@@ -29,23 +29,23 @@ export async function POST(request: NextRequest) {
     const downloader = new Downloader()
     const videoData = await downloader.downloadVideo(url)
 
-    if (!videoData || !videoData.downloadUrl) {
+    if (!videoData || (!videoData.downloadUrl && !videoData.isPhotoCarousel)) {
       return NextResponse.json(
         { success: false, error: 'Failed to extract video download URL' },
         { status: 500 },
       )
     }
 
-    // Video proxy: forces video/mp4 content-type so browsers render a proper video player
-    const videoProxyUrl = `/api/video?url=${encodeURIComponent(
-      videoData.downloadUrl,
-    )}`
+    // Video proxy: forces video/mp4 content-type so browsers render a proper video player.
+    // Audio proxy: re-serves the same video stream with audio/mpeg content-type.
+    // Both are only meaningful when there is an actual video URL.
+    const videoProxyUrl = videoData.downloadUrl
+      ? `/api/video?url=${encodeURIComponent(videoData.downloadUrl)}`
+      : undefined
 
-    // Audio proxy: re-serves the same video stream with audio/mpeg content-type
-    // so browsers treat it as an audio file for extraction purposes
-    const audioProxyUrl = `/api/audio?url=${encodeURIComponent(
-      videoData.downloadUrl,
-    )}`
+    const audioProxyUrl = videoData.downloadUrl
+      ? `/api/audio?url=${encodeURIComponent(videoData.downloadUrl)}`
+      : undefined
 
     return NextResponse.json({
       success: true,
@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
         duration: videoData.duration,
         thumbnail: videoData.thumbnail,
         platform,
+        isPhotoCarousel: videoData.isPhotoCarousel ?? false,
         images:
           videoData.images?.map((img) => ({
             ...img,

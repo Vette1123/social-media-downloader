@@ -7,6 +7,18 @@ export class Downloader {
   private readonly userAgent =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
+  // Browser-renderable video codecs (bvc2 / ByteDance proprietary codec is NOT in this list)
+  private readonly supportedVideoCodecs = [
+    'avc1',
+    'avc2',
+    'avc3', // H.264
+    'hvc1',
+    'hev1', // H.265/HEVC
+    'vp08',
+    'vp09', // VP8/VP9
+    'av01', // AV1
+  ]
+
   // Public community cobalt instances — updated list
   private readonly cobaltInstances = [
     'https://cobalt.api.timelessnesses.me/',
@@ -45,17 +57,49 @@ export class Downloader {
     throw new Error('Unsupported URL. Please use a TikTok or Twitter/X link.')
   }
 
+  /**
+   * Checks whether a video URL uses a browser-compatible codec.
+   * TikTok's HDplay sometimes uses bvc2 (ByteDance proprietary codec) which browsers cannot render.
+   * In that case we fall back to the standard play URL (H.264/avc1).
+   */
+  private async checkVideoCodecCompatible(url: string): Promise<boolean> {
+    try {
+      const referer = url.includes('tikwm.com')
+        ? 'https://www.tikwm.com/'
+        : url.includes('tiktok')
+          ? 'https://www.tiktok.com/'
+          : ''
+      const response = await axios.get(url, {
+        headers: {
+          Range: 'bytes=0-65535',
+          'User-Agent': this.userAgent,
+          ...(referer ? { Referer: referer } : {}),
+        },
+        responseType: 'arraybuffer',
+        timeout: 12000,
+        maxRedirects: 5,
+      })
+      const bytes = Buffer.from(response.data as ArrayBuffer)
+      return this.supportedVideoCodecs.some((codec) =>
+        bytes.includes(Buffer.from(codec)),
+      )
+    } catch {
+      // If the check fails we optimistically assume the codec is fine
+      return true
+    }
+  }
+
   private async downloadTikTok(url: string): Promise<VideoData> {
     const videoId = parseVideoId(url)
     if (!videoId) {
       throw new Error('Could not extract video ID from URL')
     }
 
-    // Try multiple working methods
+    // tikwm is the most reliable — try it first, then fall back to the others
     const methods = [
+      () => this.tryTikwmMethod(url),
       () => this.trySnaptikMethod(url),
       () => this.trySSSMethod(url),
-      () => this.tryTikwmMethod(url),
       () => this.tryDirectTikTokScraping(url),
     ]
 
@@ -349,6 +393,17 @@ export class Downloader {
         const data = response.data.data
         const videoId = parseVideoId(url) || 'unknown'
 
+        // Helper: convert tikwm relative paths to absolute URLs
+        const toAbsolute = (path: string | undefined): string | undefined =>
+          path
+            ? path.startsWith('/')
+              ? 'https://www.tikwm.com' + path
+              : path
+            : undefined
+
+        // Fix thumbnail URL (tikwm returns relative paths)
+        const thumbnail = toAbsolute(data.cover) || ''
+
         // Check if this is a photo carousel (slideshow)
         const isPhotoCarousel =
           data.images && Array.isArray(data.images) && data.images.length > 0
@@ -362,30 +417,50 @@ export class Downloader {
           }))
         }
 
-        // Get the video URL and make it absolute if it's relative
-        // Prefer hdplay (HD no watermark), fall back to play (SD no watermark), then wmplay
-        let downloadUrl = data.hdplay || data.play || data.wmplay
+        let downloadUrl: string | undefined
 
-        // If the URL is relative, make it absolute
-        if (downloadUrl && downloadUrl.startsWith('/')) {
-          downloadUrl = 'https://www.tikwm.com' + downloadUrl
+        if (!isPhotoCarousel) {
+          // Resolve all candidate video URLs to absolute
+          const hdplayUrl = toAbsolute(data.hdplay)
+          const playUrl = toAbsolute(data.play)
+          const wmplayUrl = toAbsolute(data.wmplay)
+
+          if (hdplayUrl) {
+            // Verify the HD URL uses a browser-renderable codec.
+            // TikTok sometimes encodes with bvc2 (ByteDance proprietary) which no browser supports,
+            // causing the video element to render audio-only ("shows as mp3").
+            const hdCompatible = await this.checkVideoCodecCompatible(hdplayUrl)
+            if (hdCompatible) {
+              downloadUrl = hdplayUrl
+            } else {
+              console.log(
+                `[tikwm] hdplay uses unsupported codec for ${videoId} — falling back to play (H.264)`,
+              )
+              downloadUrl = playUrl || wmplayUrl || hdplayUrl
+            }
+          } else {
+            downloadUrl = playUrl || wmplayUrl
+          }
         }
+        // For photo carousels there is no video; downloadUrl stays undefined
 
         return {
           id: videoId,
-          title: data.title || 'TikTok Video (Tikwm)',
+          title: data.title || 'TikTok Video',
           url: url,
-          thumbnail: data.cover || '',
+          thumbnail,
           duration: data.duration || 0,
           author: data.author?.nickname || 'Unknown',
-          description: data.title || 'Downloaded via Tikwm',
-          downloadUrl: downloadUrl,
-          images: images,
-          isPhotoCarousel: isPhotoCarousel,
+          description: data.title || '',
+          downloadUrl: downloadUrl ?? '',
+          images,
+          isPhotoCarousel,
         }
       }
-    } catch {
-      throw new Error('Tikwm method failed')
+    } catch (e) {
+      throw new Error(
+        `Tikwm method failed: ${e instanceof Error ? e.message : e}`,
+      )
     }
     return null
   }

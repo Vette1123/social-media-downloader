@@ -7,6 +7,7 @@ function getReferer(url: string): string {
     url.includes('tiktokv.com')
   )
     return 'https://www.tiktok.com/'
+  if (url.includes('tikwm.com')) return 'https://www.tikwm.com/'
   if (
     url.includes('twimg.com') ||
     url.includes('twitter.com') ||
