@@ -1,306 +1,175 @@
-# 🎵 TikTok Downloader
+# TikTok & Twitter/X Downloader
 
-A modern, web-based TikTok video downloader that removes watermarks and preserves HD quality. Built with Next.js 15, TypeScript, and Tailwind CSS with advanced video processing capabilities.
+A web app for downloading TikTok and Twitter/X content without watermarks. Paste a link, get a clean video, audio track, or photo set — no account required.
 
-## ✨ Features
+Built with Next.js 16, TypeScript, and Tailwind CSS.
 
-### 🎥 Video Downloads
+## Features
 
-- 🚫 **Watermark-free downloads** - Remove TikTok watermarks automatically
-- 🎥 **HD Quality preservation** - Download videos in their original quality
-- 👀 **Video preview** - Preview videos before downloading
-- 🔄 **Multiple download sources** - Uses Snaptik, SSSTik, Tikwm, and direct scraping for maximum success rate
-- 📹 **Multiple video formats** - Support for MP4, WebM, and other video formats
-- 🎞️ **Video metadata extraction** - Extract title, author, duration, and thumbnail information
+**TikTok**
 
-### 🖼️ Image Downloads
+- Download videos without watermarks in HD quality
+- Extract audio from any TikTok video (re-served as `audio/mpeg`)
+- Download photo carousels — preview all images and save individually or as a ZIP
 
-- 📸 **Image slideshow support** - Download images from TikTok photo carousels
-- 🖼️ **High-resolution images** - Preserve original image quality
-- 📦 **Batch image download** - Download all images from a single post
-- 🎨 **Image preview** - Preview images before downloading
+**Twitter / X**
 
-### 🔧 Advanced Processing
+- Download videos from tweets via vxTwitter and public Cobalt instances
 
-- 🗜️ **Gzip compression** - Compress responses for faster transfers
-- ⚡ **Parallel processing** - Process multiple requests simultaneously
-- 🔄 **Retry mechanism** - Automatic retry on failed requests
-- 🛡️ **Error handling** - Robust error handling with fallback methods
-- 🌐 **CORS proxy** - Built-in proxy to handle cross-origin requests
-- 📊 **Progress tracking** - Real-time download progress indicators
+**General**
 
-### 🌐 URL Support
+- Video and image preview before downloading
+- Multiple fallback download sources for maximum reliability
+- Built-in proxy routes to bypass CORS restrictions
+- No registration or API keys required
 
-- 📱 **Multiple URL formats** - Supports all TikTok URL formats:
-  - `tiktok.com/@username/video/`
-  - `vm.tiktok.com/`
-  - `m.tiktok.com/`
-  - `www.tiktok.com/t/`
-  - Photo slideshow URLs
-- 🔗 **URL validation** - Smart URL parsing and validation
-- 🔄 **URL normalization** - Automatic URL format conversion
+## Tech Stack
 
-### 🎨 User Experience
+| Layer         | Technology                        |
+| ------------- | --------------------------------- |
+| Framework     | Next.js 16 (App Router), React 19 |
+| Language      | TypeScript                        |
+| Styling       | Tailwind CSS 4                    |
+| HTTP          | Axios                             |
+| HTML Scraping | Cheerio                           |
+| ZIP bundling  | JSZip                             |
+| Analytics     | Vercel Analytics                  |
 
-- 🎨 **Modern UI** - Beautiful gradient interface with smooth animations
-- 📱 **Responsive design** - Works seamlessly on desktop and mobile
-- 🌙 **Dark/Light themes** - Toggle between theme modes
-- ⚡ **Fast processing** - Quick video extraction and processing
-- 🌐 **No registration required** - Use immediately without creating accounts
-- 📋 **One-click copy** - Easy URL copying functionality
+## Getting Started
 
-## 🛠️ Tech Stack
+**Prerequisites:** Node.js 18+, pnpm (recommended)
 
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript
-- **Styling**: Tailwind CSS 4
-- **HTTP Client**: Axios with interceptors
-- **Web Scraping**: Cheerio for DOM parsing
-- **Video Processing**: Custom processor with multiple API integrations
-- **Compression**: Gzip middleware for response optimization
-- **State Management**: React useReducer with custom hooks
+```bash
+# Clone and install
+git clone https://github.com/Vette1123/tiktok-downloader.git
+cd tiktok-downloader
+pnpm install
 
-## 🚀 Getting Started
+# Start dev server
+pnpm dev
+```
 
-### Prerequisites
+Open [http://localhost:3000](http://localhost:3000).
 
-- Node.js 18+
-- npm, yarn, pnpm, or bun
+## How to Use
 
-### Installation
+**Download a video**
 
-1. **Clone the repository**
+1. Copy a TikTok or Twitter/X video URL
+2. Paste it into the input on the homepage
+3. Click **Process** — the app fetches metadata and a clean download link
+4. Optionally preview the video, then click **Download Video** or **Download Audio**
 
-   ```bash
-   git clone <repository-url>
-   cd tiktok-downloader
-   ```
+**Download a TikTok photo carousel**
 
-2. **Install dependencies**
+1. Paste the photo post URL
+2. All images are extracted and shown as a grid
+3. Download images individually or click **Download All as ZIP**
 
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
+**Supported URL formats**
 
-3. **Run the development server**
+| Platform  | Formats                                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------ |
+| TikTok    | `tiktok.com/@user/video/…`, `vm.tiktok.com/…`, `vt.tiktok.com/…`, `m.tiktok.com/v/…`, `tiktok.com/t/…` |
+| Twitter/X | `twitter.com/user/status/…`, `x.com/user/status/…`, `t.co/…`                                           |
 
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   # or
-   bun dev
-   ```
-
-4. **Open your browser**
-
-   Navigate to [http://localhost:3000](http://localhost:3000) to see the application.
-
-## 📖 How to Use
-
-### For Videos
-
-1. **Copy a TikTok video URL** - Copy the link from any TikTok video
-2. **Paste the URL** - Paste it into the input field on the homepage
-3. **Click "Download Video"** - The app will process the video
-4. **Preview (Optional)** - Click "Show Preview" to watch the video
-5. **Download** - Click "Download Video File" to save it to your device
-
-### For Images (Photo Slideshows)
-
-1. **Copy a TikTok photo URL** - Copy the link from any TikTok photo post
-2. **Paste the URL** - Paste it into the input field
-3. **Click "Download"** - The app will extract all images
-4. **Preview Images** - View all images in the slideshow
-5. **Download** - Download individual images or all at once
-
-### Supported Content Types
-
-- **Videos**: Standard TikTok videos with or without watermarks
-- **Images**: Photo slideshow posts with multiple images
-- **Live Photos**: Animated photo content
-- **Duets**: Duet videos with multiple participants
-- **Stitches**: Stitched video content
-
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 src/
-├── app/                    # Next.js App Router
-│   ├── api/               # API routes
-│   │   ├── download/      # Video/image download endpoint
-│   │   ├── video/         # Video proxy endpoint
-│   │   └── image/         # Image proxy endpoint
-│   ├── components/        # React components
-│   │   ├── ui/           # UI components
-│   │   └── features/     # Feature-specific components
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Home page
-├── lib/                   # Utility libraries
-│   ├── appReducer.ts      # React useReducer state management
-│   ├── downloader.ts      # Core download logic with multiple APIs
-│   ├── imageProcessor.ts  # Image processing utilities
-│   ├── types.ts           # TypeScript type definitions
-│   ├── validator.ts       # URL validation and parsing
-│   ├── videoProcessor.ts  # Video processing utilities
-│   └── compression.ts     # Gzip compression utilities
-└── middleware.ts          # Next.js middleware for compression
+├── app/
+│   ├── page.tsx            # Home page (useReducer-driven UI)
+│   ├── layout.tsx          # Root layout with analytics
+│   ├── globals.css
+│   └── api/
+│       ├── download/       # POST — resolves URL, returns video/image data
+│       ├── video/          # GET  — proxies video stream (video/mp4)
+│       ├── audio/          # GET  — proxies same stream as audio/mpeg
+│       └── images/         # POST — batch image fetcher with ZIP support
+└── lib/
+    ├── downloader.ts       # Core logic: TikTok + Twitter/X, multi-source fallbacks
+    ├── validator.ts        # URL validation and platform detection
+    ├── appReducer.ts       # Client state management
+    ├── audioExtractor.ts   # Audio extraction helpers
+    ├── videoProcessor.ts   # Video processing utilities
+    └── types.ts            # Shared TypeScript types
 ```
 
-## 🔧 API Endpoints
+## API Reference
 
-### POST `/api/download`
+### `POST /api/download`
 
-Processes TikTok URLs and returns video/image metadata with download links.
+Resolves a TikTok or Twitter/X URL and returns download links and metadata.
 
-**Request:**
+**Body:**
 
 ```json
-{
-  "url": "https://www.tiktok.com/@username/video/1234567890"
-}
+{ "url": "https://www.tiktok.com/@username/video/1234567890" }
 ```
 
-**Response for Videos:**
+**Video response:**
 
 ```json
 {
   "success": true,
-  "type": "video",
   "downloadUrl": "/api/video?url=...",
-  "metadata": {
-    "title": "Video Title",
-    "author": "Username",
-    "duration": 30,
-    "thumbnail": "https://...",
-    "quality": "HD"
-  }
+  "audioUrl": "/api/audio?url=...",
+  "metadata": { "title": "…", "author": "…", "thumbnail": "…" }
 }
 ```
 
-**Response for Images:**
+**Photo carousel response:**
 
 ```json
 {
   "success": true,
-  "type": "images",
-  "images": [
-    {
-      "url": "/api/image?url=...",
-      "thumbnail": "https://...",
-      "index": 0
-    }
-  ],
-  "metadata": {
-    "title": "Photo Post Title",
-    "author": "Username",
-    "imageCount": 5
-  }
+  "isPhotoCarousel": true,
+  "images": ["https://…", "https://…"],
+  "metadata": { "title": "…", "author": "…" }
 }
 ```
 
-### GET `/api/video`
+### `GET /api/video?url=<encoded>`
 
-Proxies video files from external sources with gzip compression.
+Proxies a video file with `Content-Type: video/mp4`, adding the correct `Referer` header for TikTok/Tikwm/Twitter CDNs.
 
-**Query Parameters:**
+### `GET /api/audio?url=<encoded>`
 
-- `url`: The video URL to proxy
-- `quality`: Optional quality parameter (hd, sd)
+Same proxy as `/api/video` but with `Content-Type: audio/mpeg`, so browsers treat it as an audio download.
 
-### GET `/api/image`
+### `POST /api/images`
 
-Proxies image files from external sources with optimization.
+Fetches a list of image URLs and returns them for individual download or bundled as a ZIP archive.
 
-**Query Parameters:**
+**Body:**
 
-- `url`: The image URL to proxy
-- `compress`: Optional compression level (1-100)
-
-## 🔄 Download Methods
-
-The app uses multiple fallback methods for maximum reliability:
-
-### Video Downloads
-
-1. **Snaptik API** - Primary method for watermark removal
-2. **SSSTik API** - Alternative with good quality preservation
-3. **Tikwm API** - Backup method with HD support
-4. **Direct Scraping** - Fallback for when APIs are unavailable
-5. **Native Extraction** - Direct TikTok API scraping
-
-### Image Downloads
-
-1. **Direct Image URLs** - Extract high-resolution image URLs
-2. **Slideshow API** - Specialized slideshow image extraction
-3. **Thumbnail Upscaling** - Enhance thumbnail quality when needed
-
-## 🚀 Deployment
-
-### Deploy on Vercel (Recommended)
-
-The easiest way to deploy is using the [Vercel Platform](https://vercel.com/new):
-
-1. Push your code to a Git repository
-2. Import your project to Vercel
-3. Configure environment variables if needed
-4. Vercel will automatically detect Next.js and deploy
-
-### Environment Variables
-
-```env
-# Optional: Configure API endpoints
-NEXT_PUBLIC_API_BASE_URL=your-api-url
-COMPRESSION_LEVEL=6
-MAX_FILE_SIZE=100mb
+```json
+{ "imageUrls": ["https://…"], "title": "post-title", "asZip": true }
 ```
 
-### Other Deployment Options
+## Download Methods
 
-- **Netlify**: Supports Next.js with serverless functions
-- **Railway**: Simple deployment with automatic HTTPS
-- **Docker**: Use the included Dockerfile for containerized deployment
-- **AWS**: Deploy with Lambda functions for serverless operation
+The downloader tries sources in order and falls back on failure:
 
-## 🤝 Contributing
+**TikTok videos:** Snaptik → SSSTik → Tikwm → direct scraping
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+**Twitter/X videos:** vxTwitter → public Cobalt instances
 
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## Deployment
 
-### Development Guidelines
+Deploy to [Vercel](https://vercel.com/new) in one click — no environment variables required for basic use. The project is a standard Next.js app and also works on Netlify, Railway, or any Node.js host.
 
-- Follow TypeScript best practices
-- Add tests for new features
-- Update documentation for API changes
-- Ensure responsive design compatibility
+## Legal Notice
 
-## ⚠️ Legal Notice
+This tool is intended for personal use with content you have the right to download. Respect the Terms of Service of TikTok and Twitter/X, and do not download content without the creator's permission.
 
-This tool is for educational purposes only. Please respect TikTok's Terms of Service and copyright laws. Only download videos and images you have permission to download.
+## License
 
-## 📄 License
+MIT — see [LICENSE](LICENSE).
 
-This project is open source and available under the [MIT License](LICENSE).
+## Issues
 
-## 🐛 Issues & Support
-
-If you encounter any issues or have questions:
-
-1. Check the [Issues](../../issues) page for existing problems
-2. Create a new issue with detailed information
-3. Include error messages and steps to reproduce
-4. Mention the type of content (video/image) and TikTok URL format
+Open a ticket on the [Issues](../../issues) page. 2. Create a new issue with detailed information 3. Include error messages and steps to reproduce 4. Mention the type of content (video/image) and TikTok URL format
 
 ## 🙏 Acknowledgments
 
