@@ -13,6 +13,7 @@ import {
   CheckIcon,
   getImagePlaceholderBase64,
 } from '@/components/icons'
+import { AdBanner } from '@/components/AdBanner'
 
 export default function Home() {
   const [state, dispatch] = useReducer(appReducer, initialState)
@@ -351,6 +352,12 @@ export default function Home() {
             </a>
           </div>
         </div>{' '}
+        {/* Ad Banner - Between Header and Main Content */}
+        <AdBanner
+          slot='1234567890'
+          format='horizontal'
+          className='my-4 md:my-6'
+        />
         <div
           className={`grid gap-6 lg:gap-8 transition-all duration-300 ${
             state.videoMetadata && !state.showPreview && !state.showImageGallery
@@ -931,6 +938,8 @@ export default function Home() {
             </div>
           </div>
         </div>
+        {/* Ad Banner - Bottom of Page */}
+        <AdBanner slot='0987654321' format='auto' className='mt-6' />
       </div>
     </div>
   )
