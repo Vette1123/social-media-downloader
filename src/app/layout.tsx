@@ -193,6 +193,10 @@ export default function RootLayout({
         <link rel='manifest' href='/manifest.json' />
         <meta name='msapplication-TileColor' content='#7c3aed' />
         <meta name='google-adsense-account' content='ca-pub-3842960431278714' />
+        <meta
+          name='google-site-verification'
+          content='aha64Aa3HDSFKw-xDlfpIGcBkGRU4lRV9xU-qR2SPwc'
+        />
         <Script
           id='ld-json'
           type='application/ld+json'
