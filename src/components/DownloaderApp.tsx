@@ -431,24 +431,41 @@ export function DownloaderApp({
 
         {/* Results Section */}
         <div className='results-section space-y-4'>
-          {state.message && (
-            <div
-              className={`p-3 rounded-xl text-center transition-all duration-300 text-sm md:text-base ${
-                state.message.includes('success') ||
-                state.message.includes('🎉') ||
-                state.message.includes('🎵')
-                  ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
-              }`}
-            >
-              {state.message}
-            </div>
-          )}
+          <AnimatePresence initial={false} mode='popLayout'>
+            {state.message && (
+              <motion.div
+                key='message'
+                initial={{ opacity: 0, height: 0, y: -8 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -8 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                className='overflow-hidden'
+              >
+                <div
+                  className={`p-3 rounded-xl text-center text-sm md:text-base ${
+                    state.message.includes('success') ||
+                    state.message.includes('🎉') ||
+                    state.message.includes('🎵')
+                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                      : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  }`}
+                >
+                  {state.message}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {!state.videoMetadata && !state.message && idleRightSlot}
 
           {state.videoMetadata && (
-            <div className='p-4 bg-white/10 rounded-xl border border-white/20 space-y-4'>
+            <motion.div
+              key='results-card'
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className='p-4 bg-white/10 rounded-xl border border-white/20 space-y-4'
+            >
               <div className='flex items-start space-x-3'>
                 {state.videoMetadata.thumbnail && (
                   <img
@@ -533,37 +550,53 @@ export function DownloaderApp({
               )}
 
               {/* Video Preview */}
-              {state.showPreview && state.downloadUrl && (
-                <div className='space-y-3'>
-                  <div className='bg-black rounded-xl overflow-hidden ring-1 ring-white/10 shadow-lg'>
-                    <video
-                      src={state.downloadUrl}
-                      poster={state.videoMetadata?.thumbnail || undefined}
-                      controls
-                      playsInline
-                      className='w-full h-auto max-h-[60vh] object-contain bg-black'
-                      preload='metadata'
-                      onError={(e) => {
-                        console.error('Video preview error:', e)
-                        dispatch({
-                          type: 'SET_MESSAGE',
-                          payload:
-                            'Preview unavailable, but download should work',
-                        })
-                      }}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
-                  </div>
-                  <p className='text-white/50 text-xs text-center'>
-                    ⚡ Preview loaded — ready to download!
-                  </p>
-                </div>
-              )}
+              <AnimatePresence initial={false}>
+                {state.showPreview && state.downloadUrl && (
+                  <motion.div
+                    key='video-preview'
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    className='overflow-hidden'
+                  >
+                    <div className='space-y-3'>
+                      <div className='bg-black rounded-xl overflow-hidden ring-1 ring-white/10 shadow-lg'>
+                        <video
+                          src={state.downloadUrl}
+                          poster={state.videoMetadata?.thumbnail || undefined}
+                          controls
+                          playsInline
+                          className='w-full h-auto max-h-[60vh] object-contain bg-black'
+                          preload='metadata'
+                          onError={(e) => {
+                            console.error('Video preview error:', e)
+                            dispatch({
+                              type: 'SET_MESSAGE',
+                              payload:
+                                'Preview unavailable, but download should work',
+                            })
+                          }}
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                      <p className='text-white/50 text-xs text-center'>
+                        ⚡ Preview loaded — ready to download!
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Photo Carousel Audio Preview */}
               {state.videoMetadata?.isPhotoCarousel && state.audioUrl && (
-                <div className='space-y-3 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-xl p-4 border border-white/10'>
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+                  className='space-y-3 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-xl p-4 border border-white/10'
+                >
                   <div className='flex items-center gap-2 text-white'>
                     <MusicIcon className='w-5 h-5 text-green-300' />
                     <div className='flex-1 min-w-0'>
@@ -586,7 +619,7 @@ export function DownloaderApp({
                   >
                     Your browser does not support the audio element.
                   </audio>
-                </div>
+                </motion.div>
               )}
 
               {/* Image Gallery */}
@@ -611,7 +644,16 @@ export function DownloaderApp({
                       </span>
                     </motion.button>
 
+                    <AnimatePresence initial={false}>
                     {state.showImageGallery && (
+                      <motion.div
+                        key='image-gallery'
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                        className='overflow-hidden'
+                      >
                       <div className='space-y-3'>
                         <div className='flex items-center justify-between bg-white/5 rounded-lg p-3'>
                           <span className='text-white text-sm'>
@@ -752,7 +794,9 @@ export function DownloaderApp({
                           )}
                         </button>
                       </div>
+                      </motion.div>
                     )}
+                    </AnimatePresence>
                   </div>
                 )}
 
@@ -860,7 +904,7 @@ export function DownloaderApp({
                     : 'Click to download your content'}
                 </p>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
