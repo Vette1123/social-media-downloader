@@ -113,7 +113,10 @@ const seoCards = [
 
 function HowItWorks() {
   return (
-    <div className='bg-white/5 rounded-xl p-5 border border-white/10'>
+    <div
+      className='animate-fade-in-up bg-white/5 rounded-xl p-5 border border-white/10'
+      style={{ animationDelay: '150ms' }}
+    >
       <h3 className='text-white font-semibold mb-4 text-sm md:text-base flex items-center'>
         🚀 How it works
         <div className='ml-2 w-8 h-0.5 bg-gradient-to-r from-pink-500 to-violet-500 rounded' />
@@ -143,7 +146,10 @@ function IdleRightContent() {
   return (
     <div className='space-y-4'>
       {/* What you can do — 2x2 bento grid */}
-      <div className='bg-white/5 rounded-xl p-5 border border-white/10'>
+      <div
+        className='animate-fade-in-up bg-white/5 rounded-xl p-5 border border-white/10'
+        style={{ animationDelay: '150ms' }}
+      >
         <h3 className='text-white font-semibold mb-4 text-sm md:text-base flex items-center'>
           ✨ What you can do
           <div className='ml-2 w-8 h-0.5 bg-gradient-to-r from-pink-500 to-violet-500 rounded' />
@@ -165,7 +171,10 @@ function IdleRightContent() {
       </div>
 
       {/* Supported link formats */}
-      <div className='bg-white/5 rounded-xl p-5 border border-white/10'>
+      <div
+        className='animate-fade-in-up bg-white/5 rounded-xl p-5 border border-white/10'
+        style={{ animationDelay: '230ms' }}
+      >
         <h3 className='text-white font-semibold mb-3 text-sm md:text-base flex items-center'>
           🔗 Supported link formats
           <div className='ml-2 w-8 h-0.5 bg-gradient-to-r from-cyan-400 to-sky-500 rounded' />
@@ -180,7 +189,10 @@ function IdleRightContent() {
       </div>
 
       {/* Trust strip */}
-      <div className='grid grid-cols-3 gap-2'>
+      <div
+        className='animate-fade-in-up grid grid-cols-3 gap-2'
+        style={{ animationDelay: '310ms' }}
+      >
         {trustStrip.map((b) => (
           <div
             key={b.k}
@@ -211,9 +223,9 @@ export default function Home() {
         className='blob-3 pointer-events-none absolute top-1/3 left-1/2 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-violet-500/20 blur-3xl'
       />
 
-      <div className='relative z-10 my-auto w-full max-w-sm md:max-w-2xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl bg-white/10 backdrop-blur-lg rounded-2xl p-4 md:p-8 shadow-2xl border border-white/20'>
+      <div className='animate-card-enter relative z-10 my-auto w-full max-w-sm md:max-w-2xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl bg-white/10 backdrop-blur-lg rounded-2xl p-4 md:p-8 shadow-2xl border border-white/20'>
         {/* Header */}
-        <div className='text-center mb-6 md:mb-8'>
+        <div className='animate-fade-in-up text-center mb-6 md:mb-8'>
           <div className='flex justify-center mb-4'>
             <div className='flex items-center space-x-3'>
               <div className='w-10 h-10 md:w-12 md:h-12 bg-[#010101] rounded-full flex items-center justify-center ring-2 ring-white/20'>
@@ -264,7 +276,10 @@ export default function Home() {
         />
 
         {/* Features List - Mobile only */}
-        <div className='lg:hidden bg-white/5 rounded-xl p-4 mt-6 border border-white/10'>
+        <div
+          className='animate-fade-in-up lg:hidden bg-white/5 rounded-xl p-4 mt-6 border border-white/10'
+          style={{ animationDelay: '200ms' }}
+        >
           <h3 className='text-white font-semibold mb-4 text-sm md:text-base flex items-center'>
             ✨ Features
             <div className='ml-2 w-8 h-0.5 bg-gradient-to-r from-pink-500 to-violet-500 rounded' />
@@ -285,7 +300,8 @@ export default function Home() {
         {/* SEO Content */}
         <section
           aria-labelledby='seo-heading'
-          className='mt-10 space-y-6 text-white/80'
+          className='animate-fade-in-up mt-10 space-y-6 text-white/80'
+          style={{ animationDelay: '300ms' }}
         >
           <div>
             <h2
