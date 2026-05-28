@@ -554,9 +554,9 @@ export function DownloaderApp({
                 {state.showPreview && state.downloadUrl && (
                   <motion.div
                     key='video-preview'
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
+                    initial={{ height: 0 }}
+                    animate={{ height: 'auto' }}
+                    exit={{ height: 0 }}
                     transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                     className='overflow-hidden'
                   >
@@ -648,9 +648,9 @@ export function DownloaderApp({
                     {state.showImageGallery && (
                       <motion.div
                         key='image-gallery'
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
+                        initial={{ height: 0 }}
+                        animate={{ height: 'auto' }}
+                        exit={{ height: 0 }}
                         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                         className='overflow-hidden'
                       >
