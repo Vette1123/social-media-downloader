@@ -1,8 +1,22 @@
 # Social Media Downloader
 
+> Download TikTok & Twitter/X videos without watermarks — HD video, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits.
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+### 🚀 [Try it live →](https://tiktok-downloader-cyan.vercel.app)
+
+![Demo — paste a TikTok URL, preview the video, and download it without the watermark](docs/demo.gif)
+
 A free, watermark-free downloader for TikTok and Twitter/X. Paste a link and get an HD video, MP3 audio, a TikTok photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack — no login, no install, runs in your browser.
 
-Live: <https://www.mohamedgado.com>
+A free, open-source alternative to SnapTik, SSSTik, and SaveTT — with no ads, no tracking, and a multi-source fallback chain so downloads keep working when any single provider goes down.
+
+⭐ **If this tool is useful to you, please [star the repo](https://github.com/Vette1123/tiktok-downloader/stargazers)** — it helps others find it.
 
 Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion.
 
