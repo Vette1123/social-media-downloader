@@ -78,72 +78,87 @@ export function ImageLightbox({
 
   if (!current) return null
 
+  const hasMultiple = images.length > 1
+  const stop = (e: React.MouseEvent) => e.stopPropagation()
+
   return (
+    // Column layout: fixed top/bottom bars with a flexible image area in
+    // between. The image is sized to the remaining space (object-contain), so
+    // it's always fully visible and never overflows the viewport — no clipping,
+    // no scrolling needed, for portrait or landscape. Clicking the backdrop
+    // (any empty space) closes; the image and controls stop propagation.
     <div
-      className='fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4'
+      className='fixed inset-0 z-50 flex flex-col bg-black/85 backdrop-blur-md'
       onClick={onClose}
       role='dialog'
       aria-modal='true'
       aria-label='Image preview'
     >
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onClose()
-        }}
-        className='absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xl transition-colors'
-        aria-label='Close preview'
+      {/* Top bar: counter + close */}
+      <div
+        className='flex shrink-0 items-center justify-between gap-3 p-4'
+        onClick={stop}
       >
-        ×
-      </button>
+        <span className='rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-white tabular-nums'>
+          {activeIndex + 1} / {images.length}
+        </span>
+        <button
+          onClick={(e) => {
+            stop(e)
+            onClose()
+          }}
+          className='flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl leading-none text-white transition-colors hover:bg-white/20'
+          aria-label='Close preview'
+        >
+          ×
+        </button>
+      </div>
 
-      {images.length > 1 && (
-        <>
+      {/* Image area — flexes to fill the space between the bars */}
+      <div className='relative flex min-h-0 flex-1 items-center justify-center px-3 sm:px-6'>
+        {hasMultiple && (
           <button
             onClick={(e) => {
-              e.stopPropagation()
+              stop(e)
               onPrev()
             }}
-            className='absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-2xl transition-colors'
+            className='absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-2xl leading-none text-white transition-colors hover:bg-white/20 sm:left-4 md:h-12 md:w-12'
             aria-label='Previous image'
           >
             ‹
           </button>
+        )}
+
+        <img
+          src={current.url}
+          alt={`Slide ${activeIndex + 1} of ${images.length}`}
+          onClick={stop}
+          className='max-h-full max-w-full rounded-lg object-contain shadow-2xl'
+        />
+
+        {hasMultiple && (
           <button
             onClick={(e) => {
-              e.stopPropagation()
+              stop(e)
               onNext()
             }}
-            className='absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-2xl transition-colors'
+            className='absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-2xl leading-none text-white transition-colors hover:bg-white/20 sm:right-4 md:h-12 md:w-12'
             aria-label='Next image'
           >
             ›
           </button>
-        </>
-      )}
+        )}
+      </div>
 
-      <div
-        className='flex flex-col items-center gap-4 max-h-full max-w-full'
-        onClick={(e) => e.stopPropagation()}
-      >
-        <img
-          src={current.url}
-          alt={`Slide ${activeIndex + 1} of ${images.length}`}
-          className='max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl'
-        />
-
-        <div className='flex items-center gap-3 bg-white/10 backdrop-blur-md rounded-full px-4 py-2'>
-          <span className='text-white text-sm font-medium tabular-nums'>
-            {activeIndex + 1} / {images.length}
-          </span>
-          <button
-            onClick={handleDownloadOne}
-            className='flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 text-white text-sm font-medium rounded-full transition-all'
-          >
-            <DownloadIcon className='w-4 h-4' />
-            Download
-          </button>
-        </div>
+      {/* Bottom bar: download */}
+      <div className='flex shrink-0 items-center justify-center p-4' onClick={stop}>
+        <button
+          onClick={handleDownloadOne}
+          className='flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-500/25 transition-all hover:from-pink-600 hover:to-violet-600'
+        >
+          <DownloadIcon className='h-4 w-4' />
+          Download image
+        </button>
       </div>
     </div>
   )

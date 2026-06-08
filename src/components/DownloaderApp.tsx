@@ -762,26 +762,31 @@ export function DownloaderApp({
                           </div>
                         </div>
 
-                        <div className='grid grid-cols-2 md:grid-cols-3 gap-3'>
+                        <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
                           {state.videoMetadata.images.map((image, index) => (
+                            // Ring lives on this (non-clipping) wrapper so the
+                            // selection outline is never cut off; the inner
+                            // button holds the rounded/overflow-hidden cell.
                             <div
                               key={image.id}
-                              className={`group relative rounded-lg overflow-hidden transition-all duration-200 ${
+                              className={`group relative rounded-xl transition-all duration-200 ${
                                 image.selected
                                   ? 'ring-2 ring-pink-500'
-                                  : 'hover:ring-2 hover:ring-white/30'
+                                  : 'ring-1 ring-white/10 hover:ring-white/40'
                               }`}
                             >
                               <button
                                 type='button'
                                 onClick={() => setLightboxIndex(index)}
-                                className='block w-full cursor-zoom-in'
+                                className='flex aspect-square w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-xl bg-black/30'
                                 aria-label={`Open image ${index + 1} full size`}
                               >
+                                {/* object-contain shows the whole image (never
+                                    cropped); the cell letterboxes onto bg. */}
                                 <img
                                   src={image.thumbnail}
                                   alt={`Slideshow image ${index + 1}`}
-                                  className='w-full h-24 md:h-32 object-cover transition-transform duration-200 group-hover:scale-105'
+                                  className='h-full w-full object-contain transition-transform duration-200 group-hover:scale-[1.03]'
                                   loading='lazy'
                                   onError={(e) => {
                                     e.currentTarget.src =
@@ -802,22 +807,22 @@ export function DownloaderApp({
                                     ? `Deselect image ${index + 1}`
                                     : `Select image ${index + 1}`
                                 }
-                                className={`absolute top-1 right-1 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 backdrop-blur-sm ${
+                                className={`absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 backdrop-blur-sm transition-all duration-200 ${
                                   image.selected
-                                    ? 'bg-pink-500 border-pink-500'
-                                    : 'bg-black/40 border-white/50 hover:border-white hover:bg-black/60'
+                                    ? 'border-pink-500 bg-pink-500'
+                                    : 'border-white/50 bg-black/40 hover:border-white hover:bg-black/60'
                                 }`}
                               >
                                 {image.selected && (
-                                  <CheckIcon className='w-4 h-4 text-white' />
+                                  <CheckIcon className='h-4 w-4 text-white' />
                                 )}
                               </button>
 
-                              <div className='absolute top-1 left-1 bg-black/60 text-white text-xs font-medium px-2 py-0.5 rounded'>
+                              <div className='pointer-events-none absolute top-1.5 left-1.5 rounded bg-black/60 px-2 py-0.5 text-xs font-medium text-white'>
                                 {index + 1}
                               </div>
 
-                              <div className='pointer-events-none absolute bottom-1 left-1 right-1 text-[10px] text-white/80 bg-black/40 rounded px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-center'>
+                              <div className='pointer-events-none absolute inset-x-1.5 bottom-1.5 rounded bg-black/40 px-1.5 py-0.5 text-center text-[10px] text-white/80 opacity-0 transition-opacity group-hover:opacity-100'>
                                 Click to preview
                               </div>
                             </div>
