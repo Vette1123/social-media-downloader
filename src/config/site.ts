@@ -1,7 +1,11 @@
 export type SiteConfig = typeof siteConfig
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.mohamedgado.com'
+// Canonical site URL. Driven by NEXT_PUBLIC_SITE_URL in deploys; falls back to
+// the production domain. Any trailing slash is stripped so `${siteUrl}/path`
+// never produces a double slash.
+const siteUrl = (
+  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.socialdownloader.space'
+).replace(/\/+$/, '')
 
 export const siteConfig = {
   name: 'Social Media Downloader',

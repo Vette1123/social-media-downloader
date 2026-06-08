@@ -10,7 +10,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-### 🚀 [Try it live →](https://tiktok-downloader-cyan.vercel.app)
+### 🚀 [Try it live →](https://www.socialdownloader.space)
 
 ![Demo — paste a TikTok, X, Instagram, Facebook, or YouTube link, preview the media, and download it without the watermark](docs/demo.gif)
 
