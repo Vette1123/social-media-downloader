@@ -64,8 +64,10 @@ export const structuredData = {
       featureList: [
         'Download TikTok videos in HD without watermark',
         'Download Twitter/X videos in HD (including GIF videos)',
+        'Download Instagram reels, videos and photos',
         'Extract MP3 audio from TikTok videos',
         'Download TikTok slideshows (photo carousels) with original music',
+        'Download Instagram photo carousels — every image individually or as a ZIP',
         'Preview video, audio and images before downloading',
         'Save images individually or as a ZIP archive',
         'Works on desktop, iPhone, iPad and Android — no app install',
@@ -98,9 +100,9 @@ export const structuredData = {
     {
       '@type': 'HowTo',
       '@id': `${siteConfig.url}/#howto`,
-      name: 'How to download a TikTok or Twitter/X video without a watermark',
+      name: 'How to download a TikTok, Twitter/X or Instagram video without a watermark',
       description:
-        'Save any TikTok or Twitter/X video, MP3 audio, or slideshow image in three steps — no login, no install, no watermark.',
+        'Save any TikTok, Twitter/X, or Instagram video, MP3 audio, or carousel image in three steps — no login, no install, no watermark.',
       totalTime: 'PT30S',
       image: ogImage,
       inLanguage: 'en',
@@ -110,18 +112,21 @@ export const structuredData = {
         value: '0',
       },
       supply: [
-        { '@type': 'HowToSupply', name: 'TikTok or Twitter/X post URL' },
+        {
+          '@type': 'HowToSupply',
+          name: 'TikTok, Twitter/X or Instagram post URL',
+        },
       ],
       tool: [
         { '@type': 'HowToTool', name: 'Any modern web browser' },
-        { '@type': 'HowToTool', name: 'A TikTok or Twitter/X URL' },
+        { '@type': 'HowToTool', name: 'A TikTok, Twitter/X or Instagram URL' },
       ],
       step: [
         {
           '@type': 'HowToStep',
           position: 1,
           name: 'Copy the link',
-          text: 'Open the TikTok or Twitter/X post and copy the share URL.',
+          text: 'Open the TikTok, Twitter/X or Instagram post and copy the share URL.',
           url: `${siteConfig.url}/#step-1`,
         },
         {
@@ -179,6 +184,14 @@ export const structuredData = {
         },
         {
           '@type': 'Question',
+          name: 'Can I download Instagram reels and photos?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. Paste a public Instagram post, reel, or carousel URL (instagram.com/p/… or instagram.com/reel/…) and the tool extracts the video, the single photo, or every image in a carousel — no login required. Private accounts and stories are not supported.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Does it work on iPhone, iPad and Android?',
           acceptedAnswer: {
             '@type': 'Answer',
@@ -203,7 +216,7 @@ export const structuredData = {
         },
         {
           '@type': 'Question',
-          name: 'Is downloading TikTok or Twitter/X videos legal?',
+          name: 'Is downloading TikTok, Twitter/X or Instagram videos legal?',
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'Downloading public videos for personal, non-commercial use is generally allowed, but you should respect the original creator’s rights and the platform’s terms of service. Do not redistribute or monetize content you do not own.',

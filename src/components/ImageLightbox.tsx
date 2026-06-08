@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from 'react'
 import { DownloadIcon } from './icons'
+import { buildDownloadFilename } from '@/lib/filename'
 
 interface LightboxImage {
   id: string
@@ -15,6 +16,9 @@ interface ImageLightboxProps {
   onClose: () => void
   onPrev: () => void
   onNext: () => void
+  platform?: string
+  author?: string
+  title?: string
 }
 
 export function ImageLightbox({
@@ -23,6 +27,9 @@ export function ImageLightbox({
   onClose,
   onPrev,
   onNext,
+  platform,
+  author,
+  title,
 }: ImageLightboxProps) {
   const current = images[activeIndex]
 
@@ -52,7 +59,14 @@ export function ImageLightbox({
       const blobUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = blobUrl
-      link.download = `social-image-${activeIndex + 1}-${Date.now()}.jpg`
+      link.download = buildDownloadFilename({
+        platform,
+        author,
+        title,
+        ext: 'jpg',
+        index: activeIndex + 1,
+        total: images.length,
+      })
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)

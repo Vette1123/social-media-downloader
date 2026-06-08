@@ -1,6 +1,6 @@
 # Social Media Downloader
 
-> Download TikTok & Twitter/X videos without watermarks — HD video, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits.
+> Download TikTok, Twitter/X & Instagram videos without watermarks — HD video, reels, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
@@ -12,13 +12,13 @@
 
 ![Demo — paste a TikTok URL, preview the video, and download it without the watermark](docs/demo.gif)
 
-A free, watermark-free downloader for TikTok and Twitter/X. Paste a link and get an HD video, MP3 audio, a TikTok photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack — no login, no install, runs in your browser.
+A free, watermark-free downloader for TikTok, Twitter/X, and Instagram. Paste a link and get an HD video or reel, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack — no login, no install, runs in your browser.
 
-A free, open-source alternative to SnapTik, SSSTik, and SaveTT — with no ads, no tracking, and a multi-source fallback chain so downloads keep working when any single provider goes down.
+A free, open-source alternative to SnapTik, SSSTik, SaveTT, and SnapInsta — with no ads, no tracking, and a multi-source fallback chain so downloads keep working when any single provider goes down.
 
 ⭐ **If this tool is useful to you, please [star the repo](https://github.com/Vette1123/tiktok-downloader/stargazers)** — it helps others find it.
 
-Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion.
+Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Mohamed Gado](https://www.mohamedgado.com).
 
 ## Features
 
@@ -33,11 +33,18 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion.
 
 - Native video extraction from any `twitter.com` or `x.com` status URL
 
+**Instagram**
+
+- Download reels and feed videos in their original quality
+- Save single-photo posts and multi-image carousels — individually or as a ZIP
+- Extract the audio track from a reel as MP3
+- Works with `instagram.com/p/…`, `/reel/…`, `/tv/…` and share links — no login required
+
 **Quality of life**
 
 - Inline video and image previews before downloading
 - Multi-source fallback chain per platform (resilient against any single provider going down)
-- CORS-proxied media routes so downloads work cross-origin
+- CORS-proxied media routes so downloads (and Instagram's hotlink-protected CDN) work cross-origin
 - Inline URL validation, smooth motion animations, fully responsive layout
 - Production-grade SEO: dynamic OpenGraph and Twitter card images, JSON-LD (WebSite, Person, SoftwareApplication, HowTo, FAQPage), hreflang, sitemap, and a manifest tuned for PWA install
 - No registration, no API keys, no daily limit
@@ -78,19 +85,19 @@ pnpm build && pnpm start
 
 ## How to use
 
-**Download a video**
+**Download a video or reel**
 
-1. Copy a TikTok or Twitter/X video URL.
+1. Copy a TikTok, Twitter/X, or Instagram video/reel URL.
 2. Paste it into the input on the homepage.
 3. Click **Process URL** — the app fetches metadata and a clean download link.
 4. Optionally preview, then click **Video** or **Extract Audio**.
 
-**Download a TikTok photo carousel**
+**Download a photo carousel**
 
-1. Paste the photo post URL.
+1. Paste the photo post URL (a TikTok slideshow or an Instagram carousel).
 2. All images appear as a selectable grid.
 3. Toggle the selections, then download them individually or as a ZIP.
-4. Click **Video (slideshow)** to render an MP4 of the images timed to the original music.
+4. For TikTok slideshows, click **Video (slideshow)** to render an MP4 of the images timed to the original music.
 
 **Supported URL formats**
 
@@ -98,6 +105,7 @@ pnpm build && pnpm start
 | --------- | ------------------------------------------------------------------------------------------------------ |
 | TikTok    | `tiktok.com/@user/video/…`, `vm.tiktok.com/…`, `vt.tiktok.com/…`, `m.tiktok.com/v/…`, `tiktok.com/t/…` |
 | Twitter/X | `twitter.com/user/status/…`, `x.com/user/status/…`, `t.co/…`                                           |
+| Instagram | `instagram.com/p/…`, `instagram.com/reel/…`, `instagram.com/tv/…`, `instagram.com/share/…`             |
 
 ## Project structure
 
@@ -115,6 +123,7 @@ src/
 │       ├── download/            # POST — resolves URL, returns video/image data
 │       ├── video/               # GET  — proxies the video stream (video/mp4)
 │       ├── audio/               # GET  — proxies the same stream as audio/mpeg
+│       ├── image/               # GET  — proxies a single image (CORS + CDN referer)
 │       ├── images/              # POST — batch image fetcher with ZIP support
 │       └── slideshow/           # POST — renders an MP4 from images + audio (ffmpeg)
 ├── components/
@@ -124,7 +133,7 @@ src/
 ├── config/
 │   └── site.ts                  # Single source of truth for site metadata
 └── lib/
-    ├── downloader.ts            # Core logic: TikTok + Twitter/X multi-source fallbacks
+    ├── downloader.ts            # Core logic: TikTok + Twitter/X + Instagram multi-source fallbacks
     ├── validator.ts             # URL validation and platform detection
     ├── appReducer.ts            # Client state machine
     ├── audioExtractor.ts        # Audio extraction helpers
@@ -138,10 +147,10 @@ src/
 
 ### `POST /api/download`
 
-Resolves a TikTok or Twitter/X URL and returns download links and metadata.
+Resolves a TikTok, Twitter/X, or Instagram URL and returns download links and metadata.
 
 ```json
-{ "url": "https://www.tiktok.com/@username/video/1234567890" }
+{ "url": "https://www.instagram.com/reel/ABC123/" }
 ```
 
 Video response:
@@ -151,7 +160,7 @@ Video response:
   "success": true,
   "downloadUrl": "/api/video?url=...",
   "audioUrl": "/api/audio?url=...",
-  "metadata": { "title": "…", "author": "…", "thumbnail": "…" }
+  "metadata": { "title": "…", "author": "…", "thumbnail": "…", "platform": "instagram" }
 }
 ```
 
@@ -160,23 +169,30 @@ Photo carousel response:
 ```json
 {
   "success": true,
-  "isPhotoCarousel": true,
-  "images": ["https://…", "https://…"],
-  "metadata": { "title": "…", "author": "…" }
+  "metadata": {
+    "title": "…",
+    "author": "…",
+    "platform": "instagram",
+    "images": ["…", "…"]
+  }
 }
 ```
 
 ### `GET /api/video?url=<encoded>`
 
-Proxies a video file with `Content-Type: video/mp4`, adding the correct `Referer` for TikTok / Tikwm / Twitter CDNs and honoring HTTP range requests so preview/seek works.
+Proxies a video file with `Content-Type: video/mp4`, adding the correct `Referer` for TikTok / Tikwm / Twitter / Instagram CDNs and honoring HTTP range requests so preview/seek works.
 
 ### `GET /api/audio?url=<encoded>`
 
 Same proxy as `/api/video` but with `Content-Type: audio/mpeg`, so browsers treat it as an audio download.
 
+### `GET /api/image?url=<encoded>`
+
+Proxies a single image with the correct CDN `Referer` and permissive CORS headers. Instagram's CDN refuses cross-origin browser requests, so Instagram image previews and individual downloads are routed through this endpoint.
+
 ### `POST /api/images`
 
-Fetches a list of image URLs. Returns either a JSON list of downloadable URLs or a ZIP archive depending on `asZip`.
+Fetches a list of image URLs. Returns either a JSON list of (proxied) downloadable URLs or a ZIP archive depending on `asZip`.
 
 ```json
 { "imageUrls": ["https://…"], "title": "post-title", "asZip": true }
@@ -198,8 +214,9 @@ Renders a real MP4 from a TikTok photo carousel using ffmpeg, timing each image 
 
 The downloader tries providers in order and falls back automatically on failure.
 
-- **TikTok videos:** Snaptik → SSSTik → Tikwm → direct scraping
+- **TikTok videos:** Tikwm → Snaptik → SSSTik → direct scraping
 - **Twitter/X videos:** vxTwitter → public Cobalt instances
+- **Instagram posts/reels:** embed page (`shortcode_media`) → public Cobalt instances → web GraphQL
 
 ## Deployment
 
@@ -209,7 +226,11 @@ The project deploys to [Vercel](https://vercel.com/new) with no configuration. I
 
 ## Legal
 
-This tool is intended for personal use with content you have the right to save. Respect the Terms of Service of TikTok and Twitter/X, and do not download content without the creator's permission.
+This tool is intended for personal use with content you have the right to save. Respect the Terms of Service of TikTok, Twitter/X, and Instagram, and do not download content without the creator's permission. Private accounts and stories are not supported.
+
+## Author
+
+Built and maintained by **[Mohamed Gado](https://www.mohamedgado.com)** — [mohamedgado.com](https://www.mohamedgado.com).
 
 ## License
 

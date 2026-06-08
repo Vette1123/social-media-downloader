@@ -14,6 +14,12 @@ function getReferer(url: string): string {
     url.includes('x.com')
   )
     return 'https://x.com/'
+  if (
+    url.includes('cdninstagram.com') ||
+    url.includes('fbcdn.net') ||
+    url.includes('instagram.com')
+  )
+    return 'https://www.instagram.com/'
   // cobalt tunnel URLs — no referer needed
   return ''
 }
