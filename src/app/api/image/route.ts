@@ -1,31 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getMediaReferer } from '../../../lib/proxyHeaders'
 
-// Adds the right Referer for CDNs that gate hotlinking. Instagram's
-// scontent/fbcdn hosts also omit CORS headers, so individual image downloads
-// must be proxied same-origin through this route instead of fetched directly.
-function getReferer(url: string): string {
-  if (
-    url.includes('tiktok.com') ||
-    url.includes('tiktokcdn.com') ||
-    url.includes('tiktokv.com')
-  )
-    return 'https://www.tiktok.com/'
-  if (url.includes('tikwm.com')) return 'https://www.tikwm.com/'
-  if (
-    url.includes('twimg.com') ||
-    url.includes('twitter.com') ||
-    url.includes('x.com')
-  )
-    return 'https://x.com/'
-  if (
-    url.includes('cdninstagram.com') ||
-    url.includes('fbcdn.net') ||
-    url.includes('instagram.com')
-  )
-    return 'https://www.instagram.com/'
-  return ''
-}
-
+// Instagram's scontent/fbcdn hosts omit CORS headers, so individual image
+// downloads must be proxied same-origin through this route instead of fetched
+// directly. getMediaReferer() adds the right Referer for hotlink-gated CDNs.
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -44,7 +22,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const referer = getReferer(imageUrl)
+    const referer = getMediaReferer(imageUrl)
     const headers: Record<string, string> = {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
