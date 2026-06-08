@@ -17,7 +17,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid URL. Please paste a TikTok or Twitter/X link.',
+          error:
+            'Invalid URL. Please paste a TikTok, Twitter/X, or Instagram link.',
         },
         { status: 400 },
       )
@@ -29,9 +30,15 @@ export async function POST(request: NextRequest) {
     const downloader = new Downloader()
     const videoData = await downloader.downloadVideo(url)
 
-    if (!videoData || (!videoData.downloadUrl && !videoData.isPhotoCarousel)) {
+    // Accept the result if it yielded any downloadable media: a video stream,
+    // a flagged photo carousel (TikTok), or a plain image set (Instagram posts).
+    const hasImages = (videoData?.images?.length ?? 0) > 0
+    if (
+      !videoData ||
+      (!videoData.downloadUrl && !videoData.isPhotoCarousel && !hasImages)
+    ) {
       return NextResponse.json(
-        { success: false, error: 'Failed to extract video download URL' },
+        { success: false, error: 'Failed to extract download URL' },
         { status: 500 },
       )
     }
@@ -49,6 +56,14 @@ export async function POST(request: NextRequest) {
       ? `/api/audio?url=${encodeURIComponent(audioSourceUrl)}`
       : undefined
 
+    // Instagram's CDN blocks cross-origin <img>/fetch from the browser (it only
+    // serves to instagram.com), so image URLs must be routed through our
+    // same-origin /api/image proxy for both display and download. TikTok/Twitter
+    // images load directly, so they are left untouched.
+    const isInstagram = platform === 'instagram'
+    const proxyImage = (u: string) =>
+      isInstagram && u ? `/api/image?url=${encodeURIComponent(u)}` : u
+
     return NextResponse.json({
       success: true,
       downloadUrl: videoProxyUrl,
@@ -57,7 +72,7 @@ export async function POST(request: NextRequest) {
         title: videoData.title,
         author: videoData.author,
         duration: videoData.duration,
-        thumbnail: videoData.thumbnail,
+        thumbnail: proxyImage(videoData.thumbnail),
         platform,
         isPhotoCarousel: videoData.isPhotoCarousel ?? false,
         musicTitle: videoData.musicTitle,
@@ -67,6 +82,8 @@ export async function POST(request: NextRequest) {
         images:
           videoData.images?.map((img) => ({
             ...img,
+            url: proxyImage(img.url),
+            thumbnail: proxyImage(img.thumbnail),
             selected: false,
           })) || [],
       },

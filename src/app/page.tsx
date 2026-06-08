@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/accordion'
 import {
   GitHubIcon,
+  InstagramIcon,
   PortfolioIcon,
   TikTokIcon,
   TwitterXIcon,
@@ -31,7 +32,7 @@ const howItWorksSteps = [
   {
     n: 1,
     title: 'Copy a video URL',
-    sub: 'From TikTok or Twitter/X',
+    sub: 'From TikTok, Twitter/X, or Instagram',
     grad: 'from-pink-500 to-pink-400',
   },
   {
@@ -185,6 +186,8 @@ function IdleRightContent() {
           <li className='truncate'>vt.tiktok.com/…</li>
           <li className='truncate'>twitter.com/user/status/…</li>
           <li className='truncate'>x.com/user/status/…</li>
+          <li className='truncate'>instagram.com/p/…</li>
+          <li className='truncate'>instagram.com/reel/…</li>
         </ul>
       </div>
 
@@ -234,6 +237,9 @@ export default function Home() {
               <div className='w-10 h-10 md:w-12 md:h-12 bg-black rounded-full flex items-center justify-center ring-2 ring-white/20'>
                 <TwitterXIcon className='w-5 h-5 md:w-6 md:h-6 text-white' />
               </div>
+              <div className='w-10 h-10 md:w-12 md:h-12 bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 rounded-full flex items-center justify-center ring-2 ring-white/20'>
+                <InstagramIcon className='w-5 h-5 md:w-6 md:h-6 text-white' />
+              </div>
             </div>
           </div>
           <h1 className='text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2'>
@@ -241,7 +247,7 @@ export default function Home() {
           </h1>
           <p className='text-sm md:text-base text-white/70 mb-4'>
             Download videos without watermarks, extract MP3 audio, or save
-            images from TikTok &amp; Twitter/X
+            images from TikTok, Twitter/X &amp; Instagram
           </p>
           <div className='flex justify-center items-center gap-3'>
             {devLinks.map(({ href, label, Icon, grad }) => (
@@ -308,14 +314,14 @@ export default function Home() {
               id='seo-heading'
               className='text-xl md:text-2xl font-bold text-white mb-3'
             >
-              Free TikTok &amp; Twitter/X Video Downloader
+              Free TikTok, Twitter/X &amp; Instagram Video Downloader
             </h2>
             <p className='text-sm md:text-base leading-relaxed'>
-              Save any TikTok or Twitter/X post in a couple of clicks. Paste
-              the link, preview the content, and download the full-quality
-              video, the original MP3 soundtrack, or every image from a TikTok
-              photo carousel. Everything happens in your browser — no app, no
-              sign-up, no watermark.
+              Save any TikTok, Twitter/X, or Instagram post in a couple of
+              clicks. Paste the link, preview the content, and download the
+              full-quality video, the original MP3 soundtrack, or every image
+              from a photo carousel. Everything happens in your browser — no
+              app, no sign-up, no watermark.
             </p>
           </div>
 
@@ -377,9 +383,57 @@ export default function Home() {
                   resolves the underlying media automatically.
                 </AccordionContent>
               </AccordionItem>
+              <AccordionItem value='faq-5'>
+                <AccordionTrigger>
+                  Can I download Instagram reels and photos?
+                </AccordionTrigger>
+                <AccordionContent>
+                  Yes — paste a public Instagram post, reel, or carousel URL
+                  (instagram.com/p/… or instagram.com/reel/…). The tool pulls
+                  the video, the single photo, or every image in a carousel, no
+                  login required. Private accounts and stories aren&apos;t
+                  supported.
+                </AccordionContent>
+              </AccordionItem>
             </Accordion>
           </div>
         </section>
+
+        {/* Footer */}
+        <footer className='animate-fade-in-up mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-5 text-sm text-white/60'>
+          <span>
+            Built by{' '}
+            <a
+              href='https://www.mohamedgado.com'
+              target='_blank'
+              rel='noopener noreferrer'
+              className='font-medium text-pink-300 hover:text-pink-200 underline underline-offset-2 transition-colors'
+            >
+              Mohamed Gado
+            </a>
+          </span>
+          <span aria-hidden className='hidden sm:inline text-white/20'>
+            •
+          </span>
+          <a
+            href='https://www.mohamedgado.com'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='inline-flex items-center gap-1.5 text-white/70 hover:text-white transition-colors'
+          >
+            <PortfolioIcon className='w-4 h-4' />
+            Portfolio
+          </a>
+          <a
+            href='https://github.com/Vette1123/tiktok-downloader'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='inline-flex items-center gap-1.5 text-white/70 hover:text-white transition-colors'
+          >
+            <GitHubIcon className='w-4 h-4' />
+            GitHub
+          </a>
+        </footer>
       </div>
     </div>
   )
