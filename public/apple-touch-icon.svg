@@ -1,25 +1,25 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background with rounded corners for iOS -->
-  <rect width="180" height="180" rx="40" fill="url(#gradient)"/>
-  
-  <!-- Download arrow - larger for better visibility -->
-  <path d="M90 40V125M90 125L65 100M90 125L115 100" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-  
-  <!-- Bottom bar (representing saved file) -->
-  <rect x="50" y="140" width="80" height="12" rx="6" fill="white"/>
-  
-  <!-- Musical note - larger and more prominent -->
-  <circle cx="135" cy="55" r="12" fill="white" opacity="0.95"/>
-  <path d="M135 55V30C135 27 137 25 140 24L155 20V40L135 45V55Z" fill="white" opacity="0.95"/>
-  
-  <!-- Gradient definition -->
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Social Media Downloader">
   <defs>
-    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#ff0050;stop-opacity:1" />
-      <stop offset="25%" style="stop-color:#00f2ea;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#ff0050;stop-opacity:1" />
-      <stop offset="75%" style="stop-color:#00f2ea;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#ff0050;stop-opacity:1" />
+    <linearGradient id="tile" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ec4899" />
+      <stop offset="0.5" stop-color="#8b5cf6" />
+      <stop offset="1" stop-color="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="sheen" x1="90" y1="0" x2="90" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity="0.26" />
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0" />
     </linearGradient>
   </defs>
+
+  <!-- Full-bleed, opaque square: iOS applies its own rounded mask, and the glyph
+       sits well inside the maskable safe zone for Android adaptive icons. -->
+  <rect width="180" height="180" fill="url(#tile)" />
+  <rect width="180" height="180" fill="url(#sheen)" />
+
+  <!-- Download-into-tray glyph -->
+  <g stroke="#ffffff" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M90 48V104" />
+    <path d="M62 82 90 110 118 82" />
+    <path d="M53 132H127" />
+  </g>
 </svg>
