@@ -144,20 +144,25 @@ export default async function OpenGraphImage() {
               zIndex: 1,
             }}
           >
-            <div
-              style={{
-                fontSize: 96,
-                fontWeight: 800,
-                letterSpacing: -3,
-                lineHeight: 1,
-                background:
-                  'linear-gradient(135deg, #ffffff 0%, #f0abfc 45%, #67e8f9 100%)',
-                backgroundClip: 'text',
-                color: 'transparent',
-                display: 'flex',
-              }}
-            >
-              Download TikTok &amp; X
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {['Download TikTok, X', '& Instagram'].map((line) => (
+                <div
+                  key={line}
+                  style={{
+                    fontSize: 84,
+                    fontWeight: 800,
+                    letterSpacing: -3,
+                    lineHeight: 1.05,
+                    background:
+                      'linear-gradient(135deg, #ffffff 0%, #f0abfc 45%, #67e8f9 100%)',
+                    backgroundClip: 'text',
+                    color: 'transparent',
+                    display: 'flex',
+                  }}
+                >
+                  {line}
+                </div>
+              ))}
             </div>
             <div
               style={{
@@ -169,7 +174,7 @@ export default async function OpenGraphImage() {
                 display: 'flex',
               }}
             >
-              videos · MP3 · slideshows — no watermark
+              videos · reels · photos · MP3 — no watermark
             </div>
 
             <div
@@ -203,6 +208,28 @@ export default async function OpenGraphImage() {
                   {chip.label}
                 </div>
               ))}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                marginTop: 4,
+                fontSize: 24,
+                fontWeight: 600,
+              }}
+            >
+              <span
+                style={{ display: 'flex', color: 'rgba(186, 230, 253, 0.72)' }}
+              >
+                Built by
+              </span>
+              <span
+                style={{ display: 'flex', color: '#f0abfc', fontWeight: 700 }}
+              >
+                mohamedgado.com
+              </span>
             </div>
           </div>
         </div>
