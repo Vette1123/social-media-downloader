@@ -18,6 +18,11 @@ export interface VideoData {
   musicUrl?: string
   musicTitle?: string
   musicAuthor?: string
+  // Set when no downloadable stream could be extracted but the video can still
+  // be played via an embedded player (used for YouTube, which bot-blocks free
+  // extraction from datacenters). The UI shows the embed and hides the
+  // download/audio buttons.
+  embedUrl?: string
 }
 
 export interface ProcessedVideo {

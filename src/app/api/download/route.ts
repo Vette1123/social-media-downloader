@@ -32,10 +32,15 @@ export async function POST(request: NextRequest) {
 
     // Accept the result if it yielded any downloadable media: a video stream,
     // a flagged photo carousel (TikTok), or a plain image set (Instagram posts).
+    // Also accept an embed-only result (YouTube fallback: playable but not
+    // downloadable).
     const hasImages = (videoData?.images?.length ?? 0) > 0
     if (
       !videoData ||
-      (!videoData.downloadUrl && !videoData.isPhotoCarousel && !hasImages)
+      (!videoData.downloadUrl &&
+        !videoData.isPhotoCarousel &&
+        !hasImages &&
+        !videoData.embedUrl)
     ) {
       return NextResponse.json(
         { success: false, error: 'Failed to extract download URL' },
@@ -43,17 +48,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Same-origin API paths (e.g. the yt-dlp streaming endpoint
+    // /api/youtube?...) are already playable as-is — only external media URLs
+    // need wrapping in the proxy routes.
+    const toMediaUrl = (mediaUrl: string, proxyPath: string) =>
+      mediaUrl.startsWith('/')
+        ? mediaUrl
+        : `${proxyPath}?url=${encodeURIComponent(mediaUrl)}`
+
     // Video proxy: forces video/mp4 content-type so browsers render a proper video player.
     // Audio proxy: re-serves the video stream OR slideshow music as audio/mpeg.
     const videoProxyUrl = videoData.downloadUrl
-      ? `/api/video?url=${encodeURIComponent(videoData.downloadUrl)}`
+      ? toMediaUrl(videoData.downloadUrl, '/api/video')
       : undefined
 
     // Prefer the dedicated music track (photo carousels / some videos) — falls back to
     // re-serving the video stream as audio when no separate track is available.
     const audioSourceUrl = videoData.musicUrl || videoData.downloadUrl
     const audioProxyUrl = audioSourceUrl
-      ? `/api/audio?url=${encodeURIComponent(audioSourceUrl)}`
+      ? toMediaUrl(audioSourceUrl, '/api/audio')
       : undefined
 
     // Instagram's CDN blocks cross-origin <img>/fetch from the browser (it only
@@ -75,6 +88,7 @@ export async function POST(request: NextRequest) {
         thumbnail: proxyImage(videoData.thumbnail),
         platform,
         isPhotoCarousel: videoData.isPhotoCarousel ?? false,
+        embedUrl: videoData.embedUrl,
         musicTitle: videoData.musicTitle,
         musicAuthor: videoData.musicAuthor,
         // Raw (non-proxied) URLs needed by the /api/slideshow renderer
