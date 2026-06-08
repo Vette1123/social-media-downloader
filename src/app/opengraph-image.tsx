@@ -180,56 +180,63 @@ export default async function OpenGraphImage() {
             <div
               style={{
                 display: 'flex',
-                gap: 14,
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 24,
                 marginTop: 8,
               }}
             >
-              {[
-                { label: 'No login', accent: '#f0abfc' },
-                { label: 'No install', accent: '#a5b4fc' },
-                { label: 'HD quality', accent: '#67e8f9' },
-                { label: 'No limits', accent: '#fbcfe8' },
-              ].map((chip) => (
-                <div
-                  key={chip.label}
+              <div style={{ display: 'flex', gap: 14 }}>
+                {[
+                  { label: 'No login', accent: '#f0abfc' },
+                  { label: 'No install', accent: '#a5b4fc' },
+                  { label: 'HD quality', accent: '#67e8f9' },
+                  { label: 'No limits', accent: '#fbcfe8' },
+                ].map((chip) => (
+                  <div
+                    key={chip.label}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '14px 26px',
+                      borderRadius: 999,
+                      background: 'rgba(255, 255, 255, 0.07)',
+                      border: '1px solid rgba(236, 72, 153, 0.35)',
+                      color: chip.accent,
+                      fontSize: 24,
+                      fontWeight: 600,
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    {chip.label}
+                  </div>
+                ))}
+              </div>
+
+              {/* Author credit — balanced opposite the chips */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  whiteSpace: 'nowrap',
+                  fontSize: 26,
+                  fontWeight: 700,
+                }}
+              >
+                <span
                   style={{
                     display: 'flex',
-                    alignItems: 'center',
-                    padding: '14px 26px',
-                    borderRadius: 999,
-                    background: 'rgba(255, 255, 255, 0.07)',
-                    border: '1px solid rgba(236, 72, 153, 0.35)',
-                    color: chip.accent,
-                    fontSize: 24,
-                    fontWeight: 600,
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+                    color: 'rgba(186, 230, 253, 0.55)',
+                    fontWeight: 500,
                   }}
                 >
-                  {chip.label}
-                </div>
-              ))}
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                marginTop: 4,
-                fontSize: 24,
-                fontWeight: 600,
-              }}
-            >
-              <span
-                style={{ display: 'flex', color: 'rgba(186, 230, 253, 0.72)' }}
-              >
-                Built by
-              </span>
-              <span
-                style={{ display: 'flex', color: '#f0abfc', fontWeight: 700 }}
-              >
-                mohamedgado.com
-              </span>
+                  by
+                </span>
+                <span style={{ display: 'flex', color: '#f0abfc' }}>
+                  mohamedgado.com
+                </span>
+              </div>
             </div>
           </div>
         </div>
