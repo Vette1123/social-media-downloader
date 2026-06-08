@@ -6,11 +6,13 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import {
+  FacebookIcon,
   GitHubIcon,
   InstagramIcon,
   PortfolioIcon,
   TikTokIcon,
   TwitterXIcon,
+  YouTubeIcon,
 } from '@/components/icons'
 
 const devLinks = [
@@ -21,7 +23,7 @@ const devLinks = [
     grad: 'from-pink-500/80 to-violet-500/80',
   },
   {
-    href: 'https://github.com/Vette1123/tiktok-downloader',
+    href: 'https://github.com/Vette1123/social-media-downloader',
     label: 'GitHub',
     Icon: GitHubIcon,
     grad: 'from-violet-500/80 to-cyan-400/80',
@@ -32,7 +34,7 @@ const howItWorksSteps = [
   {
     n: 1,
     title: 'Copy a video URL',
-    sub: 'From TikTok, Twitter/X, or Instagram',
+    sub: 'TikTok, X, Instagram, Facebook, or YouTube',
     grad: 'from-pink-500 to-pink-400',
   },
   {
@@ -100,7 +102,7 @@ const mobileFeatures = [
 const seoCards = [
   {
     title: '🎬 Videos in HD',
-    body: 'Watermark-free TikTok downloads and native Twitter/X video rips, served with proper range requests so preview and seeking work flawlessly.',
+    body: 'Watermark-free TikTok downloads plus native Twitter/X, Facebook, and YouTube (including Shorts) video rips, served with proper range requests so preview and seeking work flawlessly.',
   },
   {
     title: '🎵 MP3 audio extraction',
@@ -183,11 +185,13 @@ function IdleRightContent() {
         <ul className='grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[11px] md:text-xs text-white/65 font-mono'>
           <li className='truncate'>tiktok.com/@user/video/…</li>
           <li className='truncate'>vm.tiktok.com/…</li>
-          <li className='truncate'>vt.tiktok.com/…</li>
-          <li className='truncate'>twitter.com/user/status/…</li>
           <li className='truncate'>x.com/user/status/…</li>
           <li className='truncate'>instagram.com/p/…</li>
           <li className='truncate'>instagram.com/reel/…</li>
+          <li className='truncate'>youtube.com/watch?v=…</li>
+          <li className='truncate'>youtu.be/… · /shorts/…</li>
+          <li className='truncate'>facebook.com/…/videos/…</li>
+          <li className='truncate'>fb.watch/… · /reel/…</li>
         </ul>
       </div>
 
@@ -230,16 +234,24 @@ export default function Home() {
         {/* Header */}
         <div className='animate-fade-in-up text-center mb-6 md:mb-8'>
           <div className='flex justify-center mb-4'>
-            <div className='flex items-center space-x-3'>
-              <div className='w-10 h-10 md:w-12 md:h-12 bg-[#010101] rounded-full flex items-center justify-center ring-2 ring-white/20'>
+            <div className='flex items-center gap-2 md:gap-2.5'>
+              {/* Monochrome glyphs sit on their own brand-color tile */}
+              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#010101] flex items-center justify-center ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
                 <TikTokIcon className='w-5 h-5 md:w-6 md:h-6 text-white' />
-              </div>
-              <div className='w-10 h-10 md:w-12 md:h-12 bg-black rounded-full flex items-center justify-center ring-2 ring-white/20'>
+              </span>
+              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black flex items-center justify-center ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
                 <TwitterXIcon className='w-5 h-5 md:w-6 md:h-6 text-white' />
-              </div>
-              <div className='w-10 h-10 md:w-12 md:h-12 bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 rounded-full flex items-center justify-center ring-2 ring-white/20'>
-                <InstagramIcon className='w-5 h-5 md:w-6 md:h-6 text-white' />
-              </div>
+              </span>
+              {/* Full-color self-contained brand badges */}
+              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
+                <InstagramIcon className='w-full h-full' />
+              </span>
+              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
+                <FacebookIcon className='w-full h-full' />
+              </span>
+              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
+                <YouTubeIcon className='w-full h-full' />
+              </span>
             </div>
           </div>
           <h1 className='text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2'>
@@ -247,7 +259,7 @@ export default function Home() {
           </h1>
           <p className='text-sm md:text-base text-white/70 mb-4'>
             Download videos without watermarks, extract MP3 audio, or save
-            images from TikTok, Twitter/X &amp; Instagram
+            images from TikTok, X, Instagram, Facebook &amp; YouTube
           </p>
           <div className='flex justify-center items-center gap-3'>
             {devLinks.map(({ href, label, Icon, grad }) => (
@@ -314,14 +326,14 @@ export default function Home() {
               id='seo-heading'
               className='text-xl md:text-2xl font-bold text-white mb-3'
             >
-              Free TikTok, Twitter/X &amp; Instagram Video Downloader
+              Free TikTok, X, Instagram, Facebook &amp; YouTube Video Downloader
             </h2>
             <p className='text-sm md:text-base leading-relaxed'>
-              Save any TikTok, Twitter/X, or Instagram post in a couple of
-              clicks. Paste the link, preview the content, and download the
-              full-quality video, the original MP3 soundtrack, or every image
-              from a photo carousel. Everything happens in your browser — no
-              app, no sign-up, no watermark.
+              Save any TikTok, Twitter/X, Instagram, Facebook, or YouTube post
+              in a couple of clicks. Paste the link, preview the content, and
+              download the full-quality video, the original MP3 soundtrack, or
+              every image from a photo carousel. Everything happens in your
+              browser — no app, no sign-up, no watermark.
             </p>
           </div>
 
@@ -395,6 +407,30 @@ export default function Home() {
                   supported.
                 </AccordionContent>
               </AccordionItem>
+              <AccordionItem value='faq-6'>
+                <AccordionTrigger>
+                  Can I download YouTube videos and Shorts?
+                </AccordionTrigger>
+                <AccordionContent>
+                  Yes — paste any youtube.com/watch?v=…, youtu.be/…, or
+                  /shorts/… link. The tool resolves the stream so you can
+                  preview it, download the MP4 in HD, or extract the audio as an
+                  MP3. Age-restricted, private, and members-only videos
+                  aren&apos;t supported.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value='faq-7'>
+                <AccordionTrigger>
+                  Does it work with Facebook videos and reels?
+                </AccordionTrigger>
+                <AccordionContent>
+                  Yes — paste a public Facebook video, watch, or reel URL
+                  (facebook.com/…/videos/…, fb.watch/…, or facebook.com/reel/…)
+                  and the tool extracts the HD stream for preview and download.
+                  Private posts and videos from private groups aren&apos;t
+                  supported.
+                </AccordionContent>
+              </AccordionItem>
             </Accordion>
           </div>
         </section>
@@ -425,7 +461,7 @@ export default function Home() {
             Portfolio
           </a>
           <a
-            href='https://github.com/Vette1123/tiktok-downloader'
+            href='https://github.com/Vette1123/social-media-downloader'
             target='_blank'
             rel='noopener noreferrer'
             className='inline-flex items-center gap-1.5 text-white/70 hover:text-white transition-colors'

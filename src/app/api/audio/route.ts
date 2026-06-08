@@ -1,27 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-function getReferer(url: string): string {
-  if (
-    url.includes('tiktok.com') ||
-    url.includes('tiktokcdn.com') ||
-    url.includes('tiktokv.com')
-  )
-    return 'https://www.tiktok.com/'
-  if (url.includes('tikwm.com')) return 'https://www.tikwm.com/'
-  if (
-    url.includes('twimg.com') ||
-    url.includes('twitter.com') ||
-    url.includes('x.com')
-  )
-    return 'https://x.com/'
-  if (
-    url.includes('cdninstagram.com') ||
-    url.includes('fbcdn.net') ||
-    url.includes('instagram.com')
-  )
-    return 'https://www.instagram.com/'
-  return ''
-}
+import { getMediaReferer } from '../../../lib/proxyHeaders'
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     console.log('Fetching audio from URL:', videoUrl)
 
-    const referer = getReferer(videoUrl)
+    const referer = getMediaReferer(videoUrl)
     const headers: Record<string, string> = {
       'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
