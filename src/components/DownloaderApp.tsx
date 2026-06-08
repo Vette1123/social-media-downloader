@@ -580,8 +580,8 @@ export function DownloaderApp({
                 </div>
               </div>
 
-              {/* Preview Toggle (video only) */}
-              {state.downloadUrl && (
+              {/* Preview Toggle (downloadable video or embed-only fallback) */}
+              {(state.downloadUrl || state.videoMetadata?.embedUrl) && (
                 <motion.button
                   onClick={togglePreview}
                   whileHover={{ y: -1 }}
@@ -599,9 +599,13 @@ export function DownloaderApp({
                 </motion.button>
               )}
 
-              {/* Video Preview */}
+              {/* Video Preview (direct stream). For YouTube we prefer the
+                  lightweight embed below so previewing doesn't trigger a full
+                  yt-dlp download. */}
               <AnimatePresence initial={false}>
-                {state.showPreview && state.downloadUrl && (
+                {state.showPreview &&
+                  state.downloadUrl &&
+                  !state.videoMetadata?.embedUrl && (
                   <motion.div
                     key='video-preview'
                     initial={{ height: 0 }}
@@ -637,6 +641,39 @@ export function DownloaderApp({
                     </div>
                   </motion.div>
                 )}
+              </AnimatePresence>
+
+              {/* YouTube embed fallback — playable but not downloadable. Shown
+                  when free extraction is blocked so the video stays viewable. */}
+              <AnimatePresence initial={false}>
+                {state.showPreview && state.videoMetadata?.embedUrl && (
+                    <motion.div
+                      key='embed-preview'
+                      initial={{ height: 0 }}
+                      animate={{ height: 'auto' }}
+                      exit={{ height: 0 }}
+                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                      className='overflow-hidden'
+                    >
+                      <div className='space-y-3'>
+                        <div className='relative bg-black rounded-xl overflow-hidden ring-1 ring-white/10 shadow-lg aspect-video'>
+                          <iframe
+                            src={state.videoMetadata.embedUrl}
+                            title={state.videoMetadata.title || 'YouTube video'}
+                            allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+                            allowFullScreen
+                            referrerPolicy='strict-origin-when-cross-origin'
+                            className='absolute inset-0 h-full w-full'
+                          />
+                        </div>
+                        <p className='text-white/50 text-xs text-center'>
+                          {state.downloadUrl
+                            ? '▶️ Preview via YouTube — use the buttons below to download.'
+                            : '▶️ Playing via YouTube — direct download isn’t available for this video.'}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
               </AnimatePresence>
 
               {/* Photo Carousel Audio Preview */}

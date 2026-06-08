@@ -9,6 +9,7 @@ import {
   parseYouTubeId,
 } from './validator'
 import { getMediaReferer } from './proxyHeaders'
+import { ytdlpInfo } from './ytdlp'
 
 // Loose shapes for Instagram's GraphQL / embed `shortcode_media` payload.
 // Only the fields we actually read are typed; everything else is ignored.
@@ -44,30 +45,16 @@ export class Downloader {
     'av01', // AV1
   ]
 
-  // Public community cobalt instances. Cobalt deliberately stopped publishing
-  // its public instance list (YouTube scraping abuse), so this is a curated,
-  // probe-verified set led by the most reliable instance. Cobalt tunnels the
-  // media, so the URL it returns plays cross-origin (unlike a raw CDN URL).
-  private readonly cobaltInstances = [
-    'https://co.otomir23.me/',
-    'https://cobalt-backend.canine.tools/',
-    'https://co.eepy.today/',
-    'https://cobalt.255x.ru/',
-  ]
+  // Public community cobalt instance. Cobalt tunnels the media, so the URL it
+  // returns plays cross-origin (unlike a raw CDN URL). Used as a login-free
+  // fallback for YouTube and as one of the extractors for Twitter/Instagram/
+  // Facebook. (Other instances were pruned — canine.tools needs a JWT,
+  // eepy.today 502s, 255x.ru has a broken cert — they only added dead timeouts.)
+  private readonly cobaltInstances = ['https://co.otomir23.me/']
 
   // Public Instagram web app id — required by the GraphQL/web-API endpoints.
   // This is the same id Instagram's own web client sends and is not a secret.
   private readonly instagramAppId = '936619743392459'
-
-  // Public Piped instances (open-source YouTube frontends). Their /streams
-  // endpoint returns muxed/progressive formats whose URLs are proxied by the
-  // instance, so they play cross-origin. Used as a YouTube fallback.
-  private readonly pipedInstances = [
-    'https://api.piped.private.coffee',
-    'https://pipedapi.kavin.rocks',
-    'https://pipedapi.reallyaweso.me',
-    'https://pipedapi.adminforge.de',
-  ]
 
   // Main entry point: auto-detects platform and routes accordingly
   async downloadVideo(url: string): Promise<VideoData> {
@@ -113,12 +100,15 @@ export class Downloader {
   }
 
   /**
-   * YouTube: Cobalt is the primary extractor (it tunnels the stream, so the
-   * resulting URL is not IP-locked to a single requester the way a raw
-   * googlevideo URL is). Piped/Invidious public instances are the fallback.
-   *
-   * Cobalt returns sparse metadata, so the title/author/thumbnail are always
-   * enriched from YouTube's public oEmbed endpoint (login-free).
+   * YouTube extraction, in order of reliability:
+   *   1. yt-dlp — runs locally from a residential IP that YouTube doesn't
+   *      bot-block, so it yields real video + audio downloads.
+   *   2. Cobalt — login-free public instance; works when its server isn't
+   *      currently bot-blocked. Sparse metadata, so title/author/thumbnail are
+   *      enriched from YouTube's public oEmbed endpoint.
+   *   3. Embed fallback — when no extractor can produce a stream (e.g. on a
+   *      datacenter host like Vercel), return the official embed so the video
+   *      is still viewable.
    */
   private async downloadYouTube(url: string): Promise<VideoData> {
     const videoId = parseYouTubeId(url)
@@ -130,9 +120,19 @@ export class Downloader {
 
     const meta = await this.fetchYouTubeMeta(videoId, canonical)
 
+    // 1) yt-dlp — extracts from this process's IP. Run locally / self-hosted
+    //    (residential IP), YouTube doesn't bot-block it, so it succeeds where
+    //    the public datacenter instances fail. Downloads stream via the
+    //    dedicated /api/youtube endpoint. Returns null when the binary is
+    //    unavailable (e.g. Vercel) or the video is blocked here — then we fall
+    //    through to the public extractor and ultimately the embed.
+    if (videoId) {
+      const viaYtDlp = await this.tryYtDlpYouTube(videoId, canonical, meta)
+      if (viaYtDlp) return viaYtDlp
+    }
+
     const methods: Array<() => Promise<VideoData | null>> = [
       () => this.tryCobaltInstances(canonical),
-      () => (videoId ? this.tryPipedInstances(videoId) : Promise.resolve(null)),
     ]
 
     for (const method of methods) {
@@ -160,8 +160,28 @@ export class Downloader {
       }
     }
 
+    // No extractor could produce a downloadable stream — YouTube bot-blocks
+    // extraction from datacenter IPs (the public Cobalt instance and the Vercel
+    // deploy alike), and yt-dlp isn't available here. Rather than failing
+    // outright, degrade gracefully to the official embed player so the video
+    // stays viewable; the UI renders the embed and hides the (unavailable)
+    // download/audio buttons. Real downloads need yt-dlp (run it locally).
+    if (videoId) {
+      return {
+        id: videoId,
+        title: meta.title || 'YouTube Video',
+        url: canonical,
+        thumbnail: meta.thumbnail || '',
+        duration: 0,
+        author: meta.author || 'YouTube',
+        description: '',
+        downloadUrl: '',
+        embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
+      }
+    }
+
     throw new Error(
-      'Could not download this YouTube video. The free extraction services may be temporarily rate-limited for this video — try again shortly. It could also be private, age-restricted, region-locked, or a live stream.',
+      'Could not process this YouTube link. Please double-check the URL and try again.',
     )
   }
 
@@ -387,7 +407,7 @@ export class Downloader {
     )
   }
 
-  // Try every public cobalt instance in order
+  // Try every cobalt instance in order.
   private async tryCobaltInstances(url: string): Promise<VideoData | null> {
     const errors: string[] = []
     for (const instance of this.cobaltInstances) {
@@ -826,6 +846,35 @@ export class Downloader {
   }
 
   /**
+   * yt-dlp YouTube path. Probes availability via a quick info fetch (which also
+   * confirms the video is reachable from here); on success returns a result
+   * whose video/audio point at the same-origin /api/youtube streaming endpoint
+   * and whose embedUrl drives a lightweight preview (so previewing doesn't
+   * trigger a full download). Returns null to fall back to the public
+   * extractors when yt-dlp is unavailable or blocked.
+   */
+  private async tryYtDlpYouTube(
+    videoId: string,
+    canonical: string,
+    meta: { title?: string; author?: string; thumbnail?: string },
+  ): Promise<VideoData | null> {
+    const info = await ytdlpInfo(canonical)
+    if (!info) return null
+    return {
+      id: videoId,
+      title: meta.title || info.title || 'YouTube Video',
+      url: canonical,
+      thumbnail: meta.thumbnail || info.thumbnail || '',
+      duration: Math.round(info.duration || 0),
+      author: meta.author || info.uploader || 'YouTube',
+      description: '',
+      downloadUrl: `/api/youtube?id=${videoId}&kind=video`,
+      musicUrl: `/api/youtube?id=${videoId}&kind=audio`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
+    }
+  }
+
+  /**
    * Fetch YouTube title/author/thumbnail from the public oEmbed endpoint.
    * No login or API key required. Falls back to the deterministic ytimg
    * thumbnail (always available for public videos) when oEmbed is unavailable.
@@ -856,60 +905,6 @@ export class Downloader {
     } catch {
       return { thumbnail: fallbackThumb }
     }
-  }
-
-  // YouTube fallback: try public Piped instances. Their /streams endpoint
-  // returns progressive (video+audio) formats with instance-proxied URLs.
-  private async tryPipedInstances(videoId: string): Promise<VideoData | null> {
-    const errors: string[] = []
-    for (const instance of this.pipedInstances) {
-      try {
-        const response = await axios.get(`${instance}/streams/${videoId}`, {
-          headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
-          timeout: 20000,
-        })
-        const data = response.data
-        // videoStreams with videoOnly === false are progressive (have audio).
-        // Skip LBRY/Odysee mirrors (player.odycdn.com) — they frequently 401.
-        // Prefer streams proxied through the Piped instance itself, which play
-        // cross-origin; a raw googlevideo URL is IP-locked and may not.
-        const progressive = (data?.videoStreams ?? []).filter(
-          (s: { videoOnly?: boolean; url?: string }) =>
-            s.videoOnly === false &&
-            !!s.url &&
-            !s.url.includes('odycdn') &&
-            !s.url.includes('lbry'),
-        ) as Array<{ url: string; quality?: string; mimeType?: string }>
-
-        const isProxied = (u: string) =>
-          u.includes('piped') || u.includes('proxy')
-        const isMp4 = (s: { mimeType?: string }) =>
-          (s.mimeType || '').includes('mp4')
-
-        // Prefer: proxied + mp4 → proxied → mp4 → anything.
-        const best =
-          progressive.find((s) => isProxied(s.url) && isMp4(s)) ||
-          progressive.find((s) => isProxied(s.url)) ||
-          progressive.find((s) => isMp4(s)) ||
-          progressive[0]
-        if (!best?.url) continue
-
-        return {
-          id: videoId,
-          title: data?.title || 'YouTube Video',
-          url: `https://www.youtube.com/watch?v=${videoId}`,
-          thumbnail: data?.thumbnailUrl || '',
-          duration: Math.round(data?.duration || 0),
-          author: data?.uploader || 'Unknown',
-          description: '',
-          downloadUrl: best.url,
-        }
-      } catch (e) {
-        errors.push(`${instance}: ${e}`)
-      }
-    }
-    console.warn('All Piped instances failed:', errors)
-    return null
   }
 
   /**

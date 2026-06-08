@@ -24,6 +24,9 @@ export interface VideoMetadata {
   musicTitle?: string
   musicAuthor?: string
   rawMusicUrl?: string
+  // Present (YouTube fallback) when the video can be played via an embedded
+  // player but not downloaded. The UI shows the embed and hides download buttons.
+  embedUrl?: string
 }
 
 export interface AppState {
@@ -63,7 +66,7 @@ export type AppAction =
   | {
       type: 'SET_DOWNLOAD_SUCCESS'
       payload: {
-        downloadUrl: string
+        downloadUrl?: string
         metadata: VideoMetadata
         audioUrl?: string
         originalUrl: string
@@ -174,16 +177,18 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       const hasImages = !!meta.images && meta.images.length > 0
       const isCarousel = meta.isPhotoCarousel || hasImages
       const hasVideo = !!action.payload.downloadUrl
+      const hasEmbed = !!meta.embedUrl
       return {
         ...state,
         message: 'Content processed successfully!',
-        downloadUrl: action.payload.downloadUrl,
+        downloadUrl: action.payload.downloadUrl || '',
         audioUrl: action.payload.audioUrl || '',
         originalUrl: action.payload.originalUrl,
         videoMetadata: meta,
-        // Open the video preview by default for non-carousel posts;
-        // for carousels keep it collapsed (user can toggle) so the gallery dominates.
-        showPreview: hasVideo && !isCarousel,
+        // Open the player by default for non-carousel posts (downloadable video
+        // or an embed-only YouTube fallback); for carousels keep it collapsed
+        // (user can toggle) so the gallery dominates.
+        showPreview: (hasVideo || hasEmbed) && !isCarousel,
         showImageGallery: hasImages,
       }
     }
