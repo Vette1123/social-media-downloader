@@ -6,12 +6,14 @@ import { appReducer, initialState } from '@/lib/appReducer'
 import {
   CheckIcon,
   DownloadIcon,
+  FacebookIcon,
   getImagePlaceholderBase64,
   InstagramIcon,
   MusicIcon,
   SpinnerIcon,
   TikTokIcon,
   TwitterXIcon,
+  YouTubeIcon,
 } from '@/components/icons'
 import { ImageLightbox } from '@/components/ImageLightbox'
 import { buildDownloadFilename } from '@/lib/filename'
@@ -32,7 +34,9 @@ export function DownloaderApp({
 
   const handleProcess = async () => {
     if (!state.url.trim()) {
-      setUrlError('Please paste a TikTok, Twitter/X, or Instagram URL first')
+      setUrlError(
+        'Please paste a TikTok, Twitter/X, Instagram, Facebook, or YouTube URL first',
+      )
       return
     }
     setUrlError(null)
@@ -398,7 +402,7 @@ export function DownloaderApp({
           <div>
             <input
               type='text'
-              placeholder='Paste a TikTok, Twitter/X, or Instagram URL...'
+              placeholder='Paste a TikTok, X, Instagram, Facebook, or YouTube URL...'
               value={state.url}
               onChange={(e) => {
                 if (urlError) setUrlError(null)
@@ -541,6 +545,16 @@ export function DownloaderApp({
                           label: 'View on Instagram',
                           Icon: InstagramIcon,
                           color: 'text-fuchsia-400 hover:text-fuchsia-300',
+                        },
+                        facebook: {
+                          label: 'View on Facebook',
+                          Icon: FacebookIcon,
+                          color: 'text-blue-400 hover:text-blue-300',
+                        },
+                        youtube: {
+                          label: 'View on YouTube',
+                          Icon: YouTubeIcon,
+                          color: 'text-red-400 hover:text-red-300',
                         },
                         unknown: {
                           label: 'View Original',

@@ -1,6 +1,8 @@
 # Social Media Downloader
 
-> Download TikTok, Twitter/X & Instagram videos without watermarks — HD video, reels, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits.
+> Download TikTok, Twitter/X, Instagram, Facebook & YouTube videos without watermarks — HD video, reels, Shorts, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits.
+
+![Social Media Downloader — download HD video, reels, Shorts, MP3 audio and photos from TikTok, X, Instagram, Facebook and YouTube without watermarks](docs/social-preview.png)
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
@@ -10,13 +12,13 @@
 
 ### 🚀 [Try it live →](https://tiktok-downloader-cyan.vercel.app)
 
-![Demo — paste a TikTok URL, preview the video, and download it without the watermark](docs/demo.gif)
+![Demo — paste a TikTok, X, Instagram, Facebook, or YouTube link, preview the media, and download it without the watermark](docs/demo.gif)
 
-A free, watermark-free downloader for TikTok, Twitter/X, and Instagram. Paste a link and get an HD video or reel, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack — no login, no install, runs in your browser.
+A free, watermark-free downloader for TikTok, Twitter/X, Instagram, Facebook, and YouTube. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack — no login, no install, runs in your browser.
 
-A free, open-source alternative to SnapTik, SSSTik, SaveTT, and SnapInsta — with no ads, no tracking, and a multi-source fallback chain so downloads keep working when any single provider goes down.
+A free, open-source alternative to SnapTik, SSSTik, SaveTT, SnapInsta, Y2mate, and GetFvid — with no ads, no tracking, and a multi-source fallback chain so downloads keep working when any single provider goes down.
 
-⭐ **If this tool is useful to you, please [star the repo](https://github.com/Vette1123/tiktok-downloader/stargazers)** — it helps others find it.
+⭐ **If this tool is useful to you, please [star the repo](https://github.com/Vette1123/social-media-downloader/stargazers)** — it helps others find it.
 
 Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Mohamed Gado](https://www.mohamedgado.com).
 
@@ -39,6 +41,20 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 - Save single-photo posts and multi-image carousels — individually or as a ZIP
 - Extract the audio track from a reel as MP3
 - Works with `instagram.com/p/…`, `/reel/…`, `/tv/…` and share links — no login required
+
+**YouTube**
+
+- Download videos and Shorts in HD as MP4
+- Extract the audio track as MP3
+- Rich metadata (title, channel, thumbnail) pulled from YouTube's public oEmbed
+- Works with `youtube.com/watch?v=…`, `youtu.be/…`, `/shorts/…`, and `/embed/…`
+
+**Facebook**
+
+- Download public videos, watch clips, and reels in HD
+- Extract the audio track as MP3
+- Resolves `fb.watch/…` short links and `/share/…` links automatically
+- Works with `facebook.com/…/videos/…`, `facebook.com/watch/?v=…`, and `facebook.com/reel/…`
 
 **Quality of life**
 
@@ -69,8 +85,8 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 **Prerequisites:** Node.js 20+ (24 LTS recommended), pnpm.
 
 ```bash
-git clone https://github.com/Vette1123/tiktok-downloader.git
-cd tiktok-downloader
+git clone https://github.com/Vette1123/social-media-downloader.git
+cd social-media-downloader
 pnpm install
 pnpm dev
 ```
@@ -85,9 +101,9 @@ pnpm build && pnpm start
 
 ## How to use
 
-**Download a video or reel**
+**Download a video, reel, or Short**
 
-1. Copy a TikTok, Twitter/X, or Instagram video/reel URL.
+1. Copy a TikTok, Twitter/X, Instagram, Facebook, or YouTube video URL.
 2. Paste it into the input on the homepage.
 3. Click **Process URL** — the app fetches metadata and a clean download link.
 4. Optionally preview, then click **Video** or **Extract Audio**.
@@ -106,6 +122,8 @@ pnpm build && pnpm start
 | TikTok    | `tiktok.com/@user/video/…`, `vm.tiktok.com/…`, `vt.tiktok.com/…`, `m.tiktok.com/v/…`, `tiktok.com/t/…` |
 | Twitter/X | `twitter.com/user/status/…`, `x.com/user/status/…`, `t.co/…`                                           |
 | Instagram | `instagram.com/p/…`, `instagram.com/reel/…`, `instagram.com/tv/…`, `instagram.com/share/…`             |
+| YouTube   | `youtube.com/watch?v=…`, `youtu.be/…`, `youtube.com/shorts/…`, `youtube.com/embed/…`                   |
+| Facebook  | `facebook.com/…/videos/…`, `facebook.com/watch/?v=…`, `facebook.com/reel/…`, `fb.watch/…`              |
 
 ## Project structure
 
@@ -133,8 +151,9 @@ src/
 ├── config/
 │   └── site.ts                  # Single source of truth for site metadata
 └── lib/
-    ├── downloader.ts            # Core logic: TikTok + Twitter/X + Instagram multi-source fallbacks
+    ├── downloader.ts            # Core logic: TikTok + Twitter/X + Instagram + YouTube + Facebook fallbacks
     ├── validator.ts             # URL validation and platform detection
+    ├── proxyHeaders.ts          # Per-CDN Referer resolution shared by the proxy routes
     ├── appReducer.ts            # Client state machine
     ├── audioExtractor.ts        # Audio extraction helpers
     ├── videoProcessor.ts        # Video processing utilities
@@ -147,7 +166,7 @@ src/
 
 ### `POST /api/download`
 
-Resolves a TikTok, Twitter/X, or Instagram URL and returns download links and metadata.
+Resolves a TikTok, Twitter/X, Instagram, Facebook, or YouTube URL and returns download links and metadata.
 
 ```json
 { "url": "https://www.instagram.com/reel/ABC123/" }
@@ -180,7 +199,7 @@ Photo carousel response:
 
 ### `GET /api/video?url=<encoded>`
 
-Proxies a video file with `Content-Type: video/mp4`, adding the correct `Referer` for TikTok / Tikwm / Twitter / Instagram CDNs and honoring HTTP range requests so preview/seek works.
+Proxies a video file with `Content-Type: video/mp4`, adding the correct `Referer` for TikTok / Tikwm / Twitter / Instagram / Facebook / YouTube CDNs (via `lib/proxyHeaders.ts`) and honoring HTTP range requests so preview/seek works.
 
 ### `GET /api/audio?url=<encoded>`
 
@@ -217,6 +236,8 @@ The downloader tries providers in order and falls back automatically on failure.
 - **TikTok videos:** Tikwm → Snaptik → SSSTik → direct scraping
 - **Twitter/X videos:** vxTwitter → public Cobalt instances
 - **Instagram posts/reels:** embed page (`shortcode_media`) → public Cobalt instances → web GraphQL
+- **YouTube videos/Shorts:** public Cobalt instances → public Piped instances (metadata enriched via YouTube oEmbed)
+- **Facebook videos/reels:** video plugin page (`/plugins/video.php`) → direct page scrape (`browser_native_*_url`) → public Cobalt instances
 
 ## Deployment
 
@@ -226,7 +247,7 @@ The project deploys to [Vercel](https://vercel.com/new) with no configuration. I
 
 ## Legal
 
-This tool is intended for personal use with content you have the right to save. Respect the Terms of Service of TikTok, Twitter/X, and Instagram, and do not download content without the creator's permission. Private accounts and stories are not supported.
+This tool is intended for personal use with content you have the right to save. Respect the Terms of Service of TikTok, Twitter/X, Instagram, Facebook, and YouTube, and do not download content without the creator's permission. Private accounts, stories, and age-restricted, members-only, or private videos are not supported.
 
 ## Author
 

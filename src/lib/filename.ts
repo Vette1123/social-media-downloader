@@ -10,6 +10,8 @@ const PLATFORM_LABEL: Record<string, string> = {
   tiktok: 'tiktok',
   twitter: 'x',
   instagram: 'instagram',
+  facebook: 'facebook',
+  youtube: 'youtube',
 }
 
 // Kebab-case slug for free text (titles/captions): strip diacritics, drop

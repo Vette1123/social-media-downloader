@@ -5,7 +5,13 @@ export interface ImageData {
   selected: boolean
 }
 
-export type SupportedPlatform = 'tiktok' | 'twitter' | 'instagram' | 'unknown'
+export type SupportedPlatform =
+  | 'tiktok'
+  | 'twitter'
+  | 'instagram'
+  | 'facebook'
+  | 'youtube'
+  | 'unknown'
 
 export interface VideoMetadata {
   title: string

@@ -65,7 +65,9 @@ export const structuredData = {
         'Download TikTok videos in HD without watermark',
         'Download Twitter/X videos in HD (including GIF videos)',
         'Download Instagram reels, videos and photos',
-        'Extract MP3 audio from TikTok videos',
+        'Download YouTube videos and Shorts in HD',
+        'Download Facebook videos, watch clips and reels in HD',
+        'Extract MP3 audio from TikTok, YouTube and Facebook videos',
         'Download TikTok slideshows (photo carousels) with original music',
         'Download Instagram photo carousels — every image individually or as a ZIP',
         'Preview video, audio and images before downloading',
@@ -100,9 +102,9 @@ export const structuredData = {
     {
       '@type': 'HowTo',
       '@id': `${siteConfig.url}/#howto`,
-      name: 'How to download a TikTok, Twitter/X or Instagram video without a watermark',
+      name: 'How to download a TikTok, X, Instagram, Facebook or YouTube video without a watermark',
       description:
-        'Save any TikTok, Twitter/X, or Instagram video, MP3 audio, or carousel image in three steps — no login, no install, no watermark.',
+        'Save any TikTok, Twitter/X, Instagram, Facebook, or YouTube video, MP3 audio, or carousel image in three steps — no login, no install, no watermark.',
       totalTime: 'PT30S',
       image: ogImage,
       inLanguage: 'en',
@@ -114,19 +116,22 @@ export const structuredData = {
       supply: [
         {
           '@type': 'HowToSupply',
-          name: 'TikTok, Twitter/X or Instagram post URL',
+          name: 'TikTok, Twitter/X, Instagram, Facebook or YouTube post URL',
         },
       ],
       tool: [
         { '@type': 'HowToTool', name: 'Any modern web browser' },
-        { '@type': 'HowToTool', name: 'A TikTok, Twitter/X or Instagram URL' },
+        {
+          '@type': 'HowToTool',
+          name: 'A TikTok, Twitter/X, Instagram, Facebook or YouTube URL',
+        },
       ],
       step: [
         {
           '@type': 'HowToStep',
           position: 1,
           name: 'Copy the link',
-          text: 'Open the TikTok, Twitter/X or Instagram post and copy the share URL.',
+          text: 'Open the TikTok, Twitter/X, Instagram, Facebook or YouTube post and copy the share URL.',
           url: `${siteConfig.url}/#step-1`,
         },
         {
@@ -192,6 +197,22 @@ export const structuredData = {
         },
         {
           '@type': 'Question',
+          name: 'Can I download YouTube videos and Shorts?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. Paste any youtube.com/watch?v=…, youtu.be/…, or /shorts/… link and the tool resolves the stream so you can preview it, download the MP4 in HD, or extract the audio as an MP3. Age-restricted, private, and members-only videos are not supported.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Does it support Facebook videos and reels?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. Paste a public Facebook video, watch, or reel URL (facebook.com/…/videos/…, fb.watch/…, or facebook.com/reel/…) and the tool extracts the HD stream for preview and download. Private posts and videos from private groups are not supported.',
+          },
+        },
+        {
+          '@type': 'Question',
           name: 'Does it work on iPhone, iPad and Android?',
           acceptedAnswer: {
             '@type': 'Answer',
@@ -216,7 +237,7 @@ export const structuredData = {
         },
         {
           '@type': 'Question',
-          name: 'Is downloading TikTok, Twitter/X or Instagram videos legal?',
+          name: 'Is downloading TikTok, Twitter/X, Instagram, Facebook or YouTube videos legal?',
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'Downloading public videos for personal, non-commercial use is generally allowed, but you should respect the original creator’s rights and the platform’s terms of service. Do not redistribute or monetize content you do not own.',

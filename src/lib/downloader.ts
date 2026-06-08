@@ -1,7 +1,13 @@
 import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { VideoData, ImageData } from './types'
-import { parseVideoId, detectPlatform, parseInstagramShortcode } from './validator'
+import {
+  parseVideoId,
+  detectPlatform,
+  parseInstagramShortcode,
+  parseYouTubeId,
+} from './validator'
+import { getMediaReferer } from './proxyHeaders'
 
 // Loose shapes for Instagram's GraphQL / embed `shortcode_media` payload.
 // Only the fields we actually read are typed; everything else is ignored.
@@ -37,18 +43,30 @@ export class Downloader {
     'av01', // AV1
   ]
 
-  // Public community cobalt instances — updated list
+  // Public community cobalt instances. Cobalt deliberately stopped publishing
+  // its public instance list (YouTube scraping abuse), so this is a curated,
+  // probe-verified set led by the most reliable instance. Cobalt tunnels the
+  // media, so the URL it returns plays cross-origin (unlike a raw CDN URL).
   private readonly cobaltInstances = [
-    'https://cobalt.api.timelessnesses.me/',
-    'https://co.wuk.sh/',
-    'https://cobalt.ggtyler.dev/',
-    'https://cobalt-api.mrtoxic.dev/',
-    'https://cobalt.privacyredirect.com/',
+    'https://co.otomir23.me/',
+    'https://cobalt-backend.canine.tools/',
+    'https://co.eepy.today/',
+    'https://cobalt.255x.ru/',
   ]
 
   // Public Instagram web app id — required by the GraphQL/web-API endpoints.
   // This is the same id Instagram's own web client sends and is not a secret.
   private readonly instagramAppId = '936619743392459'
+
+  // Public Piped instances (open-source YouTube frontends). Their /streams
+  // endpoint returns muxed/progressive formats whose URLs are proxied by the
+  // instance, so they play cross-origin. Used as a YouTube fallback.
+  private readonly pipedInstances = [
+    'https://api.piped.private.coffee',
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.reallyaweso.me',
+    'https://pipedapi.adminforge.de',
+  ]
 
   // Main entry point: auto-detects platform and routes accordingly
   async downloadVideo(url: string): Promise<VideoData> {
@@ -80,8 +98,112 @@ export class Downloader {
       return this.downloadInstagram(url)
     }
 
+    if (platform === 'youtube') {
+      return this.downloadYouTube(url)
+    }
+
+    if (platform === 'facebook') {
+      return this.downloadFacebook(url)
+    }
+
     throw new Error(
-      'Unsupported URL. Please use a TikTok, Twitter/X, or Instagram link.',
+      'Unsupported URL. Please use a TikTok, Twitter/X, Instagram, Facebook, or YouTube link.',
+    )
+  }
+
+  /**
+   * YouTube: Cobalt is the primary extractor (it tunnels the stream, so the
+   * resulting URL is not IP-locked to a single requester the way a raw
+   * googlevideo URL is). Piped/Invidious public instances are the fallback.
+   *
+   * Cobalt returns sparse metadata, so the title/author/thumbnail are always
+   * enriched from YouTube's public oEmbed endpoint (login-free).
+   */
+  private async downloadYouTube(url: string): Promise<VideoData> {
+    const videoId = parseYouTubeId(url)
+    // Normalise to a canonical watch URL — short/shorts/embed links confuse
+    // some extractors, and oEmbed expects a standard watch URL.
+    const canonical = videoId
+      ? `https://www.youtube.com/watch?v=${videoId}`
+      : url
+
+    const meta = await this.fetchYouTubeMeta(videoId, canonical)
+
+    const methods: Array<() => Promise<VideoData | null>> = [
+      () => this.tryCobaltInstances(canonical),
+      () => (videoId ? this.tryPipedInstances(videoId) : Promise.resolve(null)),
+    ]
+
+    for (const method of methods) {
+      try {
+        const result = await method()
+        if (result && result.downloadUrl) {
+          // Reject dead/region-locked stream URLs so the UI never shows a
+          // broken player — fall through to the next extractor instead.
+          if (!(await this.verifyStreamReachable(result.downloadUrl))) {
+            console.warn('YouTube candidate stream unreachable, trying next...')
+            continue
+          }
+          // YouTube never yields a photo gallery.
+          result.isPhotoCarousel = false
+          result.images = undefined
+          // Prefer the richer oEmbed metadata over the extractor's guesses.
+          if (meta.title) result.title = meta.title
+          if (meta.author) result.author = meta.author
+          if (meta.thumbnail) result.thumbnail = meta.thumbnail
+          if (videoId) result.id = videoId
+          return result
+        }
+      } catch (e) {
+        console.warn('YouTube method failed, trying next...', e)
+      }
+    }
+
+    throw new Error(
+      'Could not download this YouTube video. It may be private, age-restricted, region-locked, or a live stream.',
+    )
+  }
+
+  /**
+   * Facebook: try the login-free extractors in order of reliability.
+   *   1. The public video plugin page (`/plugins/video.php`) ships the stream
+   *      config for any public video without a login wall.
+   *   2. Direct scraping of the watch/reel page JSON (`browser_native_*_url`).
+   *   3. Cobalt instances as the community fallback.
+   *
+   * fb.watch and /share/ links are resolved to their canonical URL first.
+   */
+  private async downloadFacebook(url: string): Promise<VideoData> {
+    let resolvedUrl = url
+    if (
+      url.includes('fb.watch') ||
+      url.includes('/share/') ||
+      url.includes('fb.com')
+    ) {
+      resolvedUrl = await this.resolveRedirect(url)
+    }
+
+    const methods: Array<() => Promise<VideoData | null>> = [
+      () => this.tryFacebookPlugin(resolvedUrl, url),
+      () => this.tryFacebookScrape(resolvedUrl, url),
+      () => this.tryCobaltInstances(resolvedUrl),
+    ]
+
+    for (const method of methods) {
+      try {
+        const result = await method()
+        if (result && result.downloadUrl) {
+          result.isPhotoCarousel = false
+          result.images = undefined
+          return result
+        }
+      } catch (e) {
+        console.warn('Facebook method failed, trying next...', e)
+      }
+    }
+
+    throw new Error(
+      'Could not download this Facebook video. The post may be private, age-restricted, or unavailable.',
     )
   }
 
@@ -173,6 +295,32 @@ export class Downloader {
     }
   }
 
+  /**
+   * Confirms a candidate stream URL actually serves bytes before we hand it to
+   * the client. Public Cobalt/Piped instances sometimes return dead or
+   * region-locked URLs (e.g. an LBRY mirror that 401s); without this check the
+   * UI would show a broken player. A ranged GET keeps it cheap.
+   */
+  private async verifyStreamReachable(url: string): Promise<boolean> {
+    try {
+      const referer = getMediaReferer(url)
+      const response = await axios.get(url, {
+        headers: {
+          Range: 'bytes=0-1024',
+          'User-Agent': this.userAgent,
+          ...(referer ? { Referer: referer } : {}),
+        },
+        responseType: 'arraybuffer',
+        timeout: 12000,
+        maxRedirects: 5,
+        validateStatus: () => true,
+      })
+      return response.status === 200 || response.status === 206
+    } catch {
+      return false
+    }
+  }
+
   private async downloadTikTok(url: string): Promise<VideoData> {
     const videoId = parseVideoId(url)
     if (!videoId) {
@@ -232,7 +380,7 @@ export class Downloader {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        timeout: 20000,
+        timeout: 12000,
       },
     )
 
@@ -624,6 +772,12 @@ export class Downloader {
 
   // Follow redirects on Instagram share/short links to the canonical post URL.
   private async resolveInstagramUrl(url: string): Promise<string> {
+    return this.resolveRedirect(url)
+  }
+
+  // Generic redirect follower — resolves short/share links (fb.watch,
+  // facebook.com/share/…, instagram share links) to their canonical URL.
+  private async resolveRedirect(url: string): Promise<string> {
     try {
       const response = await axios.get(url, {
         maxRedirects: 5,
@@ -635,6 +789,224 @@ export class Downloader {
     } catch {
       return url
     }
+  }
+
+  /**
+   * Fetch YouTube title/author/thumbnail from the public oEmbed endpoint.
+   * No login or API key required. Falls back to the deterministic ytimg
+   * thumbnail (always available for public videos) when oEmbed is unavailable.
+   */
+  private async fetchYouTubeMeta(
+    videoId: string | null,
+    canonicalUrl: string,
+  ): Promise<{ title?: string; author?: string; thumbnail?: string }> {
+    const fallbackThumb = videoId
+      ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
+      : ''
+    try {
+      const response = await axios.get(
+        `https://www.youtube.com/oembed?url=${encodeURIComponent(
+          canonicalUrl,
+        )}&format=json`,
+        {
+          headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
+          timeout: 12000,
+        },
+      )
+      const data = response.data
+      return {
+        title: data?.title,
+        author: data?.author_name,
+        thumbnail: data?.thumbnail_url || fallbackThumb,
+      }
+    } catch {
+      return { thumbnail: fallbackThumb }
+    }
+  }
+
+  // YouTube fallback: try public Piped instances. Their /streams endpoint
+  // returns progressive (video+audio) formats with instance-proxied URLs.
+  private async tryPipedInstances(videoId: string): Promise<VideoData | null> {
+    const errors: string[] = []
+    for (const instance of this.pipedInstances) {
+      try {
+        const response = await axios.get(`${instance}/streams/${videoId}`, {
+          headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
+          timeout: 20000,
+        })
+        const data = response.data
+        // videoStreams with videoOnly === false are progressive (have audio).
+        // Skip LBRY/Odysee mirrors (player.odycdn.com) — they frequently 401.
+        // Prefer streams proxied through the Piped instance itself, which play
+        // cross-origin; a raw googlevideo URL is IP-locked and may not.
+        const progressive = (data?.videoStreams ?? []).filter(
+          (s: { videoOnly?: boolean; url?: string }) =>
+            s.videoOnly === false &&
+            !!s.url &&
+            !s.url.includes('odycdn') &&
+            !s.url.includes('lbry'),
+        ) as Array<{ url: string; quality?: string; mimeType?: string }>
+
+        const isProxied = (u: string) =>
+          u.includes('piped') || u.includes('proxy')
+        const isMp4 = (s: { mimeType?: string }) =>
+          (s.mimeType || '').includes('mp4')
+
+        // Prefer: proxied + mp4 → proxied → mp4 → anything.
+        const best =
+          progressive.find((s) => isProxied(s.url) && isMp4(s)) ||
+          progressive.find((s) => isProxied(s.url)) ||
+          progressive.find((s) => isMp4(s)) ||
+          progressive[0]
+        if (!best?.url) continue
+
+        return {
+          id: videoId,
+          title: data?.title || 'YouTube Video',
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          thumbnail: data?.thumbnailUrl || '',
+          duration: Math.round(data?.duration || 0),
+          author: data?.uploader || 'Unknown',
+          description: '',
+          downloadUrl: best.url,
+        }
+      } catch (e) {
+        errors.push(`${instance}: ${e}`)
+      }
+    }
+    console.warn('All Piped instances failed:', errors)
+    return null
+  }
+
+  /**
+   * Facebook's public video plugin embed. It is designed to be embedded on
+   * third-party sites, so it renders the stream config for any public video
+   * without a login wall. We parse the same `*_url` keys the watch page ships.
+   */
+  private async tryFacebookPlugin(
+    resolvedUrl: string,
+    originalUrl: string,
+  ): Promise<VideoData | null> {
+    const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(
+      resolvedUrl,
+    )}`
+    const response = await axios.get(embedUrl, {
+      headers: {
+        'User-Agent': this.userAgent,
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+      },
+      timeout: 20000,
+    })
+    const html = typeof response.data === 'string' ? response.data : ''
+    return this.parseFacebookHtml(html, originalUrl)
+  }
+
+  /**
+   * Direct scrape of the public Facebook watch/reel page. The page embeds the
+   * video config JSON containing the HD/SD source URLs.
+   */
+  private async tryFacebookScrape(
+    resolvedUrl: string,
+    originalUrl: string,
+  ): Promise<VideoData | null> {
+    const response = await axios.get(resolvedUrl, {
+      headers: {
+        'User-Agent': this.userAgent,
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Upgrade-Insecure-Requests': '1',
+      },
+      timeout: 20000,
+    })
+    const html = typeof response.data === 'string' ? response.data : ''
+    return this.parseFacebookHtml(html, originalUrl)
+  }
+
+  /**
+   * Pull a playable video URL + metadata out of Facebook page/plugin HTML.
+   * Facebook ships several source keys; we prefer HD, then SD, then the
+   * generic playable_url. Values are JSON-escaped (%, \/, \uXXXX), so we
+   * decode them before use.
+   */
+  private parseFacebookHtml(
+    html: string,
+    originalUrl: string,
+  ): VideoData | null {
+    if (!html) return null
+
+    const pickUrl = (...keys: string[]): string => {
+      for (const key of keys) {
+        // Match "key":"<value>" capturing up to the next unescaped quote.
+        const re = new RegExp(`"${key}":"(.*?)"(?:,|\\})`)
+        const m = html.match(re)
+        if (m && m[1]) {
+          const decoded = this.decodeFacebookString(m[1])
+          if (decoded.startsWith('http')) return decoded
+        }
+      }
+      return ''
+    }
+
+    const downloadUrl = pickUrl(
+      'browser_native_hd_url',
+      'playable_url_quality_hd',
+      'hd_src_no_ratelimit',
+      'hd_src',
+      'browser_native_sd_url',
+      'playable_url',
+      'sd_src_no_ratelimit',
+      'sd_src',
+    )
+
+    if (!downloadUrl) return null
+
+    const $ = cheerio.load(html)
+    const ogTitle =
+      $('meta[property="og:title"]').attr('content') ||
+      $('title').first().text() ||
+      ''
+    const ogImage = $('meta[property="og:image"]').attr('content') || ''
+    const ogDescription =
+      $('meta[property="og:description"]').attr('content') || ''
+
+    const title =
+      (ogTitle || ogDescription || 'Facebook Video')
+        .slice(0, 100)
+        .replace(/\s+/g, ' ')
+        .trim() || 'Facebook Video'
+
+    return {
+      id: parseVideoId(originalUrl) || Date.now().toString(),
+      title,
+      url: originalUrl,
+      thumbnail: ogImage,
+      duration: 0,
+      author: 'Facebook',
+      description: ogDescription,
+      downloadUrl,
+    }
+  }
+
+  // Decode the JSON-string escaping Facebook ships in its embedded config.
+  private decodeFacebookString(raw: string): string {
+    return raw
+      .replace(/\\u0025/g, '%')
+      .replace(/\\u002F/gi, '/')
+      .replace(/\\\//g, '/')
+      .replace(/\\u0026/gi, '&')
+      .replace(/\\u003D/gi, '=')
+      .replace(/\\u003F/gi, '?')
+      .replace(/\\u([\dA-Fa-f]{4})/g, (_, h) =>
+        String.fromCharCode(parseInt(h, 16)),
+      )
+      .replace(/\\/g, '')
   }
 
   /**

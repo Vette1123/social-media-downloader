@@ -6,13 +6,14 @@ const siteUrl =
 export const siteConfig = {
   name: 'Social Media Downloader',
   shortName: 'Social Downloader',
-  tagline: 'Download TikTok, Twitter/X & Instagram videos without watermarks',
+  tagline:
+    'Download TikTok, X, Instagram, Facebook & YouTube videos without watermarks',
   description:
-    'Free, fast, and watermark-free downloader for TikTok, Twitter/X, and Instagram. Save HD videos and reels, extract MP3 audio, and download photo carousels and slideshows with the original soundtrack — no login or install required.',
+    'Free, fast, and watermark-free downloader for TikTok, Twitter/X, Instagram, Facebook, and YouTube. Save HD videos, reels and Shorts, extract MP3 audio, and download photo carousels and slideshows with the original soundtrack — no login or install required.',
   url: siteUrl,
   ogImage: `${siteUrl}/opengraph-image`,
   ogImageAlt:
-    'Social Media Downloader — paste a TikTok, Twitter/X, or Instagram link to save HD video, MP3 audio, or images without a watermark.',
+    'Social Media Downloader — paste a TikTok, X, Instagram, Facebook, or YouTube link to save HD video, MP3 audio, or images without a watermark.',
   locale: 'en_US',
   foundingYear: 2024,
   author: {
@@ -24,7 +25,7 @@ export const siteConfig = {
   },
   links: {
     twitter: 'https://twitter.com/Sadge1996',
-    github: 'https://github.com/Vette1123/tiktok-downloader',
+    github: 'https://github.com/Vette1123/social-media-downloader',
     portfolio: 'https://www.mohamedgado.com',
   },
   twitterTag: '@Sadge1996',
@@ -69,6 +70,25 @@ export const siteConfig = {
     'Instagram carousel downloader',
     'save Instagram videos',
     'Instagram downloader no login',
+    // YouTube
+    'YouTube video downloader',
+    'YouTube downloader',
+    'YouTube Shorts downloader',
+    'download YouTube videos',
+    'YouTube to MP3',
+    'YouTube MP3 downloader',
+    'YouTube HD downloader',
+    'save YouTube videos',
+    'YouTube 1080p downloader',
+    // Facebook
+    'Facebook video downloader',
+    'Facebook reels downloader',
+    'download Facebook videos',
+    'fb video downloader',
+    'fb.watch downloader',
+    'Facebook HD video downloader',
+    'save Facebook videos',
+    'Facebook downloader no login',
     // Generic / brand-alternative
     'social media downloader',
     'free video downloader',
@@ -80,6 +100,11 @@ export const siteConfig = {
     'ssstik alternative',
     'tikmate alternative',
     'ttdownloader alternative',
+    'y2mate alternative',
+    'savefrom alternative',
+    'getfvid alternative',
+    'fdown alternative',
+    'snapinsta alternative',
     'tiktok downloader online',
     'tiktok downloader free no login',
     // Device / platform
