@@ -1,5 +1,6 @@
 import axios from 'axios'
 import * as cheerio from 'cheerio'
+import { Readable } from 'node:stream'
 import { VideoData, ImageData } from './types'
 import {
   parseVideoId,
@@ -160,7 +161,7 @@ export class Downloader {
     }
 
     throw new Error(
-      'Could not download this YouTube video. It may be private, age-restricted, region-locked, or a live stream.',
+      'Could not download this YouTube video. The free extraction services may be temporarily rate-limited for this video — try again shortly. It could also be private, age-restricted, region-locked, or a live stream.',
     )
   }
 
@@ -298,8 +299,16 @@ export class Downloader {
   /**
    * Confirms a candidate stream URL actually serves bytes before we hand it to
    * the client. Public Cobalt/Piped instances sometimes return dead or
-   * region-locked URLs (e.g. an LBRY mirror that 401s); without this check the
-   * UI would show a broken player. A ranged GET keeps it cheap.
+   * region-locked URLs (e.g. an LBRY mirror that 401s); worse, a Cobalt
+   * instance that failed to extract a video still answers its tunnel with
+   * `200 Content-Length: 0` — a status check alone passes that empty tunnel
+   * through and the user ends up downloading a 0 KB file.
+   *
+   * So we require the probe to actually yield bytes. We stream the response and
+   * read only the FIRST chunk (then tear the connection down) — confirming the
+   * stream is live without buffering the whole file. (Cobalt tunnels ignore the
+   * Range header and would otherwise stream the entire video into memory here,
+   * and then again when the client fetches it for real.)
    */
   private async verifyStreamReachable(url: string): Promise<boolean> {
     try {
@@ -310,12 +319,37 @@ export class Downloader {
           'User-Agent': this.userAgent,
           ...(referer ? { Referer: referer } : {}),
         },
-        responseType: 'arraybuffer',
+        responseType: 'stream',
         timeout: 12000,
         maxRedirects: 5,
         validateStatus: () => true,
       })
-      return response.status === 200 || response.status === 206
+
+      const stream = response.data as Readable
+      const statusOk = response.status === 200 || response.status === 206
+      // An explicit Content-Length: 0 is the empty-tunnel signature — reject early.
+      if (!statusOk || response.headers['content-length'] === '0') {
+        stream.destroy?.()
+        return false
+      }
+
+      // Resolve true on the first non-empty chunk; false if the body ends empty,
+      // errors, or stalls. Reading one chunk is enough — never the whole file.
+      return await new Promise<boolean>((resolve) => {
+        let settled = false
+        const finish = (result: boolean) => {
+          if (settled) return
+          settled = true
+          clearTimeout(timer)
+          stream.destroy?.()
+          resolve(result)
+        }
+        const timer = setTimeout(() => finish(false), 10000)
+        timer.unref?.()
+        stream.on('data', (chunk: Buffer) => finish(chunk.length > 0))
+        stream.on('end', () => finish(false))
+        stream.on('error', () => finish(false))
+      })
     } catch {
       return false
     }
