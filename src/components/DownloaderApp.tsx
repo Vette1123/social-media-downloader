@@ -764,29 +764,31 @@ export function DownloaderApp({
 
                         <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
                           {state.videoMetadata.images.map((image, index) => (
-                            // Ring lives on this (non-clipping) wrapper so the
-                            // selection outline is never cut off; the inner
-                            // button holds the rounded/overflow-hidden cell.
-                            <div
-                              key={image.id}
-                              className={`group relative rounded-xl transition-all duration-200 ${
-                                image.selected
-                                  ? 'ring-2 ring-pink-500'
-                                  : 'ring-1 ring-white/10 hover:ring-white/40'
-                              }`}
-                            >
+                            // Wrapper is positioning-only (no ring/overflow) so
+                            // badges can overlay; the ring lives on the image
+                            // button itself — same element as the rounding, so
+                            // the outline aligns pixel-perfect and never looks
+                            // clipped (a box-shadow ring isn't cut by the
+                            // element's own overflow-hidden).
+                            <div key={image.id} className='group relative'>
                               <button
                                 type='button'
                                 onClick={() => setLightboxIndex(index)}
-                                className='flex aspect-square w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-xl bg-black/30'
+                                className={`flex aspect-square w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-xl bg-black/30 transition duration-200 ${
+                                  image.selected
+                                    ? 'ring-2 ring-pink-500'
+                                    : 'ring-1 ring-white/10 hover:ring-2 hover:ring-white/60'
+                                }`}
                                 aria-label={`Open image ${index + 1} full size`}
                               >
                                 {/* object-contain shows the whole image (never
-                                    cropped); the cell letterboxes onto bg. */}
+                                    cropped). No hover scale — scaling a
+                                    contained image past the cell would clip it
+                                    (overflow-hidden) and look cropped on hover. */}
                                 <img
                                   src={image.thumbnail}
                                   alt={`Slideshow image ${index + 1}`}
-                                  className='h-full w-full object-contain transition-transform duration-200 group-hover:scale-[1.03]'
+                                  className='h-full w-full object-contain'
                                   loading='lazy'
                                   onError={(e) => {
                                     e.currentTarget.src =

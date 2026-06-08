@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
-import { DownloadIcon } from './icons'
+import { useEffect, useCallback, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { DownloadIcon, CloseIcon } from './icons'
 import { buildDownloadFilename } from '@/lib/filename'
 
 interface LightboxImage {
@@ -32,6 +33,14 @@ export function ImageLightbox({
   title,
 }: ImageLightboxProps) {
   const current = images[activeIndex]
+
+  // Render via a portal to <body>. The lightbox uses `position: fixed` to cover
+  // the viewport, but an ancestor in the results card has a CSS `transform`
+  // (enter animation) which would otherwise become the containing block — that
+  // made `inset-0` size to the card instead of the viewport (giant, unscrollable
+  // modal). Portaling to body escapes that ancestor entirely.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
@@ -76,12 +85,12 @@ export function ImageLightbox({
     }
   }
 
-  if (!current) return null
+  if (!current || !mounted) return null
 
   const hasMultiple = images.length > 1
   const stop = (e: React.MouseEvent) => e.stopPropagation()
 
-  return (
+  return createPortal(
     // Column layout: fixed top/bottom bars with a flexible image area in
     // between. The image is sized to the remaining space (object-contain), so
     // it's always fully visible and never overflows the viewport — no clipping,
@@ -107,10 +116,10 @@ export function ImageLightbox({
             stop(e)
             onClose()
           }}
-          className='flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl leading-none text-white transition-colors hover:bg-white/20'
+          className='flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/15 transition-colors hover:bg-white/20'
           aria-label='Close preview'
         >
-          ×
+          <CloseIcon className='h-5 w-5' />
         </button>
       </div>
 
@@ -160,6 +169,7 @@ export function ImageLightbox({
           Download image
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
