@@ -7,12 +7,14 @@ import {
   CheckIcon,
   DownloadIcon,
   getImagePlaceholderBase64,
+  InstagramIcon,
   MusicIcon,
   SpinnerIcon,
   TikTokIcon,
   TwitterXIcon,
 } from '@/components/icons'
 import { ImageLightbox } from '@/components/ImageLightbox'
+import { buildDownloadFilename } from '@/lib/filename'
 
 interface DownloaderAppProps {
   idleLeftSlot: ReactNode
@@ -30,7 +32,7 @@ export function DownloaderApp({
 
   const handleProcess = async () => {
     if (!state.url.trim()) {
-      setUrlError('Please paste a TikTok or Twitter/X URL first')
+      setUrlError('Please paste a TikTok, Twitter/X, or Instagram URL first')
       return
     }
     setUrlError(null)
@@ -110,7 +112,12 @@ export function DownloaderApp({
 
       const link = document.createElement('a')
       link.href = blobUrl
-      link.download = `social-video-${Date.now()}.mp4`
+      link.download = buildDownloadFilename({
+        platform: state.videoMetadata?.platform,
+        author: state.videoMetadata?.author,
+        title: state.videoMetadata?.title,
+        ext: 'mp4',
+      })
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -165,7 +172,12 @@ export function DownloaderApp({
 
       const link = document.createElement('a')
       link.href = blobUrl
-      link.download = `tiktok-slideshow-${Date.now()}.mp4`
+      link.download = buildDownloadFilename({
+        platform: state.videoMetadata?.platform,
+        author: state.videoMetadata?.author,
+        title: state.videoMetadata?.title,
+        ext: 'mp4',
+      })
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -206,7 +218,12 @@ export function DownloaderApp({
 
       const link = document.createElement('a')
       link.href = blobUrl
-      link.download = `social-audio-${Date.now()}.mp3`
+      link.download = buildDownloadFilename({
+        platform: state.videoMetadata?.platform,
+        author: state.videoMetadata?.author,
+        title: state.videoMetadata?.title,
+        ext: 'mp3',
+      })
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -270,7 +287,12 @@ export function DownloaderApp({
 
         const link = document.createElement('a')
         link.href = blobUrl
-        link.download = `social-images-${Date.now()}.zip`
+        link.download = buildDownloadFilename({
+          platform: state.videoMetadata?.platform,
+          author: state.videoMetadata?.author,
+          title: state.videoMetadata?.title,
+          ext: 'zip',
+        })
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
@@ -304,7 +326,9 @@ export function DownloaderApp({
           throw new Error('Invalid response from server')
         }
 
-        for (const imageData of data.images) {
+        const totalImages = data.images.length
+        for (let i = 0; i < data.images.length; i++) {
+          const imageData = data.images[i]
           try {
             const imageResponse = await fetch(imageData.url)
             if (!imageResponse.ok) continue
@@ -314,7 +338,14 @@ export function DownloaderApp({
 
             const link = document.createElement('a')
             link.href = blobUrl
-            link.download = imageData.filename
+            link.download = buildDownloadFilename({
+              platform: state.videoMetadata?.platform,
+              author: state.videoMetadata?.author,
+              title: state.videoMetadata?.title,
+              ext: 'jpg',
+              index: i + 1,
+              total: totalImages,
+            })
             document.body.appendChild(link)
             link.click()
             document.body.removeChild(link)
@@ -367,7 +398,7 @@ export function DownloaderApp({
           <div>
             <input
               type='text'
-              placeholder='Paste a TikTok or Twitter/X URL...'
+              placeholder='Paste a TikTok, Twitter/X, or Instagram URL...'
               value={state.url}
               onChange={(e) => {
                 if (urlError) setUrlError(null)
@@ -505,6 +536,11 @@ export function DownloaderApp({
                           label: 'View on Twitter/X',
                           Icon: TwitterXIcon,
                           color: 'text-sky-400 hover:text-sky-300',
+                        },
+                        instagram: {
+                          label: 'View on Instagram',
+                          Icon: InstagramIcon,
+                          color: 'text-fuchsia-400 hover:text-fuchsia-300',
                         },
                         unknown: {
                           label: 'View Original',
@@ -913,6 +949,9 @@ export function DownloaderApp({
         <ImageLightbox
           images={state.videoMetadata.images}
           activeIndex={lightboxIndex}
+          platform={state.videoMetadata.platform}
+          author={state.videoMetadata.author}
+          title={state.videoMetadata.title}
           onClose={() => setLightboxIndex(null)}
           onPrev={() =>
             setLightboxIndex((i) => {

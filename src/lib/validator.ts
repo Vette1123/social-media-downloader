@@ -1,4 +1,4 @@
-export type SupportedPlatform = 'tiktok' | 'twitter' | 'unknown'
+export type SupportedPlatform = 'tiktok' | 'twitter' | 'instagram' | 'unknown'
 
 const platformPatterns: Record<
   Exclude<SupportedPlatform, 'unknown'>,
@@ -15,6 +15,14 @@ const platformPatterns: Record<
   twitter: [
     /^(https?:\/\/)?(www\.)?(twitter|x)\.com\/[\w]+\/status\/\d+/,
     /^(https?:\/\/)?t\.co\/[\w\d]+/,
+  ],
+  instagram: [
+    // Post / reel / IGTV, with or without a leading /<username>/ segment
+    /^(https?:\/\/)?(www\.)?instagram\.com\/(?:[\w.-]+\/)?(?:p|reel|reels|tv)\/[\w-]+/,
+    // instagr.am short domain
+    /^(https?:\/\/)?(www\.)?instagr\.am\/(?:p|reel|reels|tv)\/[\w-]+/,
+    // New-style share links (resolved to a canonical post URL before extraction)
+    /^(https?:\/\/)?(www\.)?instagram\.com\/share\/[\w-]+/,
   ],
 }
 
@@ -55,5 +63,22 @@ export function parseVideoId(url: string): string | null {
     }
   }
 
+  return null
+}
+
+/**
+ * Extracts the Instagram shortcode (the alphanumeric id in /p/<code>,
+ * /reel/<code>, /reels/<code>, /tv/<code>) from a post URL. Tolerates an
+ * optional leading /<username>/ segment and trailing query/hash.
+ */
+export function parseInstagramShortcode(url: string): string | null {
+  const patterns = [
+    /instagram\.com\/(?:[\w.-]+\/)?(?:p|reel|reels|tv)\/([\w-]+)/,
+    /instagr\.am\/(?:p|reel|reels|tv)\/([\w-]+)/,
+  ]
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match && match[1]) return match[1]
+  }
   return null
 }

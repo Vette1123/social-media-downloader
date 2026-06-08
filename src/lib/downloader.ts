@@ -1,7 +1,25 @@
 import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { VideoData, ImageData } from './types'
-import { parseVideoId, detectPlatform } from './validator'
+import { parseVideoId, detectPlatform, parseInstagramShortcode } from './validator'
+
+// Loose shapes for Instagram's GraphQL / embed `shortcode_media` payload.
+// Only the fields we actually read are typed; everything else is ignored.
+interface IgMediaNode {
+  __typename?: string
+  is_video?: boolean
+  video_url?: string
+  display_url?: string
+  thumbnail_src?: string
+  display_resources?: Array<{ src: string }>
+}
+
+interface IgShortcodeMedia extends IgMediaNode {
+  owner?: { username?: string; full_name?: string }
+  edge_media_to_caption?: { edges?: Array<{ node?: { text?: string } }> }
+  edge_sidecar_to_children?: { edges?: Array<{ node?: IgMediaNode }> }
+  video_duration?: number
+}
 
 export class Downloader {
   private readonly userAgent =
@@ -27,6 +45,10 @@ export class Downloader {
     'https://cobalt-api.mrtoxic.dev/',
     'https://cobalt.privacyredirect.com/',
   ]
+
+  // Public Instagram web app id — required by the GraphQL/web-API endpoints.
+  // This is the same id Instagram's own web client sends and is not a secret.
+  private readonly instagramAppId = '936619743392459'
 
   // Main entry point: auto-detects platform and routes accordingly
   async downloadVideo(url: string): Promise<VideoData> {
@@ -54,7 +76,69 @@ export class Downloader {
       )
     }
 
-    throw new Error('Unsupported URL. Please use a TikTok or Twitter/X link.')
+    if (platform === 'instagram') {
+      return this.downloadInstagram(url)
+    }
+
+    throw new Error(
+      'Unsupported URL. Please use a TikTok, Twitter/X, or Instagram link.',
+    )
+  }
+
+  /**
+   * Instagram: resolve any share/short link to its canonical post URL, then
+   * try several login-free extractors in order of reliability:
+   *   1. Instagram's own web GraphQL endpoint (richest metadata, carousels)
+   *   2. The public embed page (resilient for public single posts)
+   *   3. Cobalt instances (last-resort community fallback)
+   *
+   * Instagram posts are mapped onto the same VideoData shape as everything
+   * else: a single primary video goes in `downloadUrl`, while photos (and the
+   * frames of a carousel) populate `images[]`. `isPhotoCarousel` is left false
+   * on purpose — IG carousels are plain image sets, not music-backed TikTok
+   * slideshows, so they should reuse the generic gallery, not the ffmpeg
+   * slideshow renderer.
+   */
+  private async downloadInstagram(url: string): Promise<VideoData> {
+    let resolvedUrl = url
+    if (url.includes('/share/') || url.includes('instagr.am')) {
+      resolvedUrl = await this.resolveInstagramUrl(url)
+    }
+
+    const shortcode =
+      parseInstagramShortcode(resolvedUrl) || parseInstagramShortcode(url)
+
+    // The public embed page is the most reliable login-free source today;
+    // the GraphQL/mobile endpoints are largely login-gated, so they sit last
+    // as long-shot fallbacks alongside Cobalt.
+    const methods: Array<() => Promise<VideoData | null>> = [
+      () =>
+        shortcode
+          ? this.tryInstagramEmbed(shortcode, url)
+          : Promise.resolve(null),
+      () => this.tryCobaltInstances(resolvedUrl),
+      () =>
+        shortcode
+          ? this.tryInstagramGraphQL(shortcode, url)
+          : Promise.resolve(null),
+    ]
+
+    for (const method of methods) {
+      try {
+        const result = await method()
+        if (result && (result.downloadUrl || (result.images?.length ?? 0) > 0)) {
+          // IG never uses the TikTok-style slideshow render path.
+          result.isPhotoCarousel = false
+          return result
+        }
+      } catch (e) {
+        console.warn('Instagram method failed, trying next...', e)
+      }
+    }
+
+    throw new Error(
+      'Could not download Instagram content. The post may be private, age-restricted, or unavailable.',
+    )
   }
 
   /**
@@ -534,6 +618,288 @@ export class Downloader {
       }
     } catch {
       throw new Error('Direct scraping method failed')
+    }
+    return null
+  }
+
+  // Follow redirects on Instagram share/short links to the canonical post URL.
+  private async resolveInstagramUrl(url: string): Promise<string> {
+    try {
+      const response = await axios.get(url, {
+        maxRedirects: 5,
+        validateStatus: () => true,
+        headers: { 'User-Agent': this.userAgent },
+        timeout: 12000,
+      })
+      return response.request?.res?.responseUrl || url
+    } catch {
+      return url
+    }
+  }
+
+  /**
+   * Primary Instagram extractor: Instagram's own web GraphQL endpoint.
+   * Returns the full `shortcode_media` graph (handles photos, reels/videos
+   * and multi-item carousels) without requiring a login.
+   */
+  private async tryInstagramGraphQL(
+    shortcode: string,
+    originalUrl: string,
+  ): Promise<VideoData | null> {
+    const variables = {
+      shortcode,
+      fetch_tagged_user_count: null,
+      hoisted_comment_id: null,
+      hoisted_reply_id: null,
+    }
+    const form = new URLSearchParams()
+    form.append('av', '0')
+    form.append('__d', 'www')
+    form.append('__user', '0')
+    form.append('__a', '1')
+    form.append('__req', '1')
+    form.append('dpr', '1')
+    form.append('variables', JSON.stringify(variables))
+    form.append('doc_id', '8845758582119845')
+
+    const response = await axios.post(
+      'https://www.instagram.com/graphql/query',
+      form.toString(),
+      {
+        headers: {
+          'User-Agent': this.userAgent,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-IG-App-ID': this.instagramAppId,
+          Accept: '*/*',
+          Origin: 'https://www.instagram.com',
+          Referer: `https://www.instagram.com/p/${shortcode}/`,
+        },
+        timeout: 20000,
+      },
+    )
+
+    const media: IgShortcodeMedia | undefined =
+      response.data?.data?.xdt_shortcode_media ??
+      response.data?.data?.shortcode_media
+    if (!media) return null
+    return this.parseInstagramMedia(media, shortcode, originalUrl)
+  }
+
+  /**
+   * Primary Instagram extractor: the public embed page. It is designed to be
+   * publicly embeddable, so it serves a full `shortcode_media` graph (photos,
+   * reels/videos and multi-item carousels) without a login. The browser-like
+   * `Sec-Fetch-*` headers matter — Instagram returns 403 without them.
+   *
+   * First parses the rich JSON the page ships (handles carousels); otherwise
+   * falls back to scraping the rendered single image/video element.
+   */
+  private async tryInstagramEmbed(
+    shortcode: string,
+    originalUrl: string,
+  ): Promise<VideoData | null> {
+    const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`
+    const response = await axios.get(embedUrl, {
+      headers: {
+        'User-Agent': this.userAgent,
+        Accept:
+          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+      },
+      timeout: 20000,
+    })
+
+    const html = typeof response.data === 'string' ? response.data : ''
+    if (!html) return null
+
+    // 1) Best case: the embed page ships the full shortcode_media JSON.
+    const media = this.extractEmbeddedShortcodeMedia(html)
+    if (media) {
+      const parsed = this.parseInstagramMedia(media, shortcode, originalUrl)
+      if (parsed.downloadUrl || (parsed.images?.length ?? 0) > 0) return parsed
+    }
+
+    // 2) Fallback: scrape the rendered embed for a single image / video.
+    const $ = cheerio.load(html)
+    const imgSrc = $('img.EmbeddedMediaImage').attr('src')
+    const videoSrc = $('video').attr('src')
+    const username =
+      $('.UsernameText').first().text().trim() ||
+      $('.Username a').first().text().trim() ||
+      'Unknown'
+
+    if (!imgSrc && !videoSrc) return null
+
+    return {
+      id: shortcode,
+      title: `Instagram post by @${username}`,
+      url: originalUrl,
+      thumbnail: imgSrc || '',
+      duration: 0,
+      author: username,
+      description: '',
+      downloadUrl: videoSrc || '',
+      images:
+        !videoSrc && imgSrc
+          ? [{ id: `${shortcode}_0`, url: imgSrc, thumbnail: imgSrc }]
+          : undefined,
+      isPhotoCarousel: false,
+    }
+  }
+
+  // Map an Instagram `shortcode_media` object onto our shared VideoData shape.
+  private parseInstagramMedia(
+    media: IgShortcodeMedia,
+    shortcode: string,
+    originalUrl: string,
+  ): VideoData {
+    const username = media.owner?.username || 'Unknown'
+    const caption =
+      media.edge_media_to_caption?.edges?.[0]?.node?.text?.trim() || ''
+    const title = caption
+      ? caption.slice(0, 80).replace(/\s+/g, ' ').trim()
+      : `Instagram post by @${username}`
+
+    const images: ImageData[] = []
+    let downloadUrl = ''
+
+    const children = media.edge_sidecar_to_children?.edges
+    if (Array.isArray(children) && children.length > 0) {
+      // Carousel: collect every photo; the first video becomes the primary clip.
+      children.forEach((edge, i) => {
+        const node = edge?.node
+        if (!node) return
+        if (node.is_video && node.video_url) {
+          if (!downloadUrl) downloadUrl = node.video_url
+        } else if (node.display_url) {
+          images.push({
+            id: `${shortcode}_${i}`,
+            url: node.display_url,
+            thumbnail: node.display_resources?.[0]?.src || node.display_url,
+          })
+        }
+      })
+    } else if (media.is_video && media.video_url) {
+      downloadUrl = media.video_url
+    } else if (media.display_url) {
+      images.push({
+        id: `${shortcode}_0`,
+        url: media.display_url,
+        thumbnail: media.display_url,
+      })
+    }
+
+    const thumbnail =
+      media.display_url || media.thumbnail_src || images[0]?.thumbnail || ''
+
+    return {
+      id: shortcode,
+      title,
+      url: originalUrl,
+      thumbnail,
+      duration: Math.round(media.video_duration || 0),
+      author: username,
+      description: caption,
+      downloadUrl,
+      images: images.length > 0 ? images : undefined,
+      isPhotoCarousel: false,
+    }
+  }
+
+  // Pull the embedded `shortcode_media` JSON out of an embed page's HTML.
+  private extractEmbeddedShortcodeMedia(
+    html: string,
+  ): IgShortcodeMedia | null {
+    // Preferred path: the embed ships `"contextJSON":"<json-encoded-json>"`.
+    // The value is a JSON-encoded string whose contents are themselves JSON,
+    // so a double JSON.parse decodes every escape (quotes, slashes, \uXXXX)
+    // correctly — far more robust than hand-rolled unescaping.
+    const fromContext = this.extractContextJson(html)
+    if (fromContext) return fromContext
+
+    // Fallback: balance-match the raw `shortcode_media` object. Handles the
+    // raw (already-unescaped) variant some payloads ship.
+    const key = '"shortcode_media":'
+    const keyIdx = html.indexOf(key)
+    if (keyIdx !== -1) {
+      const braceStart = html.indexOf('{', keyIdx + key.length)
+      if (braceStart !== -1) {
+        const json = this.extractBalancedJson(html, braceStart)
+        if (json) {
+          try {
+            return JSON.parse(json) as IgShortcodeMedia
+          } catch {
+            // fall through
+          }
+        }
+      }
+    }
+    return null
+  }
+
+  // Decode the embed page's `contextJSON` blobs and return the first that
+  // contains a shortcode_media. The page can ship several contextJSON strings
+  // (e.g. a NavigationMetrics telemetry one), so we scan all of them rather
+  // than assuming the media blob comes first.
+  private extractContextJson(html: string): IgShortcodeMedia | null {
+    const key = '"contextJSON":'
+    let searchFrom = 0
+    while (true) {
+      const idx = html.indexOf(key, searchFrom)
+      if (idx === -1) break
+      const quoteStart = html.indexOf('"', idx + key.length)
+      if (quoteStart === -1) break
+
+      // Read the JSON string token (respecting backslash escapes).
+      let i = quoteStart + 1
+      let escaped = false
+      for (; i < html.length; i++) {
+        const ch = html[i]
+        if (escaped) escaped = false
+        else if (ch === '\\') escaped = true
+        else if (ch === '"') break
+      }
+      searchFrom = i + 1
+
+      const token = html.slice(quoteStart, i + 1)
+      try {
+        const inner = JSON.parse(token) as string // first decode → JSON text
+        const obj = JSON.parse(inner) as {
+          gql_data?: { shortcode_media?: IgShortcodeMedia }
+          context?: { media?: IgShortcodeMedia }
+        }
+        const media = obj?.gql_data?.shortcode_media || obj?.context?.media
+        if (media) return media
+      } catch {
+        // not the media blob — try the next contextJSON occurrence
+      }
+    }
+    return null
+  }
+
+  // Return the balanced `{...}` substring starting at `start`, respecting
+  // nested braces and string literals.
+  private extractBalancedJson(text: string, start: number): string | null {
+    let depth = 0
+    let inString = false
+    let escaped = false
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i]
+      if (inString) {
+        if (escaped) escaped = false
+        else if (ch === '\\') escaped = true
+        else if (ch === '"') inString = false
+        continue
+      }
+      if (ch === '"') inString = true
+      else if (ch === '{') depth++
+      else if (ch === '}') {
+        depth--
+        if (depth === 0) return text.slice(start, i + 1)
+      }
     }
     return null
   }

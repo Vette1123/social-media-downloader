@@ -6,13 +6,13 @@ const siteUrl =
 export const siteConfig = {
   name: 'Social Media Downloader',
   shortName: 'Social Downloader',
-  tagline: 'Download TikTok & Twitter/X videos without watermarks',
+  tagline: 'Download TikTok, Twitter/X & Instagram videos without watermarks',
   description:
-    'Free, fast, and watermark-free downloader for TikTok and Twitter/X. Save HD videos, extract MP3 audio, and download TikTok photo carousels (slideshows) with the original soundtrack — no login or install required.',
+    'Free, fast, and watermark-free downloader for TikTok, Twitter/X, and Instagram. Save HD videos and reels, extract MP3 audio, and download photo carousels and slideshows with the original soundtrack — no login or install required.',
   url: siteUrl,
   ogImage: `${siteUrl}/opengraph-image`,
   ogImageAlt:
-    'Social Media Downloader — paste a TikTok or Twitter/X link to save HD video, MP3 audio, or slideshow images without a watermark.',
+    'Social Media Downloader — paste a TikTok, Twitter/X, or Instagram link to save HD video, MP3 audio, or images without a watermark.',
   locale: 'en_US',
   foundingYear: 2024,
   author: {
@@ -60,6 +60,15 @@ export const siteConfig = {
     'save Twitter videos',
     'Twitter GIF downloader',
     'Twitter HD video downloader',
+    // Instagram
+    'Instagram video downloader',
+    'Instagram reels downloader',
+    'Instagram reel downloader',
+    'download Instagram reels',
+    'Instagram photo downloader',
+    'Instagram carousel downloader',
+    'save Instagram videos',
+    'Instagram downloader no login',
     // Generic / brand-alternative
     'social media downloader',
     'free video downloader',
