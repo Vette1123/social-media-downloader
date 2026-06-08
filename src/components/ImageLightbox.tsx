@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { DownloadIcon, CloseIcon } from './icons'
 import { buildDownloadFilename } from '@/lib/filename'
@@ -33,6 +33,7 @@ export function ImageLightbox({
   title,
 }: ImageLightboxProps) {
   const current = images[activeIndex]
+  const hasMultiple = images.length > 1
 
   // Render via a portal to <body>. The lightbox uses `position: fixed` to cover
   // the viewport, but an ancestor in the results card has a CSS `transform`
@@ -61,6 +62,60 @@ export function ImageLightbox({
     }
   }, [handleKey])
 
+  // --- Mobile swipe-to-navigate ---
+  // Track the touch so the image follows the finger (dragDx) and we can decide
+  // on release whether the gesture was a real swipe. `moved` guards the backdrop
+  // so a swipe never accidentally closes the lightbox (only a clean tap does).
+  const touchStart = useRef<{ x: number; y: number; t: number } | null>(null)
+  const moved = useRef(false)
+  const [dragDx, setDragDx] = useState(0)
+  const [dragging, setDragging] = useState(false)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    moved.current = false
+    if (!hasMultiple) return
+    const t = e.touches[0]
+    touchStart.current = { x: t.clientX, y: t.clientY, t: Date.now() }
+    setDragging(true)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const start = touchStart.current
+    if (!start) return
+    const t = e.touches[0]
+    const dx = t.clientX - start.x
+    const dy = t.clientY - start.y
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved.current = true
+    // Only follow the finger while the gesture is predominantly horizontal, so
+    // a vertical drag doesn't drag the image sideways.
+    if (Math.abs(dx) > Math.abs(dy)) setDragDx(dx)
+  }
+
+  const handleTouchEnd = () => {
+    const start = touchStart.current
+    touchStart.current = null
+    setDragging(false)
+    const dx = dragDx
+    setDragDx(0)
+    if (!start) return
+    // Navigate on a decisive drag or a quick flick; otherwise snap back.
+    const elapsed = Date.now() - start.t
+    const swiped = Math.abs(dx) > 60 || (elapsed < 250 && Math.abs(dx) > 30)
+    if (swiped) {
+      if (dx < 0) onNext()
+      else onPrev()
+    }
+  }
+
+  const handleBackdropClick = () => {
+    // A swipe ends with a click on some browsers — don't let it close the modal.
+    if (moved.current) {
+      moved.current = false
+      return
+    }
+    onClose()
+  }
+
   const handleDownloadOne = async () => {
     try {
       const res = await fetch(current.url)
@@ -87,7 +142,6 @@ export function ImageLightbox({
 
   if (!current || !mounted) return null
 
-  const hasMultiple = images.length > 1
   const stop = (e: React.MouseEvent) => e.stopPropagation()
 
   return createPortal(
@@ -98,7 +152,7 @@ export function ImageLightbox({
     // (any empty space) closes; the image and controls stop propagation.
     <div
       className='fixed inset-0 z-50 flex flex-col bg-black/85 backdrop-blur-md'
-      onClick={onClose}
+      onClick={handleBackdropClick}
       role='dialog'
       aria-modal='true'
       aria-label='Image preview'
@@ -123,8 +177,16 @@ export function ImageLightbox({
         </button>
       </div>
 
-      {/* Image area — flexes to fill the space between the bars */}
-      <div className='relative flex min-h-0 flex-1 items-center justify-center px-3 sm:px-6'>
+      {/* Image area — flexes to fill the space between the bars. Handles the
+          mobile swipe gesture; `touch-action: pan-y` lets us own horizontal
+          swipes while the browser keeps any vertical panning. */}
+      <div
+        className='relative flex min-h-0 flex-1 items-center justify-center px-3 sm:px-6'
+        style={{ touchAction: 'pan-y' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {hasMultiple && (
           <button
             onClick={(e) => {
@@ -142,7 +204,12 @@ export function ImageLightbox({
           src={current.url}
           alt={`Slide ${activeIndex + 1} of ${images.length}`}
           onClick={stop}
-          className='max-h-full max-w-full rounded-lg object-contain shadow-2xl'
+          draggable={false}
+          style={{
+            transform: `translateX(${dragDx}px)`,
+            transition: dragging ? 'none' : 'transform 0.2s ease-out',
+          }}
+          className='max-h-full max-w-full rounded-lg object-contain shadow-2xl select-none'
         />
 
         {hasMultiple && (
