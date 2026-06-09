@@ -49,3 +49,70 @@ export function getMediaReferer(url: string): string {
   // Cobalt tunnel URLs and anything else — no referer needed
   return ''
 }
+
+/**
+ * Normalize an upstream range response into a spec-compliant one.
+ *
+ * Some upstreams — notably Cobalt tunnels — answer a Range request with a
+ * `206 Partial Content` but OMIT the mandatory `Content-Range` header. `curl`
+ * tolerates that, but browsers reject such a response for `<video>`/`<audio>`
+ * playback, so the in-page preview fails (`onError`) even though a plain
+ * download — which sends no Range and gets a clean `200` — still works.
+ *
+ * This restores a valid response:
+ *   - open-ended range (`bytes=N-`): the upstream body is `[N .. EOF]`, so the
+ *     total size is `N + bodyLength` and we can synthesize the Content-Range.
+ *     This is the shape every browser's media element uses (including for
+ *     seeking), so it's both correct and efficient.
+ *   - any other shape with an unknown total: re-fetch the whole resource and
+ *     serve it as a plain `200` instead of a broken `206`.
+ *
+ * Responses that already carry a `Content-Range` (real CDNs, tikwm) — or that
+ * weren't range requests at all — pass through untouched.
+ */
+export async function resolveRangeResponse(
+  response: Response,
+  rangeHeader: string | null,
+  refetchFull: () => Promise<Response>,
+): Promise<{
+  status: number
+  body: ReadableStream<Uint8Array> | null
+  contentLength: string | null
+  contentRange: string | null
+}> {
+  const contentRange = response.headers.get('content-range')
+  const contentLength = response.headers.get('content-length')
+
+  if (!rangeHeader || contentRange || response.status !== 206) {
+    return {
+      status: response.status,
+      body: response.body,
+      contentLength,
+      contentRange,
+    }
+  }
+
+  const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader)
+  const len = contentLength ? parseInt(contentLength, 10) : NaN
+  if (match && match[2] === '' && Number.isFinite(len)) {
+    const start = parseInt(match[1], 10)
+    const total = start + len
+    return {
+      status: 206,
+      body: response.body,
+      contentLength: String(len),
+      contentRange: `bytes ${start}-${total - 1}/${total}`,
+    }
+  }
+
+  // Closed range with an unknown total — can't safely synthesize. Drop this
+  // partial body and serve the whole resource as a plain 200.
+  response.body?.cancel().catch(() => {})
+  const full = await refetchFull()
+  return {
+    status: 200,
+    body: full.body,
+    contentLength: full.headers.get('content-length'),
+    contentRange: null,
+  }
+}
