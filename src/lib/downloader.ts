@@ -45,12 +45,20 @@ export class Downloader {
     'av01', // AV1
   ]
 
-  // Public community cobalt instance. Cobalt tunnels the media, so the URL it
-  // returns plays cross-origin (unlike a raw CDN URL). Used as a login-free
-  // fallback for YouTube and as one of the extractors for Twitter/Instagram/
-  // Facebook. (Other instances were pruned — canine.tools needs a JWT,
-  // eepy.today 502s, 255x.ru has a broken cert — they only added dead timeouts.)
-  private readonly cobaltInstances = ['https://co.otomir23.me/']
+  // Cobalt instances, tried in order. Cobalt tunnels the media, so the URL it
+  // returns plays cross-origin (unlike a raw CDN URL) — which is what makes it
+  // work from datacenter hosts (Vercel) for TikTok, and as a login-free source
+  // for YouTube/Twitter/Instagram/Facebook.
+  //
+  // A self-hosted instance (set COBALT_API_URL, e.g. a Fly.io deploy — see
+  // deploy/cobalt/) is tried first so we don't depend on the shared public
+  // instance's rate limits/uptime; the public one stays as a fallback. (Other
+  // public instances were pruned — canine.tools needs a JWT, eepy.today 502s,
+  // 255x.ru has a broken cert — they only added dead timeouts.)
+  private readonly cobaltInstances = [
+    process.env.COBALT_API_URL,
+    'https://co.otomir23.me/',
+  ].filter((v): v is string => Boolean(v))
 
   // Public Instagram web app id — required by the GraphQL/web-API endpoints.
   // This is the same id Instagram's own web client sends and is not a secret.
@@ -529,16 +537,20 @@ export class Downloader {
     baseUrl: string,
     url: string,
   ): Promise<VideoData | null> {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    }
+    // When the (self-hosted) instance requires auth, forward the key so only
+    // this app can use it. No-op for the open public instance.
+    if (process.env.COBALT_API_KEY) {
+      headers.Authorization = `Api-Key ${process.env.COBALT_API_KEY}`
+    }
+
     const response = await axios.post(
       baseUrl,
       { url, videoQuality: 'max', filenameStyle: 'basic' },
-      {
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        timeout: 12000,
-      },
+      { headers, timeout: 12000 },
     )
 
     const data = response.data
