@@ -160,7 +160,14 @@ export async function ytdlpDownload(
       // so cmd.exe on Windows would treat `height<=1080` as a redirection and
       // break. Cap the resolution with --format-sort (res:1080) instead.
       format: 'bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4]/bv*+ba/b',
-      formatSort: 'res:1080',
+      // Prefer H.264 (avc1) FIRST, then cap resolution at 1080p. TikTok defaults
+      // to h265/bytevc1, which no browser can play in a <video> tag (the stream
+      // renders audio-only — the "shows as mp3" bug), and it often offers a
+      // higher-res HEVC rendition than its H.264 one — so codec must outrank
+      // resolution here, otherwise the bigger HEVC wins and playback breaks.
+      // `vcodec:h264` only *prefers* H.264; with no H.264 rendition yt-dlp still
+      // falls back to the best available.
+      formatSort: 'vcodec:h264,res:1080',
       mergeOutputFormat: 'mp4',
     })
   }

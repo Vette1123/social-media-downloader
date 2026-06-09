@@ -381,9 +381,15 @@ export class Downloader {
       throw new Error('Could not extract video ID from URL')
     }
 
-    // tikwm is the most reliable — try it first, then fall back to the others
+    // Order by reliability. tikwm stays first — when it's reachable it returns
+    // the richest result (carousels, music track, a directly-proxyable URL).
+    // But the public scraper services have all become flaky (tikwm now sits
+    // behind Cloudflare, snaptik ships obfuscated JS, ssstik needs a rotating
+    // token), so yt-dlp runs second as the reliable catch-all: it extracts the
+    // video from this process's IP and streams it via /api/tiktok.
     const methods = [
       () => this.tryTikwmMethod(url),
+      () => this.tryYtDlpTikTok(url),
       () => this.trySnaptikMethod(url),
       () => this.trySSSMethod(url),
       () => this.tryDirectTikTokScraping(url),
@@ -405,6 +411,35 @@ export class Downloader {
     throw new Error(
       'All download methods failed. TikTok might be blocking requests or the video is private.',
     )
+  }
+
+  /**
+   * yt-dlp TikTok path. Used as the reliable fallback when the public scraper
+   * services fail. Probes availability/reachability via a quick info fetch
+   * (which also yields title/author/thumbnail/duration); on success returns a
+   * result whose video/audio point at the same-origin /api/tiktok streaming
+   * endpoint, which lets yt-dlp do the actual fetch server-side (TikTok's CDN
+   * URLs are signed against the extracting session and can't be replayed by the
+   * plain media proxy). Returns null when yt-dlp is unavailable (e.g. Vercel) or
+   * the video can't be reached here, so the next method gets a turn.
+   */
+  private async tryYtDlpTikTok(url: string): Promise<VideoData | null> {
+    const info = await ytdlpInfo(url)
+    if (!info) return null
+
+    const encoded = encodeURIComponent(url)
+    return {
+      id: parseVideoId(url) || Date.now().toString(),
+      title: info.title || 'TikTok Video',
+      url,
+      thumbnail: info.thumbnail || '',
+      duration: Math.round(info.duration || 0),
+      author: info.uploader || 'Unknown',
+      description: info.title || '',
+      downloadUrl: `/api/tiktok?url=${encoded}&kind=video`,
+      musicUrl: `/api/tiktok?url=${encoded}&kind=audio`,
+      isPhotoCarousel: false,
+    }
   }
 
   // Try every cobalt instance in order.
