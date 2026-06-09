@@ -1,0 +1,36 @@
+# Fly.io config for a private cobalt API instance (media extractor/tunnel).
+# This powers TikTok (and later IG/Twitter/FB) extraction for the Vercel app.
+#
+# IMPORTANT: pick a unique app name below, then set API_URL to match the
+# resulting public URL — `https://<app>.fly.dev/` — or tunnels won't work.
+# See README.md in this folder for the full deploy steps.
+
+app = "tiktok-cobalt"            # <-- change to your own unique name
+primary_region = "fra"           # Frankfurt — closest to EU users
+
+[build]
+  # Run cobalt's prebuilt API image directly (no Dockerfile needed).
+  image = "ghcr.io/imputnet/cobalt:11"
+
+[env]
+  # Must exactly equal this app's public URL, trailing slash included.
+  # Update this to match your app name, then `fly deploy`.
+  API_URL = "https://tiktok-cobalt.fly.dev/"
+  API_PORT = "9000"
+  # Dedicated instance, so loosen the default tunnel rate limits a bit.
+  TUNNEL_RATELIMIT_MAX = "120"
+  RATELIMIT_MAX = "60"
+
+[http_service]
+  internal_port = 9000
+  force_https = true
+  # Cost-friendly: the single machine sleeps when idle and wakes on request.
+  # (A cold start adds a few seconds to the first extraction after idle — set
+  #  min_machines_running = 1 to keep it always warm.)
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"               # 256mb can OOM remuxing larger videos
