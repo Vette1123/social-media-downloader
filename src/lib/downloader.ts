@@ -50,14 +50,15 @@ export class Downloader {
   // work from datacenter hosts (Vercel) for TikTok, and as a login-free source
   // for YouTube/Twitter/Instagram/Facebook.
   //
-  // A self-hosted instance (set COBALT_API_URL, e.g. a Fly.io deploy — see
-  // deploy/cobalt/) is tried first so we don't depend on the shared public
-  // instance's rate limits/uptime; the public one stays as a fallback. (Other
-  // public instances were pruned — canine.tools needs a JWT, eepy.today 502s,
-  // 255x.ru has a broken cert — they only added dead timeouts.)
+  // The public instance is tried FIRST (it's warm and fast); a self-hosted
+  // instance (set COBALT_API_URL — e.g. a free Render deploy, see deploy/cobalt/)
+  // is the FALLBACK, used only when the public one fails or rate-limits. This
+  // keeps a free fallback's cold-start latency and bandwidth off the hot path.
+  // (Other public instances were pruned — canine.tools needs a JWT, eepy.today
+  // 502s, 255x.ru has a broken cert — they only added dead timeouts.)
   private readonly cobaltInstances = [
-    process.env.COBALT_API_URL,
     'https://co.otomir23.me/',
+    process.env.COBALT_API_URL,
   ].filter((v): v is string => Boolean(v))
 
   // Public Instagram web app id — required by the GraphQL/web-API endpoints.
