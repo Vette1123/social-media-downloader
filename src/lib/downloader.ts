@@ -381,14 +381,21 @@ export class Downloader {
       throw new Error('Could not extract video ID from URL')
     }
 
-    // Order by reliability. tikwm stays first — when it's reachable it returns
-    // the richest result (carousels, music track, a directly-proxyable URL).
-    // But the public scraper services have all become flaky (tikwm now sits
-    // behind Cloudflare, snaptik ships obfuscated JS, ssstik needs a rotating
-    // token), so yt-dlp runs second as the reliable catch-all: it extracts the
-    // video from this process's IP and streams it via /api/tiktok.
+    // Order by reliability across BOTH local and serverless (Vercel) hosts.
+    //   1. tikwm — richest result (carousels, music, a non-IP-bound URL) when
+    //      reachable, but it now sits behind Cloudflare and 403s from most IPs.
+    //   2. Cobalt — the reliable everywhere path: it *tunnels* the media through
+    //      its own server, so the URL it returns isn't bound to TikTok's signed
+    //      CDN session and plays from any IP (the raw playAddr that snaptik/
+    //      direct-scrape hand back 403s when re-fetched from a different host —
+    //      which is exactly why TikTok broke on Vercel).
+    //   3. yt-dlp — fast + reliable locally (residential IP), but unavailable on
+    //      Vercel, so it sits after Cobalt and returns null there.
+    //   4-6. The remaining public scrapers as last resorts (snaptik ships
+    //      obfuscated JS, ssstik needs a rotating token).
     const methods = [
       () => this.tryTikwmMethod(url),
+      () => this.tryTikTokCobalt(url),
       () => this.tryYtDlpTikTok(url),
       () => this.trySnaptikMethod(url),
       () => this.trySSSMethod(url),
@@ -439,6 +446,67 @@ export class Downloader {
       downloadUrl: `/api/tiktok?url=${encoded}&kind=video`,
       musicUrl: `/api/tiktok?url=${encoded}&kind=audio`,
       isPhotoCarousel: false,
+    }
+  }
+
+  /**
+   * TikTok via Cobalt — the reliable path on datacenter hosts (Vercel). Cobalt
+   * tunnels the media through its own server, so the returned URL plays from any
+   * IP, unlike TikTok's signed CDN URLs (which 403 when re-fetched elsewhere).
+   * The tunnel serves browser-friendly H.264 with range support, so it drives
+   * both the preview and the download through the existing /api/video proxy.
+   *
+   * Cobalt's metadata is sparse (it only names the file `tiktok_<author>_<id>`),
+   * so title/author/thumbnail are enriched from TikTok's public oembed endpoint.
+   */
+  private async tryTikTokCobalt(url: string): Promise<VideoData | null> {
+    const result = await this.tryCobaltInstances(url)
+    if (!result) return null
+
+    // Recover author + numeric id from Cobalt's `tiktok_<author>_<id>` filename
+    // (the title is that filename minus extension). Falls back to the URL.
+    const fnMatch = result.title.match(/^tiktok_(.+)_(\d+)$/)
+    const fnAuthor = fnMatch?.[1]
+    const videoId = fnMatch?.[2] || parseVideoId(url) || result.id
+    result.id = videoId
+
+    const canonical = fnAuthor
+      ? `https://www.tiktok.com/@${fnAuthor}/video/${videoId}`
+      : url
+    const meta = await this.fetchTikTokMeta(canonical)
+
+    if (meta.title) result.title = meta.title
+    else if (fnAuthor) result.title = `TikTok by @${fnAuthor}`
+    if (meta.author) result.author = meta.author
+    else if (fnAuthor) result.author = fnAuthor
+    if (meta.thumbnail) result.thumbnail = meta.thumbnail
+
+    return result
+  }
+
+  /**
+   * TikTok title/author/thumbnail from the public oembed endpoint (no login or
+   * key required). Best-effort — returns an empty object on any failure so the
+   * caller keeps whatever metadata it already had.
+   */
+  private async fetchTikTokMeta(
+    url: string,
+  ): Promise<{ title?: string; author?: string; thumbnail?: string }> {
+    try {
+      const response = await axios.get(
+        `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
+        {
+          headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
+          timeout: 12000,
+        },
+      )
+      return {
+        title: response.data?.title,
+        author: response.data?.author_name,
+        thumbnail: response.data?.thumbnail_url,
+      }
+    } catch {
+      return {}
     }
   }
 
