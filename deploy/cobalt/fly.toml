@@ -5,7 +5,7 @@
 # resulting public URL — `https://<app>.fly.dev/` — or tunnels won't work.
 # See README.md in this folder for the full deploy steps.
 
-app = "tiktok-cobalt"            # <-- change to your own unique name
+app = "socialdownloader-cobalt"  # globally unique on fly.dev — change if taken
 primary_region = "fra"           # Frankfurt — closest to EU users
 
 [build]
@@ -15,7 +15,7 @@ primary_region = "fra"           # Frankfurt — closest to EU users
 [env]
   # Must exactly equal this app's public URL, trailing slash included.
   # Update this to match your app name, then `fly deploy`.
-  API_URL = "https://tiktok-cobalt.fly.dev/"
+  API_URL = "https://socialdownloader-cobalt.fly.dev/"
   API_PORT = "9000"
   # Dedicated instance, so loosen the default tunnel rate limits a bit.
   TUNNEL_RATELIMIT_MAX = "120"
