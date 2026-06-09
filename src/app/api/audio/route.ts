@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getMediaReferer } from '../../../lib/proxyHeaders'
+import { getMediaReferer, resolveRangeResponse } from '../../../lib/proxyHeaders'
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,6 +37,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Cobalt tunnels reply 206 without a Content-Range, which browsers reject
+    // for <audio> playback — normalize into a valid response.
+    const ranged = await resolveRangeResponse(response, rangeHeader, () => {
+      const { Range: _omit, ...noRange } = headers
+      return fetch(videoUrl, { headers: noRange, redirect: 'follow' })
+    })
+
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const filename = `social-audio-${timestamp}.mp3`
 
@@ -50,15 +57,13 @@ export async function GET(request: NextRequest) {
       'Accept-Ranges': 'bytes',
     }
 
-    const contentLength = response.headers.get('content-length')
-    if (contentLength) responseHeaders['Content-Length'] = contentLength
-    const contentRange = response.headers.get('content-range')
-    if (contentRange) responseHeaders['Content-Range'] = contentRange
+    if (ranged.contentLength) responseHeaders['Content-Length'] = ranged.contentLength
+    if (ranged.contentRange) responseHeaders['Content-Range'] = ranged.contentRange
 
     // Stream the body directly — works for real MP3 sources (slideshow music)
     // AND for MP4 video streams (browsers extract the audio track automatically).
-    return new NextResponse(response.body, {
-      status: response.status,
+    return new NextResponse(ranged.body, {
+      status: ranged.status,
       headers: responseHeaders,
     })
   } catch (error) {
