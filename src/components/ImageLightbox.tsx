@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useCallback, useState, useRef } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { AnimatePresence, motion, type PanInfo } from 'motion/react'
 import { DownloadIcon, CloseIcon } from './icons'
 import { buildDownloadFilename } from '@/lib/filename'
 
@@ -22,6 +23,28 @@ interface ImageLightboxProps {
   title?: string
 }
 
+// Direction-aware slide variants. `direction` is +1 when paginating forward
+// (next) and -1 when paginating back (prev); the entering image slides in from
+// the side the user swiped from, and the exiting image slides out the opposite
+// way — so the motion always reads as "follow the finger."
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({
+    x: direction < 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
+}
+
+// Either a long-enough drag OR a fast-enough flick triggers pagination. Two
+// independent thresholds (not a multiplied "power") so a slow careful drag
+// still navigates once the user clearly commits past the halfway mark.
+const OFFSET_THRESHOLD = 80
+const VELOCITY_THRESHOLD = 400
+
 export function ImageLightbox({
   images,
   activeIndex,
@@ -38,18 +61,33 @@ export function ImageLightbox({
   // Render via a portal to <body>. The lightbox uses `position: fixed` to cover
   // the viewport, but an ancestor in the results card has a CSS `transform`
   // (enter animation) which would otherwise become the containing block — that
-  // made `inset-0` size to the card instead of the viewport (giant, unscrollable
-  // modal). Portaling to body escapes that ancestor entirely.
+  // made `inset-0` size to the card instead of the viewport. Portaling escapes
+  // that ancestor entirely.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  // Track direction so AnimatePresence's enter/exit slides the right way.
+  // Update it just before calling onNext/onPrev — React batches both updates so
+  // `direction` is already correct when the new activeIndex re-renders.
+  const [direction, setDirection] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
+
+  const paginate = useCallback(
+    (dir: 1 | -1) => {
+      setDirection(dir)
+      if (dir === 1) onNext()
+      else onPrev()
+    },
+    [onNext, onPrev],
+  )
 
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
-      else if (e.key === 'ArrowLeft') onPrev()
-      else if (e.key === 'ArrowRight') onNext()
+      else if (e.key === 'ArrowLeft' && hasMultiple) paginate(-1)
+      else if (e.key === 'ArrowRight' && hasMultiple) paginate(1)
     },
-    [onClose, onPrev, onNext],
+    [onClose, paginate, hasMultiple],
   )
 
   useEffect(() => {
@@ -62,57 +100,20 @@ export function ImageLightbox({
     }
   }, [handleKey])
 
-  // --- Mobile swipe-to-navigate ---
-  // Track the touch so the image follows the finger (dragDx) and we can decide
-  // on release whether the gesture was a real swipe. `moved` guards the backdrop
-  // so a swipe never accidentally closes the lightbox (only a clean tap does).
-  const touchStart = useRef<{ x: number; y: number; t: number } | null>(null)
-  const moved = useRef(false)
-  const [dragDx, setDragDx] = useState(0)
-  const [dragging, setDragging] = useState(false)
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    moved.current = false
-    if (!hasMultiple) return
-    const t = e.touches[0]
-    touchStart.current = { x: t.clientX, y: t.clientY, t: Date.now() }
-    setDragging(true)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const start = touchStart.current
-    if (!start) return
-    const t = e.touches[0]
-    const dx = t.clientX - start.x
-    const dy = t.clientY - start.y
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved.current = true
-    // Only follow the finger while the gesture is predominantly horizontal, so
-    // a vertical drag doesn't drag the image sideways.
-    if (Math.abs(dx) > Math.abs(dy)) setDragDx(dx)
-  }
-
-  const handleTouchEnd = () => {
-    const start = touchStart.current
-    touchStart.current = null
-    setDragging(false)
-    const dx = dragDx
-    setDragDx(0)
-    if (!start) return
-    // Navigate on a decisive drag or a quick flick; otherwise snap back.
-    const elapsed = Date.now() - start.t
-    const swiped = Math.abs(dx) > 60 || (elapsed < 250 && Math.abs(dx) > 30)
-    if (swiped) {
-      if (dx < 0) onNext()
-      else onPrev()
+  const handleDragEnd = (_: unknown, info: PanInfo) => {
+    setIsDragging(false)
+    const { offset, velocity } = info
+    if (offset.x < -OFFSET_THRESHOLD || velocity.x < -VELOCITY_THRESHOLD) {
+      paginate(1)
+    } else if (offset.x > OFFSET_THRESHOLD || velocity.x > VELOCITY_THRESHOLD) {
+      paginate(-1)
     }
+    // Otherwise the image springs back to 0 automatically (constraints 0/0).
   }
 
   const handleBackdropClick = () => {
-    // A swipe ends with a click on some browsers — don't let it close the modal.
-    if (moved.current) {
-      moved.current = false
-      return
-    }
+    // A pointerup that ends a drag can synthesize a click — don't close then.
+    if (isDragging) return
     onClose()
   }
 
@@ -145,11 +146,6 @@ export function ImageLightbox({
   const stop = (e: React.MouseEvent) => e.stopPropagation()
 
   return createPortal(
-    // Column layout: fixed top/bottom bars with a flexible image area in
-    // between. The image is sized to the remaining space (object-contain), so
-    // it's always fully visible and never overflows the viewport — no clipping,
-    // no scrolling needed, for portrait or landscape. Clicking the backdrop
-    // (any empty space) closes; the image and controls stop propagation.
     <div
       className='fixed inset-0 z-50 flex flex-col bg-black/85 backdrop-blur-md'
       onClick={handleBackdropClick}
@@ -177,21 +173,18 @@ export function ImageLightbox({
         </button>
       </div>
 
-      {/* Image area — flexes to fill the space between the bars. Handles the
-          mobile swipe gesture; `touch-action: pan-y` lets us own horizontal
-          swipes while the browser keeps any vertical panning. */}
+      {/* Image area. `overflow-hidden` clips the exiting image as it slides off
+          so it never bleeds into the bars. `touch-action: pan-y` lets us own
+          horizontal swipes while letting the browser keep any vertical panning. */}
       <div
-        className='relative flex min-h-0 flex-1 items-center justify-center px-3 sm:px-6'
+        className='relative flex min-h-0 flex-1 items-center justify-center overflow-hidden px-3 sm:px-6'
         style={{ touchAction: 'pan-y' }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
         {hasMultiple && (
           <button
             onClick={(e) => {
               stop(e)
-              onPrev()
+              paginate(-1)
             }}
             className='absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-2xl leading-none text-white transition-colors hover:bg-white/20 sm:left-4 md:h-12 md:w-12'
             aria-label='Previous image'
@@ -200,23 +193,39 @@ export function ImageLightbox({
           </button>
         )}
 
-        <img
-          src={current.url}
-          alt={`Slide ${activeIndex + 1} of ${images.length}`}
-          onClick={stop}
-          draggable={false}
-          style={{
-            transform: `translateX(${dragDx}px)`,
-            transition: dragging ? 'none' : 'transform 0.2s ease-out',
-          }}
-          className='max-h-full max-w-full rounded-lg object-contain shadow-2xl select-none'
-        />
+        {/* `popLayout` removes the exiting image from layout flow so the new
+            image takes the centered slot immediately — no flex-stacking jump. */}
+        <AnimatePresence initial={false} custom={direction} mode='popLayout'>
+          <motion.img
+            key={activeIndex}
+            src={current.url}
+            alt={`Slide ${activeIndex + 1} of ${images.length}`}
+            custom={direction}
+            variants={slideVariants}
+            initial='enter'
+            animate='center'
+            exit='exit'
+            transition={{
+              x: { type: 'spring', stiffness: 280, damping: 32, mass: 0.6 },
+              opacity: { duration: 0.18 },
+            }}
+            drag={hasMultiple ? 'x' : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={1}
+            dragMomentum={false}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={handleDragEnd}
+            onClick={stop}
+            draggable={false}
+            className='max-h-full max-w-full cursor-grab rounded-lg object-contain shadow-2xl select-none active:cursor-grabbing'
+          />
+        </AnimatePresence>
 
         {hasMultiple && (
           <button
             onClick={(e) => {
               stop(e)
-              onNext()
+              paginate(1)
             }}
             className='absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-2xl leading-none text-white transition-colors hover:bg-white/20 sm:right-4 md:h-12 md:w-12'
             aria-label='Next image'
