@@ -4,7 +4,7 @@ import OpenGraphImage, {
   size as ogSize,
 } from './opengraph-image'
 
-export const runtime = 'edge'
+export const dynamic = 'force-static'
 export const alt = ogAlt
 export const size = ogSize
 export const contentType = ogContentType
