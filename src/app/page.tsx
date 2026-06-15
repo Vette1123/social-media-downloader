@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { DownloaderApp } from '@/components/DownloaderApp'
 import {
   Accordion,
@@ -14,6 +15,8 @@ import {
   TwitterXIcon,
   YouTubeIcon,
 } from '@/components/icons'
+import { platforms } from '@/lib/platforms'
+import { homepageStructuredData } from '@/lib/structuredData'
 
 const devLinks = [
   {
@@ -126,7 +129,11 @@ function HowItWorks() {
       </h3>
       <ol className='space-y-3'>
         {howItWorksSteps.map((s) => (
-          <li key={s.n} className='flex items-start gap-3 group'>
+          <li
+            key={s.n}
+            id={`step-${s.n}`}
+            className='flex items-start gap-3 group scroll-mt-24'
+          >
             <div
               className={`shrink-0 w-7 h-7 rounded-full bg-gradient-to-br ${s.grad} flex items-center justify-center text-white text-xs font-bold shadow-md ring-1 ring-white/20`}
             >
@@ -214,9 +221,67 @@ function IdleRightContent() {
   )
 }
 
+const platformLinkTiles: Record<
+  string,
+  { tile: string; Icon: React.ComponentType<{ className?: string }> }
+> = {
+  'tiktok-downloader': { tile: 'bg-[#010101]', Icon: TikTokIcon },
+  'twitter-video-downloader': { tile: 'bg-black', Icon: TwitterXIcon },
+  'instagram-downloader': { tile: 'bg-transparent', Icon: InstagramIcon },
+  'facebook-downloader': { tile: 'bg-transparent', Icon: FacebookIcon },
+  'youtube-downloader': { tile: 'bg-transparent', Icon: YouTubeIcon },
+}
+
+function PlatformLinks() {
+  return (
+    <nav
+      aria-label='Per-platform downloaders'
+      className='animate-fade-in-up mt-8 rounded-xl bg-white/5 border border-white/10 p-4'
+      style={{ animationDelay: '260ms' }}
+    >
+      <p className='text-white/65 text-xs md:text-sm mb-3'>
+        Or jump straight to a dedicated downloader
+      </p>
+      <div className='flex flex-wrap gap-2'>
+        {platforms.map((p) => {
+          const cfg = platformLinkTiles[p.slug]
+          if (!cfg) return null
+          const { tile, Icon } = cfg
+          const useBrandTile = !tile.startsWith('bg-transparent')
+          return (
+            <Link
+              key={p.slug}
+              href={`/${p.slug}`}
+              className='inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/15 text-white/80 hover:text-white hover:border-white/40 text-xs md:text-sm transition-colors'
+            >
+              <span
+                className={`inline-flex items-center justify-center w-5 h-5 rounded ${useBrandTile ? tile : ''}`}
+              >
+                {useBrandTile ? (
+                  <Icon className='w-3.5 h-3.5 text-white' />
+                ) : (
+                  <Icon className='w-full h-full' />
+                )}
+              </span>
+              {p.brandLabel}
+            </Link>
+          )
+        })}
+      </div>
+    </nav>
+  )
+}
+
 export default function Home() {
   return (
-    <div className='relative min-h-screen overflow-clip bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex justify-center items-start py-6 px-4'>
+    <>
+      <script
+        type='application/ld+json'
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(homepageStructuredData()),
+        }}
+      />
+      <div className='relative min-h-screen overflow-clip bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex justify-center items-start py-6 px-4'>
       <div
         aria-hidden
         className='blob-1 pointer-events-none absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-pink-500/30 blur-3xl'
@@ -235,23 +300,51 @@ export default function Home() {
         <div className='animate-fade-in-up text-center mb-6 md:mb-8'>
           <div className='flex justify-center mb-4'>
             <div className='flex items-center gap-2 md:gap-2.5'>
-              {/* Monochrome glyphs sit on their own brand-color tile */}
-              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#010101] flex items-center justify-center ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
-                <TikTokIcon className='w-5 h-5 md:w-6 md:h-6 text-white' />
-              </span>
-              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black flex items-center justify-center ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
-                <TwitterXIcon className='w-5 h-5 md:w-6 md:h-6 text-white' />
-              </span>
-              {/* Full-color self-contained brand badges */}
-              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
-                <InstagramIcon className='w-full h-full' />
-              </span>
-              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
-                <FacebookIcon className='w-full h-full' />
-              </span>
-              <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5'>
-                <YouTubeIcon className='w-full h-full' />
-              </span>
+              <Link
+                href='/tiktok-downloader'
+                aria-label='TikTok video downloader'
+                className='block'
+              >
+                <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl bg-[#010101] flex items-center justify-center ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-white/35'>
+                  <TikTokIcon className='w-5 h-5 md:w-6 md:h-6 text-white' />
+                </span>
+              </Link>
+              <Link
+                href='/twitter-video-downloader'
+                aria-label='Twitter/X video downloader'
+                className='block'
+              >
+                <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black flex items-center justify-center ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-white/35'>
+                  <TwitterXIcon className='w-5 h-5 md:w-6 md:h-6 text-white' />
+                </span>
+              </Link>
+              <Link
+                href='/instagram-downloader'
+                aria-label='Instagram reels & photo downloader'
+                className='block'
+              >
+                <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-white/35'>
+                  <InstagramIcon className='w-full h-full' />
+                </span>
+              </Link>
+              <Link
+                href='/facebook-downloader'
+                aria-label='Facebook video & reels downloader'
+                className='block'
+              >
+                <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-white/35'>
+                  <FacebookIcon className='w-full h-full' />
+                </span>
+              </Link>
+              <Link
+                href='/youtube-downloader'
+                aria-label='YouTube & Shorts downloader'
+                className='block'
+              >
+                <span className='w-10 h-10 md:w-12 md:h-12 rounded-xl overflow-hidden flex ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-white/35'>
+                  <YouTubeIcon className='w-full h-full' />
+                </span>
+              </Link>
             </div>
           </div>
           <h1 className='text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2'>
@@ -292,6 +385,8 @@ export default function Home() {
           idleLeftSlot={<HowItWorks />}
           idleRightSlot={<IdleRightContent />}
         />
+
+        <PlatformLinks />
 
         {/* Features List - Mobile only */}
         <div
@@ -472,5 +567,6 @@ export default function Home() {
         </footer>
       </div>
     </div>
+    </>
   )
 }
