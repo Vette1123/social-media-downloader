@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Social Media Downloader",
   "short_name": "Social Downloader",
-  "description": "Download TikTok and Twitter/X videos without watermarks, extract MP3 audio, and save TikTok photo carousels — free, no sign-up, in your browser.",
+  "description": "Download TikTok, X, Instagram, Facebook, and YouTube videos without watermarks. Extract MP3 audio and save photo carousels — free, no sign-up, in your browser.",
   "lang": "en",
   "dir": "ltr",
   "categories": ["utilities", "multimedia", "productivity"],
@@ -26,22 +26,43 @@
       "sizes": "1200x630",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Paste a TikTok or Twitter/X link to download video, audio, or slideshow images."
+      "label": "Paste a TikTok, X, Instagram, Facebook, or YouTube link to download video, audio, or slideshow images."
     }
   ],
   "shortcuts": [
     {
-      "name": "Download TikTok video",
+      "name": "TikTok downloader",
       "short_name": "TikTok",
       "description": "Paste a TikTok URL to save the video without a watermark.",
-      "url": "/?source=pwa-shortcut-tiktok",
+      "url": "/tiktok-downloader",
       "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
     },
     {
-      "name": "Download Twitter/X video",
-      "short_name": "Twitter",
-      "description": "Paste a twitter.com or x.com URL to save the video in HD.",
-      "url": "/?source=pwa-shortcut-twitter",
+      "name": "Twitter / X video downloader",
+      "short_name": "X video",
+      "description": "Save twitter.com or x.com videos in HD.",
+      "url": "/twitter-video-downloader",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Instagram reels & photo downloader",
+      "short_name": "Instagram",
+      "description": "Download Instagram reels and photo carousels.",
+      "url": "/instagram-downloader",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "YouTube & Shorts downloader",
+      "short_name": "YouTube",
+      "description": "Save YouTube videos and Shorts as MP4 or MP3.",
+      "url": "/youtube-downloader",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Facebook video & reels downloader",
+      "short_name": "Facebook",
+      "description": "Download Facebook videos, watch clips, and reels.",
+      "url": "/facebook-downloader",
       "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
   ],

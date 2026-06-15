@@ -4,7 +4,7 @@ import Script from 'next/script'
 import './globals.css'
 import { Analytics } from '@vercel/analytics/next'
 import { siteConfig } from '@/config/site'
-import { structuredData } from '@/lib/structuredData'
+import { globalStructuredData } from '@/lib/structuredData'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -42,7 +42,6 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   applicationName: siteConfig.name,
-  keywords: siteConfig.keywords,
   authors: [{ name: siteConfig.author.name, url: siteConfig.author.url }],
   creator: siteConfig.author.name,
   publisher: siteConfig.author.name,
@@ -75,10 +74,6 @@ export const metadata: Metadata = {
         type: 'image/png',
       },
     ],
-  },
-  other: {
-    'og:see_also': siteConfig.author.url,
-    'article:author': siteConfig.author.url,
   },
   twitter: {
     card: 'summary_large_image',
@@ -143,7 +138,9 @@ export default function RootLayout({
         />
         <script
           type='application/ld+json'
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(globalStructuredData),
+          }}
         />
       </head>
       <body
