@@ -5,7 +5,7 @@ import {
 } from '@/lib/platformOgImage'
 import { platformsBySlug } from '@/lib/platforms'
 
-export const runtime = 'edge'
+export const dynamic = 'force-static'
 export const alt = `${platformsBySlug['facebook-downloader'].brandLabel} — ${platformsBySlug['facebook-downloader'].tagline}`
 export const size = ogImageSize
 export const contentType = ogImageContentType
