@@ -1,2 +1,8 @@
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
+  youtube-dl-exec: true
 onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver
   - youtube-dl-exec

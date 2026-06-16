@@ -29,6 +29,18 @@ interface IgShortcodeMedia extends IgMediaNode {
   video_duration?: number
 }
 
+// Instagram's GraphQL endpoint rejects requests that don't carry its anti-CSRF
+// tokens (csrftoken + lsd) — it bounces them to a "Page Not Found" HTML page.
+// The tokens are harvested from a homepage GET and cached briefly here to avoid
+// an extra round-trip on every request. Keyed by the session cookie in use so
+// switching IG_SESSIONID invalidates a stale (anonymous) token set.
+let igTokenCache: {
+  csrf: string
+  lsd: string
+  sessionKey: string
+  expires: number
+} | null = null
+
 export class Downloader {
   private readonly userAgent =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -64,6 +76,14 @@ export class Downloader {
   // Public Instagram web app id — required by the GraphQL/web-API endpoints.
   // This is the same id Instagram's own web client sends and is not a secret.
   private readonly instagramAppId = '936619743392459'
+
+  // Optional Instagram session cookie (the `sessionid` value). When set via the
+  // IG_SESSIONID env var, the GraphQL extractor sends it so login-gated posts —
+  // ones Instagram only serves to authenticated users — can be resolved. Public
+  // posts work without it, and the extractor degrades gracefully when it's
+  // absent or expired. Use a burner account: Instagram may flag an account for
+  // automated access from datacenter (e.g. Vercel) IPs.
+  private readonly instagramSessionId = process.env.IG_SESSIONID?.trim() || ''
 
   // Main entry point: auto-detects platform and routes accordingly
   async downloadVideo(url: string): Promise<VideoData> {
@@ -260,19 +280,26 @@ export class Downloader {
     const shortcode =
       parseInstagramShortcode(resolvedUrl) || parseInstagramShortcode(url)
 
-    // The public embed page is the most reliable login-free source today;
-    // the GraphQL/mobile endpoints are largely login-gated, so they sit last
-    // as long-shot fallbacks alongside Cobalt.
+    // Order by reliability + cost:
+    //   1. Embed page — fast, login-free, no authenticated hit; resolves the
+    //      majority of public posts (and now bails rather than misrendering a
+    //      video as a photo when its JSON doesn't parse).
+    //   2. GraphQL — the workhorse fallback: token-authenticated, returns a
+    //      definitive video_url, and (with IG_SESSIONID set) the ONLY path that
+    //      resolves login-gated posts. Tried after the embed so the burner
+    //      account is only used when actually needed.
+    //   3. Cobalt — last-ditch community fallback (usually blocked for IG from
+    //      datacenter IPs, but harmless to try).
     const methods: Array<() => Promise<VideoData | null>> = [
       () =>
         shortcode
           ? this.tryInstagramEmbed(shortcode, url)
           : Promise.resolve(null),
-      () => this.tryCobaltInstances(resolvedUrl),
       () =>
         shortcode
           ? this.tryInstagramGraphQL(shortcode, url)
           : Promise.resolve(null),
+      () => this.tryCobaltInstances(resolvedUrl),
     ]
 
     for (const method of methods) {
@@ -288,8 +315,20 @@ export class Downloader {
       }
     }
 
+    // Every login-free path failed. The most common cause now is a login-gated
+    // post (Instagram serves these only to authenticated users); resolving them
+    // requires a valid IG_SESSIONID. Surface that distinctly so the operator
+    // knows whether to configure/refresh the cookie.
+    if (!this.instagramSessionId) {
+      console.warn(
+        'Instagram extraction failed and IG_SESSIONID is not set — login-gated posts require it.',
+      )
+      throw new Error(
+        'Could not download this Instagram post. It may be private, age-restricted, or login-only (this post requires a logged-in Instagram session).',
+      )
+    }
     throw new Error(
-      'Could not download Instagram content. The post may be private, age-restricted, or unavailable.',
+      'Could not download Instagram content. The post may be private or unavailable, or the configured Instagram session (IG_SESSIONID) may have expired.',
     )
   }
 
@@ -1155,14 +1194,87 @@ export class Downloader {
   }
 
   /**
-   * Primary Instagram extractor: Instagram's own web GraphQL endpoint.
-   * Returns the full `shortcode_media` graph (handles photos, reels/videos
-   * and multi-item carousels) without requiring a login.
+   * Harvest the anti-CSRF tokens (csrftoken + lsd) the GraphQL endpoint
+   * requires, from a homepage GET. When IG_SESSIONID is configured the GET is
+   * authenticated, so the returned csrftoken is bound to that session (required
+   * for login-gated posts). Cached briefly to avoid an extra round-trip on
+   * every request. Returns empty strings on failure — the caller still tries
+   * the request (it simply won't succeed for gated posts).
+   */
+  private async getInstagramTokens(): Promise<{ csrf: string; lsd: string }> {
+    const now = Date.now()
+    if (
+      igTokenCache &&
+      igTokenCache.sessionKey === this.instagramSessionId &&
+      igTokenCache.expires > now
+    ) {
+      return { csrf: igTokenCache.csrf, lsd: igTokenCache.lsd }
+    }
+
+    let csrf = ''
+    let lsd = ''
+    try {
+      const response = await axios.get('https://www.instagram.com/', {
+        headers: {
+          'User-Agent': this.userAgent,
+          Accept:
+            'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          ...(this.instagramSessionId
+            ? { Cookie: `sessionid=${this.instagramSessionId}` }
+            : {}),
+        },
+        timeout: 12000,
+        validateStatus: () => true,
+      })
+      const html: string =
+        typeof response.data === 'string' ? response.data : ''
+      // csrftoken is set via Set-Cookie; fall back to the inline copy in the
+      // page's shared-data blob.
+      const setCookie = (response.headers['set-cookie'] as string[]) || []
+      for (const cookie of setCookie) {
+        const m = /csrftoken=([^;]+)/.exec(cookie)
+        if (m) {
+          csrf = m[1]
+          break
+        }
+      }
+      if (!csrf) csrf = html.match(/"csrf_token":"([^"]+)"/)?.[1] || ''
+      lsd =
+        html.match(/"LSD",\[\],\{"token":"([^"]+)"/)?.[1] ||
+        html.match(/name="lsd"\s+value="([^"]+)"/)?.[1] ||
+        ''
+    } catch {
+      // network error — return whatever we have (likely empty); the GraphQL
+      // call will fail and the caller falls through to the next method.
+    }
+
+    igTokenCache = {
+      csrf,
+      lsd,
+      sessionKey: this.instagramSessionId,
+      expires: now + 5 * 60 * 1000,
+    }
+    return { csrf, lsd }
+  }
+
+  /**
+   * Instagram extractor via Instagram's own web GraphQL endpoint. Returns the
+   * full `shortcode_media` graph (handles photos, reels/videos and multi-item
+   * carousels).
+   *
+   * Unlike the embed page, this endpoint enforces the web client's anti-CSRF
+   * tokens — without a harvested csrftoken + lsd it returns a "Page Not Found"
+   * HTML stub. With them it works login-free for public posts; with a valid
+   * IG_SESSIONID cookie it also resolves login-gated posts (which the embed
+   * serves as "broken media" and Cobalt can't fetch from a datacenter IP).
    */
   private async tryInstagramGraphQL(
     shortcode: string,
     originalUrl: string,
   ): Promise<VideoData | null> {
+    const { csrf, lsd } = await this.getInstagramTokens()
+
     const variables = {
       shortcode,
       fetch_tagged_user_count: null,
@@ -1176,20 +1288,30 @@ export class Downloader {
     form.append('__a', '1')
     form.append('__req', '1')
     form.append('dpr', '1')
+    form.append('lsd', lsd)
     form.append('variables', JSON.stringify(variables))
     form.append('doc_id', '8845758582119845')
 
+    const cookieParts: string[] = []
+    if (this.instagramSessionId)
+      cookieParts.push(`sessionid=${this.instagramSessionId}`)
+    if (csrf) cookieParts.push(`csrftoken=${csrf}`)
+
     const response = await axios.post(
-      'https://www.instagram.com/graphql/query',
+      'https://www.instagram.com/graphql/query/',
       form.toString(),
       {
         headers: {
           'User-Agent': this.userAgent,
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-IG-App-ID': this.instagramAppId,
+          'X-FB-LSD': lsd,
+          'X-CSRFToken': csrf,
+          'X-ASBD-ID': '129477',
           Accept: '*/*',
           Origin: 'https://www.instagram.com',
           Referer: `https://www.instagram.com/p/${shortcode}/`,
+          ...(cookieParts.length ? { Cookie: cookieParts.join('; ') } : {}),
         },
         timeout: 20000,
       },
@@ -1249,6 +1371,21 @@ export class Downloader {
       'Unknown'
 
     if (!imgSrc && !videoSrc) return null
+
+    // CRITICAL: Instagram video embeds ship NO usable <video src> (the clip is
+    // loaded by client JS), only the poster frame as img.EmbeddedMediaImage. So
+    // when the rich JSON above didn't parse, blindly returning that poster would
+    // misrender a reel as a single photo. If the page carries any video marker,
+    // bail to null so the caller falls through to the GraphQL extractor (which
+    // returns the real video_url) instead of emitting a bogus image.
+    const looksLikeVideo =
+      !videoSrc &&
+      (/"is_video"\s*:\s*(true|1)/.test(html) ||
+        /"video_url"\s*:\s*"/.test(html) || // a real URL value, not "video_url":null
+        html.includes('video_view_count') || // video-only metadata fields
+        html.includes('video_duration') ||
+        $('video').length > 0)
+    if (looksLikeVideo) return null
 
     return {
       id: shortcode,
