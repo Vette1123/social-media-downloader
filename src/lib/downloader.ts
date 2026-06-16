@@ -288,8 +288,13 @@ export class Downloader {
     //      definitive video_url, and (with IG_SESSIONID set) the ONLY path that
     //      resolves login-gated posts. Tried after the embed so the burner
     //      account is only used when actually needed.
-    //   3. Cobalt — last-ditch community fallback (usually blocked for IG from
-    //      datacenter IPs, but harmless to try).
+    //   3. Cobalt — the datacenter-reachable fallback. Instagram's own signed
+    //      video CDN URLs (from embed/GraphQL) are frequently refused with an
+    //      HTTP 500/403 when re-fetched from a datacenter IP (e.g. Vercel), even
+    //      though extraction succeeded — so the /api/video proxy can't stream
+    //      them and the player is dead. Cobalt re-extracts the clip and hands
+    //      back a URL that DOES stream from any IP, so it's the rescue path when
+    //      the primary stream is unreachable here.
     const methods: Array<() => Promise<VideoData | null>> = [
       () =>
         shortcode
@@ -302,18 +307,43 @@ export class Downloader {
       () => this.tryCobaltInstances(resolvedUrl),
     ]
 
+    // Hold the first video result whose stream we couldn't confirm reachable, so
+    // that if no method yields a verified-playable stream we still return
+    // something (preserving prior behavior) rather than failing outright.
+    let unverifiedVideo: VideoData | null = null
+
     for (const method of methods) {
       try {
         const result = await method()
-        if (result && (result.downloadUrl || (result.images?.length ?? 0) > 0)) {
-          // IG never uses the TikTok-style slideshow render path.
-          result.isPhotoCarousel = false
-          return result
+        if (!result) continue
+        // IG never uses the TikTok-style slideshow render path.
+        result.isPhotoCarousel = false
+
+        if (result.downloadUrl) {
+          // Confirm the video stream actually serves bytes from THIS host before
+          // committing to it. Instagram's signed CDN URLs often 500/403 when
+          // re-fetched from a datacenter IP (Vercel) even though extraction
+          // worked — which renders a dead player. If it's unreachable, fall
+          // through to the next method (ultimately Cobalt, whose URL streams
+          // from any IP). Mirrors the YouTube path's reachability guard.
+          if (await this.verifyStreamReachable(result.downloadUrl)) return result
+          if (!unverifiedVideo) unverifiedVideo = result
+          console.warn(
+            'Instagram video stream unreachable from here, trying next method...',
+          )
+          continue
         }
+
+        if ((result.images?.length ?? 0) > 0) return result
       } catch (e) {
         console.warn('Instagram method failed, trying next...', e)
       }
     }
+
+    // No method produced a verified-reachable stream. If we did extract a video
+    // URL (just couldn't confirm it here), return it anyway — it may still play
+    // for the client, and this is no worse than the prior behavior.
+    if (unverifiedVideo) return unverifiedVideo
 
     // Every login-free path failed. The most common cause now is a login-gated
     // post (Instagram serves these only to authenticated users); resolving them
