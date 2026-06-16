@@ -1358,6 +1358,14 @@ export class Downloader {
     const media = this.extractEmbeddedShortcodeMedia(html)
     if (media) {
       const parsed = this.parseInstagramMedia(media, shortcode, originalUrl)
+      // The embed JSON marks a reel/video as is_video=true but ships NO video_url
+      // (the clip loads via client JS) — only a poster display_url. parseInstagram-
+      // Media refuses to emit that poster as a photo, so `parsed` comes back with
+      // no downloadUrl. Defer to the GraphQL extractor (which returns the real
+      // video_url) instead of returning an empty result here — and crucially, do
+      // NOT fall through to the scrape fallback below, which would re-emit the
+      // poster as a single photo. This is the case that misrendered reels.
+      if (this.mediaContainsVideo(media) && !parsed.downloadUrl) return null
       if (parsed.downloadUrl || (parsed.images?.length ?? 0) > 0) return parsed
     }
 
@@ -1423,12 +1431,14 @@ export class Downloader {
     const children = media.edge_sidecar_to_children?.edges
     if (Array.isArray(children) && children.length > 0) {
       // Carousel: collect every photo; the first video becomes the primary clip.
+      // A video child is added ONLY when it carries a real video_url — never via
+      // its poster display_url (see the single-media note below).
       children.forEach((edge, i) => {
         const node = edge?.node
         if (!node) return
         if (node.is_video && node.video_url) {
           if (!downloadUrl) downloadUrl = node.video_url
-        } else if (node.display_url) {
+        } else if (!node.is_video && node.display_url) {
           images.push({
             id: `${shortcode}_${i}`,
             url: node.display_url,
@@ -1438,7 +1448,12 @@ export class Downloader {
       })
     } else if (media.is_video && media.video_url) {
       downloadUrl = media.video_url
-    } else if (media.display_url) {
+    } else if (!media.is_video && media.display_url) {
+      // Photo only. A video whose video_url is absent (the embed JSON ships
+      // is_video=true with just a poster display_url) deliberately yields
+      // NOTHING here — passing its poster off as a photo is exactly what
+      // misrendered reels as single images. The caller detects the empty
+      // result and defers to the GraphQL extractor (which returns video_url).
       images.push({
         id: `${shortcode}_0`,
         url: media.display_url,
@@ -1461,6 +1476,18 @@ export class Downloader {
       images: images.length > 0 ? images : undefined,
       isPhotoCarousel: false,
     }
+  }
+
+  // True when a `shortcode_media` graph is (or contains) a video. Used by the
+  // embed extractor to decide whether a parse that produced no playable video
+  // URL should defer to a richer extractor (GraphQL) rather than be mistaken for
+  // a photo — the embed ships is_video=true with no video_url for reels/videos.
+  private mediaContainsVideo(media: IgShortcodeMedia): boolean {
+    if (media.is_video) return true
+    const children = media.edge_sidecar_to_children?.edges
+    return (
+      Array.isArray(children) && children.some((edge) => Boolean(edge?.node?.is_video))
+    )
   }
 
   // Pull the embedded `shortcode_media` JSON out of an embed page's HTML.
