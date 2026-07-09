@@ -615,7 +615,7 @@ export function DownloaderApp({
                     className='overflow-hidden'
                   >
                     <div className='space-y-3'>
-                      <div className='bg-black rounded-xl overflow-hidden ring-1 ring-white/10 shadow-lg'>
+                      <div className='bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg'>
                         <video
                           src={state.downloadUrl}
                           poster={state.videoMetadata?.thumbnail || undefined}
@@ -656,7 +656,7 @@ export function DownloaderApp({
                       className='overflow-hidden'
                     >
                       <div className='space-y-3'>
-                        <div className='relative bg-black rounded-xl overflow-hidden ring-1 ring-white/10 shadow-lg aspect-video'>
+                        <div className='relative bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg aspect-video'>
                           <iframe
                             src={state.videoMetadata.embedUrl}
                             title={state.videoMetadata.title || 'YouTube video'}
@@ -767,14 +767,21 @@ export function DownloaderApp({
                             // Wrapper is positioning-only (no ring/overflow) so
                             // badges can overlay; the ring lives on the image
                             // button itself — same element as the rounding, so
-                            // the outline aligns pixel-perfect and never looks
-                            // clipped (a box-shadow ring isn't cut by the
-                            // element's own overflow-hidden).
+                            // the outline aligns pixel-perfect to the corners.
+                            // `ring-inset` is essential: an OUTWARD ring is a
+                            // box-shadow painted outside the element, and this
+                            // grid's collapse wrapper (the height-animated
+                            // `overflow-hidden` motion.div) would slice that
+                            // outward ring off the left/right edge tiles —
+                            // permanently for selected tiles and on hover (when
+                            // it thickens 1px→2px). An inset ring renders inside
+                            // the element's own box, so no ancestor clip can
+                            // ever cut it, in any state.
                             <div key={image.id} className='group relative'>
                               <button
                                 type='button'
                                 onClick={() => setLightboxIndex(index)}
-                                className={`flex aspect-square w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-xl bg-black/30 transition duration-200 ${
+                                className={`flex aspect-square w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-xl bg-black/30 ring-inset transition duration-200 ${
                                   image.selected
                                     ? 'ring-2 ring-pink-500'
                                     : 'ring-1 ring-white/10 hover:ring-2 hover:ring-white/60'
