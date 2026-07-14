@@ -310,14 +310,14 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           <p className='text-sm md:text-base text-white/70 mb-4 max-w-3xl mx-auto'>
             {platform.tagline}
           </p>
-          <div className='flex justify-center items-center gap-3'>
+          <div className='flex justify-center items-stretch gap-2 sm:gap-3 max-w-md sm:max-w-none mx-auto'>
             {devLinks.map(({ href, label, Icon, grad }) => (
               <a
                 key={label}
                 href={href}
                 target='_blank'
                 rel='noopener noreferrer'
-                className='group relative flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/15 overflow-hidden backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5 active:scale-95'
+                className='group relative flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-white/5 border border-white/15 overflow-hidden backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5 active:scale-95'
               >
                 <span
                   className={`absolute inset-0 bg-gradient-to-r ${grad} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
@@ -327,7 +327,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
                   className='pointer-events-none absolute inset-0 rounded-xl ring-1 ring-white/10 group-hover:ring-white/30 transition-all duration-300'
                   aria-hidden
                 />
-                <Icon className='relative w-4 h-4 text-white/80 group-hover:text-white transition-colors duration-300' />
+                <Icon className='relative w-[18px] h-[18px] shrink-0 text-white/80 group-hover:text-white transition-colors duration-300' />
                 <span className='relative text-white/80 group-hover:text-white text-sm font-medium transition-colors duration-300'>
                   {label}
                 </span>
