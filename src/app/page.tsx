@@ -15,6 +15,8 @@ import {
   TwitterXIcon,
   YouTubeIcon,
 } from '@/components/icons'
+import { RafiqLink } from '@/components/RafiqLink'
+import { RafiqPromoCard } from '@/components/RafiqPromoCard'
 import { platforms } from '@/lib/platforms'
 import { homepageStructuredData } from '@/lib/structuredData'
 
@@ -377,6 +379,7 @@ export default function Home() {
                 </span>
               </a>
             ))}
+            <RafiqPromoCard />
           </div>
         </div>
 
@@ -564,6 +567,13 @@ export default function Home() {
             <GitHubIcon className='w-4 h-4' />
             GitHub
           </a>
+          <span aria-hidden className='hidden sm:inline text-white/20'>
+            •
+          </span>
+          <span className='inline-flex items-center gap-1.5'>
+            <RafiqLink />
+            <span className='text-white/40'>— an app made by us</span>
+          </span>
         </footer>
       </div>
     </div>

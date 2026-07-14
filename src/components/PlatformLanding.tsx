@@ -15,6 +15,8 @@ import {
   TwitterXIcon,
   YouTubeIcon,
 } from '@/components/icons'
+import { RafiqLink } from '@/components/RafiqLink'
+import { RafiqPromoCard } from '@/components/RafiqPromoCard'
 import { siteConfig } from '@/config/site'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
 import { platforms } from '@/lib/platforms'
@@ -331,6 +333,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
                 </span>
               </a>
             ))}
+            <RafiqPromoCard />
           </div>
         </div>
 
@@ -423,6 +426,13 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             <GitHubIcon className='w-4 h-4' />
             GitHub
           </a>
+          <span aria-hidden className='hidden sm:inline text-white/20'>
+            •
+          </span>
+          <span className='inline-flex items-center gap-1.5'>
+            <RafiqLink />
+            <span className='text-white/40'>— an app made by us</span>
+          </span>
         </footer>
       </div>
     </div>
