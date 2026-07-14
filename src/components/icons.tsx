@@ -18,17 +18,20 @@ export const PortfolioIcon = ({
     className={className}
     fill='none'
     stroke='currentColor'
-    strokeWidth={2}
+    strokeWidth={1.7}
     strokeLinecap='round'
     strokeLinejoin='round'
     viewBox='0 0 24 24'
     {...props}
   >
-    <rect x='2' y='7' width='20' height='14' rx='2.5' />
-    <path d='M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2' />
-    <path d='M2 13h20' />
-    <path d='M10 13v2' />
-    <path d='M14 13v2' />
+    {/* second work peeking behind — a collection */}
+    <path d='M8.5 4.5h9A2 2 0 0 1 19.5 6.5v9' />
+    {/* framed showcase piece */}
+    <rect x='3' y='7' width='13' height='13' rx='2.6' />
+    {/* spotlight */}
+    <circle cx='7' cy='11' r='1.25' fill='currentColor' stroke='none' />
+    {/* the work itself */}
+    <path d='M3.8 17.4l3.1-3.1a1.5 1.5 0 0 1 2.12 0L14 19' />
   </svg>
 )
 
