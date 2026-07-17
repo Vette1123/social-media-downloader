@@ -13,7 +13,7 @@ export const siteConfig = {
   tagline:
     'Download TikTok, X, Instagram, Facebook & YouTube videos without watermarks',
   description:
-    'Free, fast, and watermark-free downloader for TikTok, Twitter/X, Instagram, Facebook, and YouTube. Save HD videos, reels and Shorts, extract MP3 audio, and download photo carousels and slideshows with the original soundtrack — no login or install required.',
+    'Free, watermark-free downloader for TikTok, X, Instagram, Facebook & YouTube — save HD videos, Reels & Shorts, extract MP3 audio, or grab photo carousels.',
   url: siteUrl,
   ogImage: `${siteUrl}/opengraph-image`,
   ogImageAlt:
