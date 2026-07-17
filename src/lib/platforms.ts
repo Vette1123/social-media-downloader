@@ -44,9 +44,9 @@ export const platforms: Platform[] = [
     name: 'TikTok',
     brandLabel: 'TikTok video downloader',
     metaTitle:
-      'TikTok Video Downloader — HD, No Watermark, Free MP3 & Slideshow',
+      'TikTok Video Downloader — HD, No Watermark, MP3 & Slideshow',
     metaDescription:
-      'Download TikTok videos in HD without a watermark, extract the soundtrack as MP3, or save every image from a TikTok photo carousel — free, no login, no app install.',
+      'Download TikTok videos in HD without a watermark, extract the soundtrack as MP3, or save every image from a photo carousel — free, no login, no app install.',
     h1: 'TikTok Video Downloader — HD, No Watermark',
     tagline:
       'Save TikTok videos in 1080p, extract MP3 audio, and download photo carousels with their original music.',
@@ -180,8 +180,7 @@ export const platforms: Platform[] = [
     slug: 'instagram-downloader',
     name: 'Instagram',
     brandLabel: 'Instagram reels & photo downloader',
-    metaTitle:
-      'Instagram Reels & Photo Downloader — HD, No Login, Free Carousel',
+    metaTitle: 'Instagram Reels & Photo Downloader — Free, No Login',
     metaDescription:
       'Download Instagram reels in HD, save single photos, or pull every image from a carousel post — no Instagram login, no app install. Free, no daily limit.',
     h1: 'Instagram Reels & Photo Downloader — Free, No Login',
