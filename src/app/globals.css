@@ -188,9 +188,11 @@ body {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
-  /* No drop-shadow filter: an animated filter forces an expensive per-frame
-     repaint. The conic sheen reads fine without it, and dropping it keeps the
-     perimeter cheap on every device. Sweep slowed for a calmer, quieter loop. */
+  /* Soft bloom on the travelling sheen — the drop-shadow is clipped to the thin
+     1.4px ring by the mask, so it's a tiny area, cheap even animated (the heavy
+     full-screen layers are what we removed, not this). Kept modest. Frozen under
+     reduced-motion. */
+  filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.35));
   animation: border-move 22s linear infinite;
 }
 .glow-card::after {
