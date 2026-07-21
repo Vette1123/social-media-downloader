@@ -60,6 +60,7 @@ export function DownloaderApp() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const pasteBarRef = useRef<HTMLDivElement>(null)
 
   const handleProcess = async () => {
     if (!state.url.trim()) {
@@ -427,13 +428,19 @@ export function DownloaderApp() {
   // The soft keyboard doesn't reflow the page; it shrinks the *visual* viewport
   // and overlays the bottom, so a paste bar sitting low in the hero ends up
   // hidden behind it. visualViewport.height is the real post-keyboard height:
-  // if the field's bottom sits below the visible band, scroll the page up by
-  // exactly that overlap (+ breathing room) so the field rises above the keys.
+  // if the bar's bottom sits below the visible band, scroll the page up by
+  // exactly that overlap (+ breathing room) so it rises above the keys.
+  //
+  // Measure the whole PASTE BAR, not just the input: on mobile the Download
+  // button stacks *below* the field (flex-col), so scrolling only the input
+  // into view left the button — the thing the user actually taps — still
+  // buried under the keyboard. getBoundingClientRect() on the container spans
+  // input + button, so both clear the keys.
   const keepInputAboveKeyboard = useCallback(() => {
-    const input = inputRef.current
+    const bar = pasteBarRef.current
     const vv = window.visualViewport
-    if (!input || !vv) return
-    const rect = input.getBoundingClientRect()
+    if (!bar || !vv) return
+    const rect = bar.getBoundingClientRect()
     const visibleBottom = vv.height + vv.offsetTop
     const overshoot = rect.bottom - visibleBottom + 24
     if (overshoot > 0) {
@@ -457,6 +464,7 @@ export function DownloaderApp() {
     <div ref={containerRef} className='mx-auto w-full max-w-2xl'>
       {/* Paste bar — the hero action. Input + CTA share one focus-ring pill. */}
       <div
+        ref={pasteBarRef}
         className={`flex flex-col gap-2 rounded-2xl border bg-white/[0.04] p-2 transition-colors duration-200 sm:flex-row ${
           urlError
             ? 'border-red-400/60'
