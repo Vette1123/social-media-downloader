@@ -345,7 +345,7 @@ export default function Home() {
             />
             <nav
               aria-label='Per-platform downloaders'
-              className='flex flex-wrap justify-center gap-2.5'
+              className='mx-auto flex max-w-md flex-col gap-2.5 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center'
             >
               {platforms.map((p) => {
                 const cfg = platformLinkTiles[p.slug]
@@ -356,7 +356,7 @@ export default function Home() {
                   <Link
                     key={p.slug}
                     href={`/${p.slug}`}
-                    className='inline-flex items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 hover:text-white'
+                    className='inline-flex w-full items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 hover:text-white sm:w-auto'
                   >
                     <span
                       className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${
