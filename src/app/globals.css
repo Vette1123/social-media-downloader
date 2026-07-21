@@ -161,6 +161,11 @@ body {
   --bd: 0deg;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
   border: 1px solid var(--line);
+  /* Static bloom halo: one paint, no per-frame cost, no mask/filter layer. This
+     replaces the old animated drop-shadow on ::before, which forced a per-frame
+     filtered recomposite of a masked layer and blanked the card on weak mobile
+     GPUs (the "disappearing card" bug). */
+  box-shadow: 0 0 24px -6px rgba(34, 211, 238, 0.18);
 }
 .glow-card::before {
   content: '';
@@ -188,11 +193,10 @@ body {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
-  /* Soft bloom on the travelling sheen — the drop-shadow is clipped to the thin
-     1.4px ring by the mask, so it's a tiny area, cheap even animated (the heavy
-     full-screen layers are what we removed, not this). Kept modest. Frozen under
-     reduced-motion. */
-  filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.35));
+  /* NO filter here. An animated filter on this masked element forces a per-frame
+     filtered recomposite that drops the layer (blank/black card) on weak mobile
+     GPUs. The card's soft bloom now comes from a static box-shadow on .glow-card.
+     The conic sheen reads fine without it. */
   animation: border-move 22s linear infinite;
 }
 .glow-card::after {
@@ -416,5 +420,14 @@ body {
   .bg-blob,
   .bg-grid-hot {
     display: none !important;
+  }
+  /* Freeze the remaining idle per-frame paints on phones (weak GPUs). The conic
+     perimeter ring and the gradient-text sweep both repaint every frame; static
+     they still read premium (glowing border, gradient heading) at zero idle cost.
+     One-shot entrance animations stay — they're compositor transform/opacity and
+     give the reveal its life. */
+  .glow-card::before,
+  .text-grad {
+    animation: none !important;
   }
 }
