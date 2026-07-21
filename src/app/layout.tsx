@@ -23,11 +23,8 @@ const geistMono = Geist_Mono({
 const title = `${siteConfig.name} — ${siteConfig.tagline}`
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: '#1e1b4b' },
-    { media: '(prefers-color-scheme: light)', color: '#7c3aed' },
-  ],
-  colorScheme: 'dark light',
+  themeColor: '#08080a',
+  colorScheme: 'dark',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -130,7 +127,7 @@ export default function RootLayout({
           crossOrigin='anonymous'
         />
         <link rel='dns-prefetch' href='https://pagead2.googlesyndication.com' />
-        <meta name='msapplication-TileColor' content='#7c3aed' />
+        <meta name='msapplication-TileColor' content='#08080a' />
         <meta name='google-adsense-account' content='ca-pub-3842960431278714' />
         <meta
           name='google-site-verification'
@@ -145,11 +142,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        style={{
-          backgroundColor: '#1e1b4b',
-          backgroundImage:
-            'linear-gradient(to bottom right, #4c1d95, #1e3a8a, #312e81)',
-        }}
+        style={{ backgroundColor: '#08080a' }}
       >
         <Script
           async

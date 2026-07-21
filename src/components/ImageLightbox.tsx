@@ -239,7 +239,7 @@ export function ImageLightbox({
       <div className='flex shrink-0 items-center justify-center p-4' onClick={stop}>
         <button
           onClick={handleDownloadOne}
-          className='flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-500/25 transition-all hover:from-pink-600 hover:to-violet-600'
+          className='btn-grad flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-[box-shadow,transform] hover:-translate-y-0.5'
         >
           <DownloadIcon className='h-4 w-4' />
           Download image

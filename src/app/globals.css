@@ -1,15 +1,24 @@
 @import 'tailwindcss';
 
+/* ---------------------------------------------------------------------------
+   Ink + Cyan theme. Near-black graphite ground, a single electric-cyan accent,
+   one locked gradient. Replaces the old purple-gradient look.
+--------------------------------------------------------------------------- */
+:root {
+  --base: #08080a;
+  --panel: #101014;
+  --panel-2: #17171d;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(56, 211, 238, 0.3);
+  --txt: #fafafa;
+  --accent: #22d3ee;
+  --accent-ink: #04171b;
+  --grad: linear-gradient(120deg, #2dd4bf 0%, #22d3ee 42%, #38bdf8 100%);
+}
+
 html,
 body {
-  background-color: #1e1b4b;
-  background-image: linear-gradient(
-    to bottom right,
-    #4c1d95,
-    #1e3a8a,
-    #312e81
-  );
-  background-attachment: fixed;
+  background-color: var(--base);
   min-height: 100%;
 }
 
@@ -45,62 +54,236 @@ body {
   overflow: hidden;
 }
 
-@keyframes blob-drift-1 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
+/* ---------------------------------------------------------------------------
+   Interactive background: slow grid pan, a cursor spotlight that lights up the
+   grid lines in the accent hue, plus drifting accent blobs that ease toward the
+   pointer. Pointer offsets (--mx/--my) and spotlight (--px/--py) are set in JS.
+--------------------------------------------------------------------------- */
+.bg-grid {
+  position: absolute;
+  inset: -2px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: grid-pan 26s linear infinite;
+  -webkit-mask-image: radial-gradient(
+    ellipse 90% 70% at 50% 22%,
+    #000 42%,
+    transparent 82%
+  );
+  mask-image: radial-gradient(
+    ellipse 90% 70% at 50% 22%,
+    #000 42%,
+    transparent 82%
+  );
+}
+.bg-grid-hot {
+  position: absolute;
+  inset: -2px;
+  background-image:
+    linear-gradient(to right, rgba(56, 211, 238, 0.5) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 211, 238, 0.5) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: grid-pan 26s linear infinite;
+  -webkit-mask-image: radial-gradient(
+    220px 220px at var(--px, 50%) var(--py, 40%),
+    #000 0%,
+    transparent 70%
+  );
+  mask-image: radial-gradient(
+    220px 220px at var(--px, 50%) var(--py, 40%),
+    #000 0%,
+    transparent 70%
+  );
+}
+@keyframes grid-pan {
+  from {
+    background-position: 0 0;
   }
-  33% {
-    transform: translate(60px, 40px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, -30px) scale(0.95);
+  to {
+    background-position: 48px 48px;
   }
 }
 
-@keyframes blob-drift-2 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-50px, -40px) scale(1.08);
-  }
-  66% {
-    transform: translate(30px, 20px) scale(0.97);
-  }
-}
-
-@keyframes blob-pulse {
-  0%,
-  100% {
-    transform: translateX(-50%) scale(1);
-    opacity: 0.5;
-  }
-  50% {
-    transform: translateX(-50%) scale(1.15);
-    opacity: 0.8;
-  }
-}
-
-.blob-1 {
-  animation: blob-drift-1 18s ease-in-out infinite;
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
   will-change: transform;
 }
-.blob-2 {
-  animation: blob-drift-2 22s ease-in-out infinite;
-  will-change: transform;
+.bg-blob-1 {
+  width: 46rem;
+  height: 46rem;
+  background: rgba(34, 211, 238, 0.16);
+  top: -16rem;
+  left: -12rem;
+  transform: translate(calc(var(--mx, 0) * 40px), calc(var(--my, 0) * 40px));
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.blob-3 {
-  animation: blob-pulse 12s ease-in-out infinite;
-  will-change: transform, opacity;
+.bg-blob-2 {
+  width: 42rem;
+  height: 42rem;
+  background: rgba(45, 212, 191, 0.13);
+  bottom: -18rem;
+  right: -10rem;
+  transform: translate(calc(var(--mx, 0) * -55px), calc(var(--my, 0) * -40px));
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bg-blob-3 {
+  width: 30rem;
+  height: 30rem;
+  background: rgba(56, 189, 248, 0.12);
+  top: 30%;
+  left: 44%;
+  transform: translate(calc(var(--mx, 0) * 30px), calc(var(--my, 0) * 24px));
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Fine grain to kill gradient banding on the dark ground. */
+.bg-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------------------------------------------------------------------------
+   Glow card: a slow, low-luminance cyan sheen glides the perimeter (a single
+   comet with a long faint tail — no bright hot core), over a faint static
+   outline. A cursor spotlight lifts the surface where the pointer sits.
+--------------------------------------------------------------------------- */
+@property --bd {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+.glow-card {
+  position: relative;
+  --bd: 0deg;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  border: 1px solid var(--line);
+}
+.glow-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  z-index: 1;
+  background:
+    conic-gradient(
+      from var(--bd) at 50% 50%,
+      transparent 0deg,
+      transparent 225deg,
+      rgba(45, 212, 191, 0.04) 265deg,
+      rgba(34, 211, 238, 0.1) 305deg,
+      rgba(34, 211, 238, 0.22) 335deg,
+      rgba(103, 232, 249, 0.42) 352deg,
+      rgba(125, 235, 250, 0.5) 358deg,
+      rgba(103, 232, 249, 0.42) 360deg
+    ),
+    linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.3));
+  animation: border-move 12s linear infinite;
+}
+.glow-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 0.3s;
+  background: radial-gradient(
+    320px 320px at var(--cx, 50%) var(--cy, 0%),
+    rgba(56, 211, 238, 0.12),
+    transparent 65%
+  );
+}
+.glow-card:hover::after {
+  opacity: 1;
+}
+.glow-card > * {
+  position: relative;
+  z-index: 2;
+}
+@keyframes border-move {
+  to {
+    --bd: 360deg;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Reusable accent pieces.
+--------------------------------------------------------------------------- */
+.text-grad {
+  background: linear-gradient(
+    100deg,
+    #5eead4,
+    #22d3ee,
+    #38bdf8,
+    #818cf8,
+    #22d3ee,
+    #5eead4
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 3px 20px rgba(34, 211, 238, 0.35));
+  animation: text-flow 6s linear infinite;
+}
+@keyframes text-flow {
+  to {
+    background-position: 260% 0;
+  }
+}
+
+/* Loud gradient button: dark ink label for AA contrast on bright cyan. */
+.btn-grad {
+  background-image: linear-gradient(120deg, #2dd4bf, #22d3ee, #38bdf8);
+  color: var(--accent-ink);
+  box-shadow:
+    0 10px 30px -8px rgba(34, 211, 238, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.btn-grad:hover:not(:disabled) {
+  box-shadow:
+    0 14px 38px -8px rgba(34, 211, 238, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Quiet secondary button for toggles. */
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  color: #cffafe;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--line-strong);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .blob-1,
-  .blob-2,
-  .blob-3 {
+  .bg-grid,
+  .bg-grid-hot,
+  .glow-card::before,
+  .text-grad {
     animation: none;
+  }
+  .bg-blob {
+    transition: none;
   }
 }
 

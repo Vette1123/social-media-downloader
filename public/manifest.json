@@ -66,8 +66,8 @@
       "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
   ],
-  "theme_color": "#7c3aed",
-  "background_color": "#1e1b4b",
+  "theme_color": "#08080a",
+  "background_color": "#08080a",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "browser"],
   "start_url": "/",

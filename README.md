@@ -12,8 +12,6 @@
 
 ### 🚀 [Try it live →](https://www.socialdownloader.space)
 
-![Demo — paste a TikTok, X, Instagram, Facebook, or YouTube link, preview the media, and download it without the watermark](docs/demo.gif)
-
 A free, watermark-free downloader for TikTok, Twitter/X, Instagram, Facebook, and YouTube. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack — no login, no install, runs in your browser.
 
 A free, open-source alternative to SnapTik, SSSTik, SaveTT, SnapInsta, Y2mate, and GetFvid — with no ads, no tracking, and a multi-source fallback chain so downloads keep working when any single provider goes down.
