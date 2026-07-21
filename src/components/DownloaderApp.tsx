@@ -398,7 +398,7 @@ export function DownloaderApp() {
       >
         <input
           type='text'
-          placeholder='Paste a TikTok, X, Instagram, Facebook, or YouTube link…'
+          placeholder='Paste a video link…'
           value={state.url}
           onChange={(e) => {
             if (urlError) setUrlError(null)
@@ -454,7 +454,7 @@ export function DownloaderApp() {
       </AnimatePresence>
 
       <p className='mt-3 text-center text-xs text-white/45'>
-        Works with videos, reels, shorts &amp; photo carousels · no sign-up
+        Works with videos, reels, shorts &amp; photo carousels
       </p>
 
       {/* Results — expand directly under the paste bar */}
