@@ -17,7 +17,7 @@ export function RafiqPromoCard() {
         e.preventDefault()
         openRafiqOnPlayStore()
       }}
-      className='group relative flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl bg-white/5 border border-white/15 overflow-hidden backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5 active:scale-95'
+      className='group relative flex flex-1 sm:flex-none items-center justify-center gap-2 py-2.5 pl-3 pr-5 sm:pl-4 sm:pr-6 rounded-xl bg-white/5 border border-white/15 overflow-hidden backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5 active:scale-95'
     >
       <span
         className='absolute inset-0 bg-gradient-to-r from-emerald-500/80 to-green-400/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300'

@@ -421,12 +421,11 @@ body {
   .bg-grid-hot {
     display: none !important;
   }
-  /* Freeze the remaining idle per-frame paints on phones (weak GPUs). The conic
-     perimeter ring and the gradient-text sweep both repaint every frame; static
-     they still read premium (glowing border, gradient heading) at zero idle cost.
-     One-shot entrance animations stay — they're compositor transform/opacity and
-     give the reveal its life. */
-  .glow-card::before,
+  /* Freeze the gradient-text sweep on phones (weak GPUs) — it repaints a large
+     text area every frame for imperceptible drift. Static it still reads premium.
+     The perimeter ring animation stays: it's the card's signature motion, a thin
+     masked ring (tiny paint area), and NOT what caused the disappearing bug — that
+     was the animated filter, now removed. One-shot entrance animations stay too. */
   .text-grad {
     animation: none !important;
   }
