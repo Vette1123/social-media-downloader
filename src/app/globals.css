@@ -66,7 +66,7 @@ body {
     linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
   background-size: 48px 48px;
-  animation: grid-pan 26s linear infinite;
+  animation: grid-pan 44s linear infinite;
   -webkit-mask-image: radial-gradient(
     ellipse 90% 70% at 50% 22%,
     #000 42%,
@@ -85,7 +85,7 @@ body {
     linear-gradient(to right, rgba(56, 211, 238, 0.5) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(56, 211, 238, 0.5) 1px, transparent 1px);
   background-size: 48px 48px;
-  animation: grid-pan 26s linear infinite;
+  animation: grid-pan 44s linear infinite;
   -webkit-mask-image: radial-gradient(
     220px 220px at var(--px, 50%) var(--py, 40%),
     #000 0%,
@@ -192,8 +192,10 @@ body {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
-  filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.3));
-  animation: border-move 12s linear infinite;
+  /* No drop-shadow filter: an animated filter forces an expensive per-frame
+     repaint. The conic sheen reads fine without it, and dropping it keeps the
+     perimeter cheap on every device. Sweep slowed for a calmer, quieter loop. */
+  animation: border-move 22s linear infinite;
 }
 .glow-card::after {
   content: '';
@@ -241,8 +243,9 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  filter: drop-shadow(0 3px 20px rgba(34, 211, 238, 0.35));
-  animation: text-flow 6s linear infinite;
+  /* Glow filter dropped (per-frame repaint on animated text) and flow slowed —
+     the gradient still reads, just calmer and cheaper. */
+  animation: text-flow 14s linear infinite;
 }
 @keyframes text-flow {
   to {
@@ -361,5 +364,58 @@ body {
   .animate-soft-fade,
   .animate-section-in {
     animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   MOBILE PERFORMANCE GUARD (≤767px / phones)
+
+   Phones choked on the GPU. The whole downloader UI sits inside .glow-card,
+   whose ::before is a masked, drop-shadow'd conic gradient animated via an
+   @property angle — a continuous full-subtree repaint. Stack the panning grid,
+   drifting blobs, animated gradient text and backdrop-filters on top and a
+   mid-range Android compositor runs out of layers, so buttons and the card top
+   simply stop painting ("everything disappears").
+
+   On phones we go fully static and minimal: no perimeter glow, no cursor
+   spotlight, no background field, no entrance animation, no backdrop blur. The
+   layout, borders and colours are untouched — it just stops moving, so it
+   always paints. Desktop keeps the full treatment.
+--------------------------------------------------------------------------- */
+@media (max-width: 767px) {
+  /* Perimeter glow + cursor spotlight — the single most expensive layer. */
+  .glow-card::before,
+  .glow-card::after {
+    display: none !important;
+  }
+
+  /* Ambient background field — panning grid, spotlight grid, blobs, grain. */
+  .bg-grid,
+  .bg-grid-hot,
+  .bg-blob,
+  .bg-grain {
+    display: none !important;
+  }
+
+  /* Gradient heading: keep the colour, drop the animation + glow filter. */
+  .text-grad {
+    animation: none !important;
+    filter: none !important;
+  }
+
+  /* Entrance animations render instantly — no compositor transform/opacity
+     work while the card and its sections mount. */
+  .animate-card-enter,
+  .animate-fade-in-up,
+  .animate-soft-fade,
+  .animate-section-in {
+    animation: none !important;
+  }
+
+  /* backdrop-filter is GPU-costly on phones and stacks with everything above;
+     the elements using it already have opaque-enough backgrounds without it. */
+  [class*='backdrop-blur'] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }
