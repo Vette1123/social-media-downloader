@@ -205,7 +205,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
 
       <div className='relative z-10 mx-auto max-w-6xl px-4 py-10 sm:py-16'>
         {/* HERO — brand row, breadcrumb, headline, and the paste-bar. */}
-        <GlowCard className='animate-card-enter mx-auto w-full max-w-3xl rounded-3xl p-5 shadow-2xl backdrop-blur-md sm:p-8 md:p-10'>
+        <GlowCard className='animate-card-enter mx-auto w-full max-w-3xl rounded-3xl p-5 shadow-2xl sm:p-8 md:p-10'>
           <div className='animate-fade-in-up text-center'>
             <PlatformIconRow activeSlug={platform.slug} />
             <Breadcrumb platform={platform} />

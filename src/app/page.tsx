@@ -214,7 +214,7 @@ export default function Home() {
               HERO — brand tiles, headline, and the paste-bar (the product).
               Download results expand directly under the bar, inside the card.
           ---------------------------------------------------------------- */}
-          <GlowCard className='animate-card-enter mx-auto w-full max-w-3xl rounded-3xl p-5 shadow-2xl backdrop-blur-md sm:p-8 md:p-10'>
+          <GlowCard className='animate-card-enter mx-auto w-full max-w-3xl rounded-3xl p-5 shadow-2xl sm:p-8 md:p-10'>
             <div className='animate-fade-in-up text-center'>
               <div className='mb-6 flex justify-center'>
                 <div className='flex items-center gap-2 md:gap-2.5'>
