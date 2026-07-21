@@ -250,8 +250,11 @@ body {
   }
 }
 
-/* Loud gradient button: dark ink label for AA contrast on bright cyan. */
+/* Loud gradient button: dark ink label for AA contrast on bright cyan.
+   The solid background-color is a fallback: the dark-ink label must stay
+   readable even if the gradient image ever fails to paint. */
 .btn-grad {
+  background-color: var(--accent);
   background-image: linear-gradient(120deg, #2dd4bf, #22d3ee, #38bdf8);
   color: var(--accent-ink);
   box-shadow:
