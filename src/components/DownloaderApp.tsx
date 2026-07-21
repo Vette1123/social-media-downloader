@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode, useReducer, useRef, useState } from 'react'
+import { useReducer, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { appReducer, initialState } from '@/lib/appReducer'
 import {
@@ -18,15 +18,7 @@ import {
 import { ImageLightbox } from '@/components/ImageLightbox'
 import { buildDownloadFilename } from '@/lib/filename'
 
-interface DownloaderAppProps {
-  idleLeftSlot: ReactNode
-  idleRightSlot: ReactNode
-}
-
-export function DownloaderApp({
-  idleLeftSlot,
-  idleRightSlot,
-}: DownloaderAppProps) {
+export function DownloaderApp() {
   const [state, dispatch] = useReducer(appReducer, initialState)
   const containerRef = useRef<HTMLDivElement>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -395,79 +387,80 @@ export function DownloaderApp({
   }
 
   return (
-    <div ref={containerRef}>
-      <div className='grid gap-6 lg:gap-8 grid-cols-1 lg:grid-cols-2'>
-        {/* Input Section */}
-        <div className='space-y-4 xl:col-span-1'>
-          <div>
-            <input
-              type='text'
-              placeholder='Paste a TikTok, X, Instagram, Facebook, or YouTube URL...'
-              value={state.url}
-              onChange={(e) => {
-                if (urlError) setUrlError(null)
-                dispatch({ type: 'SET_URL', payload: e.target.value })
-              }}
-              aria-invalid={urlError ? 'true' : 'false'}
-              aria-describedby={urlError ? 'url-error' : undefined}
-              className={`w-full px-4 py-3.5 rounded-xl bg-white/[0.04] border text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:border-transparent text-sm md:text-base transition-colors duration-200 ${
-                urlError
-                  ? 'border-red-400/60 focus:ring-red-400'
-                  : 'border-white/[0.1] focus:ring-cyan-400'
-              }`}
-            />
-            <AnimatePresence initial={false}>
-              {urlError && (
-                <motion.p
-                  id='url-error'
-                  role='alert'
-                  initial={{ opacity: 0, y: -4, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: 'auto' }}
-                  exit={{ opacity: 0, y: -4, height: 0 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className='mt-2 text-xs md:text-sm text-red-300 flex items-center gap-1.5 overflow-hidden'
-                >
-                  <span aria-hidden>⚠</span>
-                  {urlError}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </div>
+    <div ref={containerRef} className='mx-auto w-full max-w-2xl'>
+      {/* Paste bar — the hero action. Input + CTA share one focus-ring pill. */}
+      <div
+        className={`flex flex-col gap-2 rounded-2xl border bg-white/[0.04] p-2 transition-colors duration-200 sm:flex-row ${
+          urlError
+            ? 'border-red-400/60'
+            : 'border-white/[0.1] focus-within:border-cyan-400/60'
+        }`}
+      >
+        <input
+          type='text'
+          placeholder='Paste a TikTok, X, Instagram, Facebook, or YouTube link…'
+          value={state.url}
+          onChange={(e) => {
+            if (urlError) setUrlError(null)
+            dispatch({ type: 'SET_URL', payload: e.target.value })
+          }}
+          aria-invalid={urlError ? 'true' : 'false'}
+          aria-describedby={urlError ? 'url-error' : undefined}
+          className='min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm text-white placeholder-white/40 outline-none md:text-base'
+        />
+        <motion.button
+          onClick={handleProcess}
+          whileHover={{ y: -1 }}
+          whileTap={{ scale: 0.985 }}
+          transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.6 }}
+          disabled={
+            state.loading ||
+            state.downloading ||
+            state.downloadingAudio ||
+            state.downloadingImages
+          }
+          className='btn-grad group relative flex shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl px-6 py-3 text-sm font-semibold transition-[box-shadow,transform] duration-300 ease-out disabled:cursor-not-allowed disabled:opacity-50 md:text-base'
+        >
+          <span
+            className='pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-full'
+            aria-hidden
+          />
+          {state.loading ? (
+            <span className='relative flex items-center'>
+              <SpinnerIcon className='-ml-1 mr-2 h-4 w-4 md:h-5 md:w-5' />
+              Processing...
+            </span>
+          ) : (
+            <span className='relative'>Download</span>
+          )}
+        </motion.button>
+      </div>
 
-          <motion.button
-            onClick={handleProcess}
-            whileHover={{ y: -1 }}
-            whileTap={{ scale: 0.985 }}
-            transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.6 }}
-            disabled={
-              state.loading ||
-              state.downloading ||
-              state.downloadingAudio ||
-              state.downloadingImages
-            }
-            className='btn-grad group relative w-full cursor-pointer py-3.5 px-4 font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-[box-shadow,transform] duration-300 ease-out flex items-center justify-center text-sm md:text-base overflow-hidden'
+      <AnimatePresence initial={false}>
+        {urlError && (
+          <motion.p
+            id='url-error'
+            role='alert'
+            initial={{ opacity: 0, y: -4, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -4, height: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className='mt-2 flex items-center gap-1.5 overflow-hidden text-xs text-red-300 md:text-sm'
           >
-            <span
-              className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out'
-              aria-hidden
-            />
-            {state.loading ? (
-              <span className='relative flex items-center'>
-                <SpinnerIcon className='-ml-1 mr-3 h-4 w-4 md:h-5 md:w-5' />
-                Processing...
-              </span>
-            ) : (
-              <span className='relative'>Process URL</span>
-            )}
-          </motion.button>
+            <span aria-hidden>⚠</span>
+            {urlError}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
-          {!state.videoMetadata && idleLeftSlot}
-        </div>
+      <p className='mt-3 text-center text-xs text-white/45'>
+        Works with videos, reels, shorts &amp; photo carousels · no sign-up
+      </p>
 
-        {/* Results Section */}
-        <div className='results-section space-y-4'>
-          <AnimatePresence initial={false} mode='popLayout'>
-            {state.message && (
+      {/* Results — expand directly under the paste bar */}
+      <div className='results-section mt-6 space-y-4'>
+        <AnimatePresence initial={false} mode='popLayout'>
+          {state.message && (
               <motion.div
                 key='message'
                 initial={{ opacity: 0, height: 0, y: -8 }}
@@ -490,8 +483,6 @@ export function DownloaderApp({
               </motion.div>
             )}
           </AnimatePresence>
-
-          {!state.videoMetadata && !state.message && idleRightSlot}
 
           {state.videoMetadata && (
             <motion.div
@@ -996,7 +987,6 @@ export function DownloaderApp({
             </motion.div>
           )}
         </div>
-      </div>
 
       {lightboxIndex !== null && state.videoMetadata?.images && (
         <ImageLightbox

@@ -36,6 +36,13 @@ const devLinks = [
   },
 ] as const
 
+const heroChips = [
+  'Free forever',
+  'No login required',
+  'No download limits',
+  'HD quality',
+] as const
+
 const platformIcons: Record<PlatformSlug, { Icon: React.ComponentType<{ className?: string }>; tile: string }> = {
   'tiktok-downloader': {
     Icon: TikTokIcon,
@@ -59,19 +66,20 @@ const platformIcons: Record<PlatformSlug, { Icon: React.ComponentType<{ classNam
   },
 }
 
-const howItWorksSteps = [
-  { n: 1, title: 'Copy a video URL', sub: 'TikTok, X, Instagram, Facebook, or YouTube' },
-  { n: 2, title: 'Paste & process', sub: 'We resolve the media in seconds' },
-  { n: 3, title: 'Download', sub: 'Video, MP3, or full image gallery' },
-] as const
+// Centered section header (title + one-line sub) for the full-width bands.
+function SectionHead({ title, sub }: { title: string; sub?: string }) {
+  return (
+    <div className='mx-auto mb-9 max-w-2xl text-center'>
+      <h2 className='text-2xl font-bold tracking-tight text-white text-balance sm:text-3xl'>
+        {title}
+      </h2>
+      {sub && <p className='mt-3 text-sm text-white/60 md:text-base'>{sub}</p>}
+    </div>
+  )
+}
 
-const trustStrip = [
-  { k: 'Free', v: 'forever' },
-  { k: 'No login', v: 'required' },
-  { k: 'No limit', v: 'on downloads' },
-] as const
-
-function SectionHeading({ children }: { children: React.ReactNode }) {
+// Uppercase eyebrow with a fading cyan hairline — for in-column labels.
+function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <h3 className='mb-4 flex items-center gap-3 text-xs font-semibold tracking-[0.13em] uppercase text-white/60'>
       {children}
@@ -85,88 +93,6 @@ function CheckMark({ className }: { className?: string }) {
     <svg className={className} viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} strokeLinecap='round' strokeLinejoin='round'>
       <path d='m5 12 5 5 9-11' />
     </svg>
-  )
-}
-
-function HowItWorks() {
-  return (
-    <div
-      className='animate-fade-in-up rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
-      style={{ animationDelay: '150ms' }}
-    >
-      <SectionHeading>How it works</SectionHeading>
-      <ol className='space-y-3'>
-        {howItWorksSteps.map((s) => (
-          <li
-            key={s.n}
-            id={`step-${s.n}`}
-            className='flex items-start gap-3 scroll-mt-24'
-          >
-            <div className='btn-grad flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold'>
-              {s.n}
-            </div>
-            <div className='min-w-0'>
-              <p className='text-sm font-medium leading-tight text-white'>
-                {s.title}
-              </p>
-              <p className='mt-0.5 text-xs text-white/55'>{s.sub}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
-}
-
-function PlatformSidebar({ platform }: { platform: Platform }) {
-  return (
-    <div className='space-y-4'>
-      <div
-        className='animate-fade-in-up rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
-        style={{ animationDelay: '150ms' }}
-      >
-        <SectionHeading>
-          With this {platform.name} downloader you can
-        </SectionHeading>
-        <ul className='space-y-2 text-sm text-white/75'>
-          {platform.featureList.map((f) => (
-            <li key={f} className='flex items-start gap-2'>
-              <CheckMark className='mt-0.5 h-4 w-4 shrink-0 text-cyan-300' />
-              <span>{f}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div
-        className='animate-fade-in-up rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
-        style={{ animationDelay: '230ms' }}
-      >
-        <SectionHeading>Supported {platform.name} URL formats</SectionHeading>
-        <ul className='grid grid-cols-1 gap-x-4 gap-y-1.5 font-mono text-[11px] text-white/60 md:text-xs'>
-          {platform.urlExamples.map((u) => (
-            <li key={u} className='truncate'>
-              {u}
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div
-        className='animate-fade-in-up grid grid-cols-3 gap-2'
-        style={{ animationDelay: '310ms' }}
-      >
-        {trustStrip.map((b) => (
-          <div
-            key={b.k}
-            className='rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-center'
-          >
-            <p className='text-sm font-semibold text-grad'>{b.k}</p>
-            <p className='mt-0.5 text-[10px] text-white/50 md:text-xs'>{b.v}</p>
-          </div>
-        ))}
-      </div>
-    </div>
   )
 }
 
@@ -211,42 +137,36 @@ function CrossLinkNav({ activeSlug }: { activeSlug: PlatformSlug }) {
   return (
     <nav
       aria-label='Other downloaders'
-      className='animate-fade-in-up mt-8 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4'
-      style={{ animationDelay: '260ms' }}
+      className='flex flex-wrap justify-center gap-2.5'
     >
-      <p className='mb-3 text-xs text-white/65 md:text-sm'>
-        Also try our dedicated downloaders
-      </p>
-      <div className='flex flex-wrap gap-2'>
-        <Link
-          href='/'
-          className='inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs text-white/80 transition-colors hover:border-cyan-400/40 hover:text-white md:text-sm'
-        >
-          ← All platforms
-        </Link>
-        {others.map((p) => {
-          const { Icon, tile } = platformIcons[p.slug]
-          const useBrandTile = !tile.startsWith('bg-transparent')
-          return (
-            <Link
-              key={p.slug}
-              href={`/${p.slug}`}
-              className='inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs text-white/80 transition-colors hover:border-cyan-400/40 hover:text-white md:text-sm'
+      <Link
+        href='/'
+        className='inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 hover:text-white'
+      >
+        ← All platforms
+      </Link>
+      {others.map((p) => {
+        const { Icon, tile } = platformIcons[p.slug]
+        const useBrandTile = !tile.startsWith('bg-transparent')
+        return (
+          <Link
+            key={p.slug}
+            href={`/${p.slug}`}
+            className='inline-flex items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 hover:text-white'
+          >
+            <span
+              className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${useBrandTile ? tile : ''}`}
             >
-              <span
-                className={`inline-flex h-5 w-5 items-center justify-center rounded ${useBrandTile ? tile : ''}`}
-              >
-                {useBrandTile ? (
-                  <Icon className='h-3.5 w-3.5 text-white' />
-                ) : (
-                  <Icon className='h-full w-full' />
-                )}
-              </span>
-              {p.brandLabel}
-            </Link>
-          )
-        })}
-      </div>
+              {useBrandTile ? (
+                <Icon className='h-3.5 w-3.5 text-white' />
+              ) : (
+                <Icon className='h-full w-full' />
+              )}
+            </span>
+            {p.brandLabel}
+          </Link>
+        )
+      })}
     </nav>
   )
 }
@@ -276,27 +196,52 @@ function Breadcrumb({ platform }: { platform: Platform }) {
 
 export function PlatformLanding({ platform }: { platform: Platform }) {
   return (
-    <div className='relative flex min-h-[100dvh] justify-center overflow-clip bg-[#08080a] px-4 py-6'>
-      <InteractiveBackground />
+    <div className='relative min-h-[100dvh] overflow-clip bg-[#08080a]'>
+      {/* Fixed so the interactive grid + spotlight track the viewport across
+          the full scroll length of the page. */}
+      <div className='pointer-events-none fixed inset-0 z-0'>
+        <InteractiveBackground />
+      </div>
 
-      <GlowCard className='animate-card-enter relative z-10 my-auto w-full max-w-sm rounded-3xl p-4 shadow-2xl backdrop-blur-md md:max-w-2xl md:p-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl'>
-        <div className='animate-fade-in-up mb-6 text-center md:mb-8'>
-          <PlatformIconRow activeSlug={platform.slug} />
-          <Breadcrumb platform={platform} />
-          <h1 className='mb-2 text-2xl font-extrabold tracking-tight text-white text-balance md:text-3xl lg:text-4xl'>
-            {platform.h1}
-          </h1>
-          <p className='mx-auto mb-4 max-w-3xl text-sm text-white/70 md:text-base'>
-            {platform.tagline}
-          </p>
-          <div className='flex justify-center items-stretch gap-2 sm:gap-3 max-w-md sm:max-w-none mx-auto'>
+      <div className='relative z-10 mx-auto max-w-6xl px-4 py-10 sm:py-16'>
+        {/* HERO — brand row, breadcrumb, headline, and the paste-bar. */}
+        <GlowCard className='animate-card-enter mx-auto w-full max-w-3xl rounded-3xl p-5 shadow-2xl backdrop-blur-md sm:p-8 md:p-10'>
+          <div className='animate-fade-in-up text-center'>
+            <PlatformIconRow activeSlug={platform.slug} />
+            <Breadcrumb platform={platform} />
+            <h1 className='mb-3 text-2xl font-extrabold tracking-tight text-white text-balance sm:text-3xl md:text-4xl'>
+              {platform.h1}
+            </h1>
+            <p className='mx-auto mb-7 max-w-xl text-sm text-white/70 md:text-base'>
+              {platform.tagline}
+            </p>
+          </div>
+
+          {/* Interactive island — paste bar + results */}
+          <DownloaderApp />
+
+          {/* Reassurance chips */}
+          <div className='mt-7 flex flex-wrap justify-center gap-2'>
+            {heroChips.map((chip) => (
+              <span
+                key={chip}
+                className='inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-xs text-white/70 md:text-sm'
+              >
+                <span className='h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]' />
+                {chip}
+              </span>
+            ))}
+          </div>
+
+          {/* Dev / companion-app links */}
+          <div className='mx-auto mt-6 flex max-w-md items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
             {devLinks.map(({ href, label, Icon }) => (
               <a
                 key={label}
                 href={href}
                 target='_blank'
                 rel='noopener noreferrer'
-                className='group flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 sm:px-4 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 active:scale-95'
+                className='group flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 active:scale-95 sm:flex-none sm:px-4'
               >
                 <Icon className='h-[18px] w-[18px] shrink-0 text-white/80 transition-colors duration-300 group-hover:text-cyan-300' />
                 <span className='text-sm font-medium text-white/80 transition-colors duration-300 group-hover:text-white'>
@@ -306,46 +251,77 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             ))}
             <RafiqPromoCard />
           </div>
-        </div>
+        </GlowCard>
 
-        <DownloaderApp
-          idleLeftSlot={<HowItWorks />}
-          idleRightSlot={<PlatformSidebar platform={platform} />}
-        />
+        {/* WHAT YOU CAN DO — platform feature list */}
+        <section className='mt-16 sm:mt-24'>
+          <SectionHead title={`With this ${platform.name} downloader you can`} />
+          <ul className='mx-auto grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2'>
+            {platform.featureList.map((f) => (
+              <li
+                key={f}
+                className='flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 text-sm text-white/80'
+              >
+                <CheckMark className='mt-0.5 h-4 w-4 shrink-0 text-cyan-300' />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-        <CrossLinkNav activeSlug={platform.slug} />
-
-        <section
-          aria-labelledby='seo-heading'
-          className='animate-fade-in-up mt-10 space-y-6 text-white/80'
-          style={{ animationDelay: '300ms' }}
-        >
-          <div>
-            <h2
-              id='seo-heading'
-              className='mb-3 text-xl font-bold text-white md:text-2xl'
-            >
-              Free {platform.brandLabel} — {platform.tagline}
-            </h2>
-            <p className='text-sm leading-relaxed md:text-base'>
-              {platform.intro}
-            </p>
-          </div>
-
+        {/* HIGHLIGHT CARDS */}
+        <section className='mt-16 sm:mt-24'>
           <div className='grid gap-4 md:grid-cols-3'>
             {platform.cards.map((card) => (
               <article
                 key={card.title}
-                className='rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-all duration-200 hover:-translate-y-1 hover:border-cyan-400/30'
+                className='rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-cyan-400/30'
               >
                 <h3 className='mb-2 font-semibold text-white'>{card.title}</h3>
-                <p className='text-sm'>{card.body}</p>
+                <p className='text-sm text-white/75'>{card.body}</p>
               </article>
             ))}
           </div>
+        </section>
+
+        {/* CROSS-LINKS */}
+        <section className='mt-16 sm:mt-24'>
+          <SectionHead
+            title='Also try our other downloaders'
+            sub='One tool per platform — pick whichever you need.'
+          />
+          <CrossLinkNav activeSlug={platform.slug} />
+        </section>
+
+        {/* SEO PROSE + FAQ */}
+        <section
+          aria-labelledby='seo-heading'
+          className='mt-16 grid gap-10 sm:mt-24 lg:grid-cols-2 lg:gap-14'
+        >
+          <div>
+            <Eyebrow>Why it works</Eyebrow>
+            <h2
+              id='seo-heading'
+              className='mb-4 text-2xl font-bold tracking-tight text-white text-balance md:text-3xl'
+            >
+              Free {platform.brandLabel} — {platform.tagline}
+            </h2>
+            <p className='mb-8 max-w-[60ch] text-sm leading-relaxed text-white/80 md:text-base'>
+              {platform.intro}
+            </p>
+
+            <Eyebrow>Supported {platform.name} URL formats</Eyebrow>
+            <ul className='grid grid-cols-1 gap-x-6 gap-y-1.5 font-mono text-[11px] text-white/55 sm:grid-cols-2 md:text-xs'>
+              {platform.urlExamples.map((u) => (
+                <li key={u} className='truncate'>
+                  {u}
+                </li>
+              ))}
+            </ul>
+          </div>
 
           <div>
-            <h2 className='mb-3 text-xl font-bold text-white md:text-2xl'>
+            <h2 className='mb-5 text-2xl font-bold tracking-tight text-white md:text-3xl'>
               {platform.name} downloader — Frequently asked questions
             </h2>
             <Accordion
@@ -364,7 +340,8 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           </div>
         </section>
 
-        <footer className='animate-fade-in-up mt-10 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-6 text-sm text-white/60 sm:flex-row sm:gap-5'>
+        {/* Footer */}
+        <footer className='mt-16 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-8 text-sm text-white/60 sm:mt-24 sm:flex-row sm:gap-5'>
           <span>
             Built by{' '}
             <a
@@ -405,7 +382,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             <span className='text-white/40'>— an app made by us</span>
           </span>
         </footer>
-      </GlowCard>
+      </div>
     </div>
   )
 }
