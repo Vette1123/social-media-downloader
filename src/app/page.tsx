@@ -35,21 +35,28 @@ const devLinks = [
   },
 ] as const
 
+const heroChips = [
+  'Free forever',
+  'No login required',
+  'No download limits',
+  'HD quality',
+] as const
+
 const howItWorksSteps = [
   {
     n: 1,
     title: 'Copy a video URL',
-    sub: 'TikTok, X, Instagram, Facebook, or YouTube',
+    sub: 'From TikTok, X, Instagram, Facebook, or YouTube.',
   },
   {
     n: 2,
-    title: 'Paste & process',
-    sub: 'We resolve the media in seconds',
+    title: 'Paste & download',
+    sub: 'We resolve the media in seconds — right in your browser.',
   },
   {
     n: 3,
-    title: 'Download',
-    sub: 'Video, MP3, or full image gallery',
+    title: 'Save it',
+    sub: 'Video, MP3, or the full image gallery. Done.',
   },
 ] as const
 
@@ -91,145 +98,27 @@ function IconZip({ className }: { className?: string }) {
 }
 
 const whatYouCanDo = [
-  { Icon: IconVideo, label: 'HD Video', sub: 'No watermark' },
-  { Icon: IconAudio, label: 'MP3 audio', sub: 'Extract soundtrack' },
-  { Icon: IconGallery, label: 'Slideshow', sub: 'Image carousels' },
-  { Icon: IconZip, label: 'Batch ZIP', sub: 'All images at once' },
-] as const
-
-const trustStrip = [
-  { k: 'Free', v: 'forever' },
-  { k: 'No login', v: 'required' },
-  { k: 'No limit', v: 'on downloads' },
-] as const
-
-const mobileFeatures = [
-  'Watermark-free downloads',
-  'HD quality preservation',
-  'MP3 audio extraction',
-  'Video preview',
-  'Image gallery downloads',
-  'Multiple URL formats',
-  'Batch image selection',
-  'Fast processing',
-] as const
-
-const seoCards = [
   {
-    title: 'Videos in HD',
-    body: 'Watermark-free TikTok downloads plus native Twitter/X, Facebook, and YouTube (including Shorts) video rips, served with proper range requests so preview and seeking work flawlessly.',
+    Icon: IconVideo,
+    label: 'HD video',
+    sub: 'Full-quality MP4 with the watermark stripped, seeking works.',
   },
   {
-    title: 'MP3 audio extraction',
-    body: 'Pull the soundtrack from any TikTok video or slideshow. Photo carousels keep the original background music — perfect for trending sounds.',
+    Icon: IconAudio,
+    label: 'MP3 audio',
+    sub: 'Pull the soundtrack — perfect for trending sounds.',
   },
   {
-    title: 'Photo carousels',
-    body: 'TikTok slideshows come through as a full-resolution gallery. Preview, pick favorites, then save individually or as a single ZIP.',
+    Icon: IconGallery,
+    label: 'Photo galleries',
+    sub: 'Carousels come through at full resolution to pick from.',
+  },
+  {
+    Icon: IconZip,
+    label: 'Batch ZIP',
+    sub: 'Grab every image in a slideshow as one download.',
   },
 ] as const
-
-function SectionHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className='mb-4 flex items-center gap-3 text-xs font-semibold tracking-[0.13em] uppercase text-white/60'>
-      {children}
-      <span className='h-px flex-1 bg-gradient-to-r from-cyan-400/30 to-transparent' />
-    </h3>
-  )
-}
-
-function HowItWorks() {
-  return (
-    <div
-      className='animate-fade-in-up rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
-      style={{ animationDelay: '150ms' }}
-    >
-      <SectionHeading>How it works</SectionHeading>
-      <ol className='space-y-3'>
-        {howItWorksSteps.map((s) => (
-          <li
-            key={s.n}
-            id={`step-${s.n}`}
-            className='flex items-start gap-3 scroll-mt-24'
-          >
-            <div className='btn-grad flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold'>
-              {s.n}
-            </div>
-            <div className='min-w-0'>
-              <p className='text-sm font-medium leading-tight text-white'>
-                {s.title}
-              </p>
-              <p className='mt-0.5 text-xs text-white/55'>{s.sub}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
-}
-
-function IdleRightContent() {
-  return (
-    <div className='space-y-4'>
-      {/* What you can do — 2x2 grid */}
-      <div
-        className='animate-fade-in-up rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
-        style={{ animationDelay: '150ms' }}
-      >
-        <SectionHeading>What you can do</SectionHeading>
-        <div className='grid grid-cols-2 gap-3'>
-          {whatYouCanDo.map((t) => (
-            <div
-              key={t.label}
-              className='group rounded-xl border border-white/[0.08] bg-white/[0.02] p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/30'
-            >
-              <t.Icon className='mb-2 h-6 w-6 text-cyan-300 drop-shadow-[0_2px_6px_rgba(34,211,238,0.35)]' />
-              <p className='text-sm font-semibold leading-tight text-white'>
-                {t.label}
-              </p>
-              <p className='mt-0.5 text-xs text-white/55'>{t.sub}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Supported link formats */}
-      <div
-        className='animate-fade-in-up rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
-        style={{ animationDelay: '230ms' }}
-      >
-        <SectionHeading>Supported link formats</SectionHeading>
-        <ul className='grid grid-cols-1 gap-x-4 gap-y-1.5 font-mono text-[11px] text-white/60 sm:grid-cols-2 md:text-xs'>
-          <li className='truncate'>tiktok.com/@user/video/…</li>
-          <li className='truncate'>vm.tiktok.com/…</li>
-          <li className='truncate'>x.com/user/status/…</li>
-          <li className='truncate'>instagram.com/p/…</li>
-          <li className='truncate'>instagram.com/reel/…</li>
-          <li className='truncate'>youtube.com/watch?v=…</li>
-          <li className='truncate'>youtu.be/… · /shorts/…</li>
-          <li className='truncate'>facebook.com/…/videos/…</li>
-          <li className='truncate'>fb.watch/… · /reel/…</li>
-        </ul>
-      </div>
-
-      {/* Trust strip */}
-      <div
-        className='animate-fade-in-up grid grid-cols-3 gap-2'
-        style={{ animationDelay: '310ms' }}
-      >
-        {trustStrip.map((b) => (
-          <div
-            key={b.k}
-            className='rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 text-center'
-          >
-            <p className='text-sm font-semibold text-grad'>{b.k}</p>
-            <p className='mt-0.5 text-[10px] text-white/50 md:text-xs'>{b.v}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 const platformLinkTiles: Record<
   string,
@@ -242,43 +131,65 @@ const platformLinkTiles: Record<
   'youtube-downloader': { tile: 'bg-transparent', Icon: YouTubeIcon },
 }
 
-function PlatformLinks() {
+// The 5 brand tiles that sit above the headline — each links to its dedicated
+// downloader page.
+const heroPlatforms = [
+  {
+    href: '/tiktok-downloader',
+    label: 'TikTok video downloader',
+    tile: 'bg-[#010101]',
+    Icon: TikTokIcon,
+    brand: false,
+  },
+  {
+    href: '/twitter-video-downloader',
+    label: 'Twitter/X video downloader',
+    tile: 'bg-black',
+    Icon: TwitterXIcon,
+    brand: false,
+  },
+  {
+    href: '/instagram-downloader',
+    label: 'Instagram reels & photo downloader',
+    tile: '',
+    Icon: InstagramIcon,
+    brand: true,
+  },
+  {
+    href: '/facebook-downloader',
+    label: 'Facebook video & reels downloader',
+    tile: '',
+    Icon: FacebookIcon,
+    brand: true,
+  },
+  {
+    href: '/youtube-downloader',
+    label: 'YouTube & Shorts downloader',
+    tile: '',
+    Icon: YouTubeIcon,
+    brand: true,
+  },
+] as const
+
+// Centered section header (title + one-line sub). Used by the full-width bands.
+function SectionHead({ title, sub }: { title: string; sub: string }) {
   return (
-    <nav
-      aria-label='Per-platform downloaders'
-      className='animate-fade-in-up mt-8 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4'
-      style={{ animationDelay: '260ms' }}
-    >
-      <p className='mb-3 text-xs text-white/65 md:text-sm'>
-        Or jump straight to a dedicated downloader
-      </p>
-      <div className='flex flex-wrap gap-2'>
-        {platforms.map((p) => {
-          const cfg = platformLinkTiles[p.slug]
-          if (!cfg) return null
-          const { tile, Icon } = cfg
-          const useBrandTile = !tile.startsWith('bg-transparent')
-          return (
-            <Link
-              key={p.slug}
-              href={`/${p.slug}`}
-              className='inline-flex items-center gap-1.5 rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs text-white/80 transition-colors hover:border-cyan-400/40 hover:text-white md:text-sm'
-            >
-              <span
-                className={`inline-flex h-5 w-5 items-center justify-center rounded ${useBrandTile ? tile : ''}`}
-              >
-                {useBrandTile ? (
-                  <Icon className='h-3.5 w-3.5 text-white' />
-                ) : (
-                  <Icon className='h-full w-full' />
-                )}
-              </span>
-              {p.brandLabel}
-            </Link>
-          )
-        })}
-      </div>
-    </nav>
+    <div className='mx-auto mb-9 max-w-2xl text-center'>
+      <h2 className='text-2xl font-bold tracking-tight text-white text-balance sm:text-3xl'>
+        {title}
+      </h2>
+      <p className='mt-3 text-sm text-white/60 md:text-base'>{sub}</p>
+    </div>
+  )
+}
+
+// Small uppercase eyebrow with a fading cyan hairline — for in-column labels.
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className='mb-4 flex items-center gap-3 text-xs font-semibold tracking-[0.13em] uppercase text-white/60'>
+      {children}
+      <span className='h-px flex-1 bg-gradient-to-r from-cyan-400/30 to-transparent' />
+    </h3>
   )
 }
 
@@ -291,69 +202,74 @@ export default function Home() {
           __html: JSON.stringify(homepageStructuredData()),
         }}
       />
-      <div className='relative flex min-h-[100dvh] justify-center overflow-clip bg-[#08080a] px-4 py-6'>
-        <InteractiveBackground />
+      <div className='relative min-h-[100dvh] overflow-clip bg-[#08080a]'>
+        {/* Fixed so the interactive grid + spotlight track the viewport across
+            the full scroll length of the page. */}
+        <div className='pointer-events-none fixed inset-0 z-0'>
+          <InteractiveBackground />
+        </div>
 
-        <GlowCard className='animate-card-enter relative z-10 my-auto w-full max-w-sm rounded-3xl p-4 shadow-2xl backdrop-blur-md md:max-w-2xl md:p-8 lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl'>
-          {/* Header */}
-          <div className='animate-fade-in-up mb-6 text-center md:mb-8'>
-            <div className='mb-4 flex justify-center'>
-              <div className='flex items-center gap-2 md:gap-2.5'>
-                <Link
-                  href='/tiktok-downloader'
-                  aria-label='TikTok video downloader'
-                  className='block'
-                >
-                  <span className='flex h-10 w-10 items-center justify-center rounded-xl bg-[#010101] ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-cyan-400/40 md:h-12 md:w-12'>
-                    <TikTokIcon className='h-5 w-5 text-white md:h-6 md:w-6' />
-                  </span>
-                </Link>
-                <Link
-                  href='/twitter-video-downloader'
-                  aria-label='Twitter/X video downloader'
-                  className='block'
-                >
-                  <span className='flex h-10 w-10 items-center justify-center rounded-xl bg-black ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-cyan-400/40 md:h-12 md:w-12'>
-                    <TwitterXIcon className='h-5 w-5 text-white md:h-6 md:w-6' />
-                  </span>
-                </Link>
-                <Link
-                  href='/instagram-downloader'
-                  aria-label='Instagram reels & photo downloader'
-                  className='block'
-                >
-                  <span className='flex h-10 w-10 overflow-hidden rounded-xl ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-cyan-400/40 md:h-12 md:w-12'>
-                    <InstagramIcon className='h-full w-full' />
-                  </span>
-                </Link>
-                <Link
-                  href='/facebook-downloader'
-                  aria-label='Facebook video & reels downloader'
-                  className='block'
-                >
-                  <span className='flex h-10 w-10 overflow-hidden rounded-xl ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-cyan-400/40 md:h-12 md:w-12'>
-                    <FacebookIcon className='h-full w-full' />
-                  </span>
-                </Link>
-                <Link
-                  href='/youtube-downloader'
-                  aria-label='YouTube & Shorts downloader'
-                  className='block'
-                >
-                  <span className='flex h-10 w-10 overflow-hidden rounded-xl ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-cyan-400/40 md:h-12 md:w-12'>
-                    <YouTubeIcon className='h-full w-full' />
-                  </span>
-                </Link>
+        <div className='relative z-10 mx-auto max-w-6xl px-4 py-10 sm:py-16'>
+          {/* ---------------------------------------------------------------
+              HERO — brand tiles, headline, and the paste-bar (the product).
+              Download results expand directly under the bar, inside the card.
+          ---------------------------------------------------------------- */}
+          <GlowCard className='animate-card-enter mx-auto w-full max-w-3xl rounded-3xl p-5 shadow-2xl backdrop-blur-md sm:p-8 md:p-10'>
+            <div className='animate-fade-in-up text-center'>
+              <div className='mb-6 flex justify-center'>
+                <div className='flex items-center gap-2 md:gap-2.5'>
+                  {heroPlatforms.map((p) => (
+                    <Link
+                      key={p.href}
+                      href={p.href}
+                      aria-label={p.label}
+                      className='block'
+                    >
+                      <span
+                        className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-cyan-400/40 md:h-12 md:w-12 ${
+                          p.brand ? '' : p.tile
+                        }`}
+                      >
+                        {p.brand ? (
+                          <p.Icon className='h-full w-full' />
+                        ) : (
+                          <p.Icon className='h-5 w-5 text-white md:h-6 md:w-6' />
+                        )}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               </div>
+
+              <h1 className='mb-3 text-3xl font-extrabold tracking-tight text-white text-balance sm:text-4xl md:text-5xl'>
+                Download any video,{' '}
+                <span className='text-grad'>watermark-free</span>
+              </h1>
+              <p className='mx-auto mb-7 max-w-xl text-sm text-white/70 md:text-base'>
+                Save videos without watermarks, extract MP3 audio, or grab full
+                image galleries from TikTok, X, Instagram, Facebook &amp;
+                YouTube.
+              </p>
             </div>
-            <h1 className='mb-2 text-3xl font-extrabold tracking-tight text-white text-balance md:text-4xl lg:text-5xl'>
-              Download any video, <span className='text-grad'>watermark-free</span>
-            </h1>
-            <p className='mx-auto mb-4 max-w-2xl text-sm text-white/70 md:text-base'>
-              Save videos without watermarks, extract MP3 audio, or grab images
-              from TikTok, X, Instagram, Facebook &amp; YouTube
-            </p>
-            <div className='mx-auto flex max-w-md items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
+
+            {/* Interactive island — paste bar + results */}
+            <DownloaderApp />
+
+            {/* Reassurance chips */}
+            <div className='mt-7 flex flex-wrap justify-center gap-2'>
+              {heroChips.map((chip) => (
+                <span
+                  key={chip}
+                  className='inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-xs text-white/70 md:text-sm'
+                >
+                  <span className='h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]' />
+                  {chip}
+                </span>
+              ))}
+            </div>
+
+            {/* Dev / companion-app links */}
+            <div className='mx-auto mt-6 flex max-w-md items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
               {devLinks.map(({ href, label, Icon }) => (
                 <a
                   key={label}
@@ -370,70 +286,139 @@ export default function Home() {
               ))}
               <RafiqPromoCard />
             </div>
-          </div>
+          </GlowCard>
 
-          {/* Interactive island — form + results */}
-          <DownloaderApp
-            idleLeftSlot={<HowItWorks />}
-            idleRightSlot={<IdleRightContent />}
-          />
-
-          <PlatformLinks />
-
-          {/* Features List - Mobile only */}
-          <div
-            className='animate-fade-in-up mt-6 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 lg:hidden'
-            style={{ animationDelay: '200ms' }}
-          >
-            <SectionHeading>Features</SectionHeading>
-            <div className='grid grid-cols-1 gap-3 text-xs md:grid-cols-2 md:text-sm'>
-              {mobileFeatures.map((f) => (
-                <div key={f} className='flex items-center gap-2 text-white/70'>
-                  <svg className='h-4 w-4 shrink-0 text-cyan-300' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={2} strokeLinecap='round' strokeLinejoin='round'>
-                    <path d='m5 12 5 5 9-11' />
-                  </svg>
-                  <span>{f}</span>
+          {/* ---------------------------------------------------------------
+              WHAT YOU CAN DO — 4-across feature band
+          ---------------------------------------------------------------- */}
+          <section className='mt-16 sm:mt-24'>
+            <SectionHead
+              title='Everything from one link'
+              sub='One paste, four ways to save it. No app, no account, nothing installed.'
+            />
+            <div className='grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4'>
+              {whatYouCanDo.map((t) => (
+                <div
+                  key={t.label}
+                  className='group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-cyan-400/30'
+                >
+                  <t.Icon className='mb-4 h-6 w-6 text-cyan-300 drop-shadow-[0_2px_6px_rgba(34,211,238,0.35)]' />
+                  <p className='font-semibold text-white'>{t.label}</p>
+                  <p className='mt-1 text-sm text-white/60'>{t.sub}</p>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* SEO Content */}
+          {/* ---------------------------------------------------------------
+              HOW IT WORKS — 3 steps
+          ---------------------------------------------------------------- */}
+          <section className='mt-16 sm:mt-24'>
+            <SectionHead
+              title='Three steps, a few seconds'
+              sub='No tutorials. No settings. Paste and go.'
+            />
+            <ol className='grid gap-3 md:grid-cols-3 md:gap-4'>
+              {howItWorksSteps.map((s) => (
+                <li
+                  key={s.n}
+                  id={`step-${s.n}`}
+                  className='scroll-mt-24 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6'
+                >
+                  <div className='btn-grad mb-4 flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold'>
+                    {s.n}
+                  </div>
+                  <p className='font-semibold text-white'>{s.title}</p>
+                  <p className='mt-1 text-sm text-white/60'>{s.sub}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          {/* ---------------------------------------------------------------
+              PLATFORM QUICK LINKS
+          ---------------------------------------------------------------- */}
+          <section className='mt-16 sm:mt-24'>
+            <SectionHead
+              title='Jump to a dedicated downloader'
+              sub='Prefer a page built for one platform? Pick yours.'
+            />
+            <nav
+              aria-label='Per-platform downloaders'
+              className='flex flex-wrap justify-center gap-2.5'
+            >
+              {platforms.map((p) => {
+                const cfg = platformLinkTiles[p.slug]
+                if (!cfg) return null
+                const { tile, Icon } = cfg
+                const useBrandTile = !tile.startsWith('bg-transparent')
+                return (
+                  <Link
+                    key={p.slug}
+                    href={`/${p.slug}`}
+                    className='inline-flex items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 hover:text-white'
+                  >
+                    <span
+                      className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${
+                        useBrandTile ? tile : ''
+                      }`}
+                    >
+                      {useBrandTile ? (
+                        <Icon className='h-3.5 w-3.5 text-white' />
+                      ) : (
+                        <Icon className='h-full w-full' />
+                      )}
+                    </span>
+                    {p.brandLabel}
+                  </Link>
+                )
+              })}
+            </nav>
+          </section>
+
+          {/* ---------------------------------------------------------------
+              SEO PROSE + FAQ — two columns on desktop
+          ---------------------------------------------------------------- */}
           <section
             aria-labelledby='seo-heading'
-            className='animate-fade-in-up mt-10 space-y-6 text-white/80'
-            style={{ animationDelay: '300ms' }}
+            className='mt-16 grid gap-10 sm:mt-24 lg:grid-cols-2 lg:gap-14'
           >
             <div>
+              <Eyebrow>Why it works</Eyebrow>
               <h2
                 id='seo-heading'
-                className='mb-3 text-xl font-bold text-white md:text-2xl'
+                className='mb-4 text-2xl font-bold tracking-tight text-white text-balance md:text-3xl'
               >
-                Free TikTok, X, Instagram, Facebook &amp; YouTube Video Downloader
+                Free TikTok, X, Instagram, Facebook &amp; YouTube Video
+                Downloader
               </h2>
-              <p className='text-sm leading-relaxed md:text-base'>
+              <p className='mb-4 max-w-[60ch] text-sm leading-relaxed text-white/80 md:text-base'>
                 Save any TikTok, Twitter/X, Instagram, Facebook, or YouTube post
                 in a couple of clicks. Paste the link, preview the content, and
                 download the full-quality video, the original MP3 soundtrack, or
-                every image from a photo carousel. Everything happens in your
-                browser — no app, no sign-up, no watermark.
+                every image from a photo carousel.
               </p>
-            </div>
+              <p className='mb-8 max-w-[60ch] text-sm leading-relaxed text-white/80 md:text-base'>
+                Everything happens in your browser — no app, no sign-up, no
+                watermark, and no limit on how much you save.
+              </p>
 
-            <div className='grid gap-4 md:grid-cols-3'>
-              {seoCards.map((card) => (
-                <article
-                  key={card.title}
-                  className='rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 transition-all duration-200 hover:-translate-y-1 hover:border-cyan-400/30'
-                >
-                  <h3 className='mb-2 font-semibold text-white'>{card.title}</h3>
-                  <p className='text-sm'>{card.body}</p>
-                </article>
-              ))}
+              <Eyebrow>Supported link formats</Eyebrow>
+              <ul className='grid grid-cols-1 gap-x-6 gap-y-1.5 font-mono text-[11px] text-white/55 sm:grid-cols-2 md:text-xs'>
+                <li className='truncate'>tiktok.com/@user/video/…</li>
+                <li className='truncate'>vm.tiktok.com/…</li>
+                <li className='truncate'>x.com/user/status/…</li>
+                <li className='truncate'>instagram.com/p/…</li>
+                <li className='truncate'>instagram.com/reel/…</li>
+                <li className='truncate'>youtube.com/watch?v=…</li>
+                <li className='truncate'>youtu.be/… · /shorts/…</li>
+                <li className='truncate'>facebook.com/…/videos/…</li>
+                <li className='truncate'>fb.watch/… · /reel/…</li>
+              </ul>
             </div>
 
             <div>
-              <h2 className='mb-3 text-xl font-bold text-white md:text-2xl'>
+              <h2 className='mb-5 text-2xl font-bold tracking-tight text-white md:text-3xl'>
                 Frequently asked questions
               </h2>
               <Accordion
@@ -519,7 +504,7 @@ export default function Home() {
           </section>
 
           {/* Footer */}
-          <footer className='animate-fade-in-up mt-10 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-6 text-sm text-white/60 sm:flex-row sm:gap-5'>
+          <footer className='mt-16 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-8 text-sm text-white/60 sm:mt-24 sm:flex-row sm:gap-5'>
             <span>
               Built by{' '}
               <a
@@ -560,7 +545,7 @@ export default function Home() {
               <span className='text-white/40'>— an app made by us</span>
             </span>
           </footer>
-        </GlowCard>
+        </div>
       </div>
     </>
   )
