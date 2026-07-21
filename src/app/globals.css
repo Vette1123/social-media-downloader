@@ -66,7 +66,8 @@ body {
     linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
   background-size: 48px 48px;
-  animation: grid-pan 44s linear infinite;
+  /* Static grid — panning it repainted a full-screen layer every frame for a
+     44s drift no one could perceive. Pure idle cost, removed. */
   -webkit-mask-image: radial-gradient(
     ellipse 90% 70% at 50% 22%,
     #000 42%,
@@ -85,7 +86,8 @@ body {
     linear-gradient(to right, rgba(56, 211, 238, 0.5) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(56, 211, 238, 0.5) 1px, transparent 1px);
   background-size: 48px 48px;
-  animation: grid-pan 44s linear infinite;
+  /* Only repaints when the cursor moves (mask follows --px/--py) — interactive,
+     not idle cost. No pan needed. */
   -webkit-mask-image: radial-gradient(
     220px 220px at var(--px, 50%) var(--py, 40%),
     #000 0%,
@@ -97,19 +99,13 @@ body {
     transparent 70%
   );
 }
-@keyframes grid-pan {
-  from {
-    background-position: 0 0;
-  }
-  to {
-    background-position: 48px 48px;
-  }
-}
-
 .bg-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
+  /* 60px (was 80px): still a soft glow, cheaper to rasterise. Blobs only move
+     when the pointer moves, so there is no idle cost — desktop-only, hidden on
+     phones where .app-bg reproduces the glow statically. */
+  filter: blur(60px);
   will-change: transform;
 }
 .bg-blob-1 {
@@ -407,20 +403,16 @@ body {
    blobs' soft glow is already reproduced statically by .app-bg, while the
    spotlight is a pointer effect a touch screen can't use anyway.
 
-   Everything cheap stays for full visual parity with desktop: the grid texture
-   (frozen — a static repeating gradient costs one paint), the grain, and the
-   card's entire effect set (perimeter line glow, entrance animations, gradient
-   text, badge blur). So mobile ≈ desktop, minus only the per-frame-costly bits.
+   Everything cheap stays for full visual parity with desktop: the (static) grid
+   texture, the grain, and the card's entire effect set (perimeter line glow,
+   entrance animations, gradient text, badge blur). So mobile ≈ desktop, minus
+   only the two pointer-driven layers a touch screen can't use anyway.
 --------------------------------------------------------------------------- */
 @media (max-width: 767px) {
-  /* blur(80px) blobs + cursor spotlight: the expensive layers, gone. */
+  /* Blurred blobs + cursor spotlight: the only heavy layers, and both are
+     pointer effects a touch screen never triggers. Gone. */
   .bg-blob,
   .bg-grid-hot {
     display: none !important;
-  }
-
-  /* Keep the grid texture, just stop panning it — one static paint. */
-  .bg-grid {
-    animation: none !important;
   }
 }
