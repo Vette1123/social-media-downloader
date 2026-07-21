@@ -368,54 +368,59 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
+   Static ambient gradient — the page ground on EVERY device.
+
+   One paint, no animation, no blur elements, no fixed-attachment, so it costs
+   nothing per frame and never repaints on scroll. Cyan/teal glows pooled near
+   the hero, easing into graphite. On desktop the InteractiveBackground (grid +
+   drifting blobs + cursor spotlight) layers its live motion on top of this; on
+   mobile that field is switched off and this gradient is the whole background —
+   fancy, polished, and free.
+--------------------------------------------------------------------------- */
+.app-bg {
+  background-color: var(--base);
+  background-image:
+    radial-gradient(
+      58rem 34rem at 50% -6rem,
+      rgba(34, 211, 238, 0.16),
+      transparent 62%
+    ),
+    radial-gradient(
+      46rem 34rem at 100% 4rem,
+      rgba(56, 189, 248, 0.1),
+      transparent 58%
+    ),
+    radial-gradient(
+      44rem 34rem at 0% 22rem,
+      rgba(45, 212, 191, 0.11),
+      transparent 58%
+    );
+  background-repeat: no-repeat;
+}
+
+/* ---------------------------------------------------------------------------
    MOBILE PERFORMANCE GUARD (≤767px / phones)
 
-   Phones choked on the GPU. The whole downloader UI sits inside .glow-card,
-   whose ::before is a masked, drop-shadow'd conic gradient animated via an
-   @property angle — a continuous full-subtree repaint. Stack the panning grid,
-   drifting blobs, animated gradient text and backdrop-filters on top and a
-   mid-range Android compositor runs out of layers, so buttons and the card top
-   simply stop painting ("everything disappears").
+   The disappearing-elements bug was compositor exhaustion from a few genuinely
+   expensive layers: three blur(80px) blobs and the cursor-spotlight grid, all
+   continuously re-rasterised. Those are the ONLY things mobile drops — and the
+   blobs' soft glow is already reproduced statically by .app-bg, while the
+   spotlight is a pointer effect a touch screen can't use anyway.
 
-   On phones we go fully static and minimal: no perimeter glow, no cursor
-   spotlight, no background field, no entrance animation, no backdrop blur. The
-   layout, borders and colours are untouched — it just stops moving, so it
-   always paints. Desktop keeps the full treatment.
+   Everything cheap stays for full visual parity with desktop: the grid texture
+   (frozen — a static repeating gradient costs one paint), the grain, and the
+   card's entire effect set (perimeter line glow, entrance animations, gradient
+   text, badge blur). So mobile ≈ desktop, minus only the per-frame-costly bits.
 --------------------------------------------------------------------------- */
 @media (max-width: 767px) {
-  /* Perimeter glow + cursor spotlight — the single most expensive layer. */
-  .glow-card::before,
-  .glow-card::after {
-    display: none !important;
-  }
-
-  /* Ambient background field — panning grid, spotlight grid, blobs, grain. */
-  .bg-grid,
-  .bg-grid-hot,
+  /* blur(80px) blobs + cursor spotlight: the expensive layers, gone. */
   .bg-blob,
-  .bg-grain {
+  .bg-grid-hot {
     display: none !important;
   }
 
-  /* Gradient heading: keep the colour, drop the animation + glow filter. */
-  .text-grad {
+  /* Keep the grid texture, just stop panning it — one static paint. */
+  .bg-grid {
     animation: none !important;
-    filter: none !important;
-  }
-
-  /* Entrance animations render instantly — no compositor transform/opacity
-     work while the card and its sections mount. */
-  .animate-card-enter,
-  .animate-fade-in-up,
-  .animate-soft-fade,
-  .animate-section-in {
-    animation: none !important;
-  }
-
-  /* backdrop-filter is GPU-costly on phones and stacks with everything above;
-     the elements using it already have opaque-enough backgrounds without it. */
-  [class*='backdrop-blur'] {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
   }
 }

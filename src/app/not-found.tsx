@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <div className='relative flex min-h-[100dvh] items-center justify-center overflow-clip bg-[#08080a] px-4 py-6'>
+    <div className='app-bg relative flex min-h-[100dvh] items-center justify-center overflow-clip px-4 py-6'>
       <div
         aria-hidden
         className='bg-blob pointer-events-none absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-cyan-500/12 blur-3xl'

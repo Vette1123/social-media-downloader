@@ -202,7 +202,7 @@ export default function Home() {
           __html: JSON.stringify(homepageStructuredData()),
         }}
       />
-      <div className='relative min-h-[100dvh] overflow-clip bg-[#08080a]'>
+      <div className='app-bg relative min-h-[100dvh] overflow-clip'>
         {/* Fixed so the interactive grid + spotlight track the viewport across
             the full scroll length of the page. */}
         <div className='pointer-events-none fixed inset-0 z-0'>
