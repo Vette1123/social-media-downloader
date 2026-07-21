@@ -1,6 +1,6 @@
 'use client'
 
-import { useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { appReducer, initialState } from '@/lib/appReducer'
 import {
@@ -59,6 +59,7 @@ export function DownloaderApp() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleProcess = async () => {
     if (!state.url.trim()) {
@@ -422,17 +423,35 @@ export function DownloaderApp() {
     dispatch({ type: 'TOGGLE_PREVIEW' })
   }
 
-  // Keyboard-aware focus: on mobile the on-screen keyboard shrinks the visual
-  // viewport, which can leave the paste bar hidden behind it. Once the keyboard
-  // has settled, pull the field into the centre of the *visible* area so the
-  // user always sees what they're typing. visualViewport gives us the real
-  // post-keyboard height; the timeout waits for the slide-up animation.
-  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    const input = e.currentTarget
-    window.setTimeout(() => {
-      input.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 250)
-  }
+  // Keyboard-aware paste bar — the web equivalent of RN's KeyboardAvoidingView.
+  // The soft keyboard doesn't reflow the page; it shrinks the *visual* viewport
+  // and overlays the bottom, so a paste bar sitting low in the hero ends up
+  // hidden behind it. visualViewport.height is the real post-keyboard height:
+  // if the field's bottom sits below the visible band, scroll the page up by
+  // exactly that overlap (+ breathing room) so the field rises above the keys.
+  const keepInputAboveKeyboard = useCallback(() => {
+    const input = inputRef.current
+    const vv = window.visualViewport
+    if (!input || !vv) return
+    const rect = input.getBoundingClientRect()
+    const visibleBottom = vv.height + vv.offsetTop
+    const overshoot = rect.bottom - visibleBottom + 24
+    if (overshoot > 0) {
+      window.scrollBy({ top: overshoot, behavior: 'smooth' })
+    }
+  }, [])
+
+  // The keyboard slide-up fires a visualViewport 'resize' — recentre then, when
+  // the final height is known, but only while our field holds focus.
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const onResize = () => {
+      if (document.activeElement === inputRef.current) keepInputAboveKeyboard()
+    }
+    vv.addEventListener('resize', onResize)
+    return () => vv.removeEventListener('resize', onResize)
+  }, [keepInputAboveKeyboard])
 
   return (
     <div ref={containerRef} className='mx-auto w-full max-w-2xl'>
@@ -445,6 +464,7 @@ export function DownloaderApp() {
         }`}
       >
         <input
+          ref={inputRef}
           type='url'
           inputMode='url'
           enterKeyHint='go'
@@ -464,7 +484,11 @@ export function DownloaderApp() {
               handleProcess()
             }
           }}
-          onFocus={handleInputFocus}
+          onFocus={() => {
+            // Fallback for browsers that raise the keyboard without a
+            // visualViewport 'resize' — nudge after the slide-up settles.
+            window.setTimeout(keepInputAboveKeyboard, 300)
+          }}
           aria-invalid={urlError ? 'true' : 'false'}
           aria-describedby={urlError ? 'url-error' : undefined}
           className='min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-base text-white placeholder-white/40 outline-none'
