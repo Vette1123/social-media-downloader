@@ -722,7 +722,10 @@ export function DownloaderApp() {
                         animate={{ height: 'auto' }}
                         exit={{ height: 0 }}
                         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                        className='overflow-hidden'
+                        // px-1 keeps the selected tiles' inset cyan ring off the
+                        // overflow-hidden clip edge — the outer columns were
+                        // flush against it, slicing the ring's outer pixel.
+                        className='overflow-hidden px-1'
                       >
                       <div className='space-y-3'>
                         <div className='flex items-center justify-between bg-white/[0.03] border border-white/[0.08] rounded-lg p-3'>
