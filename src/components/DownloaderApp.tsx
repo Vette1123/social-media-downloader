@@ -523,13 +523,12 @@ export function DownloaderApp() {
           {state.loading && !state.videoMetadata && <ResultsSkeleton />}
 
           {state.videoMetadata && (
-            <motion.div
-              key='results-card'
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className='p-4 bg-white/[0.04] rounded-2xl border border-white/[0.1] space-y-4'
-            >
+            // CSS entrance (not framer initial:opacity-0). On mobile the main
+            // thread is busy decoding carousel images, which starves framer's
+            // rAF animation-start and leaves the card stuck at opacity:0 for
+            // seconds. animate-card-enter runs on the compositor and never
+            // drops below 0.6 opacity, so the card is always visible.
+            <div className='animate-card-enter p-4 bg-white/[0.04] rounded-2xl border border-white/[0.1] space-y-4'>
               <div className='flex items-start space-x-3'>
                 {state.videoMetadata.thumbnail && (
                   <img
@@ -703,12 +702,7 @@ export function DownloaderApp() {
 
               {/* Photo Carousel Audio Preview */}
               {state.videoMetadata?.isPhotoCarousel && state.audioUrl && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                  className='space-y-3 bg-gradient-to-br from-cyan-500/10 to-sky-500/10 rounded-xl p-4 border border-white/[0.1]'
-                >
+                <div className='animate-fade-in-up space-y-3 bg-gradient-to-br from-cyan-500/10 to-sky-500/10 rounded-xl p-4 border border-white/[0.1]'>
                   <div className='flex items-center gap-2 text-white'>
                     <MusicIcon className='w-5 h-5 text-cyan-300' />
                     <div className='flex-1 min-w-0'>
@@ -731,7 +725,7 @@ export function DownloaderApp() {
                   >
                     Your browser does not support the audio element.
                   </audio>
-                </motion.div>
+                </div>
               )}
 
               {/* Image Gallery */}
@@ -1025,7 +1019,7 @@ export function DownloaderApp() {
                     : 'Click to download your content'}
                 </p>
               )}
-            </motion.div>
+            </div>
           )}
         </div>
 
