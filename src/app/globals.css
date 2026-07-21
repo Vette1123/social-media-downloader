@@ -322,6 +322,23 @@ body {
   }
 }
 
+/* Section reveal — the ONLY mechanic for showing/hiding card sections (preview,
+   gallery, status message). Pure compositor (opacity + transform), one-shot on
+   mount via `both`. Unlike framer's height:0→auto it never depends on a JS rAF
+   that mobile image-decoding can starve, so a section is NEVER left invisible or
+   half-open. Under reduced-motion `animation:none` drops the fill entirely and
+   the element renders at its base opacity:1 — visible, not stuck at 0. */
+@keyframes section-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .animate-card-enter {
   animation: card-enter 650ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -334,10 +351,15 @@ body {
   animation: soft-fade 500ms ease-out both;
 }
 
+.animate-section-in {
+  animation: section-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-card-enter,
   .animate-fade-in-up,
-  .animate-soft-fade {
+  .animate-soft-fade,
+  .animate-section-in {
     animation: none;
   }
 }

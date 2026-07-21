@@ -493,34 +493,35 @@ export function DownloaderApp() {
         Works with videos, reels, shorts &amp; photo carousels
       </p>
 
-      {/* Results — expand directly under the paste bar */}
-      <div className='results-section mt-6 space-y-4'>
-        <AnimatePresence initial={false} mode='popLayout'>
-          {state.message && (
-              <motion.div
-                key='message'
-                initial={{ opacity: 0, height: 0, y: -8 }}
-                animate={{ opacity: 1, height: 'auto', y: 0 }}
-                exit={{ opacity: 0, height: 0, y: -8 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                className='overflow-hidden'
-              >
-                <div
-                  className={`p-3 rounded-xl text-center text-sm md:text-base ${
-                    state.message.includes('success') ||
-                    state.message.includes('🎉') ||
-                    state.message.includes('🎵')
-                      ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                      : 'bg-red-500/20 text-red-300 border border-red-500/30'
-                  }`}
-                >
-                  {state.message}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {/* Results — expand directly under the paste bar.
+          scroll-mt-24: the success handler calls scrollIntoView({block:'start'}),
+          which pins this section flush to the viewport top. On mobile the
+          collapsing address bar overlays that strip and eats the card header
+          ("top disappears"). scroll-margin-top leaves ~6rem so the header always
+          clears the browser chrome. */}
+      <div className='results-section mt-6 space-y-4 scroll-mt-24'>
+        {state.message && (
+          // Plain conditional + CSS reveal. key={message} remounts on new text
+          // so the entrance re-fires as state feedback. No height animation to
+          // stall, no 0-height ghost left in the space-y flow.
+          <div
+            key={state.message}
+            role='status'
+            aria-live='polite'
+            className={`animate-section-in p-3 rounded-xl text-center text-sm md:text-base ${
+              state.message.includes('success') ||
+              state.message.includes('🎉') ||
+              state.message.includes('🎵') ||
+              state.message.includes('🎬')
+                ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                : 'bg-red-500/20 text-red-300 border border-red-500/30'
+            }`}
+          >
+            {state.message}
+          </div>
+        )}
 
-          {state.loading && !state.videoMetadata && <ResultsSkeleton />}
+        {state.loading && !state.videoMetadata && <ResultsSkeleton />}
 
           {state.videoMetadata && (
             // CSS entrance (not framer initial:opacity-0). On mobile the main
@@ -626,79 +627,57 @@ export function DownloaderApp() {
               {/* Video Preview (direct stream). For YouTube we prefer the
                   lightweight embed below so previewing doesn't trigger a full
                   yt-dlp download. */}
-              <AnimatePresence initial={false}>
-                {state.showPreview &&
-                  state.downloadUrl &&
-                  !state.videoMetadata?.embedUrl && (
-                  <motion.div
-                    key='video-preview'
-                    initial={{ height: 0 }}
-                    animate={{ height: 'auto' }}
-                    exit={{ height: 0 }}
-                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    className='overflow-hidden'
-                  >
-                    <div className='space-y-3'>
-                      <div className='bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg'>
-                        <video
-                          src={state.downloadUrl}
-                          poster={state.videoMetadata?.thumbnail || undefined}
-                          controls
-                          playsInline
-                          className='w-full h-auto max-h-[60vh] object-contain bg-black'
-                          preload='metadata'
-                          onError={(e) => {
-                            console.error('Video preview error:', e)
-                            dispatch({
-                              type: 'SET_MESSAGE',
-                              payload:
-                                'Preview unavailable, but download should work',
-                            })
-                          }}
-                        >
-                          Your browser does not support the video tag.
-                        </video>
-                      </div>
-                      <p className='text-white/50 text-xs text-center'>
-                        Preview loaded — ready to download.
-                      </p>
+              {state.showPreview &&
+                state.downloadUrl &&
+                !state.videoMetadata?.embedUrl && (
+                  <div className='animate-section-in space-y-3'>
+                    <div className='bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg'>
+                      <video
+                        src={state.downloadUrl}
+                        poster={state.videoMetadata?.thumbnail || undefined}
+                        controls
+                        playsInline
+                        className='w-full h-auto max-h-[60vh] object-contain bg-black'
+                        preload='metadata'
+                        onError={(e) => {
+                          console.error('Video preview error:', e)
+                          dispatch({
+                            type: 'SET_MESSAGE',
+                            payload:
+                              'Preview unavailable, but download should work',
+                          })
+                        }}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
                     </div>
-                  </motion.div>
+                    <p className='text-white/50 text-xs text-center'>
+                      Preview loaded — ready to download.
+                    </p>
+                  </div>
                 )}
-              </AnimatePresence>
 
               {/* YouTube embed fallback — playable but not downloadable. Shown
                   when free extraction is blocked so the video stays viewable. */}
-              <AnimatePresence initial={false}>
-                {state.showPreview && state.videoMetadata?.embedUrl && (
-                    <motion.div
-                      key='embed-preview'
-                      initial={{ height: 0 }}
-                      animate={{ height: 'auto' }}
-                      exit={{ height: 0 }}
-                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                      className='overflow-hidden'
-                    >
-                      <div className='space-y-3'>
-                        <div className='relative bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg aspect-video'>
-                          <iframe
-                            src={state.videoMetadata.embedUrl}
-                            title={state.videoMetadata.title || 'YouTube video'}
-                            allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
-                            allowFullScreen
-                            referrerPolicy='strict-origin-when-cross-origin'
-                            className='absolute inset-0 h-full w-full'
-                          />
-                        </div>
-                        <p className='text-white/50 text-xs text-center'>
-                          {state.downloadUrl
-                            ? 'Preview via YouTube — use the buttons below to download.'
-                            : 'Playing via YouTube — direct download isn’t available for this video.'}
-                        </p>
-                      </div>
-                    </motion.div>
-                  )}
-              </AnimatePresence>
+              {state.showPreview && state.videoMetadata?.embedUrl && (
+                <div className='animate-section-in space-y-3'>
+                  <div className='relative bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg aspect-video'>
+                    <iframe
+                      src={state.videoMetadata.embedUrl}
+                      title={state.videoMetadata.title || 'YouTube video'}
+                      allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+                      allowFullScreen
+                      referrerPolicy='strict-origin-when-cross-origin'
+                      className='absolute inset-0 h-full w-full'
+                    />
+                  </div>
+                  <p className='text-white/50 text-xs text-center'>
+                    {state.downloadUrl
+                      ? 'Preview via YouTube — use the buttons below to download.'
+                      : 'Playing via YouTube — direct download isn’t available for this video.'}
+                  </p>
+                </div>
+              )}
 
               {/* Photo Carousel Audio Preview */}
               {state.videoMetadata?.isPhotoCarousel && state.audioUrl && (
@@ -746,20 +725,13 @@ export function DownloaderApp() {
                       </span>
                     </motion.button>
 
-                    <AnimatePresence initial={false}>
                     {state.showImageGallery && (
-                      <motion.div
-                        key='image-gallery'
-                        initial={{ height: 0 }}
-                        animate={{ height: 'auto' }}
-                        exit={{ height: 0 }}
-                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                        // px-1 keeps the selected tiles' inset cyan ring off the
-                        // overflow-hidden clip edge — the outer columns were
-                        // flush against it, slicing the ring's outer pixel.
-                        className='overflow-hidden px-1'
-                      >
-                      <div className='space-y-3'>
+                      // No height animation — a big image grid is exactly what
+                      // starved framer's rAF on mobile and left the gallery
+                      // collapsed/invisible. CSS reveal is instant, compositor-
+                      // only, and can't be stalled. px-1 gives the selected
+                      // tiles' inset cyan ring breathing room from the edge.
+                      <div className='animate-section-in space-y-3 px-1'>
                         <div className='flex items-center justify-between bg-white/[0.03] border border-white/[0.08] rounded-lg p-3'>
                           <span className='text-white text-sm'>
                             Select images to download:
@@ -913,9 +885,7 @@ export function DownloaderApp() {
                           )}
                         </button>
                       </div>
-                      </motion.div>
                     )}
-                    </AnimatePresence>
                   </div>
                 )}
 
