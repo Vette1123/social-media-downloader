@@ -422,6 +422,18 @@ export function DownloaderApp() {
     dispatch({ type: 'TOGGLE_PREVIEW' })
   }
 
+  // Keyboard-aware focus: on mobile the on-screen keyboard shrinks the visual
+  // viewport, which can leave the paste bar hidden behind it. Once the keyboard
+  // has settled, pull the field into the centre of the *visible* area so the
+  // user always sees what they're typing. visualViewport gives us the real
+  // post-keyboard height; the timeout waits for the slide-up animation.
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const input = e.currentTarget
+    window.setTimeout(() => {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 250)
+  }
+
   return (
     <div ref={containerRef} className='mx-auto w-full max-w-2xl'>
       {/* Paste bar — the hero action. Input + CTA share one focus-ring pill. */}
@@ -433,16 +445,29 @@ export function DownloaderApp() {
         }`}
       >
         <input
-          type='text'
+          type='url'
+          inputMode='url'
+          enterKeyHint='go'
+          autoCapitalize='none'
+          autoCorrect='off'
+          autoComplete='off'
+          spellCheck={false}
           placeholder='Paste a video link…'
           value={state.url}
           onChange={(e) => {
             if (urlError) setUrlError(null)
             dispatch({ type: 'SET_URL', payload: e.target.value })
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              handleProcess()
+            }
+          }}
+          onFocus={handleInputFocus}
           aria-invalid={urlError ? 'true' : 'false'}
           aria-describedby={urlError ? 'url-error' : undefined}
-          className='min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-sm text-white placeholder-white/40 outline-none md:text-base'
+          className='min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-base text-white placeholder-white/40 outline-none'
         />
         <motion.button
           onClick={handleProcess}
