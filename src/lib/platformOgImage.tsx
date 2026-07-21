@@ -53,7 +53,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
           display: 'flex',
           padding: 28,
           background:
-            'linear-gradient(135deg, #050111 0%, #1a0633 50%, #050111 100%)',
+            'linear-gradient(135deg, #050506 0%, #0a0f14 50%, #050506 100%)',
         }}
       >
         <div
@@ -65,7 +65,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
             borderRadius: 40,
             padding: 56,
             overflow: 'hidden',
-            background: `radial-gradient(circle at 18% 22%, rgba(${glyph.glow}, 0.55) 0%, transparent 48%), radial-gradient(circle at 84% 78%, #06b6d4 0%, transparent 44%), radial-gradient(circle at 60% 50%, #8b5cf6 0%, transparent 55%), linear-gradient(135deg, #0b0218 0%, #1a0633 55%, #050111 100%)`,
+            background: `radial-gradient(circle at 18% 22%, rgba(${glyph.glow}, 0.5) 0%, transparent 48%), radial-gradient(circle at 84% 78%, #22d3ee 0%, transparent 44%), radial-gradient(circle at 60% 50%, #2dd4bf 0%, transparent 55%), linear-gradient(135deg, #0b0e12 0%, #0a0f14 55%, #050506 100%)`,
             border: `1.5px solid rgba(${glyph.glow}, 0.35)`,
             boxShadow: `inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 80px 120px -40px rgba(${glyph.glow}, 0.22), inset 0 -80px 120px -40px rgba(6, 182, 212, 0.18)`,
           }}
@@ -175,7 +175,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
                 letterSpacing: -2.5,
                 lineHeight: 1.02,
                 background:
-                  'linear-gradient(135deg, #ffffff 0%, #f0abfc 45%, #67e8f9 100%)',
+                  'linear-gradient(135deg, #ffffff 0%, #67e8f9 50%, #38bdf8 100%)',
                 backgroundClip: 'text',
                 color: 'transparent',
                 display: 'flex',
@@ -206,10 +206,10 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
             >
               <div style={{ display: 'flex', gap: 14 }}>
                 {[
-                  { label: 'No login', accent: '#f0abfc' },
-                  { label: 'No watermark', accent: '#a5b4fc' },
+                  { label: 'No login', accent: '#5eead4' },
+                  { label: 'No watermark', accent: '#7dd3fc' },
                   { label: 'HD', accent: '#67e8f9' },
-                  { label: 'No limits', accent: '#fbcfe8' },
+                  { label: 'No limits', accent: '#a5f3fc' },
                 ].map((chip) => (
                   <div
                     key={chip.label}
@@ -250,7 +250,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
                 >
                   by
                 </span>
-                <span style={{ display: 'flex', color: '#f0abfc' }}>
+                <span style={{ display: 'flex', color: '#67e8f9' }}>
                   mohamedgado.com
                 </span>
               </div>

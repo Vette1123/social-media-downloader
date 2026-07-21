@@ -47,7 +47,7 @@ export default async function OpenGraphImage() {
           display: 'flex',
           padding: 28,
           background:
-            'linear-gradient(135deg, #050111 0%, #1a0633 50%, #050111 100%)',
+            'linear-gradient(135deg, #050506 0%, #0a0f14 50%, #050506 100%)',
         }}
       >
         <div
@@ -60,10 +60,10 @@ export default async function OpenGraphImage() {
             padding: 56,
             overflow: 'hidden',
             background:
-              'radial-gradient(circle at 12% 18%, #ec4899 0%, transparent 42%), radial-gradient(circle at 88% 82%, #06b6d4 0%, transparent 44%), radial-gradient(circle at 60% 50%, #8b5cf6 0%, transparent 55%), linear-gradient(135deg, #0b0218 0%, #1a0633 55%, #050111 100%)',
-            border: '1.5px solid rgba(236, 72, 153, 0.25)',
+              'radial-gradient(circle at 12% 18%, #22d3ee 0%, transparent 42%), radial-gradient(circle at 88% 82%, #38bdf8 0%, transparent 44%), radial-gradient(circle at 60% 50%, #2dd4bf 0%, transparent 55%), linear-gradient(135deg, #0b0e12 0%, #0a0f14 55%, #050506 100%)',
+            border: '1.5px solid rgba(56, 211, 238, 0.25)',
             boxShadow:
-              'inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 80px 120px -40px rgba(236, 72, 153, 0.18), inset 0 -80px 120px -40px rgba(6, 182, 212, 0.18)',
+              'inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 80px 120px -40px rgba(34, 211, 238, 0.18), inset 0 -80px 120px -40px rgba(45, 212, 191, 0.16)',
           }}
         >
           {/* starfield */}
@@ -94,12 +94,12 @@ export default async function OpenGraphImage() {
                   height: 76,
                   borderRadius: 22,
                   background:
-                    'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%)',
+                    'linear-gradient(135deg, #2dd4bf 0%, #22d3ee 50%, #38bdf8 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow:
-                    '0 20px 60px rgba(139, 92, 246, 0.55), inset 0 1px 0 rgba(255,255,255,0.3)',
+                    '0 20px 60px rgba(34, 211, 238, 0.5), inset 0 1px 0 rgba(255,255,255,0.3)',
                 }}
               >
                 <svg width='42' height='42' viewBox='0 0 24 24' fill='none'>
@@ -120,7 +120,7 @@ export default async function OpenGraphImage() {
                     fontSize: 34,
                     fontWeight: 700,
                     letterSpacing: -0.5,
-                    color: '#f5d0fe',
+                    color: '#cffafe',
                   }}
                 >
                   {siteConfig.name}
@@ -214,7 +214,7 @@ export default async function OpenGraphImage() {
                 lineHeight: 1.02,
                 whiteSpace: 'nowrap',
                 background:
-                  'linear-gradient(135deg, #ffffff 0%, #f0abfc 45%, #67e8f9 100%)',
+                  'linear-gradient(135deg, #ffffff 0%, #67e8f9 50%, #38bdf8 100%)',
                 backgroundClip: 'text',
                 color: 'transparent',
                 display: 'flex',
@@ -226,7 +226,7 @@ export default async function OpenGraphImage() {
               style={{
                 fontSize: 36,
                 fontWeight: 600,
-                color: 'rgba(243, 232, 255, 0.92)',
+                color: 'rgba(224, 242, 254, 0.92)',
                 letterSpacing: -0.6,
                 display: 'flex',
               }}
@@ -245,10 +245,10 @@ export default async function OpenGraphImage() {
             >
               <div style={{ display: 'flex', gap: 14 }}>
                 {[
-                  { label: 'No login', accent: '#f0abfc' },
-                  { label: 'No watermark', accent: '#a5b4fc' },
+                  { label: 'No login', accent: '#5eead4' },
+                  { label: 'No watermark', accent: '#7dd3fc' },
                   { label: 'HD · 4K', accent: '#67e8f9' },
-                  { label: 'No limits', accent: '#fbcfe8' },
+                  { label: 'No limits', accent: '#a5f3fc' },
                 ].map((chip) => (
                   <div
                     key={chip.label}
@@ -258,7 +258,7 @@ export default async function OpenGraphImage() {
                       padding: '13px 24px',
                       borderRadius: 999,
                       background: 'rgba(255, 255, 255, 0.07)',
-                      border: '1px solid rgba(236, 72, 153, 0.35)',
+                      border: '1px solid rgba(56, 211, 238, 0.35)',
                       color: chip.accent,
                       fontSize: 23,
                       fontWeight: 600,
@@ -289,7 +289,7 @@ export default async function OpenGraphImage() {
                 >
                   by
                 </span>
-                <span style={{ display: 'flex', color: '#f0abfc' }}>
+                <span style={{ display: 'flex', color: '#67e8f9' }}>
                   mohamedgado.com
                 </span>
               </div>

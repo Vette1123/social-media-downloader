@@ -12,31 +12,31 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <div className='relative min-h-screen overflow-clip bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex justify-center items-center py-6 px-4'>
+    <div className='relative flex min-h-[100dvh] items-center justify-center overflow-clip bg-[#08080a] px-4 py-6'>
       <div
         aria-hidden
-        className='pointer-events-none absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-pink-500/30 blur-3xl'
+        className='bg-blob pointer-events-none absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-cyan-500/12 blur-3xl'
       />
       <div
         aria-hidden
-        className='pointer-events-none absolute -bottom-40 -right-32 h-[32rem] w-[32rem] rounded-full bg-cyan-400/25 blur-3xl'
+        className='bg-blob pointer-events-none absolute -bottom-40 -right-32 h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl'
       />
 
-      <div className='relative z-10 w-full max-w-xl bg-white/10 backdrop-blur-lg rounded-2xl p-6 md:p-8 shadow-2xl border border-white/20 text-center'>
-        <p className='text-pink-300 font-semibold text-sm md:text-base tracking-wider uppercase'>
+      <div className='glow-card relative z-10 w-full max-w-xl rounded-3xl p-6 md:p-8 text-center shadow-2xl backdrop-blur-md'>
+        <p className='text-grad text-sm md:text-base font-semibold tracking-wider uppercase'>
           404
         </p>
-        <h1 className='text-2xl md:text-3xl font-bold text-white mt-2 mb-3'>
+        <h1 className='mt-2 mb-3 text-2xl md:text-3xl font-bold text-white'>
           That page wandered off.
         </h1>
-        <p className='text-sm md:text-base text-white/70 mb-6'>
+        <p className='mb-6 text-sm md:text-base text-white/70'>
           The URL you opened doesn’t match anything here. Try the main
           downloader or pick a platform-specific tool below.
         </p>
 
         <Link
           href='/'
-          className='inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 text-white font-semibold shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-violet-500/40 transition-shadow'
+          className='btn-grad inline-flex items-center gap-2 rounded-xl px-5 py-2.5 font-semibold transition-[box-shadow,transform] hover:-translate-y-0.5'
         >
           ← Back to the downloader
         </Link>
@@ -46,7 +46,7 @@ export default function NotFound() {
             <Link
               key={p.slug}
               href={`/${p.slug}`}
-              className='inline-flex items-center px-3 py-1.5 rounded-lg bg-white/5 border border-white/15 text-white/80 hover:text-white hover:border-white/40 text-xs md:text-sm transition-colors'
+              className='inline-flex items-center rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs md:text-sm text-white/80 transition-colors hover:border-cyan-400/40 hover:text-white'
             >
               {p.brandLabel}
             </Link>

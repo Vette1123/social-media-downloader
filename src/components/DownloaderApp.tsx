@@ -410,10 +410,10 @@ export function DownloaderApp({
               }}
               aria-invalid={urlError ? 'true' : 'false'}
               aria-describedby={urlError ? 'url-error' : undefined}
-              className={`w-full px-4 py-3 rounded-xl bg-white/10 border text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:border-transparent text-sm md:text-base transition-colors duration-200 ${
+              className={`w-full px-4 py-3.5 rounded-xl bg-white/[0.04] border text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:border-transparent text-sm md:text-base transition-colors duration-200 ${
                 urlError
                   ? 'border-red-400/60 focus:ring-red-400'
-                  : 'border-white/20 focus:ring-pink-500'
+                  : 'border-white/[0.1] focus:ring-cyan-400'
               }`}
             />
             <AnimatePresence initial={false}>
@@ -445,15 +445,15 @@ export function DownloaderApp({
               state.downloadingAudio ||
               state.downloadingImages
             }
-            className='group relative w-full cursor-pointer py-3 px-4 bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 bg-[length:200%_100%] bg-[position:0%_0%] hover:bg-[position:100%_0%] text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-[background-position,box-shadow] duration-500 ease-out flex items-center justify-center text-sm md:text-base shadow-lg shadow-pink-500/30 hover:shadow-xl hover:shadow-violet-500/40 overflow-hidden'
+            className='btn-grad group relative w-full cursor-pointer py-3.5 px-4 font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-[box-shadow,transform] duration-300 ease-out flex items-center justify-center text-sm md:text-base overflow-hidden'
           >
             <span
-              className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 ease-out'
+              className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out'
               aria-hidden
             />
             {state.loading ? (
               <span className='relative flex items-center'>
-                <SpinnerIcon className='-ml-1 mr-3 h-4 w-4 md:h-5 md:w-5 text-white' />
+                <SpinnerIcon className='-ml-1 mr-3 h-4 w-4 md:h-5 md:w-5' />
                 Processing...
               </span>
             ) : (
@@ -499,7 +499,7 @@ export function DownloaderApp({
               initial={{ opacity: 0, y: 12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className='p-4 bg-white/10 rounded-xl border border-white/20 space-y-4'
+              className='p-4 bg-white/[0.04] rounded-2xl border border-white/[0.1] space-y-4'
             >
               <div className='flex items-start space-x-3'>
                 {state.videoMetadata.thumbnail && (
@@ -587,14 +587,10 @@ export function DownloaderApp({
                   whileHover={{ y: -1 }}
                   whileTap={{ scale: 0.985 }}
                   transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.6 }}
-                  className='group relative w-full cursor-pointer py-2.5 px-4 bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 bg-[length:200%_100%] bg-[position:0%_0%] hover:bg-[position:100%_0%] text-white font-semibold rounded-xl transition-[background-position,box-shadow] duration-500 ease-out flex items-center justify-center text-sm md:text-base shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-indigo-500/40 overflow-hidden'
+                  className='btn-ghost w-full cursor-pointer py-2.5 px-4 font-semibold rounded-xl transition-colors duration-200 flex items-center justify-center text-sm md:text-base'
                 >
-                  <span
-                    className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 ease-out'
-                    aria-hidden
-                  />
                   <span className='relative'>
-                    {state.showPreview ? '👁️ Hide Preview' : '👀 Show Preview'}
+                    {state.showPreview ? 'Hide preview' : 'Show preview'}
                   </span>
                 </motion.button>
               )}
@@ -636,7 +632,7 @@ export function DownloaderApp({
                         </video>
                       </div>
                       <p className='text-white/50 text-xs text-center'>
-                        ⚡ Preview loaded — ready to download!
+                        Preview loaded — ready to download.
                       </p>
                     </div>
                   </motion.div>
@@ -668,8 +664,8 @@ export function DownloaderApp({
                         </div>
                         <p className='text-white/50 text-xs text-center'>
                           {state.downloadUrl
-                            ? '▶️ Preview via YouTube — use the buttons below to download.'
-                            : '▶️ Playing via YouTube — direct download isn’t available for this video.'}
+                            ? 'Preview via YouTube — use the buttons below to download.'
+                            : 'Playing via YouTube — direct download isn’t available for this video.'}
                         </p>
                       </div>
                     </motion.div>
@@ -682,10 +678,10 @@ export function DownloaderApp({
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-                  className='space-y-3 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-xl p-4 border border-white/10'
+                  className='space-y-3 bg-gradient-to-br from-cyan-500/10 to-sky-500/10 rounded-xl p-4 border border-white/[0.1]'
                 >
                   <div className='flex items-center gap-2 text-white'>
-                    <MusicIcon className='w-5 h-5 text-green-300' />
+                    <MusicIcon className='w-5 h-5 text-cyan-300' />
                     <div className='flex-1 min-w-0'>
                       <p className='text-sm font-semibold truncate'>
                         {state.videoMetadata.musicTitle ||
@@ -718,16 +714,12 @@ export function DownloaderApp({
                       whileHover={{ y: -1 }}
                       whileTap={{ scale: 0.985 }}
                       transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.6 }}
-                      className='group relative w-full cursor-pointer py-2.5 px-4 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 bg-[length:200%_100%] bg-[position:0%_0%] hover:bg-[position:100%_0%] text-white font-semibold rounded-xl transition-[background-position,box-shadow] duration-500 ease-out flex items-center justify-center text-sm md:text-base shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-fuchsia-500/40 overflow-hidden'
+                      className='btn-ghost w-full cursor-pointer py-2.5 px-4 font-semibold rounded-xl transition-colors duration-200 flex items-center justify-center text-sm md:text-base'
                     >
-                      <span
-                        className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 ease-out'
-                        aria-hidden
-                      />
                       <span className='relative'>
                         {state.showImageGallery
-                          ? '🖼️ Hide Images'
-                          : `🖼️ Show Images (${state.videoMetadata.images.length})`}
+                          ? 'Hide images'
+                          : `Show images (${state.videoMetadata.images.length})`}
                       </span>
                     </motion.button>
 
@@ -742,20 +734,20 @@ export function DownloaderApp({
                         className='overflow-hidden'
                       >
                       <div className='space-y-3'>
-                        <div className='flex items-center justify-between bg-white/5 rounded-lg p-3'>
+                        <div className='flex items-center justify-between bg-white/[0.03] border border-white/[0.08] rounded-lg p-3'>
                           <span className='text-white text-sm'>
                             Select images to download:
                           </span>
                           <div className='flex space-x-2'>
                             <button
                               onClick={() => selectAllImages(true)}
-                              className='cursor-pointer px-3 py-1 bg-emerald-500/90 hover:bg-emerald-500 text-white text-xs font-medium rounded-md transition-colors'
+                              className='btn-grad cursor-pointer px-3 py-1 text-xs font-semibold rounded-md transition-[box-shadow] duration-200'
                             >
                               All
                             </button>
                             <button
                               onClick={() => selectAllImages(false)}
-                              className='cursor-pointer px-3 py-1 bg-rose-500/90 hover:bg-rose-500 text-white text-xs font-medium rounded-md transition-colors'
+                              className='btn-ghost cursor-pointer px-3 py-1 text-xs font-medium rounded-md transition-colors'
                             >
                               None
                             </button>
@@ -783,7 +775,7 @@ export function DownloaderApp({
                                 onClick={() => setLightboxIndex(index)}
                                 className={`flex aspect-square w-full cursor-zoom-in items-center justify-center overflow-hidden rounded-xl bg-black/30 ring-inset transition duration-200 ${
                                   image.selected
-                                    ? 'ring-2 ring-pink-500'
+                                    ? 'ring-2 ring-cyan-400'
                                     : 'ring-1 ring-white/10 hover:ring-2 hover:ring-white/60'
                                 }`}
                                 aria-label={`Open image ${index + 1} full size`}
@@ -818,12 +810,12 @@ export function DownloaderApp({
                                 }
                                 className={`absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 backdrop-blur-sm transition-all duration-200 ${
                                   image.selected
-                                    ? 'border-pink-500 bg-pink-500'
+                                    ? 'border-cyan-400 bg-cyan-400 text-[#04171b]'
                                     : 'border-white/50 bg-black/40 hover:border-white hover:bg-black/60'
                                 }`}
                               >
                                 {image.selected && (
-                                  <CheckIcon className='h-4 w-4 text-white' />
+                                  <CheckIcon className='h-4 w-4 text-[#04171b]' />
                                 )}
                               </button>
 
@@ -838,7 +830,7 @@ export function DownloaderApp({
                           ))}
                         </div>
 
-                        <div className='bg-white/5 rounded-lg p-3 space-y-3'>
+                        <div className='bg-white/[0.03] border border-white/[0.08] rounded-lg p-3 space-y-3'>
                           <div className='flex items-center space-x-3'>
                             <input
                               type='checkbox'
@@ -850,7 +842,7 @@ export function DownloaderApp({
                                   payload: e.target.checked,
                                 })
                               }
-                              className='w-4 h-4 text-pink-500 bg-white/10 border-white/30 rounded focus:ring-pink-500 focus:ring-2'
+                              className='w-4 h-4 accent-cyan-400 bg-white/10 border-white/30 rounded focus:ring-cyan-400 focus:ring-2'
                             />
                             <label
                               htmlFor='downloadAsZip'
@@ -861,8 +853,8 @@ export function DownloaderApp({
                           </div>
                           <p className='text-white/60 text-xs'>
                             {state.downloadImagesAsZip
-                              ? '🗜️ Images will be packaged into a single ZIP file'
-                              : '📸 Images will be downloaded individually'}
+                              ? 'Images will be packaged into a single ZIP file'
+                              : 'Images will be downloaded individually'}
                           </p>
                         </div>
 
@@ -874,16 +866,16 @@ export function DownloaderApp({
                               (img) => img.selected,
                             )
                           }
-                          className='w-full cursor-pointer py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center text-sm md:text-base gap-2'
+                          className='btn-grad w-full cursor-pointer py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl transition-[box-shadow,transform] duration-200 flex items-center justify-center text-sm md:text-base gap-2'
                         >
                           {state.downloadingImages ? (
                             <>
-                              <SpinnerIcon className='flex-shrink-0 h-4 w-4 text-white' />
+                              <SpinnerIcon className='flex-shrink-0 h-4 w-4' />
                               <span>Downloading...</span>
                             </>
                           ) : (
                             <>
-                              <DownloadIcon className='flex-shrink-0 h-5 w-5 text-white' />
+                              <DownloadIcon className='flex-shrink-0 h-5 w-5' />
                               <span>
                                 Download Selected (
                                 {state.videoMetadata?.images?.filter(
@@ -931,15 +923,15 @@ export function DownloaderApp({
                         disabled={
                           state.downloading || state.downloadingImages
                         }
-                        className='group relative py-3 cursor-pointer px-4 bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-500 bg-[length:200%_100%] bg-[position:0%_0%] hover:bg-[position:100%_0%] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-[background-position,box-shadow] duration-500 ease-out flex items-center justify-center text-sm md:text-base gap-2 shadow-lg shadow-pink-500/25 hover:shadow-xl hover:shadow-violet-500/40 overflow-hidden'
+                        className='btn-grad group relative py-3 cursor-pointer px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl transition-[box-shadow,transform] duration-300 ease-out flex items-center justify-center text-sm md:text-base gap-2 overflow-hidden'
                       >
                         <span
-                          className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 ease-out'
+                          className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out'
                           aria-hidden
                         />
                         {state.downloading ? (
                           <span className='relative flex items-center gap-2'>
-                            <SpinnerIcon className='flex-shrink-0 h-4 w-4 text-white' />
+                            <SpinnerIcon className='flex-shrink-0 h-4 w-4' />
                             <span>
                               {state.videoMetadata?.isPhotoCarousel &&
                               !state.downloadUrl
@@ -949,7 +941,7 @@ export function DownloaderApp({
                           </span>
                         ) : (
                           <span className='relative flex items-center gap-2'>
-                            <DownloadIcon className='flex-shrink-0 h-5 w-5 text-white' />
+                            <DownloadIcon className='flex-shrink-0 h-5 w-5' />
                             <span>
                               {state.videoMetadata?.isPhotoCarousel
                                 ? 'Video (slideshow)'
@@ -969,20 +961,16 @@ export function DownloaderApp({
                         disabled={
                           state.downloadingAudio || state.downloadingImages
                         }
-                        className='group relative py-3 cursor-pointer px-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-[length:200%_100%] bg-[position:0%_0%] hover:bg-[position:100%_0%] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-[background-position,box-shadow] duration-500 ease-out flex items-center justify-center text-sm md:text-base gap-2 shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-cyan-500/40 overflow-hidden'
+                        className='btn-ghost py-3 cursor-pointer px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl transition-colors duration-200 flex items-center justify-center text-sm md:text-base gap-2'
                       >
-                        <span
-                          className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/25 to-transparent transition-transform duration-1000 ease-out'
-                          aria-hidden
-                        />
                         {state.downloadingAudio ? (
                           <span className='relative flex items-center gap-2'>
-                            <SpinnerIcon className='flex-shrink-0 h-4 w-4 text-white' />
+                            <SpinnerIcon className='flex-shrink-0 h-4 w-4' />
                             <span>Downloading...</span>
                           </span>
                         ) : (
                           <span className='relative flex items-center gap-2'>
-                            <MusicIcon className='flex-shrink-0 h-5 w-5 text-white' />
+                            <MusicIcon className='flex-shrink-0 h-5 w-5' />
                             <span>
                               {state.videoMetadata?.isPhotoCarousel
                                 ? 'Download Audio'
