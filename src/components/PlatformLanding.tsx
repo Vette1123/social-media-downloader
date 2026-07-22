@@ -199,6 +199,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
       </div>
 
       <div className='relative z-10 mx-auto max-w-6xl px-4 py-10 sm:py-16'>
+        <main>
         {/* HERO — brand row, breadcrumb, headline, and the paste-bar. */}
         <GlowCard className='animate-card-enter mx-auto w-full max-w-3xl rounded-3xl p-5 shadow-2xl sm:p-8 md:p-10'>
           <div className='animate-fade-in-up text-center'>
@@ -322,6 +323,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             <LazyFAQ items={platform.faqs} />
           </div>
         </section>
+        </main>
 
         {/* Footer */}
         <footer className='mt-16 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-8 text-sm text-white/60 sm:mt-24 sm:flex-row sm:gap-5'>
