@@ -206,6 +206,7 @@ export default function Home() {
         </div>
 
         <div className='relative z-10 mx-auto max-w-6xl px-4 py-10 sm:py-16'>
+          <main>
           {/* ---------------------------------------------------------------
               HERO — brand tiles, headline, and the paste-bar (the product).
               Download results expand directly under the bar, inside the card.
@@ -420,6 +421,7 @@ export default function Home() {
               <LazyFAQ items={homepageFaqs} />
             </div>
           </section>
+          </main>
 
           {/* Footer */}
           <footer className='mt-16 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-8 text-sm text-white/60 sm:mt-24 sm:flex-row sm:gap-5'>

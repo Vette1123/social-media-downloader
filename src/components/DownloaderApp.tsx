@@ -842,6 +842,7 @@ export function DownloaderApp() {
                                   alt={`Slideshow image ${index + 1}`}
                                   className='h-full w-full object-contain'
                                   loading='lazy'
+                                  decoding='async'
                                   onError={(e) => {
                                     e.currentTarget.src =
                                       getImagePlaceholderBase64()
