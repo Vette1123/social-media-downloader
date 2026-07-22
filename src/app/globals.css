@@ -459,14 +459,15 @@ body {
   .bg-grid-hot {
     display: none !important;
   }
-  /* Freeze the perimeter conic sweep on touch. Animating the @property --bd
-     angle regenerates the conic-gradient image every frame — a continuous PAINT
-     (not a compositor transform) on a masked border layer, which is exactly the
-     kind of per-frame rasterise that janks weak mobile GPUs. Frozen at its start
-     angle the sheen sits static and still reads as a premium hairline border, so
-     phones and tablets keep the look without paying the frame cost. */
+  /* Remove the perimeter conic sweep entirely on touch. Animating the @property
+     --bd angle regenerates the conic-gradient image every frame — a continuous
+     PAINT (not a compositor transform) on a masked border layer that janks weak
+     mobile GPUs. Merely freezing it parked the gradient's bright 352–360° stop at
+     the top edge, leaving a weird static hairline segment. Dropping the layer is
+     cleaner: the card keeps its base `border` + soft `box-shadow` bloom, so it
+     still reads as a defined, premium card — just without the moving ring. */
   .glow-card::before {
-    animation: none !important;
+    display: none !important;
   }
   /* A full-screen mix-blend-mode: overlay layer forces a blend pass on every
      composite (and on every scroll repaint). At 0.045 opacity the grain is
@@ -477,10 +478,10 @@ body {
 }
 
 /* Low-power flag (≤4 cores / ≤4GB RAM / Save-Data / slow net): freeze the live
-   gradient-text sweep (a full-text-area repaint every frame) and drop the
-   cursor-reactive layers. Static gradient text still reads premium, and every
-   entrance animation + the perimeter ring stay — they're cheap and compositor-
-   only. Capable devices are untouched. */
+   gradient-text sweep (a full-text-area repaint every frame), drop the perimeter
+   sheen and the cursor-reactive layers. Static gradient text still reads premium
+   and the one-shot entrance animations stay — they're cheap and compositor-only.
+   Capable devices are untouched. */
 .low-power .bg-blob,
 .low-power .bg-grid-hot,
 /* On a flagged weak device strip the static full-screen layers too: the masked
@@ -491,7 +492,11 @@ body {
 .low-power .bg-grain {
   display: none !important;
 }
-.low-power .text-grad,
-.low-power .glow-card::before {
+.low-power .text-grad {
   animation: none !important;
+}
+/* Same as touch: drop the sheen layer, don't just freeze it (a parked bright
+   arc looks worse than no ring). Base border + box-shadow carry the card. */
+.low-power .glow-card::before {
+  display: none !important;
 }
