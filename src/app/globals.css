@@ -459,6 +459,21 @@ body {
   .bg-grid-hot {
     display: none !important;
   }
+  /* Freeze the perimeter conic sweep on touch. Animating the @property --bd
+     angle regenerates the conic-gradient image every frame — a continuous PAINT
+     (not a compositor transform) on a masked border layer, which is exactly the
+     kind of per-frame rasterise that janks weak mobile GPUs. Frozen at its start
+     angle the sheen sits static and still reads as a premium hairline border, so
+     phones and tablets keep the look without paying the frame cost. */
+  .glow-card::before {
+    animation: none !important;
+  }
+  /* A full-screen mix-blend-mode: overlay layer forces a blend pass on every
+     composite (and on every scroll repaint). At 0.045 opacity the grain is
+     imperceptible on a phone screen — drop the whole layer on touch. */
+  .bg-grain {
+    display: none !important;
+  }
 }
 
 /* Low-power flag (≤4 cores / ≤4GB RAM / Save-Data / slow net): freeze the live
@@ -467,9 +482,16 @@ body {
    entrance animation + the perimeter ring stay — they're cheap and compositor-
    only. Capable devices are untouched. */
 .low-power .bg-blob,
-.low-power .bg-grid-hot {
+.low-power .bg-grid-hot,
+/* On a flagged weak device strip the static full-screen layers too: the masked
+   grid holds a viewport-sized rasterised layer in memory, and the grain adds a
+   blend pass. The .app-bg radial gradient alone carries the look — one paint,
+   no extra layers. */
+.low-power .bg-grid,
+.low-power .bg-grain {
   display: none !important;
 }
-.low-power .text-grad {
+.low-power .text-grad,
+.low-power .glow-card::before {
   animation: none !important;
 }
