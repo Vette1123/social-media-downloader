@@ -245,9 +245,21 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  /* Glow filter dropped (per-frame repaint on animated text) and flow slowed —
-     the gradient still reads, just calmer and cheaper. */
-  animation: text-flow 14s linear infinite;
+  /* The live sweep is OFF by default. It repaints the full text area every
+     frame, and this class is used on the LCP headline — a continuous repaint
+     loop on the LCP element inflates Largest Contentful Paint. The static
+     gradient still reads premium. The sweep only switches on for capable,
+     fine-pointer devices (see @media below), where the headline is no longer
+     the LCP-critical first paint and the GPU can sustain it cheaply. */
+}
+
+/* Capable device + fine pointer (desktop/laptop): bring back the living sweep.
+   Touch / low-power devices keep the static gradient (handled separately by
+   the hover:none and .low-power rules, which never reach here). */
+@media (hover: hover) and (pointer: fine) {
+  .text-grad {
+    animation: text-flow 14s linear infinite;
+  }
 }
 @keyframes text-flow {
   to {
@@ -281,6 +293,24 @@ body {
 .btn-ghost:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.09);
   border-color: var(--line-strong);
+}
+
+/* CSS micro-interactions — a drop-in replacement for the old motion.button
+   whileHover:{y:-1} / whileTap:{scale:0.985}. Visually identical (1px rise,
+   ~1.5% press), but pure compositor transform: no JS, no rAF, no library.
+   One shared utility for every primary/ghost/gradient button on the page. */
+.btn-press {
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s ease-out,
+    border-color 0.2s ease-out;
+  will-change: transform;
+}
+.btn-press:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.btn-press:active:not(:disabled) {
+  transform: scale(0.985);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -401,32 +431,45 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   MOBILE PERFORMANCE GUARD (≤767px / phones)
+   CAPABILITY-BASED PERFORMANCE GUARD
 
-   The disappearing-elements bug was compositor exhaustion from a few genuinely
-   expensive layers: three blur(80px) blobs and the cursor-spotlight grid, all
-   continuously re-rasterised. Those are the ONLY things mobile drops — and the
-   blobs' soft glow is already reproduced statically by .app-bg, while the
-   spotlight is a pointer effect a touch screen can't use anyway.
+   We no longer blanket-disable effects by screen width (that punished flagships
+   and tablets). Instead we split effects into two tiers:
 
-   Everything cheap stays for full visual parity with desktop: the (static) grid
-   texture, the grain, and the card's entire effect set (perimeter line glow,
-   entrance animations, gradient text, badge blur). So mobile ≈ desktop, minus
-   only the two pointer-driven layers a touch screen can't use anyway.
+   CHEAP (everywhere): one-shot entrance animations, the card's perimeter ring,
+     the static grid, grain, gradient TEXT (frozen), gradient fills. These are
+     one-paint or compositor-only and never cause jank.
+
+   HEAVY (capable devices only): the cursor spotlight grid, the drifting blurred
+     blobs, and the live gradient-text sweep. These continuously re-rasterise full
+     layers every frame. They drop on (a) coarse pointers via @media(hover:none)
+     — a touch screen can't use a cursor effect anyway, and (b) low-power-flagged
+     devices (the head script in layout.tsx sets .low-power on ≤4 cores / ≤4GB
+     RAM / Save-Data / slow net). A powerful desktop or tablet keeps the lot.
+
+   The result: a poor phone gets the full static look (fancy, no jank), and a
+   capable device loses nothing. No animation is removed from any tier.
 --------------------------------------------------------------------------- */
-@media (max-width: 767px) {
-  /* Blurred blobs + cursor spotlight: the only heavy layers, and both are
-     pointer effects a touch screen never triggers. Gone. */
+
+/* Touch devices can't use pointer-driven effects — drop the spotlight layer and
+   the blob-follow (both are cursor-reactive). The blobs' static glow lives on
+   via .app-bg, so the look is unchanged. */
+@media (hover: none) {
   .bg-blob,
   .bg-grid-hot {
     display: none !important;
   }
-  /* Freeze the gradient-text sweep on phones (weak GPUs) — it repaints a large
-     text area every frame for imperceptible drift. Static it still reads premium.
-     The perimeter ring animation stays: it's the card's signature motion, a thin
-     masked ring (tiny paint area), and NOT what caused the disappearing bug — that
-     was the animated filter, now removed. One-shot entrance animations stay too. */
-  .text-grad {
-    animation: none !important;
-  }
+}
+
+/* Low-power flag (≤4 cores / ≤4GB RAM / Save-Data / slow net): freeze the live
+   gradient-text sweep (a full-text-area repaint every frame) and drop the
+   cursor-reactive layers. Static gradient text still reads premium, and every
+   entrance animation + the perimeter ring stay — they're cheap and compositor-
+   only. Capable devices are untouched. */
+.low-power .bg-blob,
+.low-power .bg-grid-hot {
+  display: none !important;
+}
+.low-power .text-grad {
+  animation: none !important;
 }

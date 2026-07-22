@@ -1,12 +1,12 @@
-'use client'
-
-import { useRef, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { CardSpotlight } from '@/components/CardSpotlight'
 
 /**
- * The main frosted panel: a slow cyan sheen glides its perimeter (CSS) and a
- * soft spotlight follows the cursor across its surface. Pointer tracking writes
- * card-local coordinates to CSS custom properties — no state, no re-renders.
+ * The main frosted panel: a slow cyan sheen glides its perimeter (CSS) over a
+ * faint static outline and a soft bloom. The cursor spotlight is handled by a
+ * tiny isolated client island (CardSpotlight) so this component itself stays a
+ * SERVER component — its static children never hydrate.
  */
 export function GlowCard({
   children,
@@ -15,23 +15,11 @@ export function GlowCard({
   children: ReactNode
   className?: string
 }) {
-  const ref = useRef<HTMLDivElement>(null)
-  let raf = 0
-
-  const onMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const el = ref.current
-    if (!el) return
-    cancelAnimationFrame(raf)
-    const { clientX, clientY } = e
-    raf = requestAnimationFrame(() => {
-      const r = el.getBoundingClientRect()
-      el.style.setProperty('--cx', `${clientX - r.left}px`)
-      el.style.setProperty('--cy', `${clientY - r.top}px`)
-    })
-  }
-
   return (
-    <div ref={ref} onPointerMove={onMove} className={cn('glow-card', className)}>
+    <div className={cn('glow-card', className)}>
+      {/* Cursor spotlight — the only piece of the card that needs JS. Sits
+          above the ::before ring but below content (content is z-2). */}
+      <CardSpotlight />
       {children}
     </div>
   )

@@ -2,12 +2,7 @@ import Link from 'next/link'
 import { DownloaderApp } from '@/components/DownloaderApp'
 import { GlowCard } from '@/components/GlowCard'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
+import { LazyFAQ } from '@/components/LazyFAQ'
 import {
   FacebookIcon,
   GitHubIcon,
@@ -421,85 +416,38 @@ export default function Home() {
               <h2 className='mb-5 text-2xl font-bold tracking-tight text-white md:text-3xl'>
                 Frequently asked questions
               </h2>
-              <Accordion
-                type='single'
-                collapsible
-                defaultValue='faq-1'
-                className='space-y-3'
-              >
-                <AccordionItem value='faq-1'>
-                  <AccordionTrigger>
-                    Is this TikTok downloader free?
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    Yes — completely free, with no sign-up and no daily download
-                    limit.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value='faq-2'>
-                  <AccordionTrigger>
-                    Do downloaded TikTok videos have a watermark?
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    No. Videos are saved in HD quality, free of the TikTok
-                    watermark.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value='faq-3'>
-                  <AccordionTrigger>
-                    Can I download a TikTok photo carousel (slideshow)?
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    Paste the slideshow URL. The app lists every image, the
-                    background track, and — when TikTok provides one — the full
-                    rendered slideshow video, so you can grab the photos, the
-                    MP3, or the MP4 in a single flow.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value='faq-4'>
-                  <AccordionTrigger>Does it work on Twitter/X?</AccordionTrigger>
-                  <AccordionContent>
-                    Yes — paste any twitter.com or x.com status URL and the tool
-                    resolves the underlying media automatically.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value='faq-5'>
-                  <AccordionTrigger>
-                    Can I download Instagram reels and photos?
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    Yes — paste a public Instagram post, reel, or carousel URL
-                    (instagram.com/p/… or instagram.com/reel/…). The tool pulls
-                    the video, the single photo, or every image in a carousel, no
-                    login required. Private accounts and stories aren&apos;t
-                    supported.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value='faq-6'>
-                  <AccordionTrigger>
-                    Can I download YouTube videos and Shorts?
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    Yes — paste any youtube.com/watch?v=…, youtu.be/…, or
-                    /shorts/… link. The tool resolves the stream so you can
-                    preview it, download the MP4 in HD, or extract the audio as an
-                    MP3. Age-restricted, private, and members-only videos
-                    aren&apos;t supported.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value='faq-7'>
-                  <AccordionTrigger>
-                    Does it work with Facebook videos and reels?
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    Yes — paste a public Facebook video, watch, or reel URL
-                    (facebook.com/…/videos/…, fb.watch/…, or facebook.com/reel/…)
-                    and the tool extracts the HD stream for preview and download.
-                    Private posts and videos from private groups aren&apos;t
-                    supported.
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              <LazyFAQ
+                items={[
+                  {
+                    q: 'Is this TikTok downloader free?',
+                    a: 'Yes — completely free, with no sign-up and no daily download limit.',
+                  },
+                  {
+                    q: 'Do downloaded TikTok videos have a watermark?',
+                    a: 'No. Videos are saved in HD quality, free of the TikTok watermark.',
+                  },
+                  {
+                    q: 'Can I download a TikTok photo carousel (slideshow)?',
+                    a: 'Paste the slideshow URL. The app lists every image, the background track, and — when TikTok provides one — the full rendered slideshow video, so you can grab the photos, the MP3, or the MP4 in a single flow.',
+                  },
+                  {
+                    q: 'Does it work on Twitter/X?',
+                    a: 'Yes — paste any twitter.com or x.com status URL and the tool resolves the underlying media automatically.',
+                  },
+                  {
+                    q: 'Can I download Instagram reels and photos?',
+                    a: 'Yes — paste a public Instagram post, reel, or carousel URL (instagram.com/p/… or instagram.com/reel/…). The tool pulls the video, the single photo, or every image in a carousel, no login required. Private accounts and stories aren’t supported.',
+                  },
+                  {
+                    q: 'Can I download YouTube videos and Shorts?',
+                    a: 'Yes — paste any youtube.com/watch?v=…, youtu.be/…, or /shorts/… link. The tool resolves the stream so you can preview it, download the MP4 in HD, or extract the audio as an MP3. Age-restricted, private, and members-only videos aren’t supported.',
+                  },
+                  {
+                    q: 'Does it work with Facebook videos and reels?',
+                    a: 'Yes — paste a public Facebook video, watch, or reel URL (facebook.com/…/videos/…, fb.watch/…, or facebook.com/reel/…) and the tool extracts the HD stream for preview and download. Private posts and videos from private groups aren’t supported.',
+                  },
+                ]}
+              />
             </div>
           </section>
 
