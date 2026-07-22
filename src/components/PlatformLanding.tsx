@@ -2,12 +2,7 @@ import Link from 'next/link'
 import { DownloaderApp } from '@/components/DownloaderApp'
 import { GlowCard } from '@/components/GlowCard'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
+import { LazyFAQ } from '@/components/LazyFAQ'
 import {
   FacebookIcon,
   GitHubIcon,
@@ -324,19 +319,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             <h2 className='mb-5 text-2xl font-bold tracking-tight text-white md:text-3xl'>
               {platform.name} downloader — Frequently asked questions
             </h2>
-            <Accordion
-              type='single'
-              collapsible
-              defaultValue='faq-1'
-              className='space-y-3'
-            >
-              {platform.faqs.map((f, i) => (
-                <AccordionItem key={f.q} value={`faq-${i + 1}`}>
-                  <AccordionTrigger>{f.q}</AccordionTrigger>
-                  <AccordionContent>{f.a}</AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+            <LazyFAQ items={platform.faqs} />
           </div>
         </section>
 

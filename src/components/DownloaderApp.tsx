@@ -1,7 +1,7 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import { appReducer, initialState } from '@/lib/appReducer'
 import {
   CheckIcon,
@@ -15,8 +15,21 @@ import {
   TwitterXIcon,
   YouTubeIcon,
 } from '@/components/icons'
-import { ImageLightbox } from '@/components/ImageLightbox'
 import { buildDownloadFilename } from '@/lib/filename'
+
+// The lightbox is the ONLY component that genuinely needs the motion library
+// (drag/swipe + AnimatePresence). It's buried deep behind "Show images" → tap a
+// thumbnail, so it is never in the critical path. Lazy-loading it splits the
+// ~69KB motion chunk out of the initial bundle — it only downloads the first
+// time a user actually opens a carousel image. A cheap inline placeholder keeps
+// the layout stable while the chunk streams in.
+const ImageLightbox = dynamic(
+  () => import('@/components/ImageLightbox').then((m) => m.ImageLightbox),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+)
 
 // Shown the instant "Process URL" is hit, filling the results column with a
 // shaped placeholder so the card doesn't pop in cold ~1.5s later. Its outline
@@ -501,18 +514,15 @@ export function DownloaderApp() {
           aria-describedby={urlError ? 'url-error' : undefined}
           className='min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-base text-white placeholder-white/40 outline-none'
         />
-        <motion.button
+        <button
           onClick={handleProcess}
-          whileHover={{ y: -1 }}
-          whileTap={{ scale: 0.985 }}
-          transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.6 }}
           disabled={
             state.loading ||
             state.downloading ||
             state.downloadingAudio ||
             state.downloadingImages
           }
-          className='btn-grad group relative flex shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl px-6 py-3 text-sm font-semibold transition-[box-shadow,transform] duration-300 ease-out disabled:cursor-not-allowed disabled:opacity-50 md:text-base'
+          className='btn-grad btn-press group relative flex shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl px-6 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 md:text-base'
         >
           <span
             className='pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-full'
@@ -526,25 +536,19 @@ export function DownloaderApp() {
           ) : (
             <span className='relative'>Download</span>
           )}
-        </motion.button>
+        </button>
       </div>
 
-      <AnimatePresence initial={false}>
-        {urlError && (
-          <motion.p
-            id='url-error'
-            role='alert'
-            initial={{ opacity: 0, y: -4, height: 0 }}
-            animate={{ opacity: 1, y: 0, height: 'auto' }}
-            exit={{ opacity: 0, y: -4, height: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className='mt-2 flex items-center gap-1.5 overflow-hidden text-xs text-red-300 md:text-sm'
-          >
-            <span aria-hidden>⚠</span>
-            {urlError}
-          </motion.p>
-        )}
-      </AnimatePresence>
+      {urlError && (
+        <p
+          id='url-error'
+          role='alert'
+          className='animate-section-in mt-2 flex items-center gap-1.5 text-xs text-red-300 md:text-sm'
+        >
+          <span aria-hidden>⚠</span>
+          {urlError}
+        </p>
+      )}
 
       <p className='mt-3 text-center text-xs text-white/45'>
         Works with videos, reels, shorts &amp; photo carousels
@@ -668,17 +672,14 @@ export function DownloaderApp() {
 
               {/* Preview Toggle (downloadable video or embed-only fallback) */}
               {(state.downloadUrl || state.videoMetadata?.embedUrl) && (
-                <motion.button
+                <button
                   onClick={togglePreview}
-                  whileHover={{ y: -1 }}
-                  whileTap={{ scale: 0.985 }}
-                  transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.6 }}
-                  className='btn-ghost w-full cursor-pointer py-2.5 px-4 font-semibold rounded-xl transition-colors duration-200 flex items-center justify-center text-sm md:text-base'
+                  className='btn-ghost btn-press w-full cursor-pointer py-2.5 px-4 font-semibold rounded-xl flex items-center justify-center text-sm md:text-base'
                 >
                   <span className='relative'>
                     {state.showPreview ? 'Hide preview' : 'Show preview'}
                   </span>
-                </motion.button>
+                </button>
               )}
 
               {/* Video Preview (direct stream). For YouTube we prefer the
@@ -768,19 +769,16 @@ export function DownloaderApp() {
               {state.videoMetadata?.images &&
                 state.videoMetadata.images.length > 0 && (
                   <div className='space-y-3'>
-                    <motion.button
+                    <button
                       onClick={toggleImageGallery}
-                      whileHover={{ y: -1 }}
-                      whileTap={{ scale: 0.985 }}
-                      transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.6 }}
-                      className='btn-ghost w-full cursor-pointer py-2.5 px-4 font-semibold rounded-xl transition-colors duration-200 flex items-center justify-center text-sm md:text-base'
+                      className='btn-ghost btn-press w-full cursor-pointer py-2.5 px-4 font-semibold rounded-xl flex items-center justify-center text-sm md:text-base'
                     >
                       <span className='relative'>
                         {state.showImageGallery
                           ? 'Hide images'
                           : `Show images (${state.videoMetadata.images.length})`}
                       </span>
-                    </motion.button>
+                    </button>
 
                     {state.showImageGallery && (
                       // No height animation — a big image grid is exactly what
@@ -964,19 +962,16 @@ export function DownloaderApp() {
                     }`}
                   >
                     {showVideoButton && (
-                      <motion.button
+                      <button
                         onClick={
                           state.downloadUrl
                             ? handleVideoDownload
                             : handleSlideshowRender
                         }
-                        whileHover={{ y: -1 }}
-                        whileTap={{ scale: 0.985 }}
-                        transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.6 }}
                         disabled={
                           state.downloading || state.downloadingImages
                         }
-                        className='btn-grad group relative py-3 cursor-pointer px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl transition-[box-shadow,transform] duration-300 ease-out flex items-center justify-center text-sm md:text-base gap-2 overflow-hidden'
+                        className='btn-grad btn-press group relative py-3 cursor-pointer px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2 overflow-hidden'
                       >
                         <span
                           className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out'
@@ -1002,19 +997,16 @@ export function DownloaderApp() {
                             </span>
                           </span>
                         )}
-                      </motion.button>
+                      </button>
                     )}
 
                     {showAudioButton && (
-                      <motion.button
+                      <button
                         onClick={handleAudioDownload}
-                        whileHover={{ y: -1 }}
-                        whileTap={{ scale: 0.985 }}
-                        transition={{ type: 'spring', stiffness: 280, damping: 24, mass: 0.6 }}
                         disabled={
                           state.downloadingAudio || state.downloadingImages
                         }
-                        className='btn-ghost py-3 cursor-pointer px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl transition-colors duration-200 flex items-center justify-center text-sm md:text-base gap-2'
+                        className='btn-ghost btn-press py-3 cursor-pointer px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2'
                       >
                         {state.downloadingAudio ? (
                           <span className='relative flex items-center gap-2'>
@@ -1031,7 +1023,7 @@ export function DownloaderApp() {
                             </span>
                           </span>
                         )}
-                      </motion.button>
+                      </button>
                     )}
                   </div>
                 )

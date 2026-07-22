@@ -16,7 +16,17 @@ export function InteractiveBackground() {
     const root = ref.current
     const hot = hotRef.current
     if (!root || !hot) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    // Pointer tracking is a desktop/mouse effect — a touch screen never
+    // triggers a useful hover, so skip wiring it up entirely on coarse
+    // pointers (cheap client check) and on low-power-flagged devices. This
+    // removes the per-frame rAF work on phones without affecting desktop.
+    if (
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      window.matchMedia('(hover: none)').matches ||
+      document.documentElement.classList.contains('low-power')
+    ) {
+      return
+    }
 
     let raf = 0
     const onMove = (e: PointerEvent) => {
