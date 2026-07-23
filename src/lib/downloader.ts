@@ -179,13 +179,87 @@ export class Downloader {
     url: string,
     platform: SupportedPlatform,
   ): Promise<VideoData> {
-    const result = await this.tryCobaltInstances(url)
-    if (result && (result.downloadUrl || (result.images?.length ?? 0) > 0)) {
-      return result
+    const methods: Array<() => Promise<VideoData | null>> = []
+    // Vimeo has a clean, login-free config endpoint that returns direct mp4
+    // renditions — more reliable than the public Cobalt instance (which doesn't
+    // resolve Vimeo), so try it first.
+    if (platform === 'vimeo') methods.push(() => this.tryVimeo(url))
+    methods.push(() => this.tryCobaltInstances(url))
+
+    for (const method of methods) {
+      try {
+        const result = await method()
+        if (result && (result.downloadUrl || (result.images?.length ?? 0) > 0)) {
+          return result
+        }
+      } catch (e) {
+        console.warn(`${platform} method failed, trying next...`, e)
+      }
     }
     throw new Error(
       `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`,
     )
+  }
+
+  /**
+   * Vimeo via the public player config (https://player.vimeo.com/video/<id>/
+   * config). For public videos this returns direct progressive mp4 renditions
+   * that stream from any IP — no login, no signed session. Honours the HD/SD
+   * quality preference by picking the highest / lowest rendition.
+   */
+  private async tryVimeo(url: string): Promise<VideoData | null> {
+    const id = url.match(/vimeo\.com\/(?:video\/)?(\d+)/)?.[1]
+    if (!id) return null
+    const response = await axios.get(
+      `https://player.vimeo.com/video/${id}/config`,
+      {
+        headers: { 'User-Agent': this.userAgent, Referer: 'https://vimeo.com/' },
+        timeout: 15000,
+        validateStatus: () => true,
+      },
+    )
+    if (response.status !== 200) return null
+    const data = response.data as {
+      video?: {
+        title?: string
+        duration?: number
+        owner?: { name?: string }
+        thumbs?: Record<string, string>
+      }
+      request?: {
+        files?: {
+          progressive?: Array<{ url?: string; height?: number }>
+        }
+      }
+    }
+
+    const progressive = (data.request?.files?.progressive ?? []).filter(
+      (f): f is { url: string; height?: number } => Boolean(f?.url),
+    )
+    if (progressive.length === 0) return null
+
+    const sorted = [...progressive].sort(
+      (a, b) => (a.height ?? 0) - (b.height ?? 0),
+    )
+    const chosen =
+      this.videoQuality === 'sd' ? sorted[0] : sorted[sorted.length - 1]
+
+    const v = data.video ?? {}
+    const thumbs = v.thumbs ?? {}
+    const thumbnail =
+      thumbs.base || thumbs['1280'] || thumbs['640'] || thumbs['960'] || ''
+
+    return {
+      id,
+      title: v.title || 'Vimeo Video',
+      url,
+      thumbnail,
+      duration: Math.round(v.duration || 0),
+      author: v.owner?.name || 'Vimeo',
+      description: '',
+      downloadUrl: chosen.url,
+      isPhotoCarousel: false,
+    }
   }
 
   /**
