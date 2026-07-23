@@ -7,9 +7,15 @@ import {
   FacebookIcon,
   GitHubIcon,
   InstagramIcon,
+  PinterestIcon,
   PortfolioIcon,
+  RedditIcon,
+  SnapchatIcon,
+  ThreadsIcon,
   TikTokIcon,
+  TwitchIcon,
   TwitterXIcon,
+  VimeoIcon,
   YouTubeIcon,
 } from '@/components/icons'
 import { RafiqLink } from '@/components/RafiqLink'
@@ -125,6 +131,12 @@ const platformLinkTiles: Record<
   'instagram-downloader': { tile: 'bg-transparent', Icon: InstagramIcon },
   'facebook-downloader': { tile: 'bg-transparent', Icon: FacebookIcon },
   'youtube-downloader': { tile: 'bg-transparent', Icon: YouTubeIcon },
+  'pinterest-downloader': { tile: 'bg-[#E60023]', Icon: PinterestIcon },
+  'reddit-video-downloader': { tile: 'bg-[#FF4500]', Icon: RedditIcon },
+  'threads-video-downloader': { tile: 'bg-black', Icon: ThreadsIcon },
+  'snapchat-downloader': { tile: 'bg-[#FFFC00]', Icon: SnapchatIcon },
+  'twitch-clip-downloader': { tile: 'bg-[#9146FF]', Icon: TwitchIcon },
+  'vimeo-downloader': { tile: 'bg-[#1AB7EA]', Icon: VimeoIcon },
 }
 
 // The 5 brand tiles that sit above the headline — each links to its dedicated

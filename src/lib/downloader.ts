@@ -13,6 +13,49 @@ import {
 import { getMediaReferer } from './proxyHeaders'
 import { ytdlpInfo } from './ytdlp'
 
+// Retry a flaky network op with exponential backoff + light jitter. Only retries
+// errors the caller marks retryable (429 / 5xx / timeouts) — a hard 404/private
+// post fails fast. Backoff is 400ms, 900ms, ~2s so a transient rate-limit or
+// cold-start on a public instance is ridden out instead of surfacing to the user.
+async function withRetry<T>(
+  fn: (attempt: number) => Promise<T>,
+  opts: { retries?: number; isRetryable?: (e: unknown) => boolean } = {},
+): Promise<T> {
+  const retries = opts.retries ?? 2
+  const isRetryable = opts.isRetryable ?? (() => true)
+  let lastError: unknown
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn(attempt)
+    } catch (e) {
+      lastError = e
+      if (attempt === retries || !isRetryable(e)) break
+      const base = 400 * Math.pow(2.2, attempt)
+      const jitter = base * 0.25 * ((attempt % 3) / 3)
+      await new Promise((r) => setTimeout(r, Math.round(base + jitter)))
+    }
+  }
+  throw lastError
+}
+
+// True for transient failures worth retrying: network timeouts/resets and HTTP
+// 429 / 5xx. A definitive 4xx (bad/private/removed post) is NOT retried.
+function isTransientError(e: unknown): boolean {
+  const err = e as { code?: string; response?: { status?: number } }
+  if (
+    err?.code === 'ECONNABORTED' ||
+    err?.code === 'ETIMEDOUT' ||
+    err?.code === 'ECONNRESET' ||
+    err?.code === 'ENOTFOUND'
+  ) {
+    return true
+  }
+  const status = err?.response?.status
+  if (typeof status === 'number') return status === 429 || status >= 500
+  // No response at all (network layer) — worth one more try.
+  return err instanceof Error && !('response' in (err as object))
+}
+
 // Loose shapes for Instagram's GraphQL / embed `shortcode_media` payload.
 // Only the fields we actually read are typed; everything else is ignored.
 interface IgMediaNode {
@@ -63,8 +106,14 @@ export class Downloader {
   // single rendition ignore this.
   private readonly videoQuality: 'hd' | 'sd'
 
-  constructor(opts?: { quality?: 'hd' | 'sd' }) {
+  // Extraction mode: 'auto' resolves the video (default), 'audio' pulls an
+  // audio-only stream (MP3) — the "YouTube → MP3" flow, routed through Cobalt's
+  // downloadMode:'audio' for every platform.
+  private readonly mode: 'auto' | 'audio'
+
+  constructor(opts?: { quality?: 'hd' | 'sd'; mode?: 'auto' | 'audio' }) {
     this.videoQuality = opts?.quality === 'sd' ? 'sd' : 'hd'
+    this.mode = opts?.mode === 'audio' ? 'audio' : 'auto'
   }
 
   private readonly userAgent =
@@ -87,15 +136,23 @@ export class Downloader {
   // work from datacenter hosts (Vercel) for TikTok, and as a login-free source
   // for YouTube/Twitter/Instagram/Facebook.
   //
-  // The public instance is tried FIRST (it's warm and fast); a self-hosted
-  // instance (set COBALT_API_URL — e.g. a free Render deploy, see deploy/cobalt/)
-  // is the FALLBACK, used only when the public one fails or rate-limits. This
+  // The public instance is tried FIRST (it's warm and fast); self-hosted
+  // instances (set COBALT_API_URL — e.g. a free Render deploy, see deploy/cobalt/)
+  // are the FALLBACKS, used only when the public one fails or rate-limits. This
   // keeps a free fallback's cold-start latency and bandwidth off the hot path.
-  // (Other public instances were pruned — canine.tools needs a JWT, eepy.today
-  // 502s, 255x.ru has a broken cert — they only added dead timeouts.)
+  //
+  // COBALT_API_URL accepts a COMMA- or space-separated LIST, so the operator can
+  // chain several private instances for resilience (each tunnels the media, so
+  // any one that resolves the URL works). We only ship one open public instance
+  // by default — other public ones were pruned as dead weight (canine.tools
+  // needs a JWT, kwiatekmiki 403s, eepy.today/oceanofanything are down) since a
+  // dead instance only adds a timeout to every request. Probed 2026-07: only
+  // co.otomir23.me answers open POSTs.
   private readonly cobaltInstances = [
     'https://co.otomir23.me/',
-    process.env.COBALT_API_URL,
+    ...(process.env.COBALT_API_URL ?? '')
+      .split(/[\s,]+/)
+      .map((s) => s.trim()),
   ].filter((v): v is string => Boolean(v))
 
   // Public Instagram web app id — required by the GraphQL/web-API endpoints.
@@ -113,6 +170,12 @@ export class Downloader {
   // Main entry point: auto-detects platform and routes accordingly
   async downloadVideo(url: string): Promise<VideoData> {
     const platform = detectPlatform(url)
+
+    // Audio-only mode (the "→ MP3" flow) short-circuits every platform through
+    // Cobalt's audio tunnel — one path, MP3 out.
+    if (this.mode === 'audio') {
+      return this.downloadAudio(url, platform)
+    }
 
     if (platform === 'tiktok') {
       return this.downloadTikTok(url)
@@ -166,6 +229,48 @@ export class Downloader {
     throw new Error(
       'Unsupported URL. Please paste a link from a supported platform (TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, or Vimeo).',
     )
+  }
+
+  /**
+   * Audio-only extraction (MP3). Cobalt's downloadMode:'audio' returns an audio
+   * tunnel for every supported platform, so this is one path regardless of the
+   * source. Metadata is sparse from an audio tunnel, so title/author/thumbnail
+   * are enriched from the platform's public oEmbed where we have one (YouTube,
+   * TikTok) — the Recent list and result card then read like content, not a
+   * bare file. Throws a clear message when no audio stream can be produced.
+   */
+  private async downloadAudio(
+    url: string,
+    platform: SupportedPlatform,
+  ): Promise<VideoData> {
+    const result = await this.tryCobaltInstances(url)
+    if (!result || !result.musicUrl) {
+      throw new Error(
+        'Could not extract audio from this link. The post may be private, region-locked, or the audio source may be unavailable (YouTube blocks audio extraction from some networks).',
+      )
+    }
+
+    // Enrich sparse Cobalt metadata from the platform's public oEmbed.
+    let meta: { title?: string; author?: string; thumbnail?: string } = {}
+    if (platform === 'youtube') {
+      const videoId = parseYouTubeId(url)
+      const canonical = videoId
+        ? `https://www.youtube.com/watch?v=${videoId}`
+        : url
+      meta = await this.fetchYouTubeMeta(videoId, canonical)
+    } else if (platform === 'tiktok') {
+      meta = await this.fetchTikTokMeta(url)
+    }
+
+    const baseTitle = meta.title || result.title || 'Audio track'
+    return {
+      ...result,
+      title: baseTitle.endsWith(' (audio)') ? baseTitle : `${baseTitle} (audio)`,
+      author: meta.author || result.author || 'Unknown',
+      thumbnail: meta.thumbnail || result.thumbnail || '',
+      downloadUrl: '',
+      isPhotoCarousel: false,
+    }
   }
 
   /**
@@ -882,14 +987,27 @@ export class Downloader {
       headers.Authorization = `Api-Key ${process.env.COBALT_API_KEY}`
     }
 
-    const response = await axios.post(
-      baseUrl,
-      {
-        url,
-        videoQuality: this.videoQuality === 'sd' ? '480' : 'max',
-        filenameStyle: 'basic',
-      },
-      { headers, timeout: 12000 },
+    // Audio mode asks Cobalt for an audio-only MP3 tunnel (the "→ MP3" flow);
+    // otherwise a normal video tunnel at the preferred quality.
+    const body =
+      this.mode === 'audio'
+        ? {
+            url,
+            downloadMode: 'audio',
+            audioFormat: 'mp3',
+            filenameStyle: 'basic',
+          }
+        : {
+            url,
+            videoQuality: this.videoQuality === 'sd' ? '480' : 'max',
+            filenameStyle: 'basic',
+          }
+
+    // Retry transient failures (429 / 5xx / cold-start timeouts) before giving
+    // up on this instance and moving to the next.
+    const response = await withRetry(
+      () => axios.post(baseUrl, body, { headers, timeout: 12000 }),
+      { retries: 2, isRetryable: isTransientError },
     )
 
     const data = response.data
@@ -901,6 +1019,7 @@ export class Downloader {
     }
 
     if (data.status === 'tunnel' || data.status === 'redirect') {
+      const isAudio = this.mode === 'audio'
       return {
         id: Date.now().toString(),
         title: data.filename?.replace(/\.[^.]+$/, '') || 'Social Media Video',
@@ -909,7 +1028,10 @@ export class Downloader {
         duration: 0,
         author: 'Unknown',
         description: '',
-        downloadUrl: data.url,
+        // In audio mode the tunnel is an MP3 — hand it back as the music track
+        // (no video), so the API serves it through the audio path.
+        downloadUrl: isAudio ? '' : data.url,
+        ...(isAudio ? { musicUrl: data.url } : {}),
       }
     }
 
