@@ -33,8 +33,13 @@ const platformPatterns: Record<
     /^(https?:\/\/)?(www\.)?instagram\.com\/(?:[\w.-]+\/)?(?:p|reel|reels|tv)\/[\w-]+/,
     // instagr.am short domain
     /^(https?:\/\/)?(www\.)?instagr\.am\/(?:p|reel|reels|tv)\/[\w-]+/,
-    // New-style share links (resolved to a canonical post URL before extraction)
+    // Story items and highlights (resolved via a logged-in session — see
+    // Downloader.downloadInstagramStory).
+    /^(https?:\/\/)?(www\.)?instagram\.com\/stories\/highlights\/\d+/,
+    /^(https?:\/\/)?(www\.)?instagram\.com\/stories\/[\w.-]+\/\d+/,
+    // New-style share links (resolved to a canonical URL before extraction)
     /^(https?:\/\/)?(www\.)?instagram\.com\/share\/[\w-]+/,
+    /^(https?:\/\/)?(www\.)?instagram\.com\/s\/[\w-]+/,
   ],
   youtube: [
     // Standard watch URL (?v=…) — also covers music.youtube.com and m.youtube.com
@@ -146,6 +151,22 @@ export function parseInstagramShortcode(url: string): string | null {
     const match = url.match(pattern)
     if (match && match[1]) return match[1]
   }
+  return null
+}
+
+/**
+ * Recognise an Instagram story or highlight URL and pull out what we need to
+ * fetch it. Returns null for ordinary post/reel URLs.
+ *   /stories/<username>/<storyPk>/        → { username, storyPk }
+ *   /stories/highlights/<highlightId>/    → { highlightId }
+ */
+export function parseInstagramStory(
+  url: string,
+): { username?: string; storyPk?: string; highlightId?: string } | null {
+  const hi = url.match(/instagram\.com\/stories\/highlights\/(\d+)/)
+  if (hi) return { highlightId: hi[1] }
+  const st = url.match(/instagram\.com\/stories\/([\w.-]+)\/(\d+)/)
+  if (st) return { username: st[1], storyPk: st[2] }
   return null
 }
 
