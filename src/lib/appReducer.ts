@@ -5,13 +5,10 @@ export interface ImageData {
   selected: boolean
 }
 
-export type SupportedPlatform =
-  | 'tiktok'
-  | 'twitter'
-  | 'instagram'
-  | 'facebook'
-  | 'youtube'
-  | 'unknown'
+// Single source of truth lives in validator.ts; re-exported here so existing
+// imports from '@/lib/appReducer' keep working.
+import type { SupportedPlatform } from './validator'
+export type { SupportedPlatform }
 
 export interface VideoMetadata {
   title: string
