@@ -1042,10 +1042,6 @@ export function DownloaderApp() {
         )}
       </div>
 
-      {/* Install nudge — installing registers the Android share target so a link
-          can be shared straight from TikTok/IG/YouTube into the app. */}
-      {!state.videoMetadata && !state.loading && <InstallPrompt />}
-
       {/* Recent — locally-stored links (never leaves the device). Hidden once a
           result is on screen so it doesn't compete with it. Tap to re-resolve. */}
       {history.length > 0 && !state.videoMetadata && !state.loading && (
@@ -1132,6 +1128,11 @@ export function DownloaderApp() {
           )}
         </div>
       )}
+
+      {/* Install nudge — secondary, so it sits below the paste bar, controls and
+          Recent rather than interrupting the core flow. Installing registers the
+          Android share target (share a link straight from TikTok/IG/YouTube). */}
+      {!state.videoMetadata && !state.loading && <InstallPrompt />}
 
       {/* Results — expand directly under the paste bar.
           scroll-mt-24: the success handler calls scrollIntoView({block:'start'}),
