@@ -22,7 +22,9 @@ export interface HistoryEntry {
 }
 
 const KEY = 'smd:history:v1'
-const MAX = 12
+// Keep a generous backlog so "View all" is worth opening; the Recent list shows
+// a handful by default and expands to the rest.
+const MAX = 30
 
 function canUse(): boolean {
   return typeof window !== 'undefined' && !!window.localStorage
