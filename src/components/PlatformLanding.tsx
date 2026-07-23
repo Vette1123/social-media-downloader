@@ -7,9 +7,15 @@ import {
   FacebookIcon,
   GitHubIcon,
   InstagramIcon,
+  PinterestIcon,
   PortfolioIcon,
+  RedditIcon,
+  SnapchatIcon,
+  ThreadsIcon,
   TikTokIcon,
+  TwitchIcon,
   TwitterXIcon,
+  VimeoIcon,
   YouTubeIcon,
 } from '@/components/icons'
 import { RafiqLink } from '@/components/RafiqLink'
@@ -59,6 +65,30 @@ const platformIcons: Record<PlatformSlug, { Icon: React.ComponentType<{ classNam
     Icon: YouTubeIcon,
     tile: 'bg-transparent overflow-hidden',
   },
+  'pinterest-downloader': {
+    Icon: PinterestIcon,
+    tile: 'bg-[#E60023]',
+  },
+  'reddit-video-downloader': {
+    Icon: RedditIcon,
+    tile: 'bg-[#FF4500]',
+  },
+  'threads-video-downloader': {
+    Icon: ThreadsIcon,
+    tile: 'bg-black',
+  },
+  'snapchat-downloader': {
+    Icon: SnapchatIcon,
+    tile: 'bg-[#FFFC00]',
+  },
+  'twitch-clip-downloader': {
+    Icon: TwitchIcon,
+    tile: 'bg-[#9146FF]',
+  },
+  'vimeo-downloader': {
+    Icon: VimeoIcon,
+    tile: 'bg-[#1AB7EA]',
+  },
 }
 
 // Centered section header (title + one-line sub) for the full-width bands.
@@ -94,7 +124,7 @@ function CheckMark({ className }: { className?: string }) {
 function PlatformIconRow({ activeSlug }: { activeSlug: PlatformSlug }) {
   return (
     <div className='mb-4 flex justify-center'>
-      <div className='flex items-center gap-2 md:gap-2.5'>
+      <div className='flex max-w-md flex-wrap items-center justify-center gap-2 md:max-w-xl md:gap-2.5'>
         {platforms.map((p) => {
           const { Icon, tile } = platformIcons[p.slug]
           const isActive = p.slug === activeSlug

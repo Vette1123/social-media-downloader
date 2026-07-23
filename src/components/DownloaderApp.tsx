@@ -2,7 +2,11 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
-import { appReducer, initialState } from '@/lib/appReducer'
+import {
+  appReducer,
+  initialState,
+  type VideoMetadata,
+} from '@/lib/appReducer'
 import {
   CheckIcon,
   ClipboardIcon,
@@ -37,6 +41,24 @@ function extractFirstUrl(s: string): string | null {
   const m = s.match(/https?:\/\/[^\s]+/i)
   const candidate = (m ? m[0] : s).trim()
   return /^https?:\/\//i.test(candidate) ? candidate : null
+}
+
+// Pull EVERY http(s) URL out of pasted text, de-duplicated in order. Powers
+// batch mode: paste a list (one per line, or space-separated) and each link is
+// resolved and saved to Recent in turn.
+function extractAllUrls(s: string): string[] {
+  if (!s) return []
+  const matches = s.match(/https?:\/\/[^\s]+/gi) || []
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of matches) {
+    const u = raw.trim()
+    if (u && !seen.has(u)) {
+      seen.add(u)
+      out.push(u)
+    }
+  }
+  return out
 }
 
 // Stream a download response, reporting progress as it lands. Emits a 0–100
@@ -113,6 +135,34 @@ async function snapshotImage(srcUrl: string): Promise<string> {
     }
     img.src = src
   })
+}
+
+// Capture a persistent thumbnail for the Recent list. Tries the client canvas
+// snapshot first (compact, downscaled), and falls back to the server /api/thumb
+// route when the canvas path fails — an old browser that taints the canvas, a
+// decode error, or a CDN the browser can't send the right Referer to. Either
+// way the returned value is a self-contained data URL, so the Recent thumbnail
+// survives the source URL expiring. Returns '' when nothing worked (→ tile).
+async function captureThumbnail(srcUrl: string): Promise<string> {
+  if (!srcUrl) return ''
+  const snap = await snapshotImage(srcUrl)
+  if (snap) return snap
+  // Server fallback needs the original remote URL, not our proxy wrapper.
+  const proxyPrefix = '/api/image?url='
+  const raw = srcUrl.startsWith(proxyPrefix)
+    ? decodeURIComponent(srcUrl.slice(proxyPrefix.length))
+    : srcUrl
+  if (!/^https?:\/\//i.test(raw)) return ''
+  try {
+    const res = await fetch(`/api/thumb?url=${encodeURIComponent(raw)}`)
+    if (res.ok) {
+      const data = (await res.json()) as { dataUrl?: string | null }
+      if (typeof data?.dataUrl === 'string' && data.dataUrl) return data.dataUrl
+    }
+  } catch {
+    // network/parse failure — fall through to the tile.
+  }
+  return ''
 }
 
 const PLATFORM_DISPLAY: Record<string, string> = {
@@ -225,6 +275,13 @@ export function DownloaderApp() {
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [showAllHistory, setShowAllHistory] = useState(false)
   const [quality, setQuality] = useState<'hd' | 'sd'>('hd')
+  const [format, setFormat] = useState<'video' | 'audio'>('video')
+  // Batch progress while resolving a pasted list of links; null when idle.
+  const [batch, setBatch] = useState<{
+    done: number
+    total: number
+    saved: number
+  } | null>(null)
   const didInit = useRef(false)
 
   const changeQuality = (q: 'hd' | 'sd') => {
@@ -234,6 +291,56 @@ export function DownloaderApp() {
     } catch {
       // storage disabled — the choice still applies for this session.
     }
+  }
+
+  const changeFormat = (f: 'video' | 'audio') => {
+    setFormat(f)
+    try {
+      window.localStorage.setItem('smd:format', f)
+    } catch {
+      // storage disabled — the choice still applies for this session.
+    }
+  }
+
+  // Resolve one link against the API. Shared by the single-link flow and batch
+  // mode. Returns the parsed response (or throws on network failure).
+  const resolveOne = async (target: string) => {
+    const response = await fetch('/api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url: target,
+        type: state.downloadType,
+        quality,
+        format,
+      }),
+    })
+    return response.json()
+  }
+
+  // Snapshot the thumbnail off the main flow and prepend the link to Recent so
+  // the card always shows an image (even after the source URL expires) and the
+  // title never reads as a raw link.
+  const rememberInHistory = async (
+    target: string,
+    meta: {
+      title?: string
+      author?: string
+      platform?: HistoryEntry['platform']
+      thumbnail?: string
+    },
+  ) => {
+    const snap = await captureThumbnail(meta?.thumbnail || '')
+    setHistory(
+      addHistory({
+        url: target,
+        title: friendlyTitle(meta?.title, meta?.platform),
+        author: meta?.author || '',
+        platform: meta?.platform,
+        thumbnail: snap || meta?.thumbnail || '',
+        ts: Date.now(),
+      }),
+    )
   }
 
   // `overrideUrl` lets the paste button, the PWA share target, and the recent
@@ -247,6 +354,17 @@ export function DownloaderApp() {
       )
       return
     }
+
+    // Batch: a pasted list of links resolves each in turn (see processBatch).
+    // The paste button / share target pass a single overrideUrl and skip this.
+    if (overrideUrl === undefined) {
+      const urls = extractAllUrls(target)
+      if (urls.length > 1) {
+        void processBatch(urls)
+        return
+      }
+    }
+
     if (overrideUrl !== undefined) {
       dispatch({ type: 'SET_URL', payload: overrideUrl })
     }
@@ -256,19 +374,7 @@ export function DownloaderApp() {
     dispatch({ type: 'RESET_DOWNLOAD_STATE' })
 
     try {
-      const response = await fetch('/api/download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: target,
-          type: state.downloadType,
-          quality,
-        }),
-      })
-
-      const data = await response.json()
+      const data = await resolveOne(target)
 
       if (data.success) {
         dispatch({
@@ -281,24 +387,8 @@ export function DownloaderApp() {
           },
         })
 
-        // Remember it locally (one-tap re-open). Snapshot the thumbnail into a
-        // self-contained data URL off the main flow so the Recent card always
-        // shows an image — even after the source's signed URL expires — and
-        // clean up the title so it never reads as a raw link.
-        const meta = data.metadata
-        void (async () => {
-          const snap = await snapshotImage(meta?.thumbnail || '')
-          setHistory(
-            addHistory({
-              url: target,
-              title: friendlyTitle(meta?.title, meta?.platform),
-              author: meta?.author || '',
-              platform: meta?.platform,
-              thumbnail: snap || meta?.thumbnail || '',
-              ts: Date.now(),
-            }),
-          )
-        })()
+        // Remember it locally (one-tap re-open), off the main flow.
+        void rememberInHistory(target, data.metadata)
 
         dispatch({ type: 'SET_URL', payload: '' })
 
@@ -331,6 +421,62 @@ export function DownloaderApp() {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
+  }
+
+  // Resolve a pasted list of links one at a time (sequential keeps load light on
+  // the public extractor). Each success is saved to Recent; the last one also
+  // fills the result card so there's something to act on immediately, and a
+  // summary line reports how many landed.
+  const processBatch = async (urls: string[]) => {
+    setUrlError(null)
+    dispatch({ type: 'RESET_DOWNLOAD_STATE' })
+    dispatch({ type: 'SET_LOADING', payload: true })
+    setBatch({ done: 0, total: urls.length, saved: 0 })
+
+    let saved = 0
+    let last: { data: unknown; target: string } | null = null
+
+    for (let i = 0; i < urls.length; i++) {
+      setBatch({ done: i, total: urls.length, saved })
+      try {
+        const data = await resolveOne(urls[i])
+        if (data.success) {
+          saved++
+          await rememberInHistory(urls[i], data.metadata)
+          last = { data, target: urls[i] }
+        }
+      } catch {
+        // skip this link — keep going through the rest of the batch.
+      }
+    }
+
+    setBatch(null)
+    dispatch({ type: 'SET_LOADING', payload: false })
+
+    if (last) {
+      const data = last.data as {
+        downloadUrl?: string
+        audioUrl?: string
+        metadata: VideoMetadata
+      }
+      dispatch({
+        type: 'SET_DOWNLOAD_SUCCESS',
+        payload: {
+          downloadUrl: data.downloadUrl,
+          audioUrl: data.audioUrl,
+          metadata: data.metadata,
+          originalUrl: last.target,
+        },
+      })
+    }
+    dispatch({ type: 'SET_URL', payload: '' })
+    dispatch({
+      type: 'SET_MESSAGE',
+      payload:
+        saved > 0
+          ? `Saved ${saved} of ${urls.length} links to Recent — tap any to download. 🎉`
+          : `Couldn’t resolve any of those ${urls.length} links. Check they’re public post URLs and try again.`,
+    })
   }
 
   // One-tap paste: read the clipboard, and if it holds a link, resolve it
@@ -376,8 +522,10 @@ export function DownloaderApp() {
     try {
       const q = window.localStorage.getItem('smd:quality')
       if (q === 'sd' || q === 'hd') setQuality(q)
+      const f = window.localStorage.getItem('smd:format')
+      if (f === 'audio' || f === 'video') setFormat(f)
     } catch {
-      // ignore — default HD.
+      // ignore — default HD video.
     }
     try {
       const params = new URLSearchParams(window.location.search)
@@ -831,34 +979,66 @@ export function DownloaderApp() {
       )}
 
       <p className='mt-3 text-center text-xs text-white/45'>
-        Works with videos, reels, shorts &amp; photo carousels
+        Videos, reels, shorts, MP3 audio &amp; photo carousels — paste several
+        links to grab them in one go
       </p>
 
-      {/* Quality preference — applied on the next resolve. Affects sources with a
-          quality knob (most videos); single-rendition sources ignore it. */}
-      <div className='mt-3 flex items-center justify-center gap-2 text-xs'>
-        <span className='text-white/40'>Quality</span>
-        <div
-          role='group'
-          aria-label='Preferred video quality'
-          className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
-        >
-          {(['hd', 'sd'] as const).map((q) => (
-            <button
-              key={q}
-              type='button'
-              onClick={() => changeQuality(q)}
-              aria-pressed={quality === q}
-              className={`rounded-full px-3 py-1 font-medium transition-colors ${
-                quality === q
-                  ? 'bg-cyan-400/90 text-[#04171b]'
-                  : 'text-white/55 hover:text-white'
-              }`}
-            >
-              {q === 'hd' ? 'HD' : 'Data saver'}
-            </button>
-          ))}
+      {/* Format + quality preferences — applied on the next resolve. Format
+          picks video vs. audio-only (MP3); quality affects sources with a
+          quality knob (most videos) and is irrelevant for audio, so it's hidden
+          in audio mode. */}
+      <div className='mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs'>
+        <div className='flex items-center gap-2'>
+          <span className='text-white/40'>Format</span>
+          <div
+            role='group'
+            aria-label='Download format'
+            className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
+          >
+            {(['video', 'audio'] as const).map((f) => (
+              <button
+                key={f}
+                type='button'
+                onClick={() => changeFormat(f)}
+                aria-pressed={format === f}
+                className={`rounded-full px-3 py-1 font-medium transition-colors ${
+                  format === f
+                    ? 'bg-cyan-400/90 text-[#04171b]'
+                    : 'text-white/55 hover:text-white'
+                }`}
+              >
+                {f === 'video' ? 'Video' : 'Audio (MP3)'}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {format === 'video' && (
+          <div className='flex items-center gap-2'>
+            <span className='text-white/40'>Quality</span>
+            <div
+              role='group'
+              aria-label='Preferred video quality'
+              className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
+            >
+              {(['hd', 'sd'] as const).map((q) => (
+                <button
+                  key={q}
+                  type='button'
+                  onClick={() => changeQuality(q)}
+                  aria-pressed={quality === q}
+                  className={`rounded-full px-3 py-1 font-medium transition-colors ${
+                    quality === q
+                      ? 'bg-cyan-400/90 text-[#04171b]'
+                      : 'text-white/55 hover:text-white'
+                  }`}
+                >
+                  {q === 'hd' ? 'HD' : 'Data saver'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Recent — locally-stored links (never leaves the device). Hidden once a
@@ -976,7 +1156,34 @@ export function DownloaderApp() {
           </div>
         )}
 
-        {state.loading && !state.videoMetadata && <ResultsSkeleton />}
+        {/* Batch mode: show a compact per-link progress line instead of the
+            single-result skeleton while a pasted list resolves. */}
+        {batch && (
+          <div
+            className='animate-section-in space-y-2 rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'
+            role='status'
+            aria-live='polite'
+          >
+            <div className='flex items-center justify-between text-sm text-white/80'>
+              <span className='flex items-center gap-2'>
+                <SpinnerIcon className='h-4 w-4' />
+                Resolving link {Math.min(batch.done + 1, batch.total)} of{' '}
+                {batch.total}…
+              </span>
+              <span className='text-xs text-white/50'>{batch.saved} saved</span>
+            </div>
+            <div className='h-1.5 w-full overflow-hidden rounded-full bg-white/10'>
+              <div
+                className='h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-400 transition-[width] duration-200 ease-out'
+                style={{
+                  width: `${Math.round((batch.done / batch.total) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {state.loading && !batch && !state.videoMetadata && <ResultsSkeleton />}
 
           {state.videoMetadata && (
             // CSS entrance (not framer initial:opacity-0). On mobile the main

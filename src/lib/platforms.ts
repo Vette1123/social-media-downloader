@@ -6,6 +6,12 @@ export type PlatformSlug =
   | 'instagram-downloader'
   | 'youtube-downloader'
   | 'facebook-downloader'
+  | 'pinterest-downloader'
+  | 'reddit-video-downloader'
+  | 'threads-video-downloader'
+  | 'snapchat-downloader'
+  | 'twitch-clip-downloader'
+  | 'vimeo-downloader'
 
 export interface PlatformSeoCard {
   title: string
@@ -378,6 +384,414 @@ export const platforms: Platform[] = [
       'Save Facebook Reels in native vertical format',
       'Works with fb.watch short links',
       'Public posts only — no login, no extension',
+      'Preview the video before downloading',
+    ],
+  },
+  {
+    slug: 'pinterest-downloader',
+    name: 'Pinterest',
+    brandLabel: 'Pinterest video & image downloader',
+    metaTitle: 'Pinterest Video & Image Downloader — Save Pins, No Login',
+    metaDescription:
+      'Download Pinterest videos and pin images in full quality. Paste a pinterest.com/pin/ or pin.it link and save the media instantly — free, no login, no app.',
+    h1: 'Pinterest Video & Image Downloader — Free, No Login',
+    tagline:
+      'Save Pinterest video pins and full-resolution images straight to your device.',
+    intro:
+      'Paste any pinterest.com/pin/… or pin.it/… link and the tool resolves the underlying media — an idea-pin video or a full-size image — so you can preview and download it directly. No Pinterest login, no browser extension, nothing installed. Private boards and secret pins can’t be fetched.',
+    accent: {
+      chip: 'bg-[#E60023] text-white',
+      grad: 'from-red-500 via-rose-500 to-red-600',
+      ring: 'ring-red-500/30',
+      glow: 'shadow-red-500/30',
+    },
+    urlExamples: [
+      'pinterest.com/pin/…',
+      'pin.it/…',
+      'pinterest.co.uk/pin/…',
+      'pinterest.de/pin/…',
+    ],
+    cards: [
+      {
+        title: '🎬 Video pins in HD',
+        body: 'Pinterest idea-pin videos are saved at their source quality as a clean MP4 — no screen-recording, no watermark stitched on.',
+      },
+      {
+        title: '🖼️ Full-resolution images',
+        body: 'Image pins download at full size, not the compressed thumbnail the app shows — ideal for mood boards and references.',
+      },
+      {
+        title: '🔗 pin.it short links',
+        body: 'Short pin.it URLs work the same as full pinterest.com links — the tool resolves the short link to the underlying pin automatically.',
+      },
+    ],
+    faqs: [
+      {
+        q: 'Can I download Pinterest videos?',
+        a: 'Yes — paste a video pin URL and the tool resolves the MP4 so you can preview it and save it directly to your device.',
+      },
+      {
+        q: 'Does it save full-size Pinterest images?',
+        a: 'Yes. Image pins are downloaded at their source resolution rather than the compressed preview shown in the feed.',
+      },
+      {
+        q: 'Do pin.it short links work?',
+        a: 'Yes. The tool follows the pin.it redirect to the underlying pinterest.com pin, so either format works.',
+      },
+      {
+        q: 'Do I need a Pinterest account?',
+        a: 'No. Only publicly visible pins are accessed — no login, no extension. Private boards and secret pins are out of scope.',
+      },
+      {
+        q: 'Why does my Pinterest link fail to process?',
+        a: 'Make sure the pin is public and the URL is a pin link (pinterest.com/pin/… or pin.it/…). Some pins only link out to an external site and carry no downloadable media.',
+      },
+    ],
+    featureList: [
+      'Download Pinterest video pins in HD',
+      'Save Pinterest images at full resolution',
+      'Works with pin.it short links',
+      'No Pinterest login, no extension, no install',
+      'Preview the media before downloading',
+    ],
+  },
+  {
+    slug: 'reddit-video-downloader',
+    name: 'Reddit',
+    brandLabel: 'Reddit video downloader',
+    metaTitle: 'Reddit Video Downloader — Save v.redd.it Videos with Audio',
+    metaDescription:
+      'Download Reddit videos in HD with sound. Reddit stores video and audio separately — this tool merges them. Paste a reddit.com or v.redd.it link, no login.',
+    h1: 'Reddit Video Downloader — HD, With Sound',
+    tagline:
+      'Save Reddit videos with the audio track merged back in — the way they should download.',
+    intro:
+      'Reddit hosts a post’s video and its audio as two separate streams, which is why a naive “save video” grabs a silent clip. Paste any reddit.com/r/…/comments/… or v.redd.it/… link and the tool resolves both streams and merges them so you get the video with sound. No login, no extension, nothing installed.',
+    accent: {
+      chip: 'bg-[#FF4500] text-white',
+      grad: 'from-orange-500 via-orange-600 to-red-500',
+      ring: 'ring-orange-500/30',
+      glow: 'shadow-orange-500/30',
+    },
+    urlExamples: [
+      'reddit.com/r/sub/comments/…',
+      'v.redd.it/…',
+      'reddit.com/r/sub/s/…',
+      'redd.it/…',
+    ],
+    cards: [
+      {
+        title: '🔊 Video with sound',
+        body: 'Reddit splits video and audio into separate files. The tool fetches both and merges them, so your download isn’t a silent clip.',
+      },
+      {
+        title: '🎬 HD quality',
+        body: 'Clips are saved at the highest resolution the original post offers — up to 1080p on hosted v.redd.it videos.',
+      },
+      {
+        title: '🔗 Every Reddit link',
+        body: 'Full comment permalinks, /s/ share links, and bare v.redd.it / redd.it short URLs are all supported — paste any of them.',
+      },
+    ],
+    faqs: [
+      {
+        q: 'Why do Reddit videos download without sound elsewhere?',
+        a: 'Reddit stores the video and audio as two separate streams. A plain “save” grabs only the video. This tool fetches both and merges them so the download has sound.',
+      },
+      {
+        q: 'What Reddit URL formats work?',
+        a: 'Full comment permalinks (reddit.com/r/…/comments/…), new-style /s/ share links, and short v.redd.it / redd.it URLs all work.',
+      },
+      {
+        q: 'Can I download videos from any subreddit?',
+        a: 'Any public post works. Videos in private or quarantined communities, or NSFW posts behind an age gate, may not be accessible.',
+      },
+      {
+        q: 'Does it work with GIFs and crossposts?',
+        a: 'Yes — Reddit-hosted GIFs come through as MP4, and crossposts resolve to the original hosted video.',
+      },
+      {
+        q: 'Do I need to log in to Reddit?',
+        a: 'No. Only publicly visible posts are accessed — no login, no app, no extension.',
+      },
+    ],
+    featureList: [
+      'Download Reddit videos with the audio merged in',
+      'Save v.redd.it clips in HD',
+      'Works with permalinks, /s/ share links and redd.it',
+      'Reddit-hosted GIFs saved as MP4',
+      'No login, no app, no extension',
+    ],
+  },
+  {
+    slug: 'threads-video-downloader',
+    name: 'Threads',
+    brandLabel: 'Threads video & photo downloader',
+    metaTitle: 'Threads Video & Photo Downloader — Save Posts, No Login',
+    metaDescription:
+      'Download videos and photos from Threads (threads.net) in full quality. Paste a threads.net/@user/post link and save the media instantly — free, no login.',
+    h1: 'Threads Video & Photo Downloader — Free, No Login',
+    tagline:
+      'Save videos and photos from Threads posts in their original quality.',
+    intro:
+      'Paste any threads.net (or threads.com) post URL — threads.net/@username/post/… — and the tool resolves the attached media so you can preview and download the video or photo directly. No Threads or Instagram login, no extension, nothing installed. Private profiles can’t be fetched.',
+    accent: {
+      chip: 'bg-black text-white',
+      grad: 'from-zinc-400 via-zinc-200 to-white',
+      ring: 'ring-white/30',
+      glow: 'shadow-white/20',
+    },
+    urlExamples: [
+      'threads.net/@user/post/…',
+      'threads.com/@user/post/…',
+      'threads.net/t/…',
+      'www.threads.net/@user/post/…',
+    ],
+    cards: [
+      {
+        title: '🎬 Videos in HD',
+        body: 'Threads video posts are saved at their source resolution as a clean MP4 — no re-encode, no watermark.',
+      },
+      {
+        title: '🖼️ Photos at full size',
+        body: 'Single photos and image posts download at full resolution, not the compressed inline preview.',
+      },
+      {
+        title: '🧵 threads.net & threads.com',
+        body: 'Both the threads.net and newer threads.com domains work, along with short /t/ links — paste whichever you copied.',
+      },
+    ],
+    faqs: [
+      {
+        q: 'Can I download videos from Threads?',
+        a: 'Yes — paste a public Threads post URL and the tool resolves the video so you can preview and download the MP4.',
+      },
+      {
+        q: 'Does it work with photo posts?',
+        a: 'Yes. Single photos and image posts are saved at full resolution.',
+      },
+      {
+        q: 'Do I need a Threads or Instagram login?',
+        a: 'No. Only publicly visible posts are accessed. Posts from private profiles can’t be downloaded.',
+      },
+      {
+        q: 'What Threads URL formats are supported?',
+        a: 'threads.net/@user/post/…, threads.com/@user/post/…, and short threads.net/t/… links all work.',
+      },
+      {
+        q: 'Why does my Threads link fail to process?',
+        a: 'Make sure the post is public and the URL points at a single post. Private profiles, deleted posts, and text-only posts (no media) can’t be fetched.',
+      },
+    ],
+    featureList: [
+      'Download Threads videos in HD',
+      'Save Threads photos at full resolution',
+      'Works with threads.net and threads.com URLs',
+      'No Threads or Instagram login required',
+      'Preview the media before downloading',
+    ],
+  },
+  {
+    slug: 'snapchat-downloader',
+    name: 'Snapchat',
+    brandLabel: 'Snapchat Spotlight downloader',
+    metaTitle: 'Snapchat Spotlight Downloader — Save Videos, No Login',
+    metaDescription:
+      'Download public Snapchat Spotlight videos in HD. Paste a snapchat.com/spotlight or story.snapchat.com link and save the MP4 instantly — free, no login, no app.',
+    h1: 'Snapchat Spotlight Downloader — HD, No Login',
+    tagline:
+      'Save public Snapchat Spotlight clips and public stories straight to your device.',
+    intro:
+      'Paste a public Snapchat link — snapchat.com/spotlight/… or story.snapchat.com/… — and the tool resolves the clip so you can preview and download the MP4. No Snapchat login, no app, no extension. Private snaps and disappearing messages are not accessible — only content Snapchat publishes publicly.',
+    accent: {
+      chip: 'bg-[#FFFC00] text-black',
+      grad: 'from-yellow-300 via-yellow-400 to-amber-400',
+      ring: 'ring-yellow-400/40',
+      glow: 'shadow-yellow-400/30',
+    },
+    urlExamples: [
+      'snapchat.com/spotlight/…',
+      'story.snapchat.com/…',
+      'snapchat.com/t/…',
+      'snapchat.com/add/…',
+    ],
+    cards: [
+      {
+        title: '🎬 Spotlight in HD',
+        body: 'Public Snapchat Spotlight clips are saved at their source resolution as a clean, vertical MP4 — ready to re-share or archive.',
+      },
+      {
+        title: '📖 Public stories',
+        body: 'Public profile stories on story.snapchat.com resolve the same way — preview the clip, then download it.',
+      },
+      {
+        title: '🔒 Public content only',
+        body: 'Only content Snapchat publishes publicly can be fetched. Private snaps, chats, and disappearing messages are never accessible.',
+      },
+    ],
+    faqs: [
+      {
+        q: 'Can I download Snapchat Spotlight videos?',
+        a: 'Yes — paste a snapchat.com/spotlight/… link and the tool resolves the MP4 so you can preview it and save it.',
+      },
+      {
+        q: 'Can I download someone’s private snaps or chats?',
+        a: 'No. Only publicly published content (Spotlight and public profile stories) can be accessed. Private snaps and messages are never in scope.',
+      },
+      {
+        q: 'Will the other person know I saved their Spotlight clip?',
+        a: 'There’s no “downloaded by” notification for public Spotlight content. Please respect the creator and Snapchat’s terms when re-using it.',
+      },
+      {
+        q: 'What Snapchat URL formats are supported?',
+        a: 'snapchat.com/spotlight/…, story.snapchat.com/…, and short snapchat.com/t/… links work best.',
+      },
+      {
+        q: 'Why does my Snapchat link fail to process?',
+        a: 'Make sure it’s a public Spotlight or public story link. Private snaps, expired stories, and profile links with no public media can’t be fetched.',
+      },
+    ],
+    featureList: [
+      'Download public Snapchat Spotlight clips in HD',
+      'Save public profile stories as MP4',
+      'Native vertical format preserved',
+      'No Snapchat login, no app, no extension',
+      'Public content only — private snaps never accessed',
+    ],
+  },
+  {
+    slug: 'twitch-clip-downloader',
+    name: 'Twitch',
+    brandLabel: 'Twitch clip & VOD downloader',
+    metaTitle: 'Twitch Clip Downloader — Save Clips & VODs in HD, No Login',
+    metaDescription:
+      'Download Twitch clips and VODs in HD as MP4. Paste a clips.twitch.tv, twitch.tv/…/clip/, or twitch.tv/videos/ link and save instantly — free, no login.',
+    h1: 'Twitch Clip & VOD Downloader — HD MP4',
+    tagline:
+      'Save Twitch clips and past broadcasts (VODs) as MP4 in their original quality.',
+    intro:
+      'Paste a Twitch clip or VOD link — clips.twitch.tv/…, twitch.tv/<channel>/clip/…, or twitch.tv/videos/… — and the tool resolves the stream so you can preview and download the MP4. No Twitch login, no extension, nothing installed. Sub-only VODs and content behind a paywall can’t be fetched.',
+    accent: {
+      chip: 'bg-[#9146FF] text-white',
+      grad: 'from-violet-500 via-purple-500 to-fuchsia-500',
+      ring: 'ring-violet-500/30',
+      glow: 'shadow-violet-500/30',
+    },
+    urlExamples: [
+      'clips.twitch.tv/…',
+      'twitch.tv/channel/clip/…',
+      'twitch.tv/videos/…',
+      'm.twitch.tv/clip/…',
+    ],
+    cards: [
+      {
+        title: '🎬 Clips in HD',
+        body: 'Twitch clips are saved at their source resolution as a clean MP4 — perfect for compilations, reactions, or re-sharing off-platform.',
+      },
+      {
+        title: '📼 VOD downloads',
+        body: 'Past broadcasts (twitch.tv/videos/…) resolve the same way, so you can archive a stream before it expires from the channel.',
+      },
+      {
+        title: '🔗 Clip & channel links',
+        body: 'Both clips.twitch.tv short links and full twitch.tv/<channel>/clip/… URLs are supported — paste whichever you copied.',
+      },
+    ],
+    faqs: [
+      {
+        q: 'Can I download Twitch clips?',
+        a: 'Yes — paste a clips.twitch.tv or twitch.tv/<channel>/clip/… link and the tool resolves the MP4 so you can preview and save it.',
+      },
+      {
+        q: 'Can I download a full Twitch VOD?',
+        a: 'Yes, public past broadcasts (twitch.tv/videos/…) can be downloaded. Very long VODs take longer to process.',
+      },
+      {
+        q: 'Do sub-only VODs work?',
+        a: 'No. Subscriber-only VODs and any content behind a paywall or login can’t be fetched — only publicly viewable clips and VODs.',
+      },
+      {
+        q: 'What quality are downloaded clips?',
+        a: 'You get the highest resolution the source offers — typically up to 1080p60 for clips captured from HD streams.',
+      },
+      {
+        q: 'Why does my Twitch link fail to process?',
+        a: 'Make sure it’s a public clip or VOD link. Sub-only, deleted, or region-restricted content can’t be downloaded.',
+      },
+    ],
+    featureList: [
+      'Download Twitch clips in HD MP4',
+      'Save public VODs (past broadcasts)',
+      'Works with clips.twitch.tv and channel clip links',
+      'No Twitch login, no extension, no install',
+      'Preview the clip before downloading',
+    ],
+  },
+  {
+    slug: 'vimeo-downloader',
+    name: 'Vimeo',
+    brandLabel: 'Vimeo video downloader',
+    metaTitle: 'Vimeo Video Downloader — Save HD Videos as MP4, No Login',
+    metaDescription:
+      'Download public Vimeo videos in HD as MP4. Paste a vimeo.com link and save the progressive video file instantly — free, no login, no app install.',
+    h1: 'Vimeo Video Downloader — HD MP4, No Login',
+    tagline:
+      'Save public Vimeo videos as MP4 in the highest quality the source offers.',
+    intro:
+      'Paste any public vimeo.com/… link and the tool resolves the video through Vimeo’s own player configuration, returning a direct progressive MP4 you can preview and download. No Vimeo login, no extension, nothing installed. Password-protected, private, and domain-restricted videos can’t be fetched.',
+    accent: {
+      chip: 'bg-[#1AB7EA] text-white',
+      grad: 'from-sky-400 via-cyan-500 to-blue-500',
+      ring: 'ring-sky-500/30',
+      glow: 'shadow-sky-500/30',
+    },
+    urlExamples: [
+      'vimeo.com/123456789',
+      'player.vimeo.com/video/…',
+      'vimeo.com/channels/…/…',
+      'www.vimeo.com/…',
+    ],
+    cards: [
+      {
+        title: '🎬 HD MP4 downloads',
+        body: 'Public Vimeo videos are saved at the highest progressive rendition available — commonly up to 1080p — as a clean MP4.',
+      },
+      {
+        title: '⚡ Direct from Vimeo',
+        body: 'The video is resolved through Vimeo’s own player config, so you get a real progressive file — not a screen-recording or re-encode.',
+      },
+      {
+        title: '🎚️ Quality aware',
+        body: 'Choose HD for the best rendition or Data saver for a lighter file — the tool picks the matching progressive source.',
+      },
+    ],
+    faqs: [
+      {
+        q: 'Can I download any Vimeo video?',
+        a: 'Public videos that expose a progressive (non-DASH) MP4 can be downloaded. Password-protected, private, and domain-locked videos can’t be fetched.',
+      },
+      {
+        q: 'What quality do I get?',
+        a: 'The highest progressive rendition the video offers — often up to 1080p. Use the Data saver option for a smaller file.',
+      },
+      {
+        q: 'Do I need a Vimeo account?',
+        a: 'No. Only publicly viewable videos are accessed — no login, no extension, no install.',
+      },
+      {
+        q: 'Why does a Vimeo video only stream and not download?',
+        a: 'A few Vimeo videos are delivered only as adaptive DASH with no progressive MP4. Those can’t be saved as a single file.',
+      },
+      {
+        q: 'Why does my Vimeo link fail to process?',
+        a: 'Make sure the video is public and the URL is a vimeo.com/<id> link. Private, password-protected, or unlisted-with-restrictions videos can’t be fetched.',
+      },
+    ],
+    featureList: [
+      'Download public Vimeo videos as HD MP4',
+      'Direct progressive file via Vimeo’s player config',
+      'HD or Data-saver quality selection',
+      'No Vimeo login, no extension, no install',
       'Preview the video before downloading',
     ],
   },
