@@ -6,6 +6,7 @@ import {
   parseVideoId,
   detectPlatform,
   parseInstagramShortcode,
+  parseInstagramStory,
   parseYouTubeId,
   type SupportedPlatform,
 } from './validator'
@@ -28,6 +29,19 @@ interface IgShortcodeMedia extends IgMediaNode {
   edge_media_to_caption?: { edges?: Array<{ node?: { text?: string } }> }
   edge_sidecar_to_children?: { edges?: Array<{ node?: IgMediaNode }> }
   video_duration?: number
+}
+
+// Minimal shapes for the private reels_media API used by the story extractor.
+interface IgStoryItem {
+  pk?: string | number
+  id?: string
+  video_versions?: Array<{ url?: string }>
+  image_versions2?: { candidates?: Array<{ url?: string }> }
+  video_duration?: number
+}
+interface IgReel {
+  user?: { username?: string }
+  items?: IgStoryItem[]
 }
 
 // Instagram's GraphQL endpoint rejects requests that don't carry its anti-CSRF
@@ -318,6 +332,17 @@ export class Downloader {
    * slideshow renderer.
    */
   private async downloadInstagram(url: string): Promise<VideoData> {
+    // Stories & highlights use a different (login-gated) endpoint than shortcode
+    // posts — detect and route them out first. `/s/…` share links redirect to a
+    // canonical /stories/highlights/… URL, so resolve those before parsing.
+    let storyCandidate = url
+    if (url.includes('/s/')) {
+      storyCandidate = await this.resolveRedirect(url)
+    }
+    const story =
+      parseInstagramStory(storyCandidate) || parseInstagramStory(url)
+    if (story) return this.downloadInstagramStory(story, url)
+
     let resolvedUrl = url
     if (url.includes('/share/') || url.includes('instagr.am')) {
       resolvedUrl = await this.resolveInstagramUrl(url)
@@ -406,6 +431,126 @@ export class Downloader {
     throw new Error(
       'Could not download Instagram content. The post may be private or unavailable, or the configured Instagram session (IG_SESSIONID) may have expired.',
     )
+  }
+
+  /**
+   * Instagram story / highlight extractor. Stories are only served to
+   * authenticated accounts, so this REQUIRES a configured IG_SESSIONID — without
+   * it we surface a clear, specific message rather than a generic failure. With
+   * a session it resolves the user's (or highlight's) reel via the private
+   * reels_media API and returns the matching item's video or image.
+   *
+   * Best-effort: Instagram rotates these endpoints, and stories expire after
+   * 24h, so failures degrade to an explanatory error.
+   */
+  private async downloadInstagramStory(
+    story: { username?: string; storyPk?: string; highlightId?: string },
+    originalUrl: string,
+  ): Promise<VideoData> {
+    if (!this.instagramSessionId) {
+      throw new Error(
+        'This is an Instagram story/highlight — Instagram only serves these to a logged-in account, so downloading them needs a configured Instagram session (IG_SESSIONID). Public posts and reels work without one.',
+      )
+    }
+
+    const { csrf } = await this.getInstagramTokens()
+    const cookie = [
+      `sessionid=${this.instagramSessionId}`,
+      csrf ? `csrftoken=${csrf}` : '',
+    ]
+      .filter(Boolean)
+      .join('; ')
+    const headers: Record<string, string> = {
+      'User-Agent': this.userAgent,
+      'X-IG-App-ID': this.instagramAppId,
+      Accept: '*/*',
+      Referer: 'https://www.instagram.com/',
+      Cookie: cookie,
+    }
+
+    // Resolve which reel to fetch: a highlight id directly, or the user id
+    // behind a username.
+    let reelId: string
+    if (story.highlightId) {
+      reelId = `highlight:${story.highlightId}`
+    } else if (story.username) {
+      const prof = await axios.get(
+        `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(
+          story.username,
+        )}`,
+        { headers, timeout: 15000, validateStatus: () => true },
+      )
+      const userId = prof.data?.data?.user?.id
+      if (!userId) {
+        throw new Error(
+          'Could not resolve that Instagram account (it may be private, or the session has expired).',
+        )
+      }
+      reelId = String(userId)
+    } else {
+      throw new Error('Unrecognised Instagram story link.')
+    }
+
+    const reels = await axios.get(
+      `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(
+        reelId,
+      )}`,
+      { headers, timeout: 20000, validateStatus: () => true },
+    )
+
+    const reelMap = (reels.data?.reels ?? {}) as Record<string, IgReel>
+    const reel: IgReel | undefined =
+      reelMap[reelId] ?? (Object.values(reelMap)[0] as IgReel | undefined)
+    const items = (reel?.items ?? []) as IgStoryItem[]
+    if (items.length === 0) {
+      throw new Error(
+        'No story items are available — the story may have expired (stories last 24 hours) or the account has none right now.',
+      )
+    }
+
+    // Prefer the exact item the link points at; otherwise take the first.
+    const item =
+      (story.storyPk &&
+        items.find(
+          (it) =>
+            String(it.pk) === story.storyPk ||
+            String(it.id ?? '').startsWith(story.storyPk as string),
+        )) ||
+      items[0]
+
+    const video = item?.video_versions?.[0]?.url
+    const image = item?.image_versions2?.candidates?.[0]?.url
+    const owner = reel?.user?.username || story.username || 'instagram'
+    const id = String(item?.pk ?? story.storyPk ?? Date.now())
+
+    if (video) {
+      return {
+        id,
+        title: `Instagram story by @${owner}`,
+        url: originalUrl,
+        thumbnail: image || '',
+        duration: Math.round(item?.video_duration || 0),
+        author: owner,
+        description: '',
+        downloadUrl: video,
+        isPhotoCarousel: false,
+      }
+    }
+    if (image) {
+      return {
+        id,
+        title: `Instagram story by @${owner}`,
+        url: originalUrl,
+        thumbnail: image,
+        duration: 0,
+        author: owner,
+        description: '',
+        downloadUrl: '',
+        images: [{ id: `${id}_0`, url: image, thumbnail: image }],
+        isPhotoCarousel: false,
+      }
+    }
+    throw new Error('Could not extract media from that story item.')
   }
 
   /**
