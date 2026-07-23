@@ -1032,6 +1032,10 @@ export class Downloader {
         // (no video), so the API serves it through the audio path.
         downloadUrl: isAudio ? '' : data.url,
         ...(isAudio ? { musicUrl: data.url } : {}),
+        // A tunnel streams from any IP with Content-Disposition: attachment, so
+        // the browser can download it directly (bypassing our proxy). A
+        // `redirect` is a raw CDN URL — do NOT mark it direct-safe.
+        tunnel: data.status === 'tunnel',
       }
     }
 
