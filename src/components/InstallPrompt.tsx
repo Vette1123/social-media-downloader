@@ -90,8 +90,8 @@ export function InstallPrompt() {
         <p className='text-sm font-medium text-white'>Install the app</p>
         <p className='mt-0.5 text-xs text-white/60'>
           {isIOS
-            ? 'Tap Share, then “Add to Home Screen” to keep it one tap away.'
-            : 'Then share any TikTok, Reel or Short straight into it — no browser, no paste.'}
+            ? 'Tap Share, then “Add to Home Screen”.'
+            : 'Share videos straight from TikTok. No browser, no paste.'}
         </p>
       </div>
 
