@@ -23,6 +23,7 @@ import {
   TwitterXIcon,
   YouTubeIcon,
 } from '@/components/icons'
+import { InstallPrompt } from '@/components/InstallPrompt'
 import { buildDownloadFilename } from '@/lib/filename'
 import { friendlyError } from '@/lib/errorMessages'
 import {
@@ -1040,6 +1041,10 @@ export function DownloaderApp() {
           </div>
         )}
       </div>
+
+      {/* Install nudge — installing registers the Android share target so a link
+          can be shared straight from TikTok/IG/YouTube into the app. */}
+      {!state.videoMetadata && !state.loading && <InstallPrompt />}
 
       {/* Recent — locally-stored links (never leaves the device). Hidden once a
           result is on screen so it doesn't compete with it. Tap to re-resolve. */}
