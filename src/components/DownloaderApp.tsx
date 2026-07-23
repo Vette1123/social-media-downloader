@@ -166,6 +166,24 @@ async function captureThumbnail(srcUrl: string): Promise<string> {
   return ''
 }
 
+// Hand a URL straight to the browser's download manager via a synthetic <a>.
+// Used for Cobalt tunnel URLs (Content-Disposition: attachment, cross-origin
+// safe), so the bytes go browser→Cobalt directly instead of being re-streamed
+// through our function. The `download` filename is advisory (browsers ignore it
+// cross-origin and honour Cobalt's own attachment filename); target=_blank is a
+// safety net so a browser that somehow navigates opens a tab instead of
+// replacing the app shell.
+function triggerDirectDownload(url: string, filename: string) {
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  link.rel = 'noopener'
+  link.target = '_blank'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 const PLATFORM_DISPLAY: Record<string, string> = {
   tiktok: 'TikTok',
   twitter: 'X',
@@ -283,6 +301,11 @@ export function DownloaderApp() {
     total: number
     saved: number
   } | null>(null)
+  // Which rendition the result-card re-pick is currently fetching (null = idle).
+  const [repicking, setRepicking] = useState<'hd' | 'sd' | 'audio' | null>(null)
+  // iPhone/iPad Safari: downloads land in Files, not the camera roll, so we show
+  // a one-line "save to Photos" hint on video results. Set once on mount.
+  const [isIOS, setIsIOS] = useState(false)
   const didInit = useRef(false)
 
   const changeQuality = (q: 'hd' | 'sd') => {
@@ -303,17 +326,23 @@ export function DownloaderApp() {
     }
   }
 
-  // Resolve one link against the API. Shared by the single-link flow and batch
-  // mode. Returns the parsed response (or throws on network failure).
-  const resolveOne = async (target: string) => {
+  // Resolve one link against the API. Shared by the single-link flow, batch
+  // mode, and the result-card re-pick. `opts` overrides the current format/
+  // quality prefs so the re-pick can request a different rendition without
+  // waiting for a setState round-trip. Returns the parsed response (or throws
+  // on network failure).
+  const resolveOne = async (
+    target: string,
+    opts?: { quality?: 'hd' | 'sd'; format?: 'video' | 'audio' },
+  ) => {
     const response = await fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: target,
         type: state.downloadType,
-        quality,
-        format,
+        quality: opts?.quality ?? quality,
+        format: opts?.format ?? format,
       }),
     })
     return response.json()
@@ -342,6 +371,50 @@ export function DownloaderApp() {
         ts: Date.now(),
       }),
     )
+  }
+
+  // Re-resolve the current result at a different rendition (HD / Data saver /
+  // MP3) without making the user re-paste. Keeps the card on screen (no reset),
+  // updates the saved prefs so the top toggles stay in sync, and swaps in the
+  // fresh result. `repicking` marks the pending chip so the control can show a
+  // spinner and lock out double-taps.
+  const reResolve = async (
+    nextFormat: 'video' | 'audio',
+    nextQuality: 'hd' | 'sd',
+  ) => {
+    const target = state.originalUrl
+    if (!target || repicking) return
+    // Persist the new prefs so the paste-bar toggles and next resolve match.
+    if (nextFormat !== format) changeFormat(nextFormat)
+    if (nextQuality !== quality) changeQuality(nextQuality)
+    setRepicking(nextFormat === 'audio' ? 'audio' : nextQuality)
+    setUrlError(null)
+    try {
+      const data = await resolveOne(target, {
+        quality: nextQuality,
+        format: nextFormat,
+      })
+      if (data.success) {
+        dispatch({
+          type: 'SET_DOWNLOAD_SUCCESS',
+          payload: {
+            downloadUrl: data.downloadUrl,
+            audioUrl: data.audioUrl,
+            metadata: data.metadata,
+            originalUrl: target,
+          },
+        })
+        void rememberInHistory(target, data.metadata)
+      } else {
+        const fe = friendlyError(data.error, target)
+        dispatch({ type: 'SET_MESSAGE', payload: `${fe.title} — ${fe.hint}` })
+      }
+    } catch (err) {
+      const fe = friendlyError(err instanceof Error ? err.message : '', target)
+      dispatch({ type: 'SET_MESSAGE', payload: `${fe.title} — ${fe.hint}` })
+    } finally {
+      setRepicking(null)
+    }
   }
 
   // `overrideUrl` lets the paste button, the PWA share target, and the recent
@@ -520,6 +593,18 @@ export function DownloaderApp() {
     if (didInit.current) return
     didInit.current = true
     setHistory(loadHistory())
+    // iOS (real Safari, not Chrome/Firefox on iOS which spoof a desktop-ish UA):
+    // downloads go to Files, so a "save to Photos" hint helps. iPadOS 13+ reports
+    // a Mac UA, so also treat a touch-capable "Mac" as iPad.
+    try {
+      const ua = window.navigator.userAgent || ''
+      const iOSUA = /iphone|ipad|ipod/i.test(ua) && !/crios|fxios/i.test(ua)
+      const iPadOS =
+        /Macintosh/i.test(ua) && (navigator.maxTouchPoints ?? 0) > 1
+      if (iOSUA || iPadOS) setIsIOS(true)
+    } catch {
+      // non-browser / locked-down env — skip the hint.
+    }
     try {
       const q = window.localStorage.getItem('smd:quality')
       if (q === 'sd' || q === 'hd') setQuality(q)
@@ -544,6 +629,27 @@ export function DownloaderApp() {
 
   const handleVideoDownload = async () => {
     if (!state.downloadUrl) return
+
+    // Direct path: a Cobalt tunnel downloads browser→Cobalt, skipping our proxy
+    // (saves the function's egress). No progress bar — the browser's own
+    // download manager takes over instantly.
+    const direct = state.videoMetadata?.directVideoUrl
+    if (direct) {
+      triggerDirectDownload(
+        direct,
+        buildDownloadFilename({
+          platform: state.videoMetadata?.platform,
+          author: state.videoMetadata?.author,
+          title: state.videoMetadata?.title,
+          ext: 'mp4',
+        }),
+      )
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: 'Download started. Check your downloads. 🎉',
+      })
+      return
+    }
 
     dispatch({ type: 'SET_DOWNLOADING', payload: true })
     dispatch({ type: 'SET_PROGRESS', payload: 0 })
@@ -657,6 +763,27 @@ export function DownloaderApp() {
 
   const handleAudioDownload = async () => {
     if (!state.audioUrl) return
+
+    // Direct path: a Cobalt audio tunnel (MP3) downloads browser→Cobalt,
+    // bypassing our proxy. Only set when the audio source is itself a tunnel
+    // (the "→ MP3" flow); re-serving a video stream as audio keeps the proxy.
+    const direct = state.videoMetadata?.directAudioUrl
+    if (direct) {
+      triggerDirectDownload(
+        direct,
+        buildDownloadFilename({
+          platform: state.videoMetadata?.platform,
+          author: state.videoMetadata?.author,
+          title: state.videoMetadata?.title,
+          ext: 'mp3',
+        }),
+      )
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: 'Download started. Check your downloads. 🎵',
+      })
+      return
+    }
 
     dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: true })
     dispatch({ type: 'SET_PROGRESS', payload: 0 })
@@ -1560,6 +1687,68 @@ export function DownloaderApp() {
                   </div>
                 )}
 
+              {/* Re-pick rendition — re-resolve the SAME link as HD / Data
+                  saver / MP3 without making the user re-paste. Hidden for photo
+                  carousels and embed-only results (no single stream to swap). */}
+              {(() => {
+                const meta = state.videoMetadata
+                const hasStream = !!state.downloadUrl || !!state.audioUrl
+                const isGallery =
+                  meta?.isPhotoCarousel || (meta?.images?.length ?? 0) > 0
+                if (!hasStream || isGallery) return null
+                const active: 'hd' | 'sd' | 'audio' =
+                  format === 'audio' ? 'audio' : quality
+                const options: Array<{
+                  key: 'hd' | 'sd' | 'audio'
+                  label: string
+                  onPick: () => void
+                }> = [
+                  { key: 'hd', label: 'HD', onPick: () => reResolve('video', 'hd') },
+                  {
+                    key: 'sd',
+                    label: 'Data saver',
+                    onPick: () => reResolve('video', 'sd'),
+                  },
+                  {
+                    key: 'audio',
+                    label: 'MP3',
+                    onPick: () => reResolve('audio', quality),
+                  },
+                ]
+                return (
+                  <div className='flex items-center justify-center gap-2 text-xs'>
+                    <span className='text-white/40'>Get it as</span>
+                    <div
+                      role='group'
+                      aria-label='Re-download as'
+                      className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
+                    >
+                      {options.map((o) => {
+                        const isActive = active === o.key
+                        const isPending = repicking === o.key
+                        return (
+                          <button
+                            key={o.key}
+                            type='button'
+                            onClick={o.onPick}
+                            disabled={repicking !== null}
+                            aria-pressed={isActive}
+                            className={`flex items-center gap-1 rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed ${
+                              isActive
+                                ? 'bg-cyan-400/90 text-[#04171b]'
+                                : 'text-white/55 hover:text-white disabled:opacity-50'
+                            }`}
+                          >
+                            {isPending && <SpinnerIcon className='h-3 w-3' />}
+                            {o.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+
               {/* Download Buttons */}
               {(() => {
                 const hasImagesForSlideshow =
@@ -1644,6 +1833,18 @@ export function DownloaderApp() {
                   </div>
                 )
               })()}
+
+              {/* iOS: video downloads land in Files, not the camera roll, so
+                  point users at the one extra tap that saves to Photos. Only for
+                  a real video stream (MP3/Files-only downloads don't need it). */}
+              {isIOS &&
+                !!state.downloadUrl &&
+                !state.videoMetadata?.isPhotoCarousel && (
+                  <p className='text-center text-[11px] leading-relaxed text-white/45'>
+                    On iPhone it saves to Files. To add it to Photos, open the
+                    file, tap Share, then Save Video.
+                  </p>
+                )}
 
               {(state.downloadUrl || state.audioUrl) &&
                 (() => {

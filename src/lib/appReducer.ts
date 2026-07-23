@@ -24,6 +24,13 @@ export interface VideoMetadata {
   // Present (YouTube fallback) when the video can be played via an embedded
   // player but not downloaded. The UI shows the embed and hides download buttons.
   embedUrl?: string
+  // Cobalt-tunnel URLs the browser can download DIRECTLY (Content-Disposition:
+  // attachment, streams from any IP), bypassing our /api/video|audio proxy to
+  // save the function's egress. When set, the download button navigates the
+  // browser straight to this URL; when absent it falls back to the proxied
+  // downloadUrl/audioUrl (fetch + progress bar). Preview always uses the proxy.
+  directVideoUrl?: string
+  directAudioUrl?: string
 }
 
 export interface AppState {
