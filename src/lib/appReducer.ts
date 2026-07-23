@@ -44,6 +44,9 @@ export interface AppState {
   showImageGallery: boolean
   downloadType: 'video' | 'audio'
   downloadImagesAsZip: boolean
+  // Active-download progress: 0–100 when the stream reports a Content-Length,
+  // null when indeterminate (chunked response) or no download is running.
+  progress: number | null
 }
 
 export type AppAction =
@@ -58,6 +61,7 @@ export type AppAction =
   | { type: 'SET_VIDEO_METADATA'; payload: VideoMetadata | null }
   | { type: 'SET_DOWNLOAD_TYPE'; payload: 'video' | 'audio' }
   | { type: 'SET_DOWNLOAD_IMAGES_AS_ZIP'; payload: boolean }
+  | { type: 'SET_PROGRESS'; payload: number | null }
   | { type: 'TOGGLE_PREVIEW' }
   | { type: 'TOGGLE_IMAGE_GALLERY' }
   | { type: 'TOGGLE_IMAGE_SELECTION'; payload: string }
@@ -88,6 +92,7 @@ export const initialState: AppState = {
   showImageGallery: false,
   downloadType: 'video',
   downloadImagesAsZip: false,
+  progress: null,
 }
 
 export function appReducer(state: AppState, action: AppAction): AppState {
@@ -124,6 +129,9 @@ export function appReducer(state: AppState, action: AppAction): AppState {
 
     case 'SET_DOWNLOAD_IMAGES_AS_ZIP':
       return { ...state, downloadImagesAsZip: action.payload }
+
+    case 'SET_PROGRESS':
+      return { ...state, progress: action.payload }
 
     case 'TOGGLE_PREVIEW':
       return { ...state, showPreview: !state.showPreview }
@@ -170,6 +178,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         videoMetadata: null,
         showPreview: false,
         showImageGallery: false,
+        progress: null,
       }
 
     case 'SET_DOWNLOAD_SUCCESS': {

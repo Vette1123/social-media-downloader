@@ -38,6 +38,40 @@ function extractFirstUrl(s: string): string | null {
   return /^https?:\/\//i.test(candidate) ? candidate : null
 }
 
+// Stream a download response, reporting progress as it lands. Emits a 0–100
+// percentage when the response carries a Content-Length; otherwise emits null
+// (indeterminate) and lets the browser buffer. Buffering the chunks here is no
+// heavier than response.blob(), which also holds the whole body in memory — it
+// just lets us surface a real progress bar on big mobile downloads.
+async function streamToBlob(
+  response: Response,
+  onProgress: (pct: number | null) => void,
+): Promise<Blob> {
+  const total = Number(response.headers.get('content-length')) || 0
+  const type = response.headers.get('content-type') || ''
+  if (!response.body || !total) {
+    onProgress(null)
+    const blob = await response.blob()
+    onProgress(100)
+    return blob
+  }
+  const reader = response.body.getReader()
+  const chunks: BlobPart[] = []
+  let received = 0
+  onProgress(0)
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    if (value) {
+      chunks.push(value)
+      received += value.length
+      onProgress(Math.min(99, Math.round((received / total) * 100)))
+    }
+  }
+  onProgress(100)
+  return new Blob(chunks, type ? { type } : undefined)
+}
+
 // The lightbox is the ONLY component that genuinely needs the motion library
 // (drag/swipe + AnimatePresence). It's buried deep behind "Show images" → tap a
 // thumbnail, so it is never in the critical path. Lazy-loading it splits the
@@ -246,6 +280,7 @@ export function DownloaderApp() {
     if (!state.downloadUrl) return
 
     dispatch({ type: 'SET_DOWNLOADING', payload: true })
+    dispatch({ type: 'SET_PROGRESS', payload: 0 })
 
     try {
       const response = await fetch(state.downloadUrl)
@@ -253,7 +288,9 @@ export function DownloaderApp() {
       if (!response.ok) {
         throw new Error('Failed to download video')
       }
-      const blob = await response.blob()
+      const blob = await streamToBlob(response, (p) =>
+        dispatch({ type: 'SET_PROGRESS', payload: p }),
+      )
       const blobUrl = URL.createObjectURL(blob)
 
       const link = document.createElement('a')
@@ -283,6 +320,7 @@ export function DownloaderApp() {
       })
     } finally {
       dispatch({ type: 'SET_DOWNLOADING', payload: false })
+      dispatch({ type: 'SET_PROGRESS', payload: null })
     }
   }
 
@@ -313,7 +351,9 @@ export function DownloaderApp() {
         throw new Error(err.error || 'Failed to render slideshow')
       }
 
-      const blob = await response.blob()
+      const blob = await streamToBlob(response, (p) =>
+        dispatch({ type: 'SET_PROGRESS', payload: p }),
+      )
       const blobUrl = URL.createObjectURL(blob)
 
       const link = document.createElement('a')
@@ -345,6 +385,7 @@ export function DownloaderApp() {
       })
     } finally {
       dispatch({ type: 'SET_DOWNLOADING', payload: false })
+      dispatch({ type: 'SET_PROGRESS', payload: null })
     }
   }
 
@@ -352,6 +393,7 @@ export function DownloaderApp() {
     if (!state.audioUrl) return
 
     dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: true })
+    dispatch({ type: 'SET_PROGRESS', payload: 0 })
 
     try {
       const response = await fetch(state.audioUrl)
@@ -359,7 +401,9 @@ export function DownloaderApp() {
       if (!response.ok) {
         throw new Error('Failed to download audio')
       }
-      const blob = await response.blob()
+      const blob = await streamToBlob(response, (p) =>
+        dispatch({ type: 'SET_PROGRESS', payload: p }),
+      )
       const blobUrl = URL.createObjectURL(blob)
 
       const link = document.createElement('a')
@@ -389,6 +433,7 @@ export function DownloaderApp() {
       })
     } finally {
       dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
+      dispatch({ type: 'SET_PROGRESS', payload: null })
     }
   }
 
@@ -413,6 +458,7 @@ export function DownloaderApp() {
       const imageUrls = selectedImages.map((img) => img.url)
 
       if (state.downloadImagesAsZip) {
+        dispatch({ type: 'SET_PROGRESS', payload: 0 })
         const response = await fetch('/api/images', {
           method: 'POST',
           headers: {
@@ -428,7 +474,9 @@ export function DownloaderApp() {
         if (!response.ok) {
           throw new Error('Failed to download images as ZIP')
         }
-        const blob = await response.blob()
+        const blob = await streamToBlob(response, (p) =>
+          dispatch({ type: 'SET_PROGRESS', payload: p }),
+        )
         const blobUrl = URL.createObjectURL(blob)
 
         const link = document.createElement('a')
@@ -517,6 +565,7 @@ export function DownloaderApp() {
       })
     } finally {
       dispatch({ type: 'SET_DOWNLOADING_IMAGES', payload: false })
+      dispatch({ type: 'SET_PROGRESS', payload: null })
     }
   }
 
@@ -1211,15 +1260,44 @@ export function DownloaderApp() {
                 )
               })()}
 
-              {(state.downloadUrl || state.audioUrl) && (
-                <p className='text-white/50 text-xs text-center'>
-                  {state.downloading ||
-                  state.downloadingAudio ||
-                  state.downloadingImages
-                    ? 'Please wait while we prepare your download...'
-                    : 'Click to download your content'}
-                </p>
-              )}
+              {(state.downloadUrl || state.audioUrl) &&
+                (() => {
+                  const isDownloading =
+                    state.downloading ||
+                    state.downloadingAudio ||
+                    state.downloadingImages
+                  if (!isDownloading) {
+                    return (
+                      <p className='text-white/50 text-xs text-center'>
+                        Click to download your content
+                      </p>
+                    )
+                  }
+                  const pct = state.progress
+                  return (
+                    <div
+                      className='space-y-1.5'
+                      role='status'
+                      aria-live='polite'
+                    >
+                      <div className='h-1.5 w-full overflow-hidden rounded-full bg-white/10'>
+                        {pct === null ? (
+                          <div className='animate-progress-indeterminate h-full w-1/3 rounded-full bg-gradient-to-r from-cyan-400 to-sky-400' />
+                        ) : (
+                          <div
+                            className='h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-400 transition-[width] duration-150 ease-out'
+                            style={{ width: `${pct}%` }}
+                          />
+                        )}
+                      </div>
+                      <p className='text-center text-xs text-white/50'>
+                        {pct === null
+                          ? 'Preparing your download…'
+                          : `Downloading… ${pct}%`}
+                      </p>
+                    </div>
+                  )
+                })()}
             </div>
           )}
         </div>
