@@ -73,6 +73,98 @@ async function streamToBlob(
   return new Blob(chunks, type ? { type } : undefined)
 }
 
+// Capture a tiny, self-contained snapshot of a thumbnail for the Recent list.
+// Loads the image through our same-origin /api/image proxy (which sets CORS +
+// the right Referer for hotlink-gated CDNs), downscales it onto a canvas, and
+// returns a ~96px JPEG data URL. Storing the pixels means Recent thumbnails
+// never go blank later when a signed CDN URL expires or blocks hotlinking.
+// Returns '' on any failure so the caller can fall back to a platform tile.
+async function snapshotImage(srcUrl: string): Promise<string> {
+  if (!srcUrl || typeof document === 'undefined') return ''
+  const src = srcUrl.startsWith('/')
+    ? srcUrl
+    : `/api/image?url=${encodeURIComponent(srcUrl)}`
+  return new Promise((resolve) => {
+    const img = document.createElement('img')
+    img.crossOrigin = 'anonymous'
+    const timer = window.setTimeout(() => resolve(''), 8000)
+    img.onload = () => {
+      window.clearTimeout(timer)
+      try {
+        const max = 96
+        const scale =
+          Math.min(max / img.naturalWidth, max / img.naturalHeight, 1) || 1
+        const w = Math.max(1, Math.round(img.naturalWidth * scale))
+        const h = Math.max(1, Math.round(img.naturalHeight * scale))
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return resolve('')
+        ctx.drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/jpeg', 0.72))
+      } catch {
+        resolve('') // tainted canvas / decode failure — fall back to a tile
+      }
+    }
+    img.onerror = () => {
+      window.clearTimeout(timer)
+      resolve('')
+    }
+    img.src = src
+  })
+}
+
+const PLATFORM_DISPLAY: Record<string, string> = {
+  tiktok: 'TikTok',
+  twitter: 'X',
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+  youtube: 'YouTube',
+  pinterest: 'Pinterest',
+  reddit: 'Reddit',
+  threads: 'Threads',
+  snapchat: 'Snapchat',
+  twitch: 'Twitch',
+  vimeo: 'Vimeo',
+}
+
+// Never store a raw URL or "Untitled" as a Recent title — fall back to a clean
+// "<Platform> video" label so the list reads like content, not plumbing.
+function friendlyTitle(rawTitle: string | undefined, platform?: string): string {
+  const t = (rawTitle || '').trim()
+  if (t && !/^https?:\/\//i.test(t) && !/^untitled$/i.test(t)) return t
+  const name = platform ? PLATFORM_DISPLAY[platform] : ''
+  return name ? `${name} video` : 'Saved link'
+}
+
+// Branded fallback tile for a Recent entry with no usable snapshot. IG/FB/YT
+// icons are full-colour badges that fill the tile; the rest render as a glyph on
+// a neutral chip.
+function PlatformTile({ platform }: { platform?: HistoryEntry['platform'] }) {
+  const badges: Partial<
+    Record<string, React.ComponentType<{ className?: string }>>
+  > = {
+    instagram: InstagramIcon,
+    facebook: FacebookIcon,
+    youtube: YouTubeIcon,
+  }
+  const glyphs: Partial<
+    Record<string, React.ComponentType<{ className?: string }>>
+  > = {
+    tiktok: TikTokIcon,
+    twitter: TwitterXIcon,
+  }
+  const Badge = platform ? badges[platform] : undefined
+  if (Badge) return <Badge className='h-full w-full' />
+  const Glyph = (platform && glyphs[platform]) || ExternalLinkIcon
+  return (
+    <span className='flex h-full w-full items-center justify-center bg-white/[0.06] text-white/55'>
+      <Glyph className='h-4 w-4' />
+    </span>
+  )
+}
+
 // The lightbox is the ONLY component that genuinely needs the motion library
 // (drag/swipe + AnimatePresence). It's buried deep behind "Show images" → tap a
 // thumbnail, so it is never in the critical path. Lazy-loading it splits the
@@ -131,6 +223,7 @@ export function DownloaderApp() {
   const inputRef = useRef<HTMLInputElement>(null)
   const pasteBarRef = useRef<HTMLDivElement>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [showAllHistory, setShowAllHistory] = useState(false)
   const [quality, setQuality] = useState<'hd' | 'sd'>('hd')
   const didInit = useRef(false)
 
@@ -188,18 +281,24 @@ export function DownloaderApp() {
           },
         })
 
-        // Remember it locally so it shows up under "Recent" for one-tap re-open.
+        // Remember it locally (one-tap re-open). Snapshot the thumbnail into a
+        // self-contained data URL off the main flow so the Recent card always
+        // shows an image — even after the source's signed URL expires — and
+        // clean up the title so it never reads as a raw link.
         const meta = data.metadata
-        setHistory(
-          addHistory({
-            url: target,
-            title: meta?.title || 'Untitled',
-            author: meta?.author || '',
-            platform: meta?.platform,
-            thumbnail: meta?.thumbnail || '',
-            ts: Date.now(),
-          }),
-        )
+        void (async () => {
+          const snap = await snapshotImage(meta?.thumbnail || '')
+          setHistory(
+            addHistory({
+              url: target,
+              title: friendlyTitle(meta?.title, meta?.platform),
+              author: meta?.author || '',
+              platform: meta?.platform,
+              thumbnail: snap || meta?.thumbnail || '',
+              ts: Date.now(),
+            }),
+          )
+        })()
 
         dispatch({ type: 'SET_URL', payload: '' })
 
@@ -780,36 +879,46 @@ export function DownloaderApp() {
               Clear
             </button>
           </div>
-          <ul className='space-y-1.5'>
-            {history.slice(0, 5).map((h) => (
+          <ul
+            className={`space-y-1.5 ${
+              showAllHistory ? 'max-h-72 overflow-y-auto pr-1' : ''
+            }`}
+          >
+            {(showAllHistory ? history : history.slice(0, 5)).map((h) => (
               <li key={h.url} className='relative'>
                 <button
                   type='button'
                   onClick={() => handleProcess(h.url)}
-                  className='group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pr-9 pl-2.5 text-left transition-colors hover:border-cyan-400/30 hover:bg-white/[0.05]'
+                  className='group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pr-9 pl-2 text-left transition-colors hover:border-cyan-400/30 hover:bg-white/[0.05]'
                 >
-                  {h.thumbnail ? (
-                    <img
-                      src={h.thumbnail}
-                      alt=''
-                      className='h-8 w-8 shrink-0 rounded object-cover'
-                      loading='lazy'
-                      decoding='async'
-                      onError={(e) => {
-                        e.currentTarget.style.visibility = 'hidden'
-                      }}
-                    />
-                  ) : (
-                    <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded bg-white/[0.06] text-white/40'>
-                      <DownloadIcon className='h-4 w-4' />
-                    </span>
-                  )}
+                  {/* Branded tile sits underneath; the snapshot (a self-contained
+                      data URL) overlays it. If a legacy remote thumb ever fails,
+                      onError removes it and the tile shows through. */}
+                  <span className='relative h-9 w-9 shrink-0 overflow-hidden rounded-md'>
+                    <PlatformTile platform={h.platform} />
+                    {h.thumbnail && (
+                      <img
+                        src={
+                          h.thumbnail.startsWith('data:')
+                            ? h.thumbnail
+                            : `/api/image?url=${encodeURIComponent(h.thumbnail)}`
+                        }
+                        alt=''
+                        className='absolute inset-0 h-full w-full object-cover'
+                        loading='lazy'
+                        decoding='async'
+                        onError={(e) => e.currentTarget.remove()}
+                      />
+                    )}
+                  </span>
                   <span className='min-w-0 flex-1'>
                     <span className='block truncate text-xs text-white/80'>
                       {h.title}
                     </span>
                     <span className='block truncate text-[10px] text-white/40'>
-                      {h.author || h.platform || 'Saved link'}
+                      {h.author ||
+                        (h.platform ? PLATFORM_DISPLAY[h.platform] : '') ||
+                        'Saved link'}
                     </span>
                   </span>
                 </button>
@@ -826,6 +935,16 @@ export function DownloaderApp() {
               </li>
             ))}
           </ul>
+
+          {history.length > 5 && (
+            <button
+              type='button'
+              onClick={() => setShowAllHistory((v) => !v)}
+              className='mt-2 w-full rounded-lg border border-white/[0.06] py-1.5 text-center text-[11px] font-medium text-white/50 transition-colors hover:border-cyan-400/30 hover:text-white/80'
+            >
+              {showAllHistory ? 'Show less' : `View all (${history.length})`}
+            </button>
+          )}
         </div>
       )}
 
