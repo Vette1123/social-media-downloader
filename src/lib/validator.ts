@@ -4,6 +4,12 @@ export type SupportedPlatform =
   | 'instagram'
   | 'facebook'
   | 'youtube'
+  | 'pinterest'
+  | 'reddit'
+  | 'threads'
+  | 'snapchat'
+  | 'twitch'
+  | 'vimeo'
   | 'unknown'
 
 const platformPatterns: Record<
@@ -53,6 +59,36 @@ const platformPatterns: Record<
     /^(https?:\/\/)?(www\.|web\.|m\.)?facebook\.com\/share\/[vr]\/[\w-]+/,
     // Story / permalink video and bare ?v= on the root domain
     /^(https?:\/\/)?(www\.|web\.|m\.)?facebook\.com\/(?:[\w.-]+\/)?(?:video\.php|story\.php|permalink\.php)\?[^ ]*v?=?\d+/,
+  ],
+  // The platforms below are resolved through the generic Cobalt/yt-dlp path
+  // (see Downloader.downloadGeneric) — no bespoke extractor, so the patterns
+  // only need to recognise a shareable post/clip URL.
+  pinterest: [
+    /^(https?:\/\/)?(www\.)?pinterest\.[a-z.]+\/pin\/\d+/,
+    /^(https?:\/\/)?pin\.it\/[\w]+/,
+  ],
+  reddit: [
+    /^(https?:\/\/)?(www\.|old\.|new\.|m\.)?reddit\.com\/(?:r|user|u)\/[\w.-]+\/comments\/[\w]+/,
+    // New-style share links: /r/<sub>/s/<id>
+    /^(https?:\/\/)?(www\.)?reddit\.com\/(?:r|user|u)\/[\w.-]+\/s\/[\w]+/,
+    /^(https?:\/\/)?v\.redd\.it\/[\w]+/,
+    /^(https?:\/\/)?redd\.it\/[\w]+/,
+  ],
+  threads: [
+    /^(https?:\/\/)?(www\.)?threads\.(net|com)\/@[\w.-]+\/post\/[\w-]+/,
+    /^(https?:\/\/)?(www\.)?threads\.(net|com)\/t\/[\w-]+/,
+  ],
+  snapchat: [
+    /^(https?:\/\/)?(www\.)?snapchat\.com\/(?:spotlight|t|p|add|u)\/[\w.@/-]+/,
+    /^(https?:\/\/)?story\.snapchat\.com\/[\w/@-]+/,
+  ],
+  twitch: [
+    /^(https?:\/\/)?(www\.|m\.)?twitch\.tv\/[\w]+\/clip\/[\w-]+/,
+    /^(https?:\/\/)?clips\.twitch\.tv\/[\w-]+/,
+    /^(https?:\/\/)?(www\.|m\.)?twitch\.tv\/videos\/\d+/,
+  ],
+  vimeo: [
+    /^(https?:\/\/)?(www\.|player\.)?vimeo\.com\/(?:video\/)?\d+/,
   ],
 }
 

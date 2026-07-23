@@ -218,6 +218,24 @@ export const YouTubeIcon = ({
   </svg>
 )
 
+export const ExternalLinkIcon = ({
+  className = 'w-4 h-4',
+  ...props
+}: IconProps) => (
+  <svg
+    className={className}
+    fill='none'
+    stroke='currentColor'
+    strokeWidth={2}
+    strokeLinecap='round'
+    strokeLinejoin='round'
+    viewBox='0 0 24 24'
+    {...props}
+  >
+    <path d='M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6' />
+  </svg>
+)
+
 export const ClipboardIcon = ({
   className = 'w-5 h-5',
   ...props

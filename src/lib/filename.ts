@@ -12,6 +12,12 @@ const PLATFORM_LABEL: Record<string, string> = {
   instagram: 'instagram',
   facebook: 'facebook',
   youtube: 'youtube',
+  pinterest: 'pinterest',
+  reddit: 'reddit',
+  threads: 'threads',
+  snapchat: 'snapchat',
+  twitch: 'twitch',
+  vimeo: 'vimeo',
 }
 
 // Kebab-case slug for free text (titles/captions): strip diacritics, drop

@@ -7,6 +7,7 @@ import {
   detectPlatform,
   parseInstagramShortcode,
   parseYouTubeId,
+  type SupportedPlatform,
 } from './validator'
 import { getMediaReferer } from './proxyHeaders'
 import { ytdlpInfo } from './ytdlp'
@@ -123,8 +124,43 @@ export class Downloader {
       return this.downloadFacebook(url)
     }
 
+    // Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo — no bespoke
+    // extractor; resolved generically through Cobalt (which tunnels the media
+    // so it plays/downloads from any IP, including Vercel).
+    const genericPlatforms: SupportedPlatform[] = [
+      'pinterest',
+      'reddit',
+      'threads',
+      'snapchat',
+      'twitch',
+      'vimeo',
+    ]
+    if (genericPlatforms.includes(platform)) {
+      return this.downloadGeneric(url, platform)
+    }
+
     throw new Error(
-      'Unsupported URL. Please use a TikTok, Twitter/X, Instagram, Facebook, or YouTube link.',
+      'Unsupported URL. Please paste a link from a supported platform (TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, or Vimeo).',
+    )
+  }
+
+  /**
+   * Generic extractor for platforms without a bespoke path. Cobalt tunnels the
+   * media through its own server, so the returned URL isn't bound to a signed
+   * CDN session and streams from any IP — the only extraction path that works
+   * on a datacenter host (Vercel) for these sources. Handles single videos and
+   * image/gallery pickers (Cobalt returns a picker for multi-image posts).
+   */
+  private async downloadGeneric(
+    url: string,
+    platform: SupportedPlatform,
+  ): Promise<VideoData> {
+    const result = await this.tryCobaltInstances(url)
+    if (result && (result.downloadUrl || (result.images?.length ?? 0) > 0)) {
+      return result
+    }
+    throw new Error(
+      `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`,
     )
   }
 

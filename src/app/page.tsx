@@ -244,8 +244,8 @@ export default function Home() {
               </h1>
               <p className='mx-auto mb-7 max-w-xl text-sm text-white/70 md:text-base'>
                 Save videos without watermarks, extract MP3 audio, or grab full
-                image galleries from TikTok, X, Instagram, Facebook &amp;
-                YouTube.
+                image galleries from TikTok, X, Instagram, Facebook, YouTube,
+                Pinterest, Reddit, Threads, Snapchat, Twitch &amp; Vimeo.
               </p>
             </div>
 
@@ -411,6 +411,12 @@ export default function Home() {
                 <li className='truncate'>youtu.be/… · /shorts/…</li>
                 <li className='truncate'>facebook.com/…/videos/…</li>
                 <li className='truncate'>fb.watch/… · /reel/…</li>
+                <li className='truncate'>pinterest.com/pin/… · pin.it/…</li>
+                <li className='truncate'>reddit.com/r/…/comments/…</li>
+                <li className='truncate'>threads.net/@user/post/…</li>
+                <li className='truncate'>snapchat.com/spotlight/…</li>
+                <li className='truncate'>twitch.tv/…/clip/…</li>
+                <li className='truncate'>vimeo.com/…</li>
               </ul>
             </div>
 

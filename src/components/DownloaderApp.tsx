@@ -8,6 +8,7 @@ import {
   ClipboardIcon,
   ClockIcon,
   DownloadIcon,
+  ExternalLinkIcon,
   FacebookIcon,
   getImagePlaceholderBase64,
   InstagramIcon,
@@ -850,7 +851,16 @@ export function DownloaderApp() {
                   {state.originalUrl &&
                     (() => {
                       const platform = state.videoMetadata?.platform
-                      const platformConfig = {
+                      const platformConfig: Partial<
+                        Record<
+                          NonNullable<typeof platform>,
+                          {
+                            label: string
+                            Icon: React.ComponentType<{ className?: string }>
+                            color: string
+                          }
+                        >
+                      > = {
                         tiktok: {
                           label: 'View on TikTok',
                           Icon: TikTokIcon,
@@ -876,15 +886,14 @@ export function DownloaderApp() {
                           Icon: YouTubeIcon,
                           color: 'text-red-400 hover:text-red-300',
                         },
-                        unknown: {
-                          label: 'View Original',
-                          Icon: TikTokIcon,
-                          color: 'text-pink-400 hover:text-pink-300',
-                        },
+                      }
+                      const fallback = {
+                        label: 'View original post',
+                        Icon: ExternalLinkIcon,
+                        color: 'text-cyan-400 hover:text-cyan-300',
                       }
                       const cfg =
-                        platformConfig[platform ?? 'tiktok'] ??
-                        platformConfig.tiktok
+                        (platform && platformConfig[platform]) || fallback
                       return (
                         <a
                           href={state.originalUrl}
