@@ -4,7 +4,8 @@ import { validateUrl, detectPlatform } from '../../../lib/validator'
 
 export async function POST(request: NextRequest) {
   try {
-    const { url, type = 'video' } = await request.json()
+    const { url, type = 'video', quality } = await request.json()
+    const preferredQuality: 'hd' | 'sd' = quality === 'sd' ? 'sd' : 'hd'
 
     if (!url) {
       return NextResponse.json(
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     const platform = detectPlatform(url)
     console.log(`Processing ${platform} URL:`, url, 'Type:', type)
 
-    const downloader = new Downloader()
+    const downloader = new Downloader({ quality: preferredQuality })
     const videoData = await downloader.downloadVideo(url)
 
     // Accept the result if it yielded any downloadable media: a video stream,

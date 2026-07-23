@@ -43,6 +43,16 @@ let igTokenCache: {
 } | null = null
 
 export class Downloader {
+  // Preferred video quality for the extractors that expose a quality knob
+  // (Cobalt's videoQuality, tikwm's hd flag). 'hd' = best available (default);
+  // 'sd' = a smaller data-saver rendition. Extractors that only ever return a
+  // single rendition ignore this.
+  private readonly videoQuality: 'hd' | 'sd'
+
+  constructor(opts?: { quality?: 'hd' | 'sd' }) {
+    this.videoQuality = opts?.quality === 'sd' ? 'sd' : 'hd'
+  }
+
   private readonly userAgent =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
@@ -655,7 +665,11 @@ export class Downloader {
 
     const response = await axios.post(
       baseUrl,
-      { url, videoQuality: 'max', filenameStyle: 'basic' },
+      {
+        url,
+        videoQuality: this.videoQuality === 'sd' ? '480' : 'max',
+        filenameStyle: 'basic',
+      },
       { headers, timeout: 12000 },
     )
 
@@ -882,7 +896,7 @@ export class Downloader {
           count: 12,
           cursor: 0,
           web: 1,
-          hd: 1,
+          hd: this.videoQuality === 'sd' ? 0 : 1,
         },
         {
           headers: {
