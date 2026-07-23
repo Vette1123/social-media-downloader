@@ -131,7 +131,17 @@ export function DownloaderApp() {
   const inputRef = useRef<HTMLInputElement>(null)
   const pasteBarRef = useRef<HTMLDivElement>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [quality, setQuality] = useState<'hd' | 'sd'>('hd')
   const didInit = useRef(false)
+
+  const changeQuality = (q: 'hd' | 'sd') => {
+    setQuality(q)
+    try {
+      window.localStorage.setItem('smd:quality', q)
+    } catch {
+      // storage disabled — the choice still applies for this session.
+    }
+  }
 
   // `overrideUrl` lets the paste button, the PWA share target, and the recent
   // list kick off a resolve without waiting for a state round-trip through the
@@ -161,6 +171,7 @@ export function DownloaderApp() {
         body: JSON.stringify({
           url: target,
           type: state.downloadType,
+          quality,
         }),
       })
 
@@ -263,6 +274,12 @@ export function DownloaderApp() {
     if (didInit.current) return
     didInit.current = true
     setHistory(loadHistory())
+    try {
+      const q = window.localStorage.getItem('smd:quality')
+      if (q === 'sd' || q === 'hd') setQuality(q)
+    } catch {
+      // ignore — default HD.
+    }
     try {
       const params = new URLSearchParams(window.location.search)
       const shared = params.get('url') || params.get('text') || ''
@@ -717,6 +734,33 @@ export function DownloaderApp() {
       <p className='mt-3 text-center text-xs text-white/45'>
         Works with videos, reels, shorts &amp; photo carousels
       </p>
+
+      {/* Quality preference — applied on the next resolve. Affects sources with a
+          quality knob (most videos); single-rendition sources ignore it. */}
+      <div className='mt-3 flex items-center justify-center gap-2 text-xs'>
+        <span className='text-white/40'>Quality</span>
+        <div
+          role='group'
+          aria-label='Preferred video quality'
+          className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
+        >
+          {(['hd', 'sd'] as const).map((q) => (
+            <button
+              key={q}
+              type='button'
+              onClick={() => changeQuality(q)}
+              aria-pressed={quality === q}
+              className={`rounded-full px-3 py-1 font-medium transition-colors ${
+                quality === q
+                  ? 'bg-cyan-400/90 text-[#04171b]'
+                  : 'text-white/55 hover:text-white'
+              }`}
+            >
+              {q === 'hd' ? 'HD' : 'Data saver'}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Recent — locally-stored links (never leaves the device). Hidden once a
           result is on screen so it doesn't compete with it. Tap to re-resolve. */}
