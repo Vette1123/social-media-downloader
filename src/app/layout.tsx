@@ -111,7 +111,10 @@ export const metadata: Metadata = {
       { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: '32x32' },
     ],
-    apple: '/apple-touch-icon.svg',
+    apple: [
+      { url: '/icons/apple', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.svg' },
+    ],
   },
   manifest: '/manifest.json',
 }
@@ -126,7 +129,12 @@ export default function RootLayout({
       <head>
         <link rel='icon' href='/favicon.svg' type='image/svg+xml' />
         <link rel='icon' href='/favicon.ico' sizes='32x32' />
-        <link rel='apple-touch-icon' href='/apple-touch-icon.svg' />
+        <link
+          rel='apple-touch-icon'
+          sizes='180x180'
+          href='/icons/apple'
+          type='image/png'
+        />
         <link rel='manifest' href='/manifest.json' />
         <meta name='msapplication-TileColor' content='#08080a' />
         <meta
