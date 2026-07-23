@@ -5,6 +5,8 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { appReducer, initialState } from '@/lib/appReducer'
 import {
   CheckIcon,
+  ClipboardIcon,
+  ClockIcon,
   DownloadIcon,
   FacebookIcon,
   getImagePlaceholderBase64,
@@ -12,10 +14,29 @@ import {
   MusicIcon,
   SpinnerIcon,
   TikTokIcon,
+  TrashIcon,
   TwitterXIcon,
   YouTubeIcon,
 } from '@/components/icons'
 import { buildDownloadFilename } from '@/lib/filename'
+import { friendlyError } from '@/lib/errorMessages'
+import {
+  addHistory,
+  clearHistory,
+  loadHistory,
+  removeHistory,
+  type HistoryEntry,
+} from '@/lib/history'
+
+// Pull the first http(s) URL out of arbitrary shared text. Android's share sheet
+// often hands a link inside `text` wrapped in a caption ("check this out <url>"),
+// so we scan for the first URL token rather than assume the whole string is one.
+function extractFirstUrl(s: string): string | null {
+  if (!s) return null
+  const m = s.match(/https?:\/\/[^\s]+/i)
+  const candidate = (m ? m[0] : s).trim()
+  return /^https?:\/\//i.test(candidate) ? candidate : null
+}
 
 // The lightbox is the ONLY component that genuinely needs the motion library
 // (drag/swipe + AnimatePresence). It's buried deep behind "Show images" → tap a
@@ -74,13 +95,22 @@ export function DownloaderApp() {
   const [urlError, setUrlError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const pasteBarRef = useRef<HTMLDivElement>(null)
+  const [history, setHistory] = useState<HistoryEntry[]>([])
+  const didInit = useRef(false)
 
-  const handleProcess = async () => {
-    if (!state.url.trim()) {
+  // `overrideUrl` lets the paste button, the PWA share target, and the recent
+  // list kick off a resolve without waiting for a state round-trip through the
+  // input. When omitted we use whatever's in the field.
+  const handleProcess = async (overrideUrl?: string) => {
+    const target = (overrideUrl ?? state.url).trim()
+    if (!target) {
       setUrlError(
         'Please paste a TikTok, Twitter/X, Instagram, Facebook, or YouTube URL first',
       )
       return
+    }
+    if (overrideUrl !== undefined) {
+      dispatch({ type: 'SET_URL', payload: overrideUrl })
     }
     setUrlError(null)
 
@@ -94,7 +124,7 @@ export function DownloaderApp() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          url: state.url,
+          url: target,
           type: state.downloadType,
         }),
       })
@@ -108,9 +138,22 @@ export function DownloaderApp() {
             downloadUrl: data.downloadUrl,
             audioUrl: data.audioUrl,
             metadata: data.metadata,
-            originalUrl: state.url,
+            originalUrl: target,
           },
         })
+
+        // Remember it locally so it shows up under "Recent" for one-tap re-open.
+        const meta = data.metadata
+        setHistory(
+          addHistory({
+            url: target,
+            title: meta?.title || 'Untitled',
+            author: meta?.author || '',
+            platform: meta?.platform,
+            thumbnail: meta?.thumbnail || '',
+            ts: Date.now(),
+          }),
+        )
 
         dispatch({ type: 'SET_URL', payload: '' })
 
@@ -127,21 +170,77 @@ export function DownloaderApp() {
           }
         }, 500)
       } else {
+        const fe = friendlyError(data.error, target)
         dispatch({
           type: 'SET_MESSAGE',
-          payload: data.error || 'Failed to process video',
+          payload: `${fe.title} — ${fe.hint}`,
         })
       }
     } catch (err) {
       console.error('Processing error:', err)
+      const fe = friendlyError(err instanceof Error ? err.message : '', target)
       dispatch({
         type: 'SET_MESSAGE',
-        payload: 'An error occurred while processing the video',
+        payload: `${fe.title} — ${fe.hint}`,
       })
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
   }
+
+  // One-tap paste: read the clipboard, and if it holds a link, resolve it
+  // immediately. Falls back to filling the field (or focusing it, when the
+  // browser blocks programmatic clipboard reads) so the user is never stuck.
+  const handlePaste = async () => {
+    if (!navigator.clipboard?.readText) {
+      inputRef.current?.focus()
+      setUrlError('Long-press the field and choose Paste.')
+      return
+    }
+    try {
+      const text = await navigator.clipboard.readText()
+      const found = extractFirstUrl(text)
+      if (found) {
+        handleProcess(found)
+      } else if (text.trim()) {
+        dispatch({ type: 'SET_URL', payload: text.trim() })
+        inputRef.current?.focus()
+        setUrlError('That doesn’t look like a link — paste a post URL.')
+      } else {
+        inputRef.current?.focus()
+      }
+    } catch {
+      inputRef.current?.focus()
+      setUrlError('Couldn’t read the clipboard — paste the link manually.')
+    }
+  }
+
+  const handleClearHistory = () => {
+    clearHistory()
+    setHistory([])
+  }
+
+  // Runs once on mount: hydrate the recent list from localStorage, and honour a
+  // PWA share-target / deep link (?url= / ?text=). Sharing a link straight from
+  // the TikTok/IG/YouTube app lands here — we auto-resolve it and strip the
+  // query so a refresh doesn't fire it again.
+  useEffect(() => {
+    if (didInit.current) return
+    didInit.current = true
+    setHistory(loadHistory())
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const shared = params.get('url') || params.get('text') || ''
+      const found = extractFirstUrl(shared)
+      if (found) {
+        window.history.replaceState(null, '', window.location.pathname)
+        handleProcess(found)
+      }
+    } catch {
+      // no-op — malformed query, just show the normal empty state.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleVideoDownload = async () => {
     if (!state.downloadUrl) return
@@ -484,38 +583,53 @@ export function DownloaderApp() {
             : 'border-white/[0.1] focus-within:border-cyan-400/60'
         }`}
       >
-        <input
-          ref={inputRef}
-          type='url'
-          inputMode='url'
-          enterKeyHint='go'
-          autoCapitalize='none'
-          autoCorrect='off'
-          autoComplete='off'
-          spellCheck={false}
-          placeholder='Paste a video link…'
-          value={state.url}
-          onChange={(e) => {
-            if (urlError) setUrlError(null)
-            dispatch({ type: 'SET_URL', payload: e.target.value })
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              handleProcess()
-            }
-          }}
-          onFocus={() => {
-            // Fallback for browsers that raise the keyboard without a
-            // visualViewport 'resize' — nudge after the slide-up settles.
-            window.setTimeout(keepInputAboveKeyboard, 300)
-          }}
-          aria-invalid={urlError ? 'true' : 'false'}
-          aria-describedby={urlError ? 'url-error' : undefined}
-          className='min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 text-base text-white placeholder-white/40 outline-none'
-        />
+        <div className='relative flex min-w-0 flex-1 items-center'>
+          <input
+            ref={inputRef}
+            type='url'
+            inputMode='url'
+            enterKeyHint='go'
+            autoCapitalize='none'
+            autoCorrect='off'
+            autoComplete='off'
+            spellCheck={false}
+            placeholder='Paste a video link…'
+            value={state.url}
+            onChange={(e) => {
+              if (urlError) setUrlError(null)
+              dispatch({ type: 'SET_URL', payload: e.target.value })
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleProcess()
+              }
+            }}
+            onFocus={() => {
+              // Fallback for browsers that raise the keyboard without a
+              // visualViewport 'resize' — nudge after the slide-up settles.
+              window.setTimeout(keepInputAboveKeyboard, 300)
+            }}
+            aria-invalid={urlError ? 'true' : 'false'}
+            aria-describedby={urlError ? 'url-error' : undefined}
+            className='min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 pr-[4.75rem] text-base text-white placeholder-white/40 outline-none'
+          />
+          {/* One-tap paste — only while the field is empty, so it never overlaps
+              a link the user is typing. Reads the clipboard and auto-resolves. */}
+          {!state.url && (
+            <button
+              type='button'
+              onClick={handlePaste}
+              aria-label='Paste link from clipboard'
+              className='absolute right-1.5 flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-xs font-medium text-white/70 transition-colors hover:border-cyan-400/40 hover:text-white active:scale-95'
+            >
+              <ClipboardIcon className='h-3.5 w-3.5' />
+              Paste
+            </button>
+          )}
+        </div>
         <button
-          onClick={handleProcess}
+          onClick={() => handleProcess()}
           disabled={
             state.loading ||
             state.downloading ||
@@ -553,6 +667,73 @@ export function DownloaderApp() {
       <p className='mt-3 text-center text-xs text-white/45'>
         Works with videos, reels, shorts &amp; photo carousels
       </p>
+
+      {/* Recent — locally-stored links (never leaves the device). Hidden once a
+          result is on screen so it doesn't compete with it. Tap to re-resolve. */}
+      {history.length > 0 && !state.videoMetadata && !state.loading && (
+        <div className='animate-section-in mt-4'>
+          <div className='mb-2 flex items-center justify-between'>
+            <span className='flex items-center gap-1.5 text-xs font-medium text-white/50'>
+              <ClockIcon className='h-3.5 w-3.5' />
+              Recent
+            </span>
+            <button
+              type='button'
+              onClick={handleClearHistory}
+              className='flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-white/40 transition-colors hover:text-white/80'
+            >
+              <TrashIcon className='h-3 w-3' />
+              Clear
+            </button>
+          </div>
+          <ul className='space-y-1.5'>
+            {history.slice(0, 5).map((h) => (
+              <li key={h.url} className='relative'>
+                <button
+                  type='button'
+                  onClick={() => handleProcess(h.url)}
+                  className='group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pr-9 pl-2.5 text-left transition-colors hover:border-cyan-400/30 hover:bg-white/[0.05]'
+                >
+                  {h.thumbnail ? (
+                    <img
+                      src={h.thumbnail}
+                      alt=''
+                      className='h-8 w-8 shrink-0 rounded object-cover'
+                      loading='lazy'
+                      decoding='async'
+                      onError={(e) => {
+                        e.currentTarget.style.visibility = 'hidden'
+                      }}
+                    />
+                  ) : (
+                    <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded bg-white/[0.06] text-white/40'>
+                      <DownloadIcon className='h-4 w-4' />
+                    </span>
+                  )}
+                  <span className='min-w-0 flex-1'>
+                    <span className='block truncate text-xs text-white/80'>
+                      {h.title}
+                    </span>
+                    <span className='block truncate text-[10px] text-white/40'>
+                      {h.author || h.platform || 'Saved link'}
+                    </span>
+                  </span>
+                </button>
+                <button
+                  type='button'
+                  onClick={() => setHistory(removeHistory(h.url))}
+                  aria-label={`Remove ${h.title} from recent`}
+                  className='absolute top-1/2 right-1.5 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
+                >
+                  <span aria-hidden className='text-base leading-none'>
+                    ×
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Results — expand directly under the paste bar.
           scroll-mt-24: the success handler calls scrollIntoView({block:'start'}),
