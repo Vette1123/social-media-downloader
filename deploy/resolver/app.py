@@ -187,7 +187,9 @@ def _authorized(request: Request) -> bool:
 @app.get("/health")
 @app.get("/")
 def health() -> JSONResponse:
-    return JSONResponse({"status": "ok"})
+    # `auth` reports whether a cookie jar was loaded at boot (no contents), so a
+    # misconfigured cookie source can be diagnosed without shipping secrets.
+    return JSONResponse({"status": "ok", "auth": bool(COOKIEFILE)})
 
 
 @app.post("/")
