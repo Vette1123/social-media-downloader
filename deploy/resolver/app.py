@@ -76,6 +76,13 @@ if _cookies.strip():
     with open(COOKIEFILE, "w", encoding="utf-8") as fh:
         fh.write(_cookies)
 
+# Optional upstream proxy. Some sources geo-restrict by the *client* IP and
+# redirect datacenter egress to a notice/gate page (cookies can't fix that).
+# Set RESOLVER_PROXY to a proxy URL (http(s)/socks5) in a region the source
+# serves, and every fetch — extraction, the pipe path, and the /t upstream
+# stream — routes through it.
+PROXY = os.environ.get("RESOLVER_PROXY", "").strip()
+
 # Best-effort browser impersonation (needs curl_cffi) to clear TLS/anti-bot
 # fingerprint checks on the stricter sources.
 try:
@@ -95,6 +102,8 @@ def _base_opts() -> dict:
     }
     if COOKIEFILE:
         opts["cookiefile"] = COOKIEFILE
+    if PROXY:
+        opts["proxy"] = PROXY
     if _IMPERSONATE is not None:
         opts["impersonate"] = _IMPERSONATE
     return opts
@@ -191,10 +200,21 @@ def _authorized(request: Request) -> bool:
 
 @app.get("/health")
 @app.get("/")
-def health() -> JSONResponse:
+def health(request: Request) -> JSONResponse:
     # `auth` reports whether a cookie jar was loaded at boot (no contents), so a
     # misconfigured cookie source can be diagnosed without shipping secrets.
-    return JSONResponse({"status": "ok", "auth": bool(COOKIEFILE)})
+    out: dict[str, Any] = {"status": "ok", "auth": bool(COOKIEFILE), "proxy": bool(PROXY)}
+    # `?geo=1` reports the effective egress region (through the proxy if set), so
+    # a source that geo-restricts by client IP can be diagnosed.
+    if request.query_params.get("geo"):
+        proxies = {"http": PROXY, "https": PROXY} if PROXY else None
+        try:
+            r = requests.get("https://ipinfo.io/json", timeout=10, proxies=proxies)
+            j = r.json()
+            out["geo"] = {k: j.get(k) for k in ("ip", "city", "region", "country")}
+        except Exception as exc:
+            out["geo"] = f"lookup failed: {type(exc).__name__}"
+    return JSONResponse(out)
 
 
 @app.post("/")
@@ -248,6 +268,8 @@ def _pipe(url: str, audio: bool, quality: Optional[str]):
         cmd += ["--remux-video", "mp4"]
     if COOKIEFILE:
         cmd += ["--cookies", COOKIEFILE]
+    if PROXY:
+        cmd += ["--proxy", PROXY]
     if _IMPERSONATE is not None:
         cmd += ["--impersonate", "chrome"]
     cmd.append(url)
@@ -288,7 +310,10 @@ def tunnel(d: str, request: Request) -> Any:
             fwd = dict(meta["headers"])
             if range_header:
                 fwd["Range"] = range_header
-            upstream = requests.get(meta["direct"], headers=fwd, stream=True, timeout=30)
+            proxies = {"http": PROXY, "https": PROXY} if PROXY else None
+            upstream = requests.get(
+                meta["direct"], headers=fwd, stream=True, timeout=30, proxies=proxies
+            )
             if upstream.status_code < 400:
                 headers = {
                     **_CORS,
