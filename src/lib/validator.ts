@@ -10,10 +10,11 @@ export type SupportedPlatform =
   | 'snapchat'
   | 'twitch'
   | 'vimeo'
+  | 'generic'
   | 'unknown'
 
 const platformPatterns: Record<
-  Exclude<SupportedPlatform, 'unknown'>,
+  Exclude<SupportedPlatform, 'unknown' | 'generic'>,
   RegExp[]
 > = {
   tiktok: [
@@ -105,7 +106,23 @@ export function detectPlatform(url: string): SupportedPlatform {
       return platform as SupportedPlatform
     }
   }
-  return 'unknown'
+  // Any other well-formed http(s) link is resolved through the generic tunnel
+  // path (self-hosted resolver via COBALT_API_URL). Non-URL text stays unknown
+  // so it still surfaces the "unsupported link" message.
+  return isHttpUrl(trimmed) ? 'generic' : 'unknown'
+}
+
+// True only for a syntactically valid http/https URL with a real host.
+function isHttpUrl(value: string): boolean {
+  try {
+    const u = new URL(value.startsWith('http') ? value : `https://${value}`)
+    return (
+      (u.protocol === 'http:' || u.protocol === 'https:') &&
+      u.hostname.includes('.')
+    )
+  } catch {
+    return false
+  }
 }
 
 export function validateUrl(url: string): boolean {
