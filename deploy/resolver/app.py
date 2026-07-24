@@ -58,8 +58,14 @@ def _public_base(request: Request) -> str:
     no BASE_URL churn. Fall back to the configured BASE_URL for local/dev."""
     forwarded_host = request.headers.get("x-forwarded-host") or request.headers.get("host")
     if forwarded_host:
-        proto = request.headers.get("x-forwarded-proto", "https").split(",")[0].strip()
-        return f"{proto}://{forwarded_host.split(',')[0].strip()}".rstrip("/")
+        host = forwarded_host.split(",")[0].strip()
+        # The public edge terminates TLS, so the internet-facing URL is always
+        # https even though the internal hop to the container is plain http
+        # (x-forwarded-proto reflects that inner hop). Force https for any real
+        # forwarded host to avoid emitting a mixed-content link; keep http only
+        # for a bare localhost dev origin.
+        proto = "http" if host.split(":")[0] in ("localhost", "127.0.0.1") else "https"
+        return f"{proto}://{host}".rstrip("/")
     return BASE_URL
 
 # Optional shared key. When set, callers must send `Authorization: Api-Key <key>`
