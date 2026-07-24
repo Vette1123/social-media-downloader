@@ -19,24 +19,24 @@ The main app already routes any link it doesn't have a bespoke extractor for to
 this path, so once this is deployed and wired, those links resolve on the live
 (deployed) site with no local tooling required.
 
-## Deploy to Hugging Face Spaces (free, no credit card)
+## Deploy to Koyeb (free, no credit card)
 
-1. **Sign up / log in** at huggingface.co. The free CPU Basic tier (2 vCPU,
-   16 GB) needs **no card**.
-2. **New → Space.** Name it e.g. `media-resolver`. **SDK: Docker**, template
-   **Blank**, hardware **CPU basic (free)**. Create.
-3. **Add the files.** In the Space → **Files → Add file → Upload files**, upload
-   all four from this folder: `Dockerfile`, `app.py`, `requirements.txt`,
-   `README.md` (this file — its frontmatter sets the port). Commit.
-   *(Git alternative: `git clone https://huggingface.co/spaces/<user>/media-resolver`,
-   copy the four files in, `git push`.)*
-4. The Space builds automatically (Docker, ~3–5 min). When it's **Running**, the
-   public URL is `https://<user>-media-resolver.hf.space` (also under
-   **Settings → Embed this Space**). The service auto-detects this URL at
-   runtime, so no `BASE_URL` needs setting.
-5. **Settings → Variables and secrets → New secret:** add `RESOLVER_SECRET` = any
-   long random string (keeps tunnel tokens valid across restarts). Optional:
-   `RESOLVER_API_KEY`, `RESOLVER_COOKIES` (see below).
+1. **Sign up / log in** at koyeb.com — use **GitHub**. The Hobby plan needs
+   **no card** (it may ask a human-check, not a card).
+2. **Create Web Service → GitHub**, pick the repo. Grant Koyeb access if asked.
+3. Configure the build:
+   - Branch: `main`
+   - **Work directory:** `deploy/resolver`  ← critical (the service lives here)
+   - Builder: **Dockerfile** (auto-detected)
+   - Instance: **Free**
+   - **Exposed port: 8080** (matches the image default)
+4. **Environment variables:** add `RESOLVER_SECRET` = any long random string
+   (keeps tunnel tokens valid across restarts). Optional: `RESOLVER_API_KEY`,
+   `RESOLVER_COOKIES` (see below).
+5. **Deploy.** When it's healthy, copy the public URL
+   `https://<name>-<org>.koyeb.app`. Koyeb usually injects this automatically; if
+   playback URLs come back pointing at localhost, add an env var
+   `BASE_URL = https://<name>-<org>.koyeb.app` and redeploy.
 
 ## Wire it to the app
 
@@ -54,11 +54,10 @@ resolver.
 
 ## Keep it warm (optional)
 
-Free Spaces pause after ~48 h idle. To keep it hot, ping it with a free scheduler
-— **cron-job.org** (also no card):
+Free instances may sleep after idle. To keep it hot, ping it with a free
+scheduler — **cron-job.org** (also no card):
 
-- Create a cron job: `GET https://<user>-media-resolver.hf.space/health` every
-  30 minutes.
+- Create a cron job: `GET https://<name>-<org>.koyeb.app/health` every 10 min.
 
 ## Sources behind a login / anti-bot check
 
@@ -73,11 +72,14 @@ The image already installs `curl_cffi`, so the service impersonates a real
 browser's TLS fingerprint automatically. Cookies expire, so refresh them if a
 previously-working source starts failing.
 
-## Alt host: Render (needs a card now)
+## Alt hosts
 
-The repo also ships a `render.yaml` blueprint. Render's free tier recently began
-requiring a `$1` card authorization, so Hugging Face above is the no-card path;
-use Render only if you already have a card on file.
+- **Back4app Containers** — also no card (GitHub import, Docker). Only 256 MB
+  RAM, so heavier remuxes may struggle; fine for most progressive links.
+- **Render** — ships a `render.yaml` blueprint, but its free tier now requires a
+  `$1` card authorization. Use only if you already have a card on file.
+- **Hugging Face Spaces** — Docker Spaces now require a paid PRO plan (only
+  Static Spaces stay free), so it no longer works as a no-card option.
 
 ## Local test
 
