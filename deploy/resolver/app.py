@@ -377,10 +377,22 @@ def tunnel(d: str, request: Request) -> Any:
             fwd = dict(meta["headers"])
             if range_header:
                 fwd["Range"] = range_header
-            proxies = {"http": PROXY, "https": PROXY} if PROXY else None
-            upstream = requests.get(
-                meta["direct"], headers=fwd, stream=True, timeout=30, proxies=proxies
-            )
+            # Stream the media DIRECT first (no proxy). The signed CDN URL usually
+            # serves globally even when the *webpage* is geo-gated, so the big
+            # payload costs zero metered-proxy bandwidth — only extraction (tiny)
+            # needs the proxy. Fall back to the proxy only if the CDN itself
+            # rejects this box (geo-locked media), so metered bytes are spent only
+            # when genuinely required.
+            def _open(via_proxy: bool):
+                proxies = {"http": PROXY, "https": PROXY} if (via_proxy and PROXY) else None
+                return requests.get(
+                    meta["direct"], headers=fwd, stream=True, timeout=30, proxies=proxies
+                )
+
+            upstream = _open(via_proxy=False)
+            if upstream.status_code >= 400 and PROXY:
+                upstream.close()
+                upstream = _open(via_proxy=True)
             if upstream.status_code < 400:
                 headers = {
                     **_CORS,
