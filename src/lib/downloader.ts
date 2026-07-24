@@ -221,6 +221,7 @@ export class Downloader {
       'snapchat',
       'twitch',
       'vimeo',
+      'generic',
     ]
     if (genericPlatforms.includes(platform)) {
       return this.downloadGeneric(url, platform)

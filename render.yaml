@@ -1,0 +1,21 @@
+# Render Blueprint for the generic media resolver (deploy/resolver).
+# One-click: Render dashboard → New + → Blueprint → pick this repo → Apply.
+# Free plan, no credit card. RENDER_EXTERNAL_URL is injected automatically.
+services:
+  - type: web
+    name: media-resolver
+    runtime: docker
+    rootDir: deploy/resolver
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      # Signs tunnel tokens so /t can't be used as an open proxy. Auto-generated.
+      - key: RESOLVER_SECRET
+        generateValue: true
+      # Optional: require callers to send `Authorization: Api-Key <value>`.
+      # If you set this, also set COBALT_API_KEY to the same value on Vercel.
+      - key: RESOLVER_API_KEY
+        sync: false
+      # Optional: cookies.txt contents for links behind a login / anti-bot check.
+      - key: RESOLVER_COOKIES
+        sync: false
