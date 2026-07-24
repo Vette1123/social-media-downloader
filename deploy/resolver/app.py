@@ -24,6 +24,7 @@ import os
 import re
 import secrets
 import subprocess
+import time
 from typing import Any, Optional
 
 from urllib.parse import quote
@@ -100,6 +101,42 @@ if _cookies.strip():
 # serves, and every fetch — extraction, the pipe path, and the /t upstream
 # stream — routes through it.
 PROXY = os.environ.get("RESOLVER_PROXY", "").strip()
+
+# Self-registration: hosts on some free tiers hand out a rotating/temporary
+# public URL, and expose no API to read the current one — so the app can't be
+# told where to reach this box. Instead, this box announces its own live URL to
+# a tiny shared key/value store on each liveness ping and resolve. The app reads
+# that key to discover the current URL, so rotation heals automatically with no
+# manual env churn. Credentials live only in the host env (never in the repo).
+_REG_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "").strip().rstrip("/")
+_REG_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "").strip()
+_REG_KEY = os.environ.get("REGISTRY_KEY", "resolver_url").strip() or "resolver_url"
+# The stored value expires if this box stops announcing (dies / is replaced), so
+# the app stops handing out a dead URL. Kept well above the keep-warm cadence.
+_REG_TTL = 900
+_reg_state: dict[str, Any] = {"base": None, "t": 0.0}
+
+
+def _register(base: str) -> None:
+    """Publish this box's current public base URL to the shared store. No-op when
+    the store isn't configured. De-duped: only writes on a changed URL or once
+    the prior write is stale enough that the TTL needs refreshing."""
+    if not _REG_URL or not _REG_TOKEN or not base:
+        return
+    now = time.monotonic()
+    if base == _reg_state["base"] and (now - _reg_state["t"]) < (_REG_TTL / 2):
+        return
+    try:
+        requests.post(
+            _REG_URL,
+            json=["SET", _REG_KEY, base, "EX", _REG_TTL],
+            headers={"Authorization": f"Bearer {_REG_TOKEN}"},
+            timeout=8,
+        )
+        _reg_state["base"] = base
+        _reg_state["t"] = now
+    except Exception:
+        pass
 
 # Best-effort browser impersonation (needs curl_cffi) to clear TLS/anti-bot
 # fingerprint checks on the stricter sources.
@@ -221,6 +258,9 @@ def _authorized(request: Request) -> bool:
 def health(request: Request) -> JSONResponse:
     # `auth` reports whether a cookie jar was loaded at boot (no contents), so a
     # misconfigured cookie source can be diagnosed without shipping secrets.
+    # Announce the live URL on every keep-warm ping — this is the steady heartbeat
+    # that keeps the app's discovery key fresh (and refreshes its TTL).
+    _register(_public_base(request))
     out: dict[str, Any] = {"status": "ok", "auth": bool(COOKIEFILE), "proxy": bool(PROXY)}
     # `?geo=1` reports the effective egress region (through the proxy if set), so
     # a source that geo-restricts by client IP can be diagnosed.
@@ -239,6 +279,8 @@ def health(request: Request) -> JSONResponse:
 async def resolve(request: Request) -> JSONResponse:
     if not _authorized(request):
         return JSONResponse({"status": "error", "error": {"code": "auth"}}, status_code=401)
+    # Keep the discovery key current even if keep-warm pings lapse.
+    _register(_public_base(request))
     try:
         body = await request.json()
     except Exception:

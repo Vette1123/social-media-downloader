@@ -56,6 +56,44 @@ function isTransientError(e: unknown): boolean {
   return err instanceof Error && !('response' in (err as object))
 }
 
+// Discover a self-hosted resolver's *current* base URL from a shared key/value
+// store. Some free hosts hand the resolver a rotating/temporary public URL with
+// no API to read it back, so the resolver publishes its own live URL to this
+// store and we read it here — rotation heals with no env changes. Credentials
+// come from env (Vercel) only; nothing sensitive lands in the repo. The value is
+// cached in-process briefly so a burst of requests doesn't hammer the store.
+let _resolverCache: { url: string | null; at: number } = { url: null, at: 0 }
+const RESOLVER_DISCOVERY_TTL_MS = 60_000
+
+async function discoverResolverBase(): Promise<string | null> {
+  const store = process.env.UPSTASH_REDIS_REST_URL?.trim().replace(/\/$/, '')
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
+  if (!store || !token) return null
+
+  const now = Date.now()
+  if (now - _resolverCache.at < RESOLVER_DISCOVERY_TTL_MS) {
+    return _resolverCache.url
+  }
+
+  const key = process.env.REGISTRY_KEY?.trim() || 'resolver_url'
+  try {
+    const res = await axios.get(`${store}/get/${encodeURIComponent(key)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 6000,
+    })
+    // Upstash REST returns { result: <value> | null }.
+    const value = res.data?.result
+    const url = typeof value === 'string' && value ? value : null
+    _resolverCache = { url, at: now }
+    return url
+  } catch {
+    // On a store hiccup, keep serving the last known value rather than dropping
+    // the fallback entirely (staleness is better than no resolver at all).
+    _resolverCache = { url: _resolverCache.url, at: now }
+    return _resolverCache.url
+  }
+}
+
 // Loose shapes for Instagram's GraphQL / embed `shortcode_media` payload.
 // Only the fields we actually read are typed; everything else is ignored.
 interface IgMediaNode {
@@ -962,7 +1000,19 @@ export class Downloader {
   // Try every cobalt instance in order.
   private async tryCobaltInstances(url: string): Promise<VideoData | null> {
     const errors: string[] = []
-    for (const instance of this.cobaltInstances) {
+    // A self-hosted resolver that self-registers its (possibly rotating) URL is
+    // discovered at request time and appended after the static list — so it's
+    // reached even when its public URL has changed and no env was updated. Deduped
+    // against the configured instances so a stable URL isn't tried twice.
+    const discovered = await discoverResolverBase()
+    const configured = new Set(
+      this.cobaltInstances.map((i) => i.replace(/\/$/, '')),
+    )
+    const instances =
+      discovered && !configured.has(discovered.replace(/\/$/, ''))
+        ? [...this.cobaltInstances, discovered]
+        : this.cobaltInstances
+    for (const instance of instances) {
       try {
         const result = await this.tryCobaltInstance(instance, url)
         if (result) return result

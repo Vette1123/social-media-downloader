@@ -52,6 +52,25 @@ On the Vercel project → **Settings → Environment Variables**:
 Redeploy the Vercel app. Paste a link on the site — it resolves through the
 resolver.
 
+## Auto-discovery (hosts with rotating / temporary URLs)
+
+Some free hosts hand out a **temporary public URL** that changes on restart, and
+expose no API to read the current one — so you can't keep `COBALT_API_URL`
+pointed at it by hand. Instead, let this box **announce its own URL** to a tiny
+free key/value store, and let the app read it back:
+
+1. Create a free **Upstash Redis** database (no credit card). Copy its
+   **REST URL** and **REST TOKEN**.
+2. On **this service** (the resolver host), set:
+   - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+3. On the **Vercel app**, set the same two vars (identical values).
+4. Point the keep-warm cron (below) at `/health`. Each ping re-announces the
+   current URL (and refreshes its 15-min TTL); the app discovers it before its
+   fallback list, so a rotated URL heals with zero manual updates.
+
+Optional `REGISTRY_KEY` overrides the key name (default `resolver_url`) on both
+sides. With this wired you can leave `COBALT_API_URL` unset — discovery covers it.
+
 ## Keep it warm (optional)
 
 Free instances may sleep after idle. To keep it hot, ping it with a free
