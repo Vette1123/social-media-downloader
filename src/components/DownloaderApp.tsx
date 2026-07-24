@@ -635,6 +635,13 @@ export function DownloaderApp() {
     // download manager takes over instantly.
     const direct = state.videoMetadata?.directVideoUrl
     if (direct) {
+      // The instance resolves server-side before the first byte, so the
+      // browser's download dialog can take a moment to appear. Hold the button
+      // in a spinning "preparing" state and show a hint so the click clearly
+      // registered — the hidden-iframe download is cross-origin, so we can't
+      // observe the real start; release after a short beat with a confirmation.
+      dispatch({ type: 'SET_DOWNLOADING', payload: true })
+      dispatch({ type: 'SET_MESSAGE', payload: 'Preparing your download…' })
       triggerDirectDownload(
         direct,
         buildDownloadFilename({
@@ -644,10 +651,13 @@ export function DownloaderApp() {
           ext: 'mp4',
         }),
       )
-      dispatch({
-        type: 'SET_MESSAGE',
-        payload: 'Download started. Check your downloads. 🎉',
-      })
+      window.setTimeout(() => {
+        dispatch({ type: 'SET_DOWNLOADING', payload: false })
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: 'Download started. Check your downloads. 🎉',
+        })
+      }, 2800)
       return
     }
 
@@ -769,6 +779,11 @@ export function DownloaderApp() {
     // (the "→ MP3" flow); re-serving a video stream as audio keeps the proxy.
     const direct = state.videoMetadata?.directAudioUrl
     if (direct) {
+      // Same as the video path: spin + hint while the browser's download
+      // manager takes over from the hidden iframe (cross-origin, so the real
+      // start isn't observable), then release with a confirmation.
+      dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: true })
+      dispatch({ type: 'SET_MESSAGE', payload: 'Preparing your download…' })
       triggerDirectDownload(
         direct,
         buildDownloadFilename({
@@ -778,10 +793,13 @@ export function DownloaderApp() {
           ext: 'mp3',
         }),
       )
-      dispatch({
-        type: 'SET_MESSAGE',
-        payload: 'Download started. Check your downloads. 🎵',
-      })
+      window.setTimeout(() => {
+        dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: 'Download started. Check your downloads. 🎵',
+        })
+      }, 2800)
       return
     }
 
@@ -1054,7 +1072,13 @@ export function DownloaderApp() {
             }}
             aria-invalid={urlError ? 'true' : 'false'}
             aria-describedby={urlError ? 'url-error' : undefined}
-            className='min-w-0 flex-1 rounded-xl bg-transparent px-4 py-3 pr-[4.75rem] text-base text-white placeholder-white/40 outline-none'
+            /* Reserve room for the Paste chip only while it's shown (empty
+               field); once a link is typed the chip is gone, so reclaim the
+               width. The right-edge fade mask feathers an overflowing URL out
+               instead of clipping it on a hard vertical edge. */
+            className={`min-w-0 flex-1 rounded-xl bg-transparent py-3 pl-4 text-base text-white placeholder-white/40 outline-none [mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] ${
+              state.url ? 'pr-3' : 'pr-[4.75rem]'
+            }`}
           />
           {/* One-tap paste — only while the field is empty, so it never overlaps
               a link the user is typing. Reads the clipboard and auto-resolves. */}
