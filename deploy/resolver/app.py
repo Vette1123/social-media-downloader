@@ -50,6 +50,18 @@ BASE_URL = (
     or "http://localhost:8080"
 ).rstrip("/")
 
+
+def _public_base(request: Request) -> str:
+    """Playback host for tunnel links. Prefer the host the request actually
+    arrived on (via the reverse proxy's forwarded headers) so a platform that
+    hands out a rotating/temporary public URL still emits reachable links with
+    no BASE_URL churn. Fall back to the configured BASE_URL for local/dev."""
+    forwarded_host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+    if forwarded_host:
+        proto = request.headers.get("x-forwarded-proto", "https").split(",")[0].strip()
+        return f"{proto}://{forwarded_host.split(',')[0].strip()}".rstrip("/")
+    return BASE_URL
+
 # Optional shared key. When set, callers must send `Authorization: Api-Key <key>`
 # (the main app forwards COBALT_API_KEY this way). Tunnel tokens are always HMAC
 # signed so /t can't be abused as an open proxy for arbitrary URLs.
@@ -245,7 +257,7 @@ async def resolve(request: Request) -> JSONResponse:
     return JSONResponse(
         {
             "status": "tunnel",
-            "url": f"{BASE_URL}/t?d={token}",
+            "url": f"{_public_base(request)}/t?d={token}",
             "filename": _safe_name(meta["title"], meta["ext"]),
         }
     )
