@@ -149,13 +149,18 @@ def _disposition(filename: str) -> str:
     return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
 
 
+_LAST_ERR: str = ""
+
+
 def _extract(url: str, audio: bool, quality: Optional[str]) -> Optional[dict]:
+    global _LAST_ERR
     opts = _base_opts()
     opts["format"] = _format_for(audio, quality)
     try:
         with YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)
-    except Exception:
+    except Exception as exc:
+        _LAST_ERR = f"{type(exc).__name__}: {exc}"
         return None
     if not info:
         return None
@@ -211,7 +216,10 @@ async def resolve(request: Request) -> JSONResponse:
     meta = _extract(url, audio, quality)
     if not meta or (not meta["direct"] and not meta["progressive"] and not audio):
         # Nothing resolvable here — let the caller fall through to its next path.
-        return JSONResponse({"status": "error", "error": {"code": "fetch.empty"}})
+        err: dict[str, Any] = {"status": "error", "error": {"code": "fetch.empty"}}
+        if (body or {}).get("debug") and _LAST_ERR:
+            err["detail"] = _LAST_ERR
+        return JSONResponse(err)
 
     token = _sign({"u": url, "a": 1 if audio else 0, "q": quality or ""})
     return JSONResponse(
