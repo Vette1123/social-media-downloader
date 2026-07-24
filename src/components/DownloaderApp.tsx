@@ -1431,14 +1431,20 @@ export function DownloaderApp() {
                 state.downloadUrl &&
                 !state.videoMetadata?.embedUrl && (
                   <div className='animate-section-in space-y-3'>
+                    {/* Prefer the direct (browser→instance) tunnel URL so
+                        preview bytes bypass our function entirely — the
+                        /api/video proxy re-streams every byte through Vercel
+                        (Fast Origin Transfer). preload='none' loads nothing
+                        until the user actually hits play, since most just
+                        download. */}
                     <div className='bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg'>
                       <video
-                        src={state.downloadUrl}
+                        src={state.videoMetadata?.directVideoUrl || state.downloadUrl}
                         poster={state.videoMetadata?.thumbnail || undefined}
                         controls
                         playsInline
                         className='w-full h-auto max-h-[60vh] object-contain bg-black'
-                        preload='metadata'
+                        preload='none'
                         onError={(e) => {
                           console.error('Video preview error:', e)
                           dispatch({
