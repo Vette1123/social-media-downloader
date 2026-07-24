@@ -57,9 +57,20 @@ API_KEY = os.environ.get("RESOLVER_API_KEY", "").strip()
 SECRET = (os.environ.get("RESOLVER_SECRET", "").strip() or secrets.token_hex(16)).encode()
 
 # Optional cookies.txt contents (Netscape format), for links that gate behind a
-# login / anti-bot check. Written to disk once at boot.
+# login / anti-bot check. Either paste the file into RESOLVER_COOKIES, or — when
+# the file is too big for a host's env-var size cap, or the host mangles the
+# required tabs/newlines — point RESOLVER_COOKIES_URL at a raw URL (e.g. a secret
+# Gist) and it's fetched once at boot. Written to disk either way.
 COOKIEFILE: Optional[str] = None
 _cookies = os.environ.get("RESOLVER_COOKIES", "")
+_cookies_url = os.environ.get("RESOLVER_COOKIES_URL", "").strip()
+if not _cookies.strip() and _cookies_url:
+    try:
+        _resp = requests.get(_cookies_url, timeout=15)
+        if _resp.status_code < 400 and _resp.text.strip():
+            _cookies = _resp.text
+    except Exception:
+        pass
 if _cookies.strip():
     COOKIEFILE = "/tmp/cookies.txt"
     with open(COOKIEFILE, "w", encoding="utf-8") as fh:
