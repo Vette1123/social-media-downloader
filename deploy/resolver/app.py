@@ -33,10 +33,13 @@ from yt_dlp import YoutubeDL
 
 app = FastAPI()
 
-# Public base URL of this service. Render injects RENDER_EXTERNAL_URL
-# automatically; falls back to an explicit BASE_URL, then localhost for dev.
+# Public base URL of this service. Different hosts expose it differently:
+# Render injects RENDER_EXTERNAL_URL; container platforms expose SPACE_HOST
+# (host only). Falls back to an explicit BASE_URL, then localhost for dev.
+_space_host = os.environ.get("SPACE_HOST", "").strip()
 BASE_URL = (
     os.environ.get("RENDER_EXTERNAL_URL")
+    or (f"https://{_space_host}" if _space_host else "")
     or os.environ.get("BASE_URL")
     or "http://localhost:8080"
 ).rstrip("/")
