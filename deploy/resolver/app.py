@@ -261,7 +261,14 @@ def health(request: Request) -> JSONResponse:
     # Announce the live URL on every keep-warm ping — this is the steady heartbeat
     # that keeps the app's discovery key fresh (and refreshes its TTL).
     _register(_public_base(request))
-    out: dict[str, Any] = {"status": "ok", "auth": bool(COOKIEFILE), "proxy": bool(PROXY)}
+    # `registry` reports whether self-registration is wired (store URL + token
+    # present) — confirms this build + its env without leaking any secret value.
+    out: dict[str, Any] = {
+        "status": "ok",
+        "auth": bool(COOKIEFILE),
+        "proxy": bool(PROXY),
+        "registry": bool(_REG_URL and _REG_TOKEN),
+    }
     # `?geo=1` reports the effective egress region (through the proxy if set), so
     # a source that geo-restricts by client IP can be diagnosed.
     if request.query_params.get("geo"):
