@@ -98,17 +98,22 @@ export async function POST(request: NextRequest) {
     // function. Only expose these for tunnels (never a raw CDN redirect, which
     // needs the proxy for referer/content-type) and never for same-origin
     // (/api/…) streams, which are already local.
+    //
+    // Force https: a tunnel is served over TLS at its edge, so any tunnel URL is
+    // reachable over https. A self-hosted instance behind a TLS-terminating
+    // proxy can report an http self-URL; left as-is, an https page navigating to
+    // it is a mixed-content navigation that shows the file instead of
+    // downloading it. Upgrading the scheme keeps the browser→instance direct
+    // download clean.
+    const asDirectTunnel = (u?: string) =>
+      u && !u.startsWith('/') ? u.replace(/^http:\/\//i, 'https://') : undefined
     const directVideoUrl =
-      videoData.tunnel &&
-      videoData.downloadUrl &&
-      !videoData.downloadUrl.startsWith('/')
-        ? videoData.downloadUrl
+      videoData.tunnel && videoData.downloadUrl
+        ? asDirectTunnel(videoData.downloadUrl)
         : undefined
     const directAudioUrl =
-      videoData.tunnel &&
-      videoData.musicUrl &&
-      !videoData.musicUrl.startsWith('/')
-        ? videoData.musicUrl
+      videoData.tunnel && videoData.musicUrl
+        ? asDirectTunnel(videoData.musicUrl)
         : undefined
 
     const payload = {
