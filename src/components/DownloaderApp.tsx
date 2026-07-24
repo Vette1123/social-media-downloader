@@ -166,22 +166,22 @@ async function captureThumbnail(srcUrl: string): Promise<string> {
   return ''
 }
 
-// Hand a URL straight to the browser's download manager via a synthetic <a>.
-// Used for Cobalt tunnel URLs (Content-Disposition: attachment, cross-origin
-// safe), so the bytes go browser→Cobalt directly instead of being re-streamed
-// through our function. The `download` filename is advisory (browsers ignore it
-// cross-origin and honour Cobalt's own attachment filename); target=_blank is a
-// safety net so a browser that somehow navigates opens a tab instead of
-// replacing the app shell.
+// Hand a tunnel URL straight to the browser's download manager WITHOUT leaving
+// the app. The bytes go browser→instance directly (Content-Disposition:
+// attachment), skipping our function. A cross-origin <a download> is ignored by
+// browsers, so an anchor just navigates the tab to the file (or pops a new tab
+// showing the URL). A hidden iframe avoids that: the browser starts the
+// attachment download from the iframe navigation while the page stays exactly
+// where it is. The `filename` is advisory only — the instance's own attachment
+// filename wins cross-origin — so it's unused here.
 function triggerDirectDownload(url: string, filename: string) {
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.rel = 'noopener'
-  link.target = '_blank'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  void filename
+  const iframe = document.createElement('iframe')
+  iframe.style.display = 'none'
+  iframe.src = url
+  document.body.appendChild(iframe)
+  // Give the navigation→download time to start, then tear the iframe down.
+  setTimeout(() => iframe.remove(), 120000)
 }
 
 const PLATFORM_DISPLAY: Record<string, string> = {
