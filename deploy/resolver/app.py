@@ -26,6 +26,8 @@ import secrets
 import subprocess
 from typing import Any, Optional
 
+from urllib.parse import quote
+
 import requests
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -124,6 +126,16 @@ def _unsign(token: str) -> Optional[dict]:
 def _safe_name(title: str, ext: str) -> str:
     stem = re.sub(r'[\\/:*?"<>|]+', "_", (title or "media")).strip() or "media"
     return f"{stem[:80]}.{ext}"
+
+
+def _disposition(filename: str) -> str:
+    """Build a Content-Disposition value that is safe for a latin-1 HTTP header.
+    Non-latin-1 chars (emoji, curly quotes, CJK) would make the ASGI server throw
+    on header encode, so we send an ASCII-only fallback plus an RFC 5987
+    `filename*` carrying the real UTF-8 name."""
+    ascii_name = filename.encode("ascii", "ignore").decode("ascii").strip() or "media"
+    encoded = quote(filename, safe="")
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{encoded}"
 
 
 def _extract(url: str, audio: bool, quality: Optional[str]) -> Optional[dict]:
@@ -244,29 +256,36 @@ def tunnel(d: str, request: Request) -> Any:
         return JSONResponse({"error": "resolve failed"}, status_code=502)
 
     filename = _safe_name(meta["title"], meta["ext"])
-    disposition = f'attachment; filename="{filename}"'
+    disposition = _disposition(filename)
 
     # Progressive http(s) video → proxy with Range passthrough (seekable preview).
+    # If the CDN rejects this box (signed-URL 403, TLS reset) or the request
+    # errors, fall through to the yt-dlp pipe instead of surfacing a 500.
     if meta["progressive"] and meta["direct"]:
-        range_header = request.headers.get("range")
-        fwd = dict(meta["headers"])
-        if range_header:
-            fwd["Range"] = range_header
-        upstream = requests.get(meta["direct"], headers=fwd, stream=True, timeout=30)
-        headers = {
-            **_CORS,
-            "Content-Disposition": disposition,
-            "Content-Type": upstream.headers.get("content-type", "video/mp4"),
-            "Accept-Ranges": "bytes",
-        }
-        for h in ("content-length", "content-range"):
-            if h in upstream.headers:
-                headers[h.title()] = upstream.headers[h]
-        return StreamingResponse(
-            upstream.iter_content(chunk_size=65536),
-            status_code=upstream.status_code,
-            headers=headers,
-        )
+        try:
+            range_header = request.headers.get("range")
+            fwd = dict(meta["headers"])
+            if range_header:
+                fwd["Range"] = range_header
+            upstream = requests.get(meta["direct"], headers=fwd, stream=True, timeout=30)
+            if upstream.status_code < 400:
+                headers = {
+                    **_CORS,
+                    "Content-Disposition": disposition,
+                    "Content-Type": upstream.headers.get("content-type", "video/mp4"),
+                    "Accept-Ranges": "bytes",
+                }
+                for h in ("content-length", "content-range"):
+                    if h in upstream.headers:
+                        headers[h.title()] = upstream.headers[h]
+                return StreamingResponse(
+                    upstream.iter_content(chunk_size=65536),
+                    status_code=upstream.status_code,
+                    headers=headers,
+                )
+            upstream.close()
+        except Exception:
+            pass  # fall through to the pipe path below
 
     # Audio, or non-progressive video → pipe through yt-dlp.
     ctype = "audio/mpeg" if audio else "video/mp4"
