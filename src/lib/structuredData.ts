@@ -1,3 +1,4 @@
+import { buildDay } from '@/config/build'
 import { siteConfig } from '@/config/site'
 import { homepageFaqs } from '@/lib/homepageFaqs'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
@@ -5,7 +6,7 @@ import { platformsBySlug, platformUrl } from '@/lib/platforms'
 
 const ogImage = siteConfig.ogImage
 const datePublished = `${siteConfig.foundingYear}-01-01`
-const dateModified = '2026-06-15'
+const dateModified = buildDay
 
 const personNode = {
   '@type': 'Person',
