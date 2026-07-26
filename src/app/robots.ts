@@ -37,6 +37,10 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: `${siteConfig.url}/sitemap.xml`,
-    host: siteConfig.url,
+    // No `host:` directive — it is a Yandex-only extension that Yandex itself
+    // deprecated, and it must carry a bare hostname. Emitting it with a scheme
+    // (`https://…`) makes it an invalid line that every crawler discards.
+    // The www/apex preference is already expressed by the 308 redirects and the
+    // rel=canonical on every page.
   }
 }

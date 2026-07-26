@@ -1,8 +1,9 @@
 import type { MetadataRoute } from 'next'
+import { buildDate } from '@/config/build'
 import { siteConfig } from '@/config/site'
 import { platforms } from '@/lib/platforms'
 
-const lastModified = new Date('2026-06-15T00:00:00.000Z')
+const lastModified = buildDate
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const home: MetadataRoute.Sitemap[number] = {
