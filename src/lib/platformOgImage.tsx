@@ -115,9 +115,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              width: '100%',
-              zIndex: 1,
-            }}
+              width: '100%',            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
               <div
@@ -194,9 +192,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
               display: 'flex',
               flexDirection: 'column',
               gap: 22,
-              marginTop: 'auto',
-              zIndex: 1,
-            }}
+              marginTop: 'auto',            }}
           >
             <div
               style={{
