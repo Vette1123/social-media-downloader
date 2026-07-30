@@ -2,6 +2,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { readdir, mkdir, copyFile, access } from 'node:fs/promises'
+import { nativeMediaAvailable } from './nativeMedia'
 
 /**
  * yt-dlp integration. yt-dlp runs the extraction locally (from this process's
@@ -90,6 +91,10 @@ export interface YtInfo {
  * blocked/unavailable, network error).
  */
 export async function ytdlpInfo(url: string): Promise<YtInfo | null> {
+  // Skip the probe entirely where the binary cannot exist. The catch below
+  // would swallow the failure anyway, but this keeps a doomed dynamic import
+  // off the hot path of every resolve.
+  if (!nativeMediaAvailable()) return null
   try {
     const ytdlp = await loadYtdlp()
     const info = (await ytdlp(url, {

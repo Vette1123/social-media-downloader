@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
-import { Analytics } from '@vercel/analytics/next'
 import { siteConfig } from '@/config/site'
 import { globalStructuredData } from '@/lib/structuredData'
 
@@ -158,7 +157,12 @@ export default function RootLayout({
         style={{ backgroundColor: '#08080a' }}
       >
         {children}
-        <Analytics />
+        {/* Analytics is not mounted here. @vercel/analytics only reports to
+            Vercel's collector (/_vercel/insights), which does not exist off
+            that platform, so it shipped script weight and beaconed into a 404.
+            Cloudflare Web Analytics replaces it and needs no code: enable it
+            per-zone in the dashboard and the beacon is injected at the edge,
+            which also keeps it out of the client bundle. */}
       </body>
     </html>
   )

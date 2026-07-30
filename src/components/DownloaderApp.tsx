@@ -878,15 +878,73 @@ export function DownloaderApp() {
           body: JSON.stringify({
             imageUrls,
             title: state.videoMetadata.title,
-            asZip: true,
           }),
         })
 
         if (!response.ok) {
-          throw new Error('Failed to download images as ZIP')
+          throw new Error('Failed to resolve image URLs')
         }
-        const blob = await streamToBlob(response, (p) =>
-          dispatch({ type: 'SET_PROGRESS', payload: p }),
+
+        const data = await response.json()
+        if (!data.success || !data.images) {
+          throw new Error('Invalid response from server')
+        }
+        const entries = data.images as Array<{
+          url: string
+          filename: string
+        }>
+
+        // The archive is built here rather than on the server: the browser is
+        // already the destination for every one of these bytes, so zipping
+        // server-side meant paying to hold the whole carousel in memory and
+        // stream it a second time. JSZip is pulled in on demand so it stays out
+        // of the initial bundle — most visits never build an archive.
+        const { default: JSZip } = await import('jszip')
+        const zip = new JSZip()
+
+        let completed = 0
+        const noteProgress = () => {
+          completed += 1
+          // Reserve the last tenth of the bar for assembling the archive.
+          dispatch({
+            type: 'SET_PROGRESS',
+            payload: Math.round((completed / entries.length) * 90),
+          })
+        }
+
+        await Promise.all(
+          entries.map(async (entry) => {
+            try {
+              const imageResponse = await fetch(entry.url)
+              if (!imageResponse.ok) {
+                throw new Error(`HTTP ${imageResponse.status}`)
+              }
+              zip.file(entry.filename, await imageResponse.arrayBuffer())
+            } catch (error) {
+              console.error(`Failed to fetch ${entry.filename}:`, error)
+              // Mirror the previous behaviour: a failed image leaves a note in
+              // the archive rather than silently shrinking it.
+              zip.file(
+                `${entry.filename}-failed.txt`,
+                `Failed to download: ${entry.url}`,
+              )
+            } finally {
+              noteProgress()
+            }
+          }),
+        )
+
+        // STORE, not the DEFLATE default: these entries are JPEGs, which are
+        // already compressed. Deflating them walks every byte for a fraction of
+        // a percent, and on a large carousel that is the difference between an
+        // instant archive and a visibly frozen tab.
+        const blob = await zip.generateAsync(
+          { type: 'blob', compression: 'STORE' },
+          (meta) =>
+            dispatch({
+              type: 'SET_PROGRESS',
+              payload: 90 + Math.round(meta.percent * 0.1),
+            }),
         )
         const blobUrl = URL.createObjectURL(blob)
 
@@ -915,10 +973,7 @@ export function DownloaderApp() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            imageUrls,
-            asZip: false,
-          }),
+          body: JSON.stringify({ imageUrls }),
         })
 
         if (!response.ok) {
