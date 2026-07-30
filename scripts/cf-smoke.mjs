@@ -14,12 +14,19 @@
  * Exists because `wrangler dev` does not enforce the free plan's 10 ms CPU
  * limit, so a route can pass locally and return `error code 1102` in
  * production — which is exactly what happened to all 24 OpenGraph/Twitter image
- * routes. Every assertion here therefore runs against the real deployment, and
- * 1101 (thrown exception) / 1102 (resource limit) are called out explicitly
- * rather than being lumped in with ordinary 5xx.
+ * routes back when Next rendered them per request. Every assertion here
+ * therefore runs against the real deployment, and 1101 (thrown exception) /
+ * 1102 (resource limit) are called out explicitly rather than being lumped in
+ * with ordinary 5xx.
  *
- * Two passes by default: the first can hit a cold isolate, where Next's server
- * initialization is billed to the request that triggers it; the second confirms
+ * The site is now a static export: pages, images, robots.txt and sitemap.xml
+ * are files in `out/`, matched by Workers Static Assets before the Worker is
+ * invoked. Several checks below exist specifically to prove that — a page or
+ * image that started being served by Worker code would still return 200, so
+ * the assertions look at Cache-Control and Content-Type, which the asset server
+ * and `out/_headers` set in a way Worker code would not reproduce by accident.
+ *
+ * Two passes by default: the first can hit a cold isolate; the second confirms
  * the warm path. A failure on pass 1 only is still a failure — real users hit
  * cold isolates too.
  *
@@ -83,6 +90,21 @@ function describeCloudflareError(code) {
 
 // --- check definitions ----------------------------------------------------
 
+/**
+ * The canonical URL baked into the HTML at build time.
+ *
+ * Always the production origin, never the origin under test — a preview
+ * deployment must not advertise itself as canonical, or search engines will
+ * index workers.dev instead of the real domain. The root canonical carries no
+ * trailing slash, matching what Next emits from `metadataBase`.
+ */
+const CANONICAL_ORIGIN = 'https://www.socialdownloader.space'
+
+function canonicalUrl(pathname) {
+  if (pathname === '/') return CANONICAL_ORIGIN
+  return `${CANONICAL_ORIGIN}${pathname}`
+}
+
 /** An HTML document that actually rendered the app, not an error shell. */
 function htmlPage(pathname, mustContain) {
   return {
@@ -92,8 +114,25 @@ function htmlPage(pathname, mustContain) {
       if (response.status !== 200) return `expected 200, got ${response.status}`
       const type = response.headers.get('content-type') ?? ''
       if (!type.includes('text/html')) return `expected text/html, got "${type}"`
+
+      // The asset server's default for HTML. Anything else means Worker code
+      // produced this page, which would put every page view on the CPU budget.
+      const cacheControl = response.headers.get('cache-control') ?? ''
+      if (!cacheControl.includes('must-revalidate')) {
+        return `not served from static assets (cache-control: "${cacheControl}")`
+      }
+
       const text = new TextDecoder().decode(body)
       if (!text.includes('</html>')) return 'body is not a complete HTML document'
+
+      // Prerendered, not a client-rendered shell: the crawler-visible content
+      // has to be in the first byte, which is the entire point of the export.
+      const canonical = `<link rel="canonical" href="${canonicalUrl(pathname)}"`
+      if (!text.includes(canonical)) return `missing or wrong canonical (expected ${canonical}>)`
+      if (!/<title>[^<]{20,}<\/title>/.test(text)) return 'no substantive <title>'
+      if (!text.includes('application/ld+json')) return 'no structured data in the HTML'
+      if (!text.includes('<h1')) return 'no <h1> in the prerendered markup'
+
       for (const needle of mustContain) {
         if (!text.includes(needle)) return `body is missing ${JSON.stringify(needle)}`
       }
@@ -107,11 +146,11 @@ function htmlPage(pathname, mustContain) {
  * the check insists on real PNG bytes — a 200 with an error body would
  * otherwise look like a pass.
  *
- * It also asserts the response came from Workers Assets rather than the Worker.
- * scripts/cf-static-assets.mjs promotes these to static assets so the Worker is
- * never invoked, and the `_headers` Cache-Control it writes is distinct from
- * the `max-age=0, must-revalidate` Next emits — so the header doubles as proof
- * of which path served the request.
+ * The Cache-Control assertion doubles as proof of provenance. These images are
+ * written to extension-less paths (`out/tiktok-downloader/opengraph-image`), so
+ * both the Content-Type and the Cache-Control here can only have come from the
+ * `out/_headers` file that scripts/cf-postbuild.mjs generates — which means the
+ * asset server answered, and no Worker code ran.
  *
  * @param minBytes some prerendered icons are legitimately small; the social
  *   cards are ~500 KB and a tiny one means satori emitted an empty canvas.
@@ -207,31 +246,111 @@ function buildChecks() {
     },
 
     {
-      name: '404 for unknown path',
-      request: { pathname: '/definitely-not-a-real-page' },
-      check: async (response) => {
-        if (response.status !== 404) return `expected 404, got ${response.status}`
+      // Content-hashed filenames, so they must be cached forever. Getting this
+      // wrong costs a revalidation round trip per script, per visit, forever.
+      // The URL is discovered from the homepage rather than hardcoded, since
+      // the hashes change on every build.
+      name: 'hashed JS bundle is immutable',
+      request: { pathname: '/' },
+      check: async (response, body) => {
+        const html = new TextDecoder().decode(body)
+        const match = html.match(/\/_next\/static\/chunks\/[^"']+\.js/)
+        if (!match) return 'no /_next/static chunk referenced by the homepage'
+        const asset = await fetch(`${BASE}${match[0]}`)
+        if (asset.status !== 200) return `${match[0]} returned ${asset.status}`
+        const cacheControl = asset.headers.get('cache-control') ?? ''
+        if (!cacheControl.includes('immutable')) {
+          return `${match[0]} is not immutable (cache-control: "${cacheControl}")`
+        }
         return null
       },
     },
 
-    // Vulnerability scans are the bulk of a public site's 404s, and rendering
-    // Next's not-found page for each was the single most expensive thing the
-    // Worker did (up to 116 ms CPU). cloudflare/worker.js answers them before
-    // Next loads, which the plain-text body confirms.
-    ...['/wp-login.php', '/.env', '/vendor/phpunit.php', '/admin.php'].map((pathname) => ({
-      name: `scanner probe ${pathname}`,
+    // Unmatched paths, including the vulnerability scans that make up most of a
+    // public site's 404s. `not_found_handling: "404-page"` means the asset
+    // router serves out/404.html for these without invoking the Worker at all —
+    // they used to cost up to 116 ms of CPU each rendering Next's not-found
+    // page. A `text/html` body with the asset server's Cache-Control is the
+    // evidence that no Worker code ran.
+    ...[
+      '/definitely-not-a-real-page',
+      '/wp-login.php',
+      '/.env',
+      '/vendor/phpunit.php',
+      '/admin.php',
+      '/wp-content/uploads/shell.php',
+    ].map((pathname) => ({
+      name: `404 ${pathname}`,
       request: { pathname },
       check: async (response, body) => {
         if (response.status !== 404) return `expected 404, got ${response.status}`
         const type = response.headers.get('content-type') ?? ''
-        if (!type.includes('text/plain')) {
-          return `expected the cheap plain-text 404, got "${type}" (Next rendered it instead)`
+        if (!type.includes('text/html')) return `expected the 404 page, got "${type}"`
+        const cacheControl = response.headers.get('cache-control') ?? ''
+        if (!cacheControl.includes('must-revalidate')) {
+          return `Worker rendered this 404 instead of the asset router (cache-control: "${cacheControl}")`
         }
-        if (new TextDecoder().decode(body) !== 'Not found') return 'unexpected 404 body'
+        const text = new TextDecoder().decode(body)
+        if (!text.includes('</html>')) return '404 body is not the styled page'
         return null
       },
     })),
+
+    {
+      // The RSC payload the client router fetches on soft navigation. Missing
+      // these does not break the site — the link falls back to a full page
+      // load — but it silently costs the instant in-app transitions.
+      name: 'RSC payload for client-side navigation',
+      request: { pathname: '/tiktok-downloader.txt' },
+      check: async (response, body) => {
+        if (response.status !== 200) return `expected 200, got ${response.status}`
+        if (body.byteLength < 500) return `payload too small (${body.byteLength} bytes)`
+        return null
+      },
+    },
+
+    {
+      name: 'security headers on every asset',
+      request: { pathname: '/' },
+      check: async (response) => {
+        const expected = {
+          'x-content-type-options': 'nosniff',
+          'referrer-policy': 'strict-origin-when-cross-origin',
+          'x-frame-options': 'SAMEORIGIN',
+          'strict-transport-security': 'max-age=',
+        }
+        const missing = Object.entries(expected)
+          .filter(([header, value]) => !(response.headers.get(header) ?? '').includes(value))
+          .map(([header]) => header)
+        if (missing.length) return `missing/incorrect: ${missing.join(', ')}`
+        return null
+      },
+    },
+
+    {
+      name: 'API rejects a wrong method with 405, not the 404 page',
+      request: { pathname: '/api/download' },
+      check: async (response, body) => {
+        if (response.status !== 405) return `expected 405, got ${response.status}`
+        if (!(response.headers.get('allow') ?? '').includes('POST')) return 'no Allow header'
+        const payload = JSON.parse(new TextDecoder().decode(body))
+        if (payload.success !== false) return 'expected a structured JSON rejection'
+        return null
+      },
+    },
+
+    {
+      // run_worker_first pins /api/* to the Worker; without it the asset
+      // router's 404-page rule would swallow every API request.
+      name: 'unknown /api path falls through to the 404 page',
+      request: { pathname: '/api/does-not-exist' },
+      check: async (response) => {
+        if (response.status !== 404) return `expected 404, got ${response.status}`
+        const type = response.headers.get('content-type') ?? ''
+        if (!type.includes('text/html')) return `expected the 404 page, got "${type}"`
+        return null
+      },
+    },
 
     {
       name: 'api/download resolves a YouTube URL',

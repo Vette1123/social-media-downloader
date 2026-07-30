@@ -222,7 +222,7 @@ async function stepDeploy(ctx) {
     YOUTUBE_DL_SKIP_PYTHON_CHECK: '1',
   }
   run('pnpm', ['cf:build'], env)
-  run('pnpm', ['exec', 'opennextjs-cloudflare', 'deploy'], env)
+  run('pnpm', ['exec', 'wrangler', 'deploy'], env)
   ok('Worker deployed')
 }
 
@@ -293,9 +293,9 @@ async function stepDomain(ctx) {
     return
   }
 
-  // Both hostnames point at the same Worker. The app emits a canonical link to
-  // the www form, so the apex serving the same content is not a duplicate
-  // content problem, and it keeps the bare domain alive after the DNS move.
+  // Both hostnames point at the same Worker so the bare domain stays alive
+  // after the DNS move. The apex does not serve the site, though — the redirect
+  // rule below sends it to www before the Worker is ever consulted.
   for (const hostname of [APEX, WWW_HOSTNAME]) {
     await cf(ctx.token, `/accounts/${ctx.accountId}/workers/domains`, {
       method: 'PUT',
@@ -309,10 +309,62 @@ async function stepDomain(ctx) {
     ok(`${hostname} -> Worker "${ctx.script}"`)
   }
 
+  await stepApexRedirect(ctx, zone)
+
   console.log(
     `\n  Cloudflare manages the DNS records for these automatically — no manual\n` +
       '  A/CNAME needed, and the old Vercel CNAME is superseded.\n',
   )
+}
+
+/**
+ * 301 the apex to www with a zone-level redirect rule.
+ *
+ * Serving identical content on both hostnames splits ranking signals and makes
+ * every page a duplicate of itself. A rel=canonical asks search engines to
+ * ignore that; a 301 means only one URL ever exists, which is strictly better
+ * and also what users' bookmarks and inbound links end up storing.
+ *
+ * A redirect rule rather than a check inside the Worker: the
+ * http_request_dynamic_redirect phase runs before Workers, so the redirect
+ * costs no Worker invocation and no CPU. A Worker check could not do the job
+ * anyway — static assets are matched ahead of the Worker, so an apex request
+ * for a page would be answered from the asset store without the Worker ever
+ * seeing it.
+ *
+ * The entrypoint ruleset is replaced wholesale (PUT), which is idempotent:
+ * re-running produces the same single rule rather than stacking duplicates.
+ */
+async function stepApexRedirect(ctx, zone) {
+  const rule = {
+    action: 'redirect',
+    description: `301 ${APEX} -> ${WWW_HOSTNAME}`,
+    enabled: true,
+    expression: `(http.host eq "${APEX}")`,
+    action_parameters: {
+      from_value: {
+        status_code: 301,
+        target_url: {
+          expression: `concat("https://${WWW_HOSTNAME}", http.request.uri.path)`,
+        },
+        preserve_query_string: true,
+      },
+    },
+  }
+
+  try {
+    await cf(
+      ctx.token,
+      `/zones/${zone.id}/rulesets/phases/http_request_dynamic_redirect/entrypoint`,
+      { method: 'PUT', body: { rules: [rule] } },
+    )
+    ok(`${APEX} 301s to ${WWW_HOSTNAME} (zone redirect rule, no Worker CPU)`)
+  } catch (error) {
+    // Not fatal: the site works on both hostnames either way, and every page
+    // still carries a canonical pointing at www.
+    warn(`Could not create the apex redirect rule: ${error.message}`)
+    info('Add it by hand under Rules -> Redirect Rules, or re-run with a token that has Zone:Edit.')
+  }
 }
 
 // --- entry point ----------------------------------------------------------
