@@ -348,7 +348,18 @@ export class Downloader {
     platform: SupportedPlatform,
   ): Promise<VideoData> {
     const result = await this.tryCobaltInstances(url)
+
     if (!result || !result.musicUrl) {
+      // Cobalt is the only audio path for most platforms, and for YouTube it is
+      // also the least dependable one — the same public instance already
+      // refuses YouTube *video* with error.api.youtube.login, so treating its
+      // continued willingness to serve YouTube audio as guaranteed would be
+      // optimistic. Innertube gives us a real second option: an audio-only
+      // adaptive stream needs no muxing, so unlike video it comes back at full
+      // quality.
+      const viaInnertube = await this.tryYouTubeInnertubeAudio(url, platform)
+      if (viaInnertube) return viaInnertube
+
       throw new Error(
         'Could not extract audio from this link. The post may be private, region-locked, or the audio source may be unavailable (YouTube blocks audio extraction from some networks).',
       )
@@ -375,6 +386,30 @@ export class Downloader {
       downloadUrl: '',
       isPhotoCarousel: false,
     }
+  }
+
+  /**
+   * YouTube audio via Innertube, used only when Cobalt could not supply a
+   * track. Returns null for every other platform (Innertube is YouTube-only)
+   * and for anything it cannot resolve, so the caller still raises its own
+   * error message.
+   */
+  private async tryYouTubeInnertubeAudio(
+    url: string,
+    platform: SupportedPlatform,
+  ): Promise<VideoData | null> {
+    if (platform !== 'youtube') return null
+
+    const videoId = parseYouTubeId(url)
+    if (!videoId) return null
+
+    const canonical = `https://www.youtube.com/watch?v=${videoId}`
+    const result = await tryYouTubeInnertube(videoId, canonical, 'audio')
+    if (!result?.musicUrl) return null
+
+    // Matches the naming the Cobalt path applies, so the download filename is
+    // the same whichever extractor answered.
+    return { ...result, title: `${result.title} (audio)`, downloadUrl: '' }
   }
 
   /**
