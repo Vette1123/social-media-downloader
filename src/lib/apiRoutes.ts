@@ -19,11 +19,27 @@
 import { Downloader } from './downloader'
 import { validateUrl, detectPlatform } from './validator'
 import { getCached, setCached } from './responseCache'
+import { readEdgeCache, writeEdgeCache, type WaitUntilContext } from './edgeCache'
 import { slugify } from './filename'
 import { nativeMediaAvailable, nativeMediaUnavailable } from './nativeMedia'
 import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
 
-type Handler = (request: Request) => Promise<Response> | Response
+type Handler = (
+  request: Request,
+  ctx?: WaitUntilContext,
+) => Promise<Response> | Response
+
+/**
+ * A resolve served from cache. `X-Cache` distinguishes the two tiers so the
+ * smoke test can assert the edge cache is actually live — the Cache API is a
+ * silent no-op on workers.dev, and a silent no-op is exactly the kind of thing
+ * that looks fine until you check.
+ */
+function cachedResponse(body: string, tier: 'HIT' | 'EDGE'): Response {
+  return new Response(body, {
+    headers: { 'Content-Type': 'application/json', 'X-Cache': tier },
+  })
+}
 
 /** Same-origin paths are already local; only external media needs the proxy. */
 function toMediaUrl(mediaUrl: string, proxyPath: string): string {
@@ -46,7 +62,10 @@ function asDirectTunnel(url: string | undefined): string | undefined {
   return url.replace(/^http:\/\//i, 'https://')
 }
 
-export async function handleDownload(request: Request): Promise<Response> {
+export async function handleDownload(
+  request: Request,
+  ctx?: WaitUntilContext,
+): Promise<Response> {
   try {
     const { url, type = 'video', quality, format } = await request.json()
     const preferredQuality: 'hd' | 'sd' = quality === 'sd' ? 'sd' : 'hd'
@@ -69,13 +88,27 @@ export async function handleDownload(request: Request): Promise<Response> {
 
     const platform = detectPlatform(url)
 
-    // Serve an identical recent resolve from the warm-instance cache — skips a
-    // full extractor round-trip for immediate repeats (double-tap, HD/SD/MP3
-    // re-pick, Recent re-tap). Keyed on everything that changes the result.
+    // Serve an identical recent resolve from cache — skips a full extractor
+    // round-trip for repeats (double-tap, HD/SD/MP3 re-pick, Recent re-tap, or
+    // simply a link several people paste). Keyed on everything that changes the
+    // result.
+    //
+    // Two tiers, cheapest first: the per-isolate Map, then Cloudflare's colo-
+    // wide edge cache. The Map only catches a repeat that happens to land on
+    // the same warm isolate, which is a minority of them; the edge cache is
+    // shared across every isolate in the colo and is what makes a popular link
+    // essentially free to re-resolve.
     const cacheKey = `${type}|${preferredQuality}|${mode}|${url}`
-    const cached = getCached<Record<string, unknown>>(cacheKey)
-    if (cached) {
-      return Response.json(cached, { headers: { 'X-Cache': 'HIT' } })
+    const cached = getCached(cacheKey)
+    if (cached) return cachedResponse(cached, 'HIT')
+
+    const origin = new URL(request.url).origin
+    const edge = await readEdgeCache(origin, cacheKey)
+    if (edge) {
+      // Promote into this isolate so a second repeat skips even the edge
+      // lookup, which is I/O and therefore latency the Map does not cost.
+      setCached(cacheKey, edge)
+      return cachedResponse(edge, 'EDGE')
     }
 
     const downloader = new Downloader({ quality: preferredQuality, mode })
@@ -153,9 +186,16 @@ export async function handleDownload(request: Request): Promise<Response> {
       },
     }
 
-    setCached(cacheKey, payload)
+    // Serialised once, then reused for the response and both cache tiers —
+    // rather than handing the object to Response.json() and stringifying it
+    // again for storage.
+    const body = JSON.stringify(payload)
+    setCached(cacheKey, body)
+    writeEdgeCache(origin, cacheKey, body, ctx)
 
-    return Response.json(payload, { headers: { 'X-Cache': 'MISS' } })
+    return new Response(body, {
+      headers: { 'Content-Type': 'application/json', 'X-Cache': 'MISS' },
+    })
   } catch (error) {
     return Response.json(
       {

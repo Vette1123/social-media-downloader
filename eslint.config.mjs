@@ -17,6 +17,9 @@ const eslintConfig = [
       // Runtime stub for packages that cannot exist on workerd; it is
       // deliberately not part of the app's source graph.
       'cloudflare/stubs/**',
+      // Scratch dir for CPU profiling and the throwaway bench Worker: bundled
+      // output and one-off measurement scripts, gitignored and not shipped.
+      '.prof/**',
     ],
   },
   ...nextCoreWebVitals,
