@@ -21,10 +21,13 @@ discovery:  resolver ──SET live URL──▶ Upstash Redis ──GET──�
   direct from the CDN** (large) — proxy bytes are spent only if the CDN itself
   rejects the box. See `perf(resolver): stream media direct…` commit.
 
-## Do you even need this?
+## Do you need this? No.
 
-Measured against production on **2026-07-30**, with no resolver running at all
-and no secrets set on the Worker:
+> **This whole component is obsolete.** Nothing in the app depends on it, and
+> there is no longer a platform it would unblock. Kept only as reference.
+
+Measured against production on **2026-07-30**, with no resolver running and no
+secrets set on the Worker:
 
 | Platform | Status without a resolver |
 |---|---|
@@ -32,14 +35,41 @@ and no secrets set on the Worker:
 | Instagram | ✅ works — reels resolve in <1s via Cobalt |
 | Facebook | ✅ works — Cobalt returns a CDN redirect |
 | X / Twitter | ✅ works |
-| YouTube | ⚠️ **preview only** — the embed plays, download is unavailable |
+| YouTube | ✅ works — **Innertube, extracted inside the Worker** |
 
-So the resolver is now a **YouTube-download component**, not life support for the
-whole app. Public Cobalt refuses YouTube with `error.api.youtube.login`, and
-YouTube is the one source that genuinely needs cookies plus a residential-ish
-egress. Everything else is fine without it.
+YouTube was the last thing this resolver existed for, and it no longer needs a
+resolver either. `src/lib/youtubeInnertube.ts` calls YouTube's own player API
+directly from the Worker using the **ANDROID_VR** client, which still returns
+unsigned stream URLs — so there is no signature cipher to interpret, no Python,
+no ffmpeg, and no external host to keep alive. It costs 1-2 ms of CPU.
 
-Don't rebuild this until YouTube downloads actually matter.
+Both risks were verified on a real edge isolate rather than assumed, because
+neither is observable from a dev machine:
+
+- **Datacenter egress.** From colo MRS, ANDROID_VR returns `playabilityStatus:
+  OK` with 27 formats. (IOS returns OK but adaptive-only; ANDROID 400s; MWEB,
+  TVHTML5 and WEB_EMBEDDED all report the video unplayable.)
+- **IP binding.** URLs extracted in Marseille play back from an unrelated IP
+  (`206`, correct Content-Type), so googlevideo does not tie them to the
+  extracting address.
+
+Two honest limits, neither of which a resolver is worth rebuilding for:
+
+- **Video caps at 360p.** YouTube publishes exactly one muxed progressive
+  stream (itag 18); everything higher is adaptive and needs ffmpeg to
+  recombine. A self-hosted yt-dlp *would* fix this — it is the only remaining
+  reason to want one.
+- **Bytes proxy through `/api/video`**, as TikTok/Instagram/Facebook already
+  do. googlevideo sends neither `Content-Disposition: attachment` nor an
+  `Access-Control-Allow-Origin` header, so the browser can neither be handed
+  the URL directly nor fetch it cross-origin.
+
+Audio is unaffected by the 360p ceiling — an audio-only adaptive stream needs
+no muxing, so it comes back at full quality. Cobalt still serves audio first;
+Innertube backs it up.
+
+**Do not rebuild this.** The only scenario that justifies it is wanting
+above-360p YouTube video badly enough to run a host.
 
 ## Hosting
 
