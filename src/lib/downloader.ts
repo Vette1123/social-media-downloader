@@ -93,6 +93,33 @@ function tikwmAbsoluteUrl(path: string | undefined): string | undefined {
   return 'https://www.tikwm.com' + path
 }
 
+/**
+ * Pick a cover image the *browser* can load on its own.
+ *
+ * tikwm answers with two flavours of URL depending on the `web` flag: paths on
+ * its own host (`/video/cover/<id>.webp`) or the signed `*.tiktokcdn-*.com`
+ * originals. The tikwm-hosted covers are hotlink-gated and answer 403 to every
+ * client — including our own /api/image proxy sending `Referer: tikwm.com` —
+ * so as a `<video poster>` they render a dead box. The tiktokcdn originals load
+ * straight from the browser with no proxy hop at all.
+ *
+ * Measured 2026-07-30 against a live post: tikwm cover 403 (direct, and via the
+ * deployed proxy); tiktokcdn cover 200 image/jpeg direct.
+ *
+ * A tikwm-hosted path is still returned as a last resort — a poster that might
+ * 403 beats no poster, and the caller treats '' as "no thumbnail at all".
+ */
+function pickTikwmCover(
+  data: { cover?: string; origin_cover?: string; ai_dynamic_cover?: string },
+): string {
+  const candidates = [data.origin_cover, data.cover, data.ai_dynamic_cover]
+  for (const candidate of candidates) {
+    const absolute = tikwmAbsoluteUrl(candidate)
+    if (absolute && !absolute.includes('tikwm.com')) return absolute
+  }
+  return tikwmAbsoluteUrl(data.cover) || ''
+}
+
 // Discover a self-hosted resolver's *current* base URL from a shared key/value
 // store. Some free hosts hand the resolver a rotating/temporary public URL with
 // no API to read it back, so the resolver publishes its own live URL to this
@@ -1347,7 +1374,14 @@ export class Downloader {
           url: url,
           count: 12,
           cursor: 0,
-          web: 1,
+          // NO `web: 1`. That flag switches every URL in the response over to
+          // tikwm's own host: the cover becomes a hotlink-gated path that 403s
+          // for everyone (killing the preview poster) and `origin_cover` /
+          // `ai_dynamic_cover` come back empty, so there is no absolute cover
+          // left to fall back to. Without the flag we get the signed tiktokcdn
+          // originals, which the browser loads directly (200) and which our
+          // /api/video proxy can still range-fetch — verified against the
+          // deployed Worker: 206 with a correct Content-Range.
           hd: this.videoQuality === 'sd' ? 0 : 1,
         },
         {
@@ -1366,8 +1400,7 @@ export class Downloader {
         const data = response.data.data
         const videoId = parseVideoId(url) || 'unknown'
 
-        // Fix thumbnail URL (tikwm returns relative paths)
-        const thumbnail = tikwmAbsoluteUrl(data.cover) || ''
+        const thumbnail = pickTikwmCover(data)
 
         // Check if this is a photo carousel (slideshow)
         const isPhotoCarousel =
