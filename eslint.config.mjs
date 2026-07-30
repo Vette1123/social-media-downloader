@@ -10,7 +10,7 @@ const eslintConfig = [
   {
     ignores: [
       '.next/**',
-      '.open-next/**',
+      'out/**',
       '.wrangler/**',
       '.worker-size-check/**',
       'node_modules/**',

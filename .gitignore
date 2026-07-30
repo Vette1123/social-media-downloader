@@ -17,8 +17,7 @@
 /.next/
 /out/
 
-# cloudflare (opennext build output + local secrets + generated types)
-/.open-next/
+# cloudflare (local wrangler state + secrets + generated types)
 /.wrangler/
 /.worker-size-check/
 .dev.vars
