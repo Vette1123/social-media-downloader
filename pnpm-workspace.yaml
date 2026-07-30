@@ -8,11 +8,31 @@
 # and CI.
 nodeLinker: hoisted
 
+# pnpm 11 fails the install outright (ERR_PNPM_IGNORED_BUILDS) when a package
+# has a build script that is neither approved nor explicitly denied, so every
+# one of them has to be listed — including packages only present on other
+# platforms. esbuild and workerd fetch their native binaries in postinstall and
+# wrangler cannot run without them. The @ffmpeg-installer platform packages are
+# listed for the same reason, even though the Cloudflare build aliases them to
+# an inert stub: the install still has to resolve them on whichever OS is
+# building, and CI runs Linux while local development runs Windows.
 allowBuilds:
   sharp: true
   unrs-resolver: true
   youtube-dl-exec: true
+  esbuild: true
+  workerd: true
+  '@ffmpeg-installer/linux-x64': true
+  '@ffmpeg-installer/win32-x64': true
+  '@ffmpeg-installer/darwin-x64': true
+  '@ffmpeg-installer/darwin-arm64': true
 onlyBuiltDependencies:
   - sharp
   - unrs-resolver
   - youtube-dl-exec
+  - esbuild
+  - workerd
+  - '@ffmpeg-installer/linux-x64'
+  - '@ffmpeg-installer/win32-x64'
+  - '@ffmpeg-installer/darwin-x64'
+  - '@ffmpeg-installer/darwin-arm64'
