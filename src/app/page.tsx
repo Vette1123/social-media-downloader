@@ -307,13 +307,23 @@ export default function Home() {
             />
             <div className='grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4'>
               {whatYouCanDo.map((t) => (
+                // Hover raises the whole card, not just its outline. At rest
+                // the surface sits at 3% white and the body copy at 60%, which
+                // is right for a four-across band you are meant to skim — but
+                // lifting the card without also lifting those left the hovered
+                // tile looking as dim as its neighbours. Surface, border and
+                // sub-copy now all step up together, so the card reads as
+                // genuinely focused. Transitions are listed explicitly rather
+                // than `all` so the translate stays on the compositor.
                 <div
                   key={t.label}
-                  className='group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-cyan-400/30'
+                  className='group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 transition-[transform,background-color,border-color] duration-200 hover:-translate-y-1 hover:border-cyan-400/40 hover:bg-white/[0.07] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
                 >
                   <t.Icon className='mb-4 h-6 w-6 text-cyan-300 drop-shadow-[0_2px_6px_rgba(34,211,238,0.35)]' />
                   <p className='font-semibold text-white'>{t.label}</p>
-                  <p className='mt-1 text-sm text-white/60'>{t.sub}</p>
+                  <p className='mt-1 text-sm text-white/60 transition-colors duration-200 group-hover:text-white/85'>
+                    {t.sub}
+                  </p>
                 </div>
               ))}
             </div>
