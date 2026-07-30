@@ -83,9 +83,7 @@ export default async function OpenGraphImage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              width: '100%',
-              zIndex: 1,
-            }}
+              width: '100%',            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
               <div
@@ -169,9 +167,7 @@ export default async function OpenGraphImage() {
             style={{
               display: 'flex',
               gap: 18,
-              marginTop: 44,
-              zIndex: 1,
-            }}
+              marginTop: 44,            }}
           >
             {PLATFORMS.map((p) => (
               <div
@@ -202,9 +198,7 @@ export default async function OpenGraphImage() {
               display: 'flex',
               flexDirection: 'column',
               gap: 22,
-              marginTop: 'auto',
-              zIndex: 1,
-            }}
+              marginTop: 'auto',            }}
           >
             <div
               style={{
