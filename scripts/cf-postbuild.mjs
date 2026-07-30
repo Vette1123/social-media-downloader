@@ -129,11 +129,73 @@ function verifySitemapRoutes(files) {
     )
   }
 
-  const required = ['/robots.txt', '/sitemap.xml', '/404.html', '/manifest.json']
+  const required = [
+    '/robots.txt',
+    '/sitemap.xml',
+    '/404.html',
+    '/manifest.json',
+    '/llms.txt',
+  ]
   const absent = required.filter((r) => !present.has(r))
   if (absent.length > 0) fail(`missing required file(s): ${absent.join(', ')}`)
 
   return locs.length
+}
+
+/**
+ * Every asset the web app manifest points at must exist in the export.
+ *
+ * A manifest that references a missing icon does not fail loudly — the install
+ * prompt simply disappears, or the home-screen icon falls back to a screenshot
+ * of the page, and you find out weeks later on someone else's phone. The same
+ * goes for a `shortcuts[].url` pointing at a page that was renamed.
+ *
+ * Chrome additionally needs a 192px and a 512px PNG for installability, and a
+ * screenshot per form factor for the richer install UI, so both are asserted
+ * rather than merely resolved.
+ */
+function verifyManifest(files) {
+  const manifest = JSON.parse(readFileSync(join(OUT_DIR, 'manifest.json'), 'utf8'))
+  const present = new Set(files.map(toUrlPath))
+  const icons = manifest.icons ?? []
+  const shortcuts = manifest.shortcuts ?? []
+  const screenshots = manifest.screenshots ?? []
+
+  const referenced = [
+    ...icons.map((i) => i.src),
+    ...screenshots.map((s) => s.src),
+    ...shortcuts.flatMap((s) => (s.icons ?? []).map((i) => i.src)),
+  ]
+
+  const missing = referenced.filter((src) => src && !present.has(src))
+  if (missing.length > 0) {
+    fail(`manifest.json references ${missing.length} missing asset(s):\n    ${[...new Set(missing)].join('\n    ')}`)
+  }
+
+  const brokenLinks = shortcuts
+    .map((s) => s.url)
+    .filter((url) => url && !present.has(`${url}.html`) && !present.has(`${url}/index.html`))
+  if (brokenLinks.length > 0) {
+    fail(`manifest.json shortcuts point at missing page(s): ${brokenLinks.join(', ')}`)
+  }
+
+  const pngSizes = new Set(
+    icons.filter((i) => i.type === 'image/png').map((i) => i.sizes),
+  )
+  for (const needed of ['192x192', '512x512']) {
+    if (!pngSizes.has(needed)) {
+      fail(`manifest.json has no ${needed} PNG icon; Chrome will not offer install.`)
+    }
+  }
+
+  const formFactors = new Set(screenshots.map((s) => s.form_factor))
+  for (const needed of ['wide', 'narrow']) {
+    if (!formFactors.has(needed)) {
+      fail(`manifest.json has no "${needed}" screenshot; the richer install UI is skipped on that form factor.`)
+    }
+  }
+
+  return referenced.length
 }
 
 // --------------------------------------------------------------- 2. headers
@@ -274,6 +336,7 @@ async function optimizeImages(files) {
 
 const files = walk(OUT_DIR)
 const routes = verifySitemapRoutes(files)
+const manifestAssets = verifyManifest(files)
 const images = buildHeaders(files)
 // Before checkLimits, so the reported total reflects what actually ships.
 const optimized = await optimizeImages(files)
@@ -292,6 +355,7 @@ console.log(
     `  Static export ready (${fingerprint})`,
     `    ${files.length} assets, ${mib(total)} total`,
     `    ${routes} sitemap routes verified`,
+    `    ${manifestAssets} manifest assets verified`,
     `    ${images} generated PNGs given an explicit Content-Type`,
     `    ${optimized.count} PNGs recompressed: ${mib(optimized.before)} -> ${mib(optimized.after)}` +
       ` (${Math.round((1 - optimized.after / optimized.before) * 100)}% smaller)`,
