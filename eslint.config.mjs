@@ -34,6 +34,14 @@ const eslintConfig = [
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      // This app is a static export (`output: 'export'`) with
+      // `images.unoptimized: true`, so there is no image optimizer to route
+      // through — next/image would emit the same <img> tag plus a wrapper. On
+      // top of that, every image it warns about is a remote CDN thumbnail or a
+      // data: URL whose intrinsic size isn't known ahead of time, which is
+      // exactly what next/image cannot handle without width/height. The advice
+      // is sound in general and simply doesn't apply to this build.
+      '@next/next/no-img-element': 'off',
     },
   },
 ]

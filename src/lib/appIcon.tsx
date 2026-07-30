@@ -44,7 +44,7 @@ export function renderAppIcon(size: number, maskable = false) {
   return new ImageResponse(
     (
       <div style={tileStyle}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* satori renders this, not a browser — next/image has no meaning here. */}
         <img src={GLYPH_SVG} width={glyph} height={glyph} alt='' />
       </div>
     ),

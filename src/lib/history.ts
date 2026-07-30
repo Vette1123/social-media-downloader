@@ -65,6 +65,7 @@ export function addHistory(entry: HistoryEntry): HistoryEntry[] {
   } catch {
     // quota / disabled — history is best-effort, ignore.
   }
+  commit(next)
   return next
 }
 
@@ -76,6 +77,7 @@ export function removeHistory(url: string): HistoryEntry[] {
   } catch {
     // ignore
   }
+  commit(next)
   return next
 }
 
@@ -86,4 +88,42 @@ export function clearHistory(): void {
   } catch {
     // ignore
   }
+  commit([])
+}
+
+/**
+ * Subscription layer, so components can read the list with
+ * `useSyncExternalStore` instead of seeding `useState` from a mount effect.
+ *
+ * The parse above is not free and localStorage is synchronous, so the result is
+ * cached and only re-derived when we ourselves change it — every mutator here
+ * already computes the next list, so there is nothing to re-read.
+ */
+const listeners = new Set<() => void>()
+
+// Stable identity for the prerender/hydration pass: snapshots are compared by
+// reference, and a new [] each call would loop.
+const EMPTY: readonly HistoryEntry[] = Object.freeze([])
+
+let cache: HistoryEntry[] | null = null
+
+function commit(next: HistoryEntry[]): void {
+  cache = next
+  for (const listener of listeners) listener()
+}
+
+export function subscribeHistory(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+export function getHistorySnapshot(): readonly HistoryEntry[] {
+  cache ??= loadHistory()
+  return cache
+}
+
+export function getHistoryServerSnapshot(): readonly HistoryEntry[] {
+  return EMPTY
 }
