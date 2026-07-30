@@ -105,17 +105,28 @@ export const metadata: Metadata = {
     },
   },
   category: 'technology',
+  // Single source of truth for <head>. These used to be declared here AND
+  // hand-written as <link> tags below, so every page shipped the manifest and
+  // both favicons twice and apple-touch-icon three times. Duplicate icon links
+  // are not merely noise: which one a client picks is unspecified, so an iOS
+  // home-screen icon could resolve to the SVG, which iOS cannot render.
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: '32x32' },
     ],
-    apple: [
-      { url: '/icons/apple', sizes: '180x180', type: 'image/png' },
-      { url: '/apple-touch-icon.svg' },
-    ],
+    // PNG only. `apple-touch-icon` has never supported SVG on iOS — listing
+    // /apple-touch-icon.svg gave iOS a candidate it silently drops, leaving a
+    // screenshot-of-the-page icon on the home screen instead of the logo.
+    apple: [{ url: '/icons/apple', sizes: '180x180', type: 'image/png' }],
   },
   manifest: '/manifest.json',
+  verification: {
+    google: 'aha64Aa3HDSFKw-xDlfpIGcBkGRU4lRV9xU-qR2SPwc',
+  },
+  other: {
+    'msapplication-TileColor': '#08080a',
+  },
 }
 
 export default function RootLayout({
@@ -126,20 +137,10 @@ export default function RootLayout({
   return (
     <html lang='en' dir='ltr'>
       <head>
-        <link rel='icon' href='/favicon.svg' type='image/svg+xml' />
-        <link rel='icon' href='/favicon.ico' sizes='32x32' />
-        <link
-          rel='apple-touch-icon'
-          sizes='180x180'
-          href='/icons/apple'
-          type='image/png'
-        />
-        <link rel='manifest' href='/manifest.json' />
-        <meta name='msapplication-TileColor' content='#08080a' />
-        <meta
-          name='google-site-verification'
-          content='aha64Aa3HDSFKw-xDlfpIGcBkGRU4lRV9xU-qR2SPwc'
-        />
+        {/* Icons, manifest, tile colour and site verification are all declared
+            in `metadata` above — Next renders them into <head> itself. Nothing
+            static belongs here; only the two inline scripts, which have no
+            Metadata equivalent. */}
         {/* Capability-based rendering: set before first paint so low-power devices
             get the cheap variant with no FOUC. No false positives — flagships and
             tablets keep the full effect set; only genuinely weak hardware (≤4

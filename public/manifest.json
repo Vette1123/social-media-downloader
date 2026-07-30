@@ -39,6 +39,13 @@
       "type": "image/png",
       "form_factor": "wide",
       "label": "Paste a TikTok, X, Instagram, Facebook, or YouTube link to download video, audio, or slideshow images."
+    },
+    {
+      "src": "/screenshots/narrow",
+      "sizes": "720x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Paste a TikTok, X, Instagram, Facebook, or YouTube link to download video, audio, or slideshow images."
     }
   ],
   "shortcuts": [
@@ -47,35 +54,35 @@
       "short_name": "TikTok",
       "description": "Paste a TikTok URL to save the video without a watermark.",
       "url": "/tiktok-downloader",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icons/192", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Twitter / X video downloader",
       "short_name": "X video",
       "description": "Save twitter.com or x.com videos in HD.",
       "url": "/twitter-video-downloader",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icons/192", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Instagram reels & photo downloader",
       "short_name": "Instagram",
       "description": "Download Instagram reels and photo carousels.",
       "url": "/instagram-downloader",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icons/192", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "YouTube & Shorts downloader",
       "short_name": "YouTube",
       "description": "Save YouTube videos and Shorts as MP4 or MP3.",
       "url": "/youtube-downloader",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icons/192", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Facebook video & reels downloader",
       "short_name": "Facebook",
       "description": "Download Facebook videos, watch clips, and reels.",
       "url": "/facebook-downloader",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+      "icons": [{ "src": "/icons/192", "sizes": "192x192", "type": "image/png" }]
     }
   ],
   "share_target": {
