@@ -6,6 +6,10 @@ import os from 'node:os'
 import { randomUUID } from 'node:crypto'
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
+import {
+  nativeMediaAvailable,
+  nativeMediaUnavailable,
+} from '../../../lib/nativeMedia'
 
 // Node runtime — fluent-ffmpeg spawns a child process and needs fs access
 export const runtime = 'nodejs'
@@ -112,6 +116,12 @@ function renderSlideshow({
 }
 
 export async function POST(request: NextRequest) {
+  // Bail before downloading anything — rendering needs ffmpeg, and every frame
+  // would otherwise be pulled into memory only to fail at the encode step.
+  if (!nativeMediaAvailable()) {
+    return nativeMediaUnavailable('Slideshow rendering')
+  }
+
   let workDir: string | null = null
   try {
     const body = await request.json()

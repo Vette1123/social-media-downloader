@@ -1,0 +1,65 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "social-media-downloader",
+
+  // Not the generated `.open-next/worker.js` directly: cloudflare/worker.js
+  // wraps it so the media proxies and scanner probes are answered without
+  // booting Next, whose lazy initialization costs 76-98 ms of CPU against a
+  // 10 ms budget. It re-exports the generated worker's handler for everything
+  // else. See that file for the full reasoning.
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-07-01",
+
+  // nodejs_compat: the adapter runs Next's Node.js runtime on workerd, so the
+  // node:* built-ins the extractors use (node:stream, node:crypto, node:buffer)
+  // must be present. Requires a compatibility_date >= 2024-09-23.
+  //
+  // global_fetch_strictly_public: makes fetch() from inside the Worker resolve
+  // over the public internet instead of looping back into this same Worker.
+  // Every extractor subrequest targets a third-party host, and the media
+  // proxies can be handed a URL on our own domain — without this flag that
+  // would re-enter the Worker and recurse.
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  // Every route in this app is prerendered at build time (44 of them: pages,
+  // OG/Twitter images, icons, robots.txt, sitemap.xml) and is therefore served
+  // straight from static assets — those requests never invoke the Worker, so
+  // they cost no CPU and are exempt from the 100k requests/day free-plan cap.
+  // Only /api/* actually runs Worker code.
+  "observability": {
+    "enabled": true
+  },
+
+  // Native binaries can't run on workerd (no subprocesses, no writable FS), so
+  // the yt-dlp / ffmpeg packages are aliased to a stub that throws on use. The
+  // three routes that touch them already degrade gracefully (they were dead on
+  // Vercel too, for the same reason). Aliasing keeps ~10 MB of unreachable
+  // binaries and their dependency trees out of the Worker bundle, which matters
+  // against the 3 MiB gzip free-plan size limit.
+  "alias": {
+    "youtube-dl-exec": "./cloudflare/stubs/unavailable.js",
+    "fluent-ffmpeg": "./cloudflare/stubs/unavailable.js",
+    "@ffmpeg-installer/ffmpeg": "./cloudflare/stubs/unavailable.js"
+  },
+
+  // Only non-secret, runtime-read values belong here. NEXT_PUBLIC_SITE_URL is
+  // deliberately absent: Next inlines NEXT_PUBLIC_* at build time, so a Worker
+  // var would be read far too late to affect the bundle — it is set as build
+  // env in the deploy workflow instead.
+  //
+  // Secrets (COBALT_API_KEY, IG_SESSIONID, UPSTASH_REDIS_REST_URL,
+  // UPSTASH_REDIS_REST_TOKEN, REGISTRY_KEY, COBALT_API_URL) must NOT be listed
+  // here — this file is committed. Set them with `wrangler secret put <NAME>`
+  // or in the Workers dashboard.
+  "vars": {
+    // Signals to the extractors that native-binary paths (yt-dlp/ffmpeg) are
+    // unavailable in this runtime, so they short-circuit instead of failing
+    // slowly. See src/lib/nativeMedia.ts.
+    "DEPLOY_TARGET": "cloudflare"
+  }
+}

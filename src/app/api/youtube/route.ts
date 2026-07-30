@@ -3,6 +3,10 @@ import { createReadStream } from 'node:fs'
 import { stat, rm } from 'node:fs/promises'
 import { Readable } from 'node:stream'
 import { ytdlpDownload } from '../../../lib/ytdlp'
+import {
+  nativeMediaAvailable,
+  nativeMediaUnavailable,
+} from '../../../lib/nativeMedia'
 
 // yt-dlp shells out to a binary and writes to disk — must run on the Node
 // runtime, not the edge. Long videos can take a while to download + merge.
@@ -18,6 +22,11 @@ export const maxDuration = 300
  *   /api/youtube?id=<videoId>&kind=audio  → extracted mp3
  */
 export async function GET(request: NextRequest) {
+  // yt-dlp can't run here; the caller falls back to the embed player.
+  if (!nativeMediaAvailable()) {
+    return nativeMediaUnavailable('Direct YouTube download')
+  }
+
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id') ?? ''
   const kind = searchParams.get('kind') === 'audio' ? 'audio' : 'video'

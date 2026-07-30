@@ -1,6 +1,13 @@
-import axios from 'axios'
-import * as cheerio from 'cheerio'
-import { Readable } from 'node:stream'
+import { http } from './httpClient'
+import {
+  firstTagAttr,
+  hasTag,
+  metaContent,
+  mp4Hrefs,
+  pageTitle,
+  scriptContaining,
+  textOfFirstWithClass,
+} from './htmlExtract'
 import { VideoData, ImageData } from './types'
 import {
   parseVideoId,
@@ -56,6 +63,35 @@ function isTransientError(e: unknown): boolean {
   return err instanceof Error && !('response' in (err as object))
 }
 
+/**
+ * Referer for the codec probe in `checkVideoCodecCompatible`.
+ *
+ * Intentionally not `getMediaReferer` from proxyHeaders: that one matches exact
+ * hosts (`tiktokcdn.com`), whereas the probe matches the bare substring
+ * `tiktok`, which also covers regional CDN hosts such as `tiktokcdn-us.com`.
+ * Over-matching costs nothing here — an unnecessary Referer is ignored — while
+ * under-matching turns the probe into a 403 and drops a perfectly good HD URL.
+ *
+ * tikwm is checked first because it is the more specific host.
+ */
+function codecProbeReferer(url: string): string {
+  if (url.includes('tikwm.com')) return 'https://www.tikwm.com/'
+  if (url.includes('tiktok')) return 'https://www.tiktok.com/'
+  return ''
+}
+
+/**
+ * tikwm returns some media URLs as site-relative paths (`/video/media/...`) and
+ * others already absolute. Promotes the former, passes the latter through, and
+ * preserves `undefined` so callers can keep distinguishing "absent" from
+ * "present but empty".
+ */
+function tikwmAbsoluteUrl(path: string | undefined): string | undefined {
+  if (!path) return undefined
+  if (!path.startsWith('/')) return path
+  return 'https://www.tikwm.com' + path
+}
+
 // Discover a self-hosted resolver's *current* base URL from a shared key/value
 // store. Some free hosts hand the resolver a rotating/temporary public URL with
 // no API to read it back, so the resolver publishes its own live URL to this
@@ -77,7 +113,7 @@ async function discoverResolverBase(): Promise<string | null> {
 
   const key = process.env.REGISTRY_KEY?.trim() || 'resolver_url'
   try {
-    const res = await axios.get(`${store}/get/${encodeURIComponent(key)}`, {
+    const res = await http.get(`${store}/get/${encodeURIComponent(key)}`, {
       headers: { Authorization: `Bearer ${token}` },
       timeout: 6000,
     })
@@ -354,7 +390,7 @@ export class Downloader {
   private async tryVimeo(url: string): Promise<VideoData | null> {
     const id = url.match(/vimeo\.com\/(?:video\/)?(\d+)/)?.[1]
     if (!id) return null
-    const response = await axios.get(
+    const response = await http.get(
       `https://player.vimeo.com/video/${id}/config`,
       {
         headers: { 'User-Agent': this.userAgent, Referer: 'https://vimeo.com/' },
@@ -692,7 +728,7 @@ export class Downloader {
     if (story.highlightId) {
       reelId = `highlight:${story.highlightId}`
     } else if (story.username) {
-      const prof = await axios.get(
+      const prof = await http.get(
         `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(
           story.username,
         )}`,
@@ -709,7 +745,7 @@ export class Downloader {
       throw new Error('Unrecognised Instagram story link.')
     }
 
-    const reels = await axios.get(
+    const reels = await http.get(
       `https://www.instagram.com/api/v1/feed/reels_media/?reel_ids=${encodeURIComponent(
         reelId,
       )}`,
@@ -778,12 +814,8 @@ export class Downloader {
    */
   private async checkVideoCodecCompatible(url: string): Promise<boolean> {
     try {
-      const referer = url.includes('tikwm.com')
-        ? 'https://www.tikwm.com/'
-        : url.includes('tiktok')
-          ? 'https://www.tiktok.com/'
-          : ''
-      const response = await axios.get(url, {
+      const referer = codecProbeReferer(url)
+      const response = await http.get(url, {
         headers: {
           Range: 'bytes=0-65535',
           'User-Agent': this.userAgent,
@@ -818,47 +850,48 @@ export class Downloader {
    * and then again when the client fetches it for real.)
    */
   private async verifyStreamReachable(url: string): Promise<boolean> {
+    // Native fetch rather than axios: axios's `responseType: 'stream'` hands
+    // back a Node Readable, which its fetch adapter cannot produce and which
+    // does not exist on workerd. A web ReadableStream works identically on both
+    // runtimes, and reading one chunk from it costs no meaningful CPU.
+    const abort = new AbortController()
+    const timer = setTimeout(() => abort.abort(), 12000)
     try {
       const referer = getMediaReferer(url)
-      const response = await axios.get(url, {
-        headers: {
-          Range: 'bytes=0-1024',
-          'User-Agent': this.userAgent,
-          ...(referer ? { Referer: referer } : {}),
-        },
-        responseType: 'stream',
-        timeout: 12000,
-        maxRedirects: 5,
-        validateStatus: () => true,
+      const headers: Record<string, string> = {
+        Range: 'bytes=0-1024',
+        'User-Agent': this.userAgent,
+      }
+      if (referer) headers.Referer = referer
+
+      const response = await fetch(url, {
+        headers,
+        redirect: 'follow',
+        signal: abort.signal,
       })
 
-      const stream = response.data as Readable
       const statusOk = response.status === 200 || response.status === 206
       // An explicit Content-Length: 0 is the empty-tunnel signature — reject early.
-      if (!statusOk || response.headers['content-length'] === '0') {
-        stream.destroy?.()
+      if (!statusOk || response.headers.get('content-length') === '0') {
+        await response.body?.cancel()
         return false
       }
+      if (!response.body) return false
 
-      // Resolve true on the first non-empty chunk; false if the body ends empty,
-      // errors, or stalls. Reading one chunk is enough — never the whole file.
-      return await new Promise<boolean>((resolve) => {
-        let settled = false
-        const finish = (result: boolean) => {
-          if (settled) return
-          settled = true
-          clearTimeout(timer)
-          stream.destroy?.()
-          resolve(result)
-        }
-        const timer = setTimeout(() => finish(false), 10000)
-        timer.unref?.()
-        stream.on('data', (chunk: Buffer) => finish(chunk.length > 0))
-        stream.on('end', () => finish(false))
-        stream.on('error', () => finish(false))
-      })
+      // True on the first non-empty chunk; false if the body ends empty, errors,
+      // or stalls. One chunk is enough — the rest of the file is never pulled,
+      // and cancelling tears the connection down so the upstream stops sending.
+      const reader = response.body.getReader()
+      try {
+        const { value, done } = await reader.read()
+        return !done && (value?.byteLength ?? 0) > 0
+      } finally {
+        await reader.cancel().catch(() => {})
+      }
     } catch {
       return false
+    } finally {
+      clearTimeout(timer)
     }
   }
 
@@ -980,7 +1013,7 @@ export class Downloader {
     url: string,
   ): Promise<{ title?: string; author?: string; thumbnail?: string }> {
     try {
-      const response = await axios.get(
+      const response = await http.get(
         `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
         {
           headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
@@ -1012,14 +1045,32 @@ export class Downloader {
       discovered && !configured.has(discovered.replace(/\/$/, ''))
         ? [...this.cobaltInstances, discovered]
         : this.cobaltInstances
+    // Prefer an instance that *tunnels* over one that hands back a raw CDN
+    // redirect. Both are usable, but only a tunnel streams from any IP with
+    // Content-Disposition set, which lets the browser pull the file straight
+    // from the instance — a redirect has to be re-streamed through our own
+    // proxy for referer/content-type, putting every byte of the download on our
+    // host. So a redirect is held as a fallback and the remaining instances are
+    // still tried; it is only used if nothing tunnels.
+    // Only a raw-CDN redirect is deferred, identified by `tunnel === false`.
+    // That flag is set explicitly on the tunnel/redirect branch alone, so a
+    // `picker` result (photo carousel) leaves it undefined and is returned
+    // immediately like any other terminal answer.
+    let redirectFallback: VideoData | null = null
     for (const instance of instances) {
       try {
         const result = await this.tryCobaltInstance(instance, url)
-        if (result) return result
+        if (!result) continue
+        if (result.tunnel === false) {
+          redirectFallback ??= result
+          continue
+        }
+        return result
       } catch (e) {
         errors.push(`${instance}: ${e}`)
       }
     }
+    if (redirectFallback) return redirectFallback
     console.warn('All cobalt instances failed:', errors)
     return null
   }
@@ -1057,7 +1108,7 @@ export class Downloader {
     // Retry transient failures (429 / 5xx / cold-start timeouts) before giving
     // up on this instance and moving to the next.
     const response = await withRetry(
-      () => axios.post(baseUrl, body, { headers, timeout: 12000 }),
+      () => http.post(baseUrl, body, { headers, timeout: 12000 }),
       { retries: 2, isRetryable: isTransientError },
     )
 
@@ -1133,7 +1184,7 @@ export class Downloader {
     if (!match) throw new Error('Could not parse Twitter URL')
     const [, username, tweetId] = match
 
-    const response = await axios.get(
+    const response = await http.get(
       `https://api.vxtwitter.com/${username}/status/${tweetId}`,
       {
         headers: {
@@ -1189,7 +1240,7 @@ export class Downloader {
   private async trySnaptikMethod(url: string): Promise<VideoData | null> {
     try {
       // Step 1: Get the main page to extract necessary tokens
-      await axios.get('https://snaptik.app/', {
+      await http.get('https://snaptik.app/', {
         headers: { 'User-Agent': this.userAgent },
       })
 
@@ -1197,7 +1248,7 @@ export class Downloader {
       const formData = new URLSearchParams()
       formData.append('url', url)
 
-      const response = await axios.post(
+      const response = await http.post(
         'https://snaptik.app/abc2.php',
         formData,
         {
@@ -1212,16 +1263,8 @@ export class Downloader {
       )
 
       if (response.data && typeof response.data === 'string') {
-        const $ = cheerio.load(response.data)
-
         // Look for download links
-        const downloadLinks: string[] = []
-        $('a[href*=".mp4"], a[download*=".mp4"]').each((_, element) => {
-          const href = $(element).attr('href')
-          if (href && href.includes('.mp4')) {
-            downloadLinks.push(href)
-          }
-        })
+        const downloadLinks = mp4Hrefs(response.data)
 
         if (downloadLinks.length > 0) {
           const videoId = parseVideoId(url) || 'unknown'
@@ -1245,7 +1288,7 @@ export class Downloader {
 
   private async trySSSMethod(url: string): Promise<VideoData | null> {
     try {
-      const response = await axios.post(
+      const response = await http.post(
         'https://ssstik.io/abc',
         {
           id: url,
@@ -1285,7 +1328,7 @@ export class Downloader {
 
   private async tryTikwmMethod(url: string): Promise<VideoData | null> {
     try {
-      const response = await axios.post(
+      const response = await http.post(
         'https://www.tikwm.com/api/',
         {
           url: url,
@@ -1310,16 +1353,8 @@ export class Downloader {
         const data = response.data.data
         const videoId = parseVideoId(url) || 'unknown'
 
-        // Helper: convert tikwm relative paths to absolute URLs
-        const toAbsolute = (path: string | undefined): string | undefined =>
-          path
-            ? path.startsWith('/')
-              ? 'https://www.tikwm.com' + path
-              : path
-            : undefined
-
         // Fix thumbnail URL (tikwm returns relative paths)
-        const thumbnail = toAbsolute(data.cover) || ''
+        const thumbnail = tikwmAbsoluteUrl(data.cover) || ''
 
         // Check if this is a photo carousel (slideshow)
         const isPhotoCarousel =
@@ -1340,9 +1375,9 @@ export class Downloader {
         // points to an audio-only MP4 with no image frames. The /api/slideshow
         // route renders a proper images+music MP4 on demand instead.
         if (!isPhotoCarousel) {
-          const hdplayUrl = toAbsolute(data.hdplay)
-          const playUrl = toAbsolute(data.play)
-          const wmplayUrl = toAbsolute(data.wmplay)
+          const hdplayUrl = tikwmAbsoluteUrl(data.hdplay)
+          const playUrl = tikwmAbsoluteUrl(data.play)
+          const wmplayUrl = tikwmAbsoluteUrl(data.wmplay)
 
           if (hdplayUrl) {
             // Verify the HD URL uses a browser-renderable codec.
@@ -1364,7 +1399,7 @@ export class Downloader {
 
         // Slideshow soundtrack (TikTok photo carousels always have a music track)
         const musicUrl =
-          toAbsolute(data.music_info?.play) || toAbsolute(data.music)
+          tikwmAbsoluteUrl(data.music_info?.play) || tikwmAbsoluteUrl(data.music)
         const musicTitle = data.music_info?.title
         const musicAuthor = data.music_info?.author
 
@@ -1399,7 +1434,7 @@ export class Downloader {
       // First resolve any shortened URLs
       const resolvedUrl = await this.resolveUrl(url)
 
-      const response = await axios.get(resolvedUrl, {
+      const response = await http.get(resolvedUrl, {
         headers: {
           'User-Agent': this.userAgent,
           Accept:
@@ -1412,40 +1447,33 @@ export class Downloader {
         timeout: 30000,
       })
 
-      // Parse TikTok's page for video data
-      const $ = cheerio.load(response.data)
+      // Pull the state blob TikTok inlines into the page. Only the one script
+      // carrying the marker is materialised — the page ships megabytes of
+      // markup, so building a DOM to find it would cost orders of magnitude
+      // more CPU than locating the marker directly.
+      const content = scriptContaining(response.data, 'webapp.video-detail')
+      if (content) {
+        // Extract video URLs from the script content
+        const videoUrlMatch = content.match(/"playAddr":"([^"]+)"/)
+        const downloadUrlMatch = content.match(/"downloadAddr":"([^"]+)"/)
 
-      // Look for JSON data in script tags
-      const scripts = $('script').toArray()
-      for (const script of scripts) {
-        const content = $(script).html()
-        if (content && content.includes('webapp.video-detail')) {
-          try {
-            // Extract video URLs from the script content
-            const videoUrlMatch = content.match(/"playAddr":"([^"]+)"/)
-            const downloadUrlMatch = content.match(/"downloadAddr":"([^"]+)"/)
+        if (videoUrlMatch || downloadUrlMatch) {
+          const videoId = parseVideoId(url) || 'unknown'
+          const downloadUrl = (
+            downloadUrlMatch?.[1] ||
+            videoUrlMatch?.[1] ||
+            ''
+          ).replace(/\\u002F/g, '/')
 
-            if (videoUrlMatch || downloadUrlMatch) {
-              const videoId = parseVideoId(url) || 'unknown'
-              const downloadUrl = (
-                downloadUrlMatch?.[1] ||
-                videoUrlMatch?.[1] ||
-                ''
-              ).replace(/\\u002F/g, '/')
-
-              return {
-                id: videoId,
-                title: 'TikTok Video (Direct)',
-                url: url,
-                thumbnail: '',
-                duration: 0,
-                author: 'Unknown',
-                description: 'Downloaded via direct scraping',
-                downloadUrl: downloadUrl,
-              }
-            }
-          } catch {
-            continue
+          return {
+            id: videoId,
+            title: 'TikTok Video (Direct)',
+            url: url,
+            thumbnail: '',
+            duration: 0,
+            author: 'Unknown',
+            description: 'Downloaded via direct scraping',
+            downloadUrl: downloadUrl,
           }
         }
       }
@@ -1464,7 +1492,7 @@ export class Downloader {
   // facebook.com/share/…, instagram share links) to their canonical URL.
   private async resolveRedirect(url: string): Promise<string> {
     try {
-      const response = await axios.get(url, {
+      const response = await http.get(url, {
         maxRedirects: 5,
         validateStatus: () => true,
         headers: { 'User-Agent': this.userAgent },
@@ -1518,7 +1546,7 @@ export class Downloader {
       ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
       : ''
     try {
-      const response = await axios.get(
+      const response = await http.get(
         `https://www.youtube.com/oembed?url=${encodeURIComponent(
           canonicalUrl,
         )}&format=json`,
@@ -1550,7 +1578,7 @@ export class Downloader {
     const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(
       resolvedUrl,
     )}`
-    const response = await axios.get(embedUrl, {
+    const response = await http.get(embedUrl, {
       headers: {
         'User-Agent': this.userAgent,
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -1573,7 +1601,7 @@ export class Downloader {
     resolvedUrl: string,
     originalUrl: string,
   ): Promise<VideoData | null> {
-    const response = await axios.get(resolvedUrl, {
+    const response = await http.get(resolvedUrl, {
       headers: {
         'User-Agent': this.userAgent,
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -1627,14 +1655,9 @@ export class Downloader {
 
     if (!downloadUrl) return null
 
-    const $ = cheerio.load(html)
-    const ogTitle =
-      $('meta[property="og:title"]').attr('content') ||
-      $('title').first().text() ||
-      ''
-    const ogImage = $('meta[property="og:image"]').attr('content') || ''
-    const ogDescription =
-      $('meta[property="og:description"]').attr('content') || ''
+    const ogTitle = metaContent(html, 'og:title') || pageTitle(html) || ''
+    const ogImage = metaContent(html, 'og:image') || ''
+    const ogDescription = metaContent(html, 'og:description') || ''
 
     const title =
       (ogTitle || ogDescription || 'Facebook Video')
@@ -1690,7 +1713,7 @@ export class Downloader {
     let csrf = ''
     let lsd = ''
     try {
-      const response = await axios.get('https://www.instagram.com/', {
+      const response = await http.get('https://www.instagram.com/', {
         headers: {
           'User-Agent': this.userAgent,
           Accept:
@@ -1773,7 +1796,7 @@ export class Downloader {
       cookieParts.push(`sessionid=${this.instagramSessionId}`)
     if (csrf) cookieParts.push(`csrftoken=${csrf}`)
 
-    const response = await axios.post(
+    const response = await http.post(
       'https://www.instagram.com/graphql/query/',
       form.toString(),
       {
@@ -1814,7 +1837,7 @@ export class Downloader {
     originalUrl: string,
   ): Promise<VideoData | null> {
     const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`
-    const response = await axios.get(embedUrl, {
+    const response = await http.get(embedUrl, {
       headers: {
         'User-Agent': this.userAgent,
         Accept:
@@ -1846,12 +1869,11 @@ export class Downloader {
     }
 
     // 2) Fallback: scrape the rendered embed for a single image / video.
-    const $ = cheerio.load(html)
-    const imgSrc = $('img.EmbeddedMediaImage').attr('src')
-    const videoSrc = $('video').attr('src')
+    const imgSrc = firstTagAttr(html, 'img', 'src', 'EmbeddedMediaImage')
+    const videoSrc = firstTagAttr(html, 'video', 'src')
     const username =
-      $('.UsernameText').first().text().trim() ||
-      $('.Username a').first().text().trim() ||
+      textOfFirstWithClass(html, 'UsernameText') ||
+      textOfFirstWithClass(html, 'Username') ||
       'Unknown'
 
     if (!imgSrc && !videoSrc) return null
@@ -1868,7 +1890,7 @@ export class Downloader {
         /"video_url"\s*:\s*"/.test(html) || // a real URL value, not "video_url":null
         html.includes('video_view_count') || // video-only metadata fields
         html.includes('video_duration') ||
-        $('video').length > 0)
+        hasTag(html, 'video'))
     if (looksLikeVideo) return null
 
     return {
@@ -2068,7 +2090,7 @@ export class Downloader {
         url.includes('vt.tiktok.com') ||
         url.includes('/t/')
       ) {
-        const response = await axios.head(url, {
+        const response = await http.head(url, {
           maxRedirects: 5,
           validateStatus: () => true,
           headers: { 'User-Agent': this.userAgent },

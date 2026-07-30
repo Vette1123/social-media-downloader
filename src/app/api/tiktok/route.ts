@@ -4,6 +4,10 @@ import { stat, rm } from 'node:fs/promises'
 import { Readable } from 'node:stream'
 import { ytdlpDownload } from '../../../lib/ytdlp'
 import { parseVideoId } from '../../../lib/validator'
+import {
+  nativeMediaAvailable,
+  nativeMediaUnavailable,
+} from '../../../lib/nativeMedia'
 
 // yt-dlp shells out to a binary and writes to disk — must run on the Node
 // runtime, not the edge.
@@ -25,6 +29,11 @@ export const maxDuration = 300
  *   /api/tiktok?url=<tiktok url>&kind=audio  → extracted mp3
  */
 export async function GET(request: NextRequest) {
+  // yt-dlp can't run here; the caller falls back to the network extractors.
+  if (!nativeMediaAvailable()) {
+    return nativeMediaUnavailable('Direct TikTok download')
+  }
+
   const { searchParams } = new URL(request.url)
   const rawUrl = searchParams.get('url') ?? ''
   const kind = searchParams.get('kind') === 'audio' ? 'audio' : 'video'

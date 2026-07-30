@@ -1,16 +1,41 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
+import nextTypescript from 'eslint-config-next/typescript'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
+// eslint-config-next 16 ships flat configs directly. The previous setup routed
+// them through @eslint/eslintrc's FlatCompat, which now throws
+// ("Converting circular structure to JSON") because it tries to validate a
+// modern config against the legacy schema. Consuming the flat exports removes
+// the shim entirely.
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-];
+  {
+    ignores: [
+      '.next/**',
+      '.open-next/**',
+      '.wrangler/**',
+      '.worker-size-check/**',
+      'node_modules/**',
+      // Runtime stub for packages that cannot exist on workerd; it is
+      // deliberately not part of the app's source graph.
+      'cloudflare/stubs/**',
+    ],
+  },
+  ...nextCoreWebVitals,
+  ...nextTypescript,
+  {
+    rules: {
+      // The proxy routes drop a header by destructuring it into a discard
+      // binding (`const { Range: _omit, ...rest } = headers`). Leading
+      // underscore is the standard opt-out for a deliberately unused binding.
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+]
 
-export default eslintConfig;
+export default eslintConfig

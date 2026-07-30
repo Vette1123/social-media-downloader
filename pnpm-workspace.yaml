@@ -1,3 +1,13 @@
+# Flat node_modules instead of pnpm's default symlinked store layout.
+#
+# The OpenNext Cloudflare bundler reproduces the dependency tree by recreating
+# pnpm's symlinks inside .open-next. Windows refuses to create symlinks without
+# Developer Mode or an elevated shell, so that step dies with EPERM and no
+# Worker bundle is produced. A hoisted layout has no symlinks to mirror, so the
+# bundler copies real files and the build behaves identically on Windows, Linux
+# and CI.
+nodeLinker: hoisted
+
 allowBuilds:
   sharp: true
   unrs-resolver: true
