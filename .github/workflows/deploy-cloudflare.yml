@@ -33,13 +33,13 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # No `version:` input on purpose — package.json's `packageManager` field
       # pins the exact pnpm release, and the action errors out if both are set.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -47,19 +47,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm exec tsc --noEmit
-
-      # Reported but not gating. `next lint` was removed in Next 16, so this
-      # project's lint step had been silently failing to run at all; switching
-      # to eslint directly surfaced four pre-existing react-hooks errors in
-      # components unrelated to deployment. Blocking deploys on them would be
-      # the wrong trade — flip this to a gate once they are fixed.
-      - name: Lint
-        run: pnpm lint
-        continue-on-error: true
-
-      - name: Build Worker bundle
+      # No separate typecheck or lint step on purpose.
+      #
+      # `next build` type-checks the project itself (nothing sets
+      # typescript.ignoreBuildErrors), so a `tsc --noEmit` step could only ever
+      # fail where the build would already have failed — it just spent another
+      # ~30s doing it. Lint was `continue-on-error: true`, so it gated nothing
+      # and only produced output nobody read. Both belong on a developer's
+      # machine before pushing, which is where they now run.
+      # Static export into out/ (pages, images, robots, sitemap) plus the
+      # _headers file and the completeness checks in scripts/cf-postbuild.mjs.
+      - name: Build static site
         run: pnpm cf:build
 
       # Fails the run before deploying if the bundle has outgrown the free
@@ -81,7 +79,7 @@ jobs:
 
       - name: Deploy
         if: github.event_name != 'pull_request'
-        run: pnpm exec opennextjs-cloudflare deploy
+        run: pnpm exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
