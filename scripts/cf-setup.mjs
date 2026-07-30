@@ -362,11 +362,64 @@ async function stepApexRedirect(ctx, zone) {
       { method: 'PUT', body: { rules: [rule] } },
     )
     ok(`${APEX} 301s to ${WWW_HOSTNAME} (zone redirect rule, no Worker CPU)`)
+    return
+  } catch (error) {
+    // The Rulesets API sits behind its own token scope ("Dynamic Redirect"),
+    // which a token with plain Zone:Edit does NOT include — it answers 10000
+    // Authentication error rather than 403. Fall through to Page Rules, which
+    // are covered by a different scope most Workers tokens already carry.
+    warn(`Redirect rule unavailable (${error.message}) — falling back to a Page Rule.`)
+  }
+
+  await apexRedirectViaPageRule(ctx, zone)
+}
+
+/**
+ * The same 301, expressed as a legacy Page Rule.
+ *
+ * Page Rules are superseded by Redirect Rules but not deprecated, and a
+ * `forwarding_url` rule is evaluated at the edge before the request reaches the
+ * Worker — so this keeps the "no Worker invocation" property that made a
+ * zone-level rule the right answer in the first place. The free plan allows
+ * three, and this uses one.
+ *
+ * `$1` in the target is the Page Rules wildcard capture, so the path and query
+ * carry over.
+ */
+async function apexRedirectViaPageRule(ctx, zone) {
+  const target = `${APEX}/*`
+  try {
+    const existing = await cf(ctx.token, `/zones/${zone.id}/pagerules`)
+    const already = (existing || []).find((r) =>
+      (r.targets || []).some((t) => t?.constraint?.value === target),
+    )
+    if (already) {
+      ok(`${APEX} 301s to ${WWW_HOSTNAME} (page rule already present)`)
+      return
+    }
+
+    await cf(ctx.token, `/zones/${zone.id}/pagerules`, {
+      method: 'POST',
+      body: {
+        targets: [
+          { target: 'url', constraint: { operator: 'matches', value: target } },
+        ],
+        actions: [
+          {
+            id: 'forwarding_url',
+            value: { url: `https://${WWW_HOSTNAME}/$1`, status_code: 301 },
+          },
+        ],
+        status: 'active',
+        priority: 1,
+      },
+    })
+    ok(`${APEX} 301s to ${WWW_HOSTNAME} (page rule, no Worker CPU)`)
   } catch (error) {
     // Not fatal: the site works on both hostnames either way, and every page
     // still carries a canonical pointing at www.
-    warn(`Could not create the apex redirect rule: ${error.message}`)
-    info('Add it by hand under Rules -> Redirect Rules, or re-run with a token that has Zone:Edit.')
+    warn(`Could not create the apex redirect: ${error.message}`)
+    info('Add it by hand under Rules -> Redirect Rules.')
   }
 }
 
