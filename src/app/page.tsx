@@ -285,7 +285,7 @@ export default function Home() {
                   href={href}
                   target='_blank'
                   rel='noopener noreferrer'
-                  className='group flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 active:scale-95 sm:flex-none sm:px-4'
+                  className='card-lift group flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 sm:flex-none sm:px-4'
                 >
                   <Icon className='h-[18px] w-[18px] shrink-0 text-white/80 transition-colors duration-300 group-hover:text-cyan-300' />
                   <span className='text-sm font-medium text-white/80 transition-colors duration-300 group-hover:text-white'>
@@ -307,19 +307,17 @@ export default function Home() {
             />
             <div className='grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4'>
               {whatYouCanDo.map((t) => (
-                // Hover raises the whole card, not just its outline. At rest
-                // the surface sits at 3% white and the body copy at 60%, which
-                // is right for a four-across band you are meant to skim — but
-                // lifting the card without also lifting those left the hovered
-                // tile looking as dim as its neighbours. Surface, border and
-                // sub-copy now all step up together, so the card reads as
-                // genuinely focused. Transitions are listed explicitly rather
-                // than `all` so the translate stays on the compositor.
+                // Surface, border, shadow and sub-copy all step up together on
+                // hover. Lifting the card alone left the hovered tile looking as
+                // dim as its neighbours, which defeats the point in a
+                // four-across band you're meant to skim. `.card-lift` carries
+                // the shared geometry (see globals.css); only the copy and icon
+                // response, which are specific to this card, live here.
                 <div
                   key={t.label}
-                  className='group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 transition-[transform,background-color,border-color] duration-200 hover:-translate-y-1 hover:border-cyan-400/40 hover:bg-white/[0.07] motion-reduce:transition-none motion-reduce:hover:translate-y-0'
+                  className='card-lift group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
                 >
-                  <t.Icon className='mb-4 h-6 w-6 text-cyan-300 drop-shadow-[0_2px_6px_rgba(34,211,238,0.35)]' />
+                  <t.Icon className='mb-4 h-6 w-6 text-cyan-300 drop-shadow-[0_2px_6px_rgba(34,211,238,0.35)] transition-transform duration-200 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100' />
                   <p className='font-semibold text-white'>{t.label}</p>
                   <p className='mt-1 text-sm text-white/60 transition-colors duration-200 group-hover:text-white/85'>
                     {t.sub}
@@ -342,9 +340,9 @@ export default function Home() {
                 <li
                   key={s.n}
                   id={`step-${s.n}`}
-                  className='scroll-mt-24 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6'
+                  className='card-lift group scroll-mt-24 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6'
                 >
-                  <div className='btn-grad mb-4 flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold'>
+                  <div className='btn-grad mb-4 flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold transition-transform duration-200 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100'>
                     {s.n}
                   </div>
                   <p className='font-semibold text-white'>{s.title}</p>
@@ -375,7 +373,7 @@ export default function Home() {
                   <Link
                     key={p.slug}
                     href={`/${p.slug}`}
-                    className='inline-flex w-full items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 hover:text-white sm:w-auto'
+                    className='card-lift inline-flex w-full items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 hover:text-white sm:w-auto'
                   >
                     <span
                       className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${

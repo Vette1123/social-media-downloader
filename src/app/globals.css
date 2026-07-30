@@ -313,6 +313,56 @@ body {
   transform: scale(0.985);
 }
 
+/* One hover language for every card on the site — feature tiles, how-it-works
+   steps, platform links, FAQ panels, Recent rows.
+
+   These used to carry ad-hoc mixes of `hover:` utilities: the feature tiles
+   lifted, the platform links lifted by a different amount with `transition-all`,
+   and the how-it-works steps did nothing at all, so a pointer moving down the
+   page kept getting different answers about what was interactive. Collapsing
+   them onto one class fixes that and puts the tuning in a single place.
+
+   Everything expensive sits behind a hover-capable pointer query. A touch
+   device can never trigger these rules, so it should not pay the cost of the
+   box-shadow paint or carry the extra compositor layer. */
+.card-lift {
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.22s ease-out,
+    border-color 0.22s ease-out,
+    box-shadow 0.22s ease-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card-lift:hover {
+    transform: translateY(-3px);
+    background-color: rgba(255, 255, 255, 0.07);
+    border-color: rgba(34, 211, 238, 0.4);
+    /* Tinted toward the accent rather than neutral black: on a near-black
+       surface a grey shadow reads as a smudge, not as elevation. The second,
+       tighter layer is what actually separates the card from the page. */
+    box-shadow:
+      0 18px 40px -20px rgba(34, 211, 238, 0.45),
+      0 2px 10px -6px rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Touch has no hover state, but a tap should still be acknowledged. */
+.card-lift:active {
+  transform: scale(0.99);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-lift,
+  .card-lift:hover,
+  .card-lift:active {
+    transform: none;
+    transition:
+      background-color 0.2s ease-out,
+      border-color 0.2s ease-out;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .bg-grid,
   .bg-grid-hot,
