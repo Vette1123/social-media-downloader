@@ -21,17 +21,48 @@ discovery:  resolver ──SET live URL──▶ Upstash Redis ──GET──�
   direct from the CDN** (large) — proxy bytes are spent only if the CDN itself
   rejects the box. See `perf(resolver): stream media direct…` commit.
 
+## Do you even need this?
+
+Measured against production on **2026-07-30**, with no resolver running at all
+and no secrets set on the Worker:
+
+| Platform | Status without a resolver |
+|---|---|
+| TikTok | ✅ works — tikwm first, public Cobalt second |
+| Instagram | ✅ works — reels resolve in <1s via Cobalt |
+| Facebook | ✅ works — Cobalt returns a CDN redirect |
+| X / Twitter | ✅ works |
+| YouTube | ⚠️ **preview only** — the embed plays, download is unavailable |
+
+So the resolver is now a **YouTube-download component**, not life support for the
+whole app. Public Cobalt refuses YouTube with `error.api.youtube.login`, and
+YouTube is the one source that genuinely needs cookies plus a residential-ish
+egress. Everything else is fine without it.
+
+Don't rebuild this until YouTube downloads actually matter.
+
 ## Hosting
 
-- **Back4app Containers** — free, no card, Docker from this repo
-  (`deploy/resolver`, port 8080). RAM 256 MB.
-- ⚠️ **Free tier hands out a TEMPORARY public URL** that rotates on
-  restart/redeploy, with **no API to read the current one**. This is why the
-  self-registration loop exists (below) — the app never needs the URL hand-fed.
-- Long-term card-free upgrade path if rotation/limits get annoying: **Oracle
-  Cloud Always-Free VM** (real always-on host, served region → no proxy needed).
-  Koyeb's free tier closed (acquired by Mistral, 2026); Render/Railway/Fly now
-  want a card.
+**Back4app is gone — do not use it.** Its free tier expired the custom domain
+and destroyed the deployment ("The Back4app custom domain has expired for free
+plan" → `DEPLOYMENT DESTROYED`, 2026-07-24). Free-tier containers there are not
+durable enough to depend on.
+
+If you do stand a resolver back up, in preference order:
+
+1. **Hugging Face Spaces (Docker SDK)** — free, no card, and unlike Back4app it
+   gives a **stable** URL (`https://<user>-<space>.hf.space`). That single
+   property removes the entire self-registration loop below: set
+   `COBALT_API_URL` once and never touch it. Free CPU tier sleeps after ~48 h
+   idle, which the keep-warm cron already handles. Listen on port 7860.
+2. **Oracle Cloud Always-Free VM** — a real always-on host in a served region,
+   so no egress proxy needed. Requires a card for identity verification even
+   though it never bills.
+3. Render / Railway / Fly — all want a card now. Koyeb's free tier closed
+   (acquired by Mistral, 2026).
+
+Cloudflare is **not** an option for this piece: Workers can't run yt-dlp
+(Python + ffmpeg), and Cloudflare Containers requires the paid Workers plan.
 
 ## Environment variables
 
@@ -46,7 +77,8 @@ Set on the **resolver host** (Back4app):
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | shared store for self-registration |
 | `REGISTRY_KEY` | optional; discovery key name (default `resolver_url`) |
 
-Set on **Vercel** (the app):
+Set on **the app** (Cloudflare Worker secrets — `pnpm cf:setup secrets`, or
+`wrangler secret put`; the app no longer runs on Vercel):
 
 | Var | Purpose |
 |-----|---------|
@@ -55,7 +87,14 @@ Set on **Vercel** (the app):
 | `COBALT_API_URL` | optional now; discovery replaces the need to hand-set it |
 | `COBALT_API_KEY` | only if `RESOLVER_API_KEY` is set on the resolver |
 
-## Self-registration loop (why URL rotation no longer hurts)
+## Self-registration loop (only needed on a rotating-URL host)
+
+> Skip this entirely on Hugging Face Spaces or any host with a stable URL —
+> just set `COBALT_API_URL` and leave the Upstash vars unset. The app treats a
+> missing store as "no discovered resolver" and falls through to its static
+> list, which is exactly right. This section exists because Back4app rotated
+> its URL on every restart.
+
 
 1. On every `/health` ping and every resolve, the resolver derives its **current
    public URL** from the forwarded host and `SET`s it into Upstash with a 15-min
@@ -89,7 +128,7 @@ A scheduler ping keeps it hot **and** refreshes the discovery key.
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `/health` → 404 | host URL rotated | grab new URL from Back4app dashboard; update the cron URL |
+| `/health` → 404 | host URL rotated | grab the new URL from the host's dashboard; update the cron URL (does not happen on a stable-URL host) |
 | resolve → `fetch.empty`, detail `Redirection detected` | egress IP geo-blocked by the source | point `RESOLVER_PROXY` at a **served** region |
 | detail `CONNECT tunnel failed, response 402` / `ProxyError` | proxy quota exhausted (free tiers are metered, ~1 GB/mo) | refresh proxy creds; the direct-stream fix keeps quota from draining on downloads |
 | `geo` → `JSONDecodeError` | proxy up but the lookup host returned non-JSON | benign; proxy is connecting |
