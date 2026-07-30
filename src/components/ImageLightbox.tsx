@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, type PanInfo } from 'motion/react'
 import { DownloadIcon, CloseIcon } from './icons'
 import { buildDownloadFilename } from '@/lib/filename'
+import { useHydrated } from '@/lib/clientEnv'
 
 interface LightboxImage {
   id: string
@@ -63,8 +64,9 @@ export function ImageLightbox({
   // (enter animation) which would otherwise become the containing block — that
   // made `inset-0` size to the card instead of the viewport. Portaling escapes
   // that ancestor entirely.
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  // `document` only exists after hydration, so the portal can't be created on
+  // the first render pass — see lib/clientEnv for why this isn't an effect.
+  const mounted = useHydrated()
 
   // Track direction so AnimatePresence's enter/exit slides the right way.
   // Update it just before calling onNext/onPrev — React batches both updates so

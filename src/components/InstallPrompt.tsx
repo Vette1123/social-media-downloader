@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { CloseIcon, DownloadIcon, ExternalLinkIcon } from '@/components/icons'
+import {
+  INSTALL_DISMISS_KEY,
+  useInstallOfferable,
+  useIsIOSSafari,
+} from '@/lib/clientEnv'
 
 // Chrome fires this before showing its install UI; capturing it lets us trigger
 // the native install prompt from our own button instead.
@@ -9,8 +14,6 @@ interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
-
-const DISMISS_KEY = 'smd:install-dismissed'
 
 // A quiet, on-brand nudge to install the PWA. Installing is what registers the
 // app as an Android Share Target, so a user can share a link straight from the
@@ -21,60 +24,49 @@ const DISMISS_KEY = 'smd:install-dismissed'
 // manual "Add to Home Screen" hint (the home-screen icon + one-tap Paste is the
 // iOS flow). Hidden entirely once installed (standalone) or dismissed.
 export function InstallPrompt() {
+  // "Can we offer an install here at all" and "is this iOS Safari" are fixed
+  // properties of the browser, read without an effect — see lib/clientEnv.
+  const offerable = useInstallOfferable()
+  const isIOS = useIsIOSSafari()
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
-  const [isIOS, setIsIOS] = useState(false)
-  const [visible, setVisible] = useState(false)
+  const [closed, setClosed] = useState(false)
 
   useEffect(() => {
-    // Already running as an installed app → nothing to offer.
-    const nav = window.navigator as Navigator & { standalone?: boolean }
-    const standalone =
-      window.matchMedia?.('(display-mode: standalone)').matches ||
-      nav.standalone === true
-    if (standalone) return
-
-    try {
-      if (window.localStorage.getItem(DISMISS_KEY) === '1') return
-    } catch {
-      // storage blocked — treat as not-dismissed.
-    }
-
-    const ua = window.navigator.userAgent || ''
-    const iOS =
-      /iphone|ipad|ipod/i.test(ua) && !/crios|fxios|edgios/i.test(ua)
-    if (iOS) {
-      setIsIOS(true)
-      setVisible(true)
-    }
-
+    if (!offerable) return
+    // Subscribing to an external system and calling setState from its callback
+    // is the supported shape — unlike setting state in the effect body.
     const onPrompt = (e: Event) => {
       e.preventDefault()
       setDeferred(e as BeforeInstallPromptEvent)
-      setVisible(true)
     }
-    const onInstalled = () => setVisible(false)
+    const onInstalled = () => setClosed(true)
     window.addEventListener('beforeinstallprompt', onPrompt)
     window.addEventListener('appinstalled', onInstalled)
     return () => {
       window.removeEventListener('beforeinstallprompt', onPrompt)
       window.removeEventListener('appinstalled', onInstalled)
     }
-  }, [])
+  }, [offerable])
 
-  if (!visible) return null
+  // iOS Safari never fires beforeinstallprompt, so the manual Add-to-Home-Screen
+  // hint is the only offer available there. Everywhere else we stay silent until
+  // Chrome hands us the event — showing an Install button that can't install is
+  // worse than showing nothing.
+  const haveSomethingToOffer = isIOS || deferred !== null
+  if (!offerable || closed || !haveSomethingToOffer) return null
 
   const install = async () => {
     if (!deferred) return
     await deferred.prompt()
     await deferred.userChoice
     setDeferred(null)
-    setVisible(false)
+    setClosed(true)
   }
 
   const dismiss = () => {
-    setVisible(false)
+    setClosed(true)
     try {
-      window.localStorage.setItem(DISMISS_KEY, '1')
+      window.localStorage.setItem(INSTALL_DISMISS_KEY, '1')
     } catch {
       // ignore — session-only dismissal is fine.
     }
