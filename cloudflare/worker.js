@@ -60,8 +60,9 @@ const worker = {
   /**
    * @param {Request} request
    * @param {{ ASSETS: { fetch: (request: Request) => Promise<Response> } }} env
+   * @param {{ waitUntil: (promise: Promise<unknown>) => void }} ctx
    */
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url)
 
     const route = API_ROUTES[url.pathname]
@@ -69,7 +70,11 @@ const worker = {
       if (!methodMatches(request.method, route.method)) {
         return methodNotAllowed(route.method)
       }
-      return route.handler(request)
+      // `ctx` is forwarded so a handler can defer work past the response —
+      // /api/download writes its edge-cache entry that way, keeping the cache
+      // write off the client's critical path. Handlers that don't need it
+      // ignore the extra argument.
+      return route.handler(request, ctx)
     }
 
     // An /api/* path with no handler — the only thing that reaches here, since

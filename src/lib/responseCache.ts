@@ -17,8 +17,12 @@
 const TTL_MS = 3 * 60 * 1000 // 3 minutes — see note above on ephemeral URLs.
 const MAX_ENTRIES = 200 // hard cap so a warm instance can't grow unbounded.
 
+// Entries hold the SERIALISED body, not the payload object. The handler has to
+// produce that string anyway to answer the request, so storing it means a hit
+// costs a Response construction and nothing else — no second JSON.stringify of
+// a nested object graph on the path that is supposed to be the cheap one.
 interface Entry {
-  value: unknown
+  body: string
   expires: number
 }
 
@@ -26,7 +30,7 @@ interface Entry {
 // key to the newest slot); on overflow we evict the oldest (first) key.
 const store = new Map<string, Entry>()
 
-export function getCached<T>(key: string): T | null {
+export function getCached(key: string): string | null {
   const hit = store.get(key)
   if (!hit) return null
   if (hit.expires <= Date.now()) {
@@ -36,12 +40,12 @@ export function getCached<T>(key: string): T | null {
   // Touch: move to newest so it survives eviction longest.
   store.delete(key)
   store.set(key, hit)
-  return hit.value as T
+  return hit.body
 }
 
-export function setCached(key: string, value: unknown): void {
+export function setCached(key: string, body: string): void {
   if (store.has(key)) store.delete(key)
-  store.set(key, { value, expires: Date.now() + TTL_MS })
+  store.set(key, { body, expires: Date.now() + TTL_MS })
   // Evict oldest entries past the cap (usually just one per insert).
   while (store.size > MAX_ENTRIES) {
     const oldest = store.keys().next().value

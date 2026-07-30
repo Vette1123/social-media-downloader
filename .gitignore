@@ -50,3 +50,4 @@ next-env.d.ts
 
 # Local tooling scratch
 .zcode/
+.prof/
