@@ -1,62 +1,40 @@
 /**
  * Cloudflare Worker entrypoint.
  *
- * Wraps the worker that `opennextjs-cloudflare build` generates, and handles a
- * few paths *before* delegating to it. The point is the free plan's 10 ms CPU
- * budget: Next's server initializes lazily, and whichever request triggers that
- * initialization is billed for it — measured at 76-98 ms. It is not a
- * once-per-deploy cost either, because every new isolate pays it again, so
- * roughly a third of requests to any Next-served route were running 8-10x over
- * budget. Cloudflare tolerates bursts, then returns `error code 1102`.
+ * The site itself is static. `next build` exports every page, image, icon,
+ * robots.txt and sitemap.xml to `out/`, wrangler uploads that as Workers Static
+ * Assets, and Cloudflare matches those before this Worker is invoked at all —
+ * so a page view runs no code here, costs nothing against the 10 ms per-request
+ * CPU budget, and does not count toward the 100k requests/day free-plan cap.
  *
- * Anything handled here never touches Next and stays in single-digit ms.
+ * What is left for this file is the part that genuinely cannot be static: the
+ * /api/* handlers, which resolve a pasted link with a live extractor call.
+ *
+ * The handlers come from src/lib/apiRoutes.ts, written against plain
+ * Request/Response. The App Router files under src/app/api/ wrap those same
+ * functions, so `next dev` and any Node host exercise exactly this code — the
+ * two paths cannot drift.
  *
  * Deliberately plain JavaScript, not TypeScript: tsconfig.json includes
- * `**\/*.ts` with only node_modules excluded, so a .ts entrypoint importing the
- * generated `.open-next/worker.js` would fail `tsc --noEmit` on a fresh
- * checkout, where that file does not exist yet.
- *
- * Note that static assets are matched before the Worker is invoked at all, so
- * pages, icons and the prerendered OpenGraph images never reach this code.
+ * `**\/*.ts`, and a `.ts` entrypoint here would be type-checked as part of the
+ * app while actually targeting the workerd runtime.
  */
 
 import { API_ROUTES } from '../src/lib/apiRoutes'
 
 /**
- * The generated worker is imported lazily, on the first request that actually
- * needs Next to render something.
+ * There is deliberately no 404 handling here.
  *
- * A static `import` would put the whole Next server in this module's graph, and
- * a cold isolate then evaluates it before running any handler — measurably so:
- * with a static import, /api/download still spiked to 114 ms on a fresh isolate
- * despite never calling into Next, while warm requests cost ~0 ms. Deferring it
- * keeps API requests from paying for a framework they do not use.
+ * `not_found_handling: "404-page"` in wrangler.jsonc makes the asset router
+ * answer every unmatched path with out/404.html directly, without invoking this
+ * Worker — verified against the deployment, including the vulnerability scans
+ * (/wp-login.php, /.env, /vendor/…) that make up most of a public site's 404s.
+ * Those used to be the single most expensive thing this Worker did, at up to
+ * 116 ms of CPU each; they now cost none at all.
+ *
+ * `run_worker_first: ["/api/*"]` is what keeps API requests from being
+ * swallowed by that same rule, and is the only reason this Worker is reachable.
  */
-let openNextWorkerPromise = null
-
-function loadOpenNextWorker() {
-  openNextWorkerPromise ??= import('../.open-next/worker.js').then((m) => m.default)
-  return openNextWorkerPromise
-}
-
-/**
- * Paths that are unmistakably vulnerability scans rather than real navigation.
- *
- * A public site collects a constant drizzle of these, and each one was booting
- * Next to render a 404 — the single most expensive thing the Worker did (up to
- * 116 ms). None of the app's real routes end in these extensions, and requests
- * for genuine static files are answered from assets before reaching the Worker,
- * so short-circuiting here cannot shadow anything that exists.
- *
- * Ordinary typo 404s still fall through to Next and render the real not-found
- * page; they are rare enough not to matter, and worth a proper page.
- */
-const SCANNER_PATH = /\.(php|phtml|asp|aspx|jsp|cgi|env|sql|bak|old|ini|conf|sh|py|rb|pl|war|jar)$/i
-const SCANNER_PREFIX = /^\/(wp-|wordpress|vendor\/|\.git|\.env|cgi-bin|phpmyadmin|admin\.php)/i
-
-function isScannerProbe(pathname) {
-  return SCANNER_PATH.test(pathname) || SCANNER_PREFIX.test(pathname)
-}
 
 /** HEAD is served by the GET handler, as it is for any ordinary route. */
 function methodMatches(requestMethod, routeMethod) {
@@ -64,46 +42,42 @@ function methodMatches(requestMethod, routeMethod) {
   return routeMethod === 'GET' && requestMethod === 'HEAD'
 }
 
+/**
+ * 405 for a known path called with the wrong verb.
+ *
+ * Without this the request would fall through to the asset store and come back
+ * as the 404 page, which is a confusing thing to hand an API client.
+ */
+function methodNotAllowed(routeMethod) {
+  const allow = routeMethod === 'GET' ? 'GET, HEAD' : routeMethod
+  return Response.json(
+    { success: false, error: `Method not allowed. Use ${allow}.` },
+    { status: 405, headers: { Allow: allow } },
+  )
+}
+
 const worker = {
   /**
    * @param {Request} request
-   * @param {Record<string, unknown>} env
-   * @param {{ waitUntil: (p: Promise<unknown>) => void }} ctx
+   * @param {{ ASSETS: { fetch: (request: Request) => Promise<Response> } }} env
    */
-  async fetch(request, env, ctx) {
+  async fetch(request, env) {
     const url = new URL(request.url)
 
-    // Every /api/* route, dispatched without touching Next. These are the same
-    // functions the App Router route files call, so this path and local `next
-    // dev` cannot drift. A method mismatch deliberately falls through, letting
-    // Next produce its usual 405.
     const route = API_ROUTES[url.pathname]
-    if (route && methodMatches(request.method, route.method)) {
+    if (route) {
+      if (!methodMatches(request.method, route.method)) {
+        return methodNotAllowed(route.method)
+      }
       return route.handler(request)
     }
 
-    if (isScannerProbe(url.pathname)) {
-      return new Response('Not found', {
-        status: 404,
-        headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          // Nothing here will ever exist; let intermediaries stop asking.
-          'Cache-Control': 'public, max-age=86400',
-        },
-      })
-    }
-
-    const openNextWorker = await loadOpenNextWorker()
-    return openNextWorker.fetch(request, env, ctx)
+    // An /api/* path with no handler — the only thing that reaches here, since
+    // everything else is matched or 404'd by the asset router first. The
+    // binding applies the same rules as the edge, so this is the styled 404
+    // page with a 404 status.
+    return env.ASSETS.fetch(request)
   },
 }
 
 export default worker
-
-// The generated worker also exports Durable Object classes (DOQueueHandler,
-// DOShardedTagCache, BucketCachePurge). They are deliberately NOT re-exported
-// here: a static re-export would pull the Next bundle into this module's graph
-// and defeat the lazy import above. wrangler.jsonc declares no durable_objects
-// bindings — the queue and tag cache belong to OpenNext's ISR machinery, which
-// this app does not use, since every route is prerendered and none revalidate.
-// Adding such a binding later means re-exporting them from a separate entry.

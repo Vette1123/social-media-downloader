@@ -3,6 +3,11 @@ import { buildDate } from '@/config/build'
 import { siteConfig } from '@/config/site'
 import { platforms } from '@/lib/platforms'
 
+// Written once at build time into out/sitemap.xml. Required explicitly by
+// `output: 'export'`, which refuses to emit a metadata route that has not
+// declared itself static.
+export const dynamic = 'force-static'
+
 const lastModified = buildDate
 
 export default function sitemap(): MetadataRoute.Sitemap {

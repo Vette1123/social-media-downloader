@@ -2,17 +2,14 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "social-media-downloader",
 
-  // Not the generated `.open-next/worker.js` directly: cloudflare/worker.js
-  // wraps it so the media proxies and scanner probes are answered without
-  // booting Next, whose lazy initialization costs 76-98 ms of CPU against a
-  // 10 ms budget. It re-exports the generated worker's handler for everything
-  // else. See that file for the full reasoning.
+  // A small hand-written Worker, not a framework adapter. The site is a static
+  // export served from `assets` below; this script only answers /api/*. See
+  // cloudflare/worker.js for the reasoning.
   "main": "cloudflare/worker.js",
   "compatibility_date": "2026-07-01",
 
-  // nodejs_compat: the adapter runs Next's Node.js runtime on workerd, so the
-  // node:* built-ins the extractors use (node:stream, node:crypto, node:buffer)
-  // must be present. Requires a compatibility_date >= 2024-09-23.
+  // nodejs_compat: the extractors use node:* built-ins (node:stream,
+  // node:crypto, node:buffer). Requires a compatibility_date >= 2024-09-23.
   //
   // global_fetch_strictly_public: makes fetch() from inside the Worker resolve
   // over the public internet instead of looping back into this same Worker.
@@ -22,15 +19,25 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 
   "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
+    // `next build` with `output: 'export'` writes the whole site here: 12
+    // pages, the 404 page, 28 generated PNGs (OpenGraph, Twitter, app icons),
+    // robots.txt, sitemap.xml, the RSC payloads that make client-side
+    // navigation work, and the hashed _next/static bundle.
+    "directory": "out",
+    "binding": "ASSETS",
+
+    // Serve out/404.html (with a 404 status) for unmatched paths, instead of
+    // the default bare "Not Found" text. The Worker reaches this via the
+    // binding; the edge applies it directly when the Worker is not invoked.
+    "not_found_handling": "404-page",
+
+    // Static assets are matched before the Worker runs, which is exactly what
+    // keeps page views off the CPU budget — but /api/* must never be answered
+    // from the asset store, so those paths are pinned to the Worker. Nothing is
+    // exported to out/api, so this is belt-and-braces rather than load-bearing.
+    "run_worker_first": ["/api/*"]
   },
 
-  // Every route in this app is prerendered at build time (44 of them: pages,
-  // OG/Twitter images, icons, robots.txt, sitemap.xml) and is therefore served
-  // straight from static assets — those requests never invoke the Worker, so
-  // they cost no CPU and are exempt from the 100k requests/day free-plan cap.
-  // Only /api/* actually runs Worker code.
   "observability": {
     "enabled": true
   },
@@ -39,8 +46,7 @@
   // the yt-dlp / ffmpeg packages are aliased to a stub that throws on use. The
   // three routes that touch them already degrade gracefully (they were dead on
   // Vercel too, for the same reason). Aliasing keeps ~10 MB of unreachable
-  // binaries and their dependency trees out of the Worker bundle, which matters
-  // against the 3 MiB gzip free-plan size limit.
+  // binaries and their dependency trees out of the Worker bundle.
   "alias": {
     "youtube-dl-exec": "./cloudflare/stubs/unavailable.js",
     "fluent-ffmpeg": "./cloudflare/stubs/unavailable.js",
@@ -48,8 +54,8 @@
   },
 
   // Only non-secret, runtime-read values belong here. NEXT_PUBLIC_SITE_URL is
-  // deliberately absent: Next inlines NEXT_PUBLIC_* at build time, so a Worker
-  // var would be read far too late to affect the bundle — it is set as build
+  // deliberately absent: Next inlines NEXT_PUBLIC_* into the static HTML at
+  // build time, so a Worker var would be read far too late — it is set as build
   // env in the deploy workflow instead.
   //
   // Secrets (COBALT_API_KEY, IG_SESSIONID, UPSTASH_REDIS_REST_URL,

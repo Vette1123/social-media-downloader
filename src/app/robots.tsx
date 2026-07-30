@@ -1,6 +1,9 @@
 import type { MetadataRoute } from 'next'
 import { siteConfig } from '@/config/site'
 
+// Written once at build time into out/robots.txt. See sitemap.tsx.
+export const dynamic = 'force-static'
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
