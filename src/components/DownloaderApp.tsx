@@ -1,7 +1,14 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import {
   appReducer,
   initialState,
@@ -24,13 +31,17 @@ import {
   YouTubeIcon,
 } from '@/components/icons'
 import { InstallPrompt } from '@/components/InstallPrompt'
+import { useIsIOSLike } from '@/lib/clientEnv'
+import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { buildDownloadFilename } from '@/lib/filename'
 import { friendlyError } from '@/lib/errorMessages'
 import {
   addHistory,
   clearHistory,
-  loadHistory,
+  getHistorySnapshot,
+  getHistoryServerSnapshot,
   removeHistory,
+  subscribeHistory,
   type HistoryEntry,
 } from '@/lib/history'
 
@@ -94,6 +105,14 @@ async function streamToBlob(
   }
   onProgress(100)
   return new Blob(chunks, type ? { type } : undefined)
+}
+
+// Reading the clock is a side effect, and the React compiler flags a bare
+// Date.now() inside a component body as impure-during-render even when the
+// caller is an async event handler. Module scope puts it out of that analysis
+// without changing behaviour.
+function nowMs(): number {
+  return Date.now()
 }
 
 // Capture a tiny, self-contained snapshot of a thumbnail for the Recent list.
@@ -291,10 +310,18 @@ export function DownloaderApp() {
   const [urlError, setUrlError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const pasteBarRef = useRef<HTMLDivElement>(null)
-  const [history, setHistory] = useState<HistoryEntry[]>([])
+  // Persisted in localStorage and mutated from several places, so it is read
+  // from the history store rather than mirrored into component state — the
+  // mutators below notify it and this re-renders. See lib/history.
+  const history = useSyncExternalStore(
+    subscribeHistory,
+    getHistorySnapshot,
+    getHistoryServerSnapshot,
+  )
   const [showAllHistory, setShowAllHistory] = useState(false)
-  const [quality, setQuality] = useState<'hd' | 'sd'>('hd')
-  const [format, setFormat] = useState<'video' | 'audio'>('video')
+  // Sticky across visits, so they live in an external store that reads
+  // localStorage on the first client render — see lib/prefs.
+  const { quality, format } = usePrefs()
   // Batch progress while resolving a pasted list of links; null when idle.
   const [batch, setBatch] = useState<{
     done: number
@@ -305,26 +332,14 @@ export function DownloaderApp() {
   const [repicking, setRepicking] = useState<'hd' | 'sd' | 'audio' | null>(null)
   // iPhone/iPad Safari: downloads land in Files, not the camera roll, so we show
   // a one-line "save to Photos" hint on video results. Set once on mount.
-  const [isIOS, setIsIOS] = useState(false)
+  // Read straight from the browser rather than via an effect — see lib/clientEnv.
+  const isIOS = useIsIOSLike()
   const didInit = useRef(false)
 
-  const changeQuality = (q: 'hd' | 'sd') => {
-    setQuality(q)
-    try {
-      window.localStorage.setItem('smd:quality', q)
-    } catch {
-      // storage disabled — the choice still applies for this session.
-    }
-  }
-
-  const changeFormat = (f: 'video' | 'audio') => {
-    setFormat(f)
-    try {
-      window.localStorage.setItem('smd:format', f)
-    } catch {
-      // storage disabled — the choice still applies for this session.
-    }
-  }
+  // Thin aliases: the store already persists and notifies, so these exist only
+  // to keep the call sites in this file reading the same as before.
+  const changeQuality = setQuality
+  const changeFormat = setFormat
 
   // Resolve one link against the API. Shared by the single-link flow, batch
   // mode, and the result-card re-pick. `opts` overrides the current format/
@@ -361,16 +376,14 @@ export function DownloaderApp() {
     },
   ) => {
     const snap = await captureThumbnail(meta?.thumbnail || '')
-    setHistory(
-      addHistory({
-        url: target,
-        title: friendlyTitle(meta?.title, meta?.platform),
-        author: meta?.author || '',
-        platform: meta?.platform,
-        thumbnail: snap || meta?.thumbnail || '',
-        ts: Date.now(),
-      }),
-    )
+    addHistory({
+      url: target,
+      title: friendlyTitle(meta?.title, meta?.platform),
+      author: meta?.author || '',
+      platform: meta?.platform,
+      thumbnail: snap || meta?.thumbnail || '',
+      ts: nowMs(),
+    })
   }
 
   // Re-resolve the current result at a different rendition (HD / Data saver /
@@ -582,44 +595,27 @@ export function DownloaderApp() {
 
   const handleClearHistory = () => {
     clearHistory()
-    setHistory([])
   }
 
-  // Runs once on mount: hydrate the recent list from localStorage, and honour a
-  // PWA share-target / deep link (?url= / ?text=). Sharing a link straight from
-  // the TikTok/IG/YouTube app lands here — we auto-resolve it and strip the
-  // query so a refresh doesn't fire it again.
+  // Runs once on mount to honour a PWA share-target / deep link (?url= /
+  // ?text=). Sharing a link straight from the TikTok/IG/YouTube app lands here —
+  // we auto-resolve it and strip the query so a refresh doesn't fire it again.
+  // (The recent list needs no hydration step; it reads itself — see lib/history.)
   useEffect(() => {
     if (didInit.current) return
     didInit.current = true
-    setHistory(loadHistory())
-    // iOS (real Safari, not Chrome/Firefox on iOS which spoof a desktop-ish UA):
-    // downloads go to Files, so a "save to Photos" hint helps. iPadOS 13+ reports
-    // a Mac UA, so also treat a touch-capable "Mac" as iPad.
-    try {
-      const ua = window.navigator.userAgent || ''
-      const iOSUA = /iphone|ipad|ipod/i.test(ua) && !/crios|fxios/i.test(ua)
-      const iPadOS =
-        /Macintosh/i.test(ua) && (navigator.maxTouchPoints ?? 0) > 1
-      if (iOSUA || iPadOS) setIsIOS(true)
-    } catch {
-      // non-browser / locked-down env — skip the hint.
-    }
-    try {
-      const q = window.localStorage.getItem('smd:quality')
-      if (q === 'sd' || q === 'hd') setQuality(q)
-      const f = window.localStorage.getItem('smd:format')
-      if (f === 'audio' || f === 'video') setFormat(f)
-    } catch {
-      // ignore — default HD video.
-    }
     try {
       const params = new URLSearchParams(window.location.search)
       const shared = params.get('url') || params.get('text') || ''
       const found = extractFirstUrl(shared)
       if (found) {
         window.history.replaceState(null, '', window.location.pathname)
-        handleProcess(found)
+        // Deferred rather than called inline. handleProcess dispatches straight
+        // away, and doing that in the effect body makes the mount render
+        // cascade into a second one before the first has committed. A microtask
+        // runs it after commit, so the empty state paints and then flips to
+        // loading — which is also what a share-target hand-off should look like.
+        void Promise.resolve().then(() => handleProcess(found))
       }
     } catch {
       // no-op — malformed query, just show the normal empty state.
@@ -1311,7 +1307,7 @@ export function DownloaderApp() {
                 </button>
                 <button
                   type='button'
-                  onClick={() => setHistory(removeHistory(h.url))}
+                  onClick={() => removeHistory(h.url)}
                   aria-label={`Remove ${h.title} from recent`}
                   className='absolute top-1/2 right-1.5 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
                 >
@@ -1510,15 +1506,27 @@ export function DownloaderApp() {
                 state.downloadUrl &&
                 !state.videoMetadata?.embedUrl && (
                   <div className='animate-section-in space-y-3'>
-                    {/* Prefer the direct (browser→instance) tunnel URL so
-                        preview bytes bypass our function entirely — the
-                        /api/video proxy re-streams every byte through Vercel
-                        (Fast Origin Transfer). preload='none' loads nothing
-                        until the user actually hits play, since most just
-                        download. */}
+                    {/* Deliberately the same-origin /api/video proxy, NOT the
+                        direct tunnel the download button uses.
+
+                        A media element requests bytes with a Range header, and
+                        Cobalt tunnels answer that with a `206` that omits the
+                        mandatory `Content-Range`. Browsers reject such a
+                        response outright, so pointing <video> at the tunnel
+                        produces a preview that always fails while the download
+                        — a plain GET, no Range, clean `200` — works fine.
+                        resolveRangeResponse() in lib/proxyHeaders.ts repairs
+                        that shape, so going through the proxy is what makes
+                        playback (and seeking) work at all.
+
+                        The bandwidth argument still holds for downloads, which
+                        is the high-volume path and still goes browser→tunnel
+                        direct. A preview costs two extra clicks (Show preview,
+                        then play) and preload='none' means nothing is fetched
+                        until the user actually presses play. */}
                     <div className='bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg'>
                       <video
-                        src={state.videoMetadata?.directVideoUrl || state.downloadUrl}
+                        src={state.downloadUrl}
                         poster={state.videoMetadata?.thumbnail || undefined}
                         controls
                         playsInline
