@@ -17,8 +17,9 @@ import {
   parseYouTubeId,
   type SupportedPlatform,
 } from './validator'
-import { htmlScrapingAvailable } from './nativeMedia'
+import { htmlScrapingAvailable, nativeMediaAvailable } from './nativeMedia'
 import { getMediaReferer } from './proxyHeaders'
+import { tryYouTubeInnertube } from './youtubeInnertube'
 import { ytdlpInfo } from './ytdlp'
 
 // Retry a flaky network op with exponential backoff + light jitter. Only retries
@@ -489,18 +490,28 @@ export class Downloader {
       ? `https://www.youtube.com/watch?v=${videoId}`
       : url
 
-    const meta = await this.fetchYouTubeMeta(videoId, canonical)
-
     // 1) yt-dlp — extracts from this process's IP. Run locally / self-hosted
     //    (residential IP), YouTube doesn't bot-block it, so it succeeds where
-    //    the public datacenter instances fail. Downloads stream via the
-    //    dedicated /api/youtube endpoint. Returns null when the binary is
-    //    unavailable (e.g. Vercel) or the video is blocked here — then we fall
-    //    through to the public extractor and ultimately the embed.
-    if (videoId) {
+    //    the public datacenter instances fail, and unlike Innertube below it
+    //    can mux, so it is the only path that yields full resolution.
+    //    Unavailable on workerd (no Python, no ffmpeg), hence the guard — which
+    //    also skips the oEmbed round-trip that only this branch needs.
+    if (videoId && nativeMediaAvailable()) {
+      const meta = await this.fetchYouTubeMeta(videoId, canonical)
       const viaYtDlp = await this.tryYtDlpYouTube(videoId, canonical, meta)
       if (viaYtDlp) return viaYtDlp
     }
+
+    // 2) Innertube — YouTube's own player API, which (unlike Cobalt) answers a
+    //    datacenter IP, and carries its own title/author/thumbnail so no
+    //    separate metadata fetch is needed. Capped at 360p for video; see
+    //    youtubeInnertube.ts for why, and why ANDROID_VR specifically.
+    if (videoId) {
+      const viaInnertube = await tryYouTubeInnertube(videoId, canonical, this.mode)
+      if (viaInnertube) return viaInnertube
+    }
+
+    const meta = await this.fetchYouTubeMeta(videoId, canonical)
 
     const methods: Array<() => Promise<VideoData | null>> = [
       () => this.tryCobaltInstances(canonical),

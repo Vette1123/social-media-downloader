@@ -353,8 +353,7 @@ function buildChecks() {
     },
 
     {
-      name: 'api/download resolves a YouTube URL',
-      // Cobalt has to answer, so allow well over the usual budget.
+      name: 'api/download resolves a YouTube URL to a real stream',
       request: {
         pathname: '/api/download',
         method: 'POST',
@@ -368,14 +367,74 @@ function buildChecks() {
         // Shape is flat: { success, downloadUrl, audioUrl, metadata }.
         if (!payload.metadata?.title) return 'no metadata.title in response'
         if (!payload.downloadUrl) return 'no downloadUrl in response'
-        // The whole point of preferring cobalt instances that return a tunnel:
-        // the browser must be able to pull the bytes itself. If this is empty,
-        // every download would instead stream through the Worker — CPU we do
-        // not have, and video traffic Cloudflare's free plan does not allow.
-        if (!payload.metadata?.directVideoUrl) {
-          return 'metadata.directVideoUrl is empty — bytes would proxy through the Worker'
+
+        // The distinction that matters for YouTube: a real extraction versus
+        // the embed-only degradation. Both set success=true, so assert on
+        // something only extraction produces. Duration comes from Innertube's
+        // videoDetails; the embed fallback hardcodes 0.
+        if (payload.metadata.embedUrl && !payload.downloadUrl) {
+          return 'fell back to embed-only — Innertube extraction failed'
+        }
+        if (!payload.metadata.duration) {
+          return 'metadata.duration is 0 — looks like the embed fallback, not a real extraction'
         }
         return null
+      },
+    },
+
+    {
+      name: 'api/download resolves YouTube audio',
+      request: {
+        pathname: '/api/download',
+        method: 'POST',
+        json: {
+          url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          format: 'audio',
+        },
+        timeoutMs: 90_000,
+      },
+      check: async (response, body) => {
+        if (response.status !== 200) return `expected 200, got ${response.status}`
+        const payload = JSON.parse(new TextDecoder().decode(body))
+        if (!payload.success) return `success=false: ${payload.error ?? 'no error given'}`
+        if (!payload.audioUrl) return 'no audioUrl for an audio-mode request'
+        return null
+      },
+    },
+
+    {
+      // The Cache API is a silent no-op on *.workers.dev — writes appear to
+      // succeed and reads always miss. So this asserts the tier actually
+      // reached, and only *requires* a cross-isolate hit on a custom domain,
+      // where a miss would be a real regression rather than a platform rule.
+      name: 'api/download caches a repeated resolve',
+      request: {
+        pathname: '/api/download',
+        method: 'POST',
+        json: { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        timeoutMs: 90_000,
+      },
+      check: async (response) => {
+        if (response.status !== 200) return `expected 200, got ${response.status}`
+
+        // The check above already resolved this exact URL, so a second request
+        // must come from one of the two cache tiers.
+        const repeat = await fetch(`${BASE}/api/download`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }),
+        })
+        const tier = repeat.headers.get('x-cache')
+        const payload = await repeat.json()
+        if (!payload.success) return `repeat resolve failed: ${payload.error}`
+
+        const onWorkersDev = new URL(BASE).hostname.endsWith('.workers.dev')
+        if (tier === 'HIT' || tier === 'EDGE') return null
+        if (onWorkersDev) {
+          // Same-isolate luck is the only way to hit here; not a failure.
+          return null
+        }
+        return `expected X-Cache HIT or EDGE on a repeat, got ${tier ?? 'no header'}`
       },
     },
 
