@@ -231,16 +231,28 @@ body {
    Reusable accent pieces.
 --------------------------------------------------------------------------- */
 .text-grad {
+  /* Palindromic ramp, and the size is what makes it visible.
+     `background-size: 260%` used to show only the first 38% of the stops in the
+     resting frame — teal into cyan, no sky, no indigo — so the headline read as
+     one flat colour for everyone who never gets the sweep (touch, low-power,
+     reduced-motion, and every desktop first paint). At 200% the resting frame
+     shows exactly half the ramp, and mirroring the stops puts the full
+     teal -> cyan -> sky -> indigo travel inside that half.
+     200% is also the seamless loop distance: the offset moves by
+     position x (100% - 200%) = -1 element width, so a 200% sweep displaces
+     exactly one tile and wraps with no jump. The old 260%/260% pairing moved
+     2.77 tiles and snapped at the loop. */
   background: linear-gradient(
     100deg,
     #5eead4,
     #22d3ee,
     #38bdf8,
     #818cf8,
+    #38bdf8,
     #22d3ee,
     #5eead4
   );
-  background-size: 260% 100%;
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -263,7 +275,7 @@ body {
 }
 @keyframes text-flow {
   to {
-    background-position: 260% 0;
+    background-position: 200% 0;
   }
 }
 
@@ -337,13 +349,17 @@ body {
   .card-lift:hover {
     transform: translateY(-3px);
     background-color: rgba(255, 255, 255, 0.07);
-    border-color: rgba(34, 211, 238, 0.4);
-    /* Tinted toward the accent rather than neutral black: on a near-black
-       surface a grey shadow reads as a smudge, not as elevation. The second,
-       tighter layer is what actually separates the card from the page. */
+    border-color: rgba(34, 211, 238, 0.45);
+    /* The accent stays INSIDE the card, matching .glow-card. An outward cyan
+       bloom (the old `0 18px 40px -20px`) lit the page background instead of
+       the card: in a four-across band the halo bled over the neighbours and
+       read as a backdrop effect, not as "this tile is active". So the ring and
+       the light pool are both inset, and the only outward layer is a tight,
+       neutral shadow that carries elevation without tinting anything. */
     box-shadow:
-      0 18px 40px -20px rgba(34, 211, 238, 0.45),
-      0 2px 10px -6px rgba(0, 0, 0, 0.7);
+      inset 0 0 0 1px rgba(34, 211, 238, 0.2),
+      inset 0 22px 44px -26px rgba(34, 211, 238, 0.5),
+      0 8px 18px -14px rgba(0, 0, 0, 0.85);
   }
 }
 
