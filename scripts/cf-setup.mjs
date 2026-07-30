@@ -199,12 +199,15 @@ async function stepCheck(ctx) {
     info(`Set these at your registrar: ${(zone.name_servers ?? []).join(', ')}`)
   }
 
-  const worker = await cf(
+  // `/workers/scripts/<name>` returns the deployed script's JavaScript, not a
+  // JSON envelope, so asking for it here reported a false failure on a Worker
+  // that was in fact live. The settings sub-resource answers with JSON.
+  const settings = await cf(
     ctx.token,
-    `/accounts/${ctx.accountId}/workers/scripts/${ctx.script}`,
+    `/accounts/${ctx.accountId}/workers/scripts/${ctx.script}/settings`,
     { allowFailure: true },
   )
-  const deployed = worker.success !== false
+  const deployed = settings?.success !== false
   if (deployed) ok(`Worker "${ctx.script}" is deployed`)
   else warn(`Worker "${ctx.script}" not deployed yet — run the \`deploy\` step.`)
 
