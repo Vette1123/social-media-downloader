@@ -1,0 +1,94 @@
+name: Deploy to Cloudflare Workers
+
+# Push to main deploys. Pull requests build and size-check only — never deploy,
+# so a PR can't take production down or race the live Worker.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # One deploy at a time. Queued pushes supersede each other rather than racing
+  # two `wrangler deploy` calls at the same Worker.
+  group: cloudflare-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # youtube-dl-exec's preinstall hard-fails when it can't find a Python
+  # interpreter. The binary is aliased away in the Worker bundle and never runs
+  # on workerd anyway, so the check is pure friction here.
+  YOUTUBE_DL_SKIP_PYTHON_CHECK: '1'
+  # NEXT_PUBLIC_* is inlined at build time, so it has to be set for `next build`
+  # — a Worker var would be read too late to affect the bundle.
+  NEXT_PUBLIC_SITE_URL: https://www.socialdownloader.space
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Linux, deliberately: the OpenNext bundler mirrors pnpm's nested
+    # node_modules using symlinks, which Windows refuses without Developer Mode
+    # or elevation.
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+
+      # Reported but not gating. `next lint` was removed in Next 16, so this
+      # project's lint step had been silently failing to run at all; switching
+      # to eslint directly surfaced four pre-existing react-hooks errors in
+      # components unrelated to deployment. Blocking deploys on them would be
+      # the wrong trade — flip this to a gate once they are fixed.
+      - name: Lint
+        run: pnpm lint
+        continue-on-error: true
+
+      - name: Build Worker bundle
+        run: pnpm cf:build
+
+      # Fails the run before deploying if the bundle has outgrown the free
+      # plan's 3 MiB gzipped limit. wrangler would reject it at upload anyway,
+      # but catching it here also covers pull requests, where nothing deploys.
+      - name: Check bundle size against free-plan limit
+        run: |
+          pnpm exec wrangler deploy --dry-run --outdir .worker-size-check
+          gzipped=$(cat .worker-size-check/*.js | gzip -9 | wc -c)
+          limit=$((3 * 1024 * 1024))
+          printf 'Worker bundle: %s bytes gzipped (limit %s)\n' "$gzipped" "$limit"
+          if [ "$gzipped" -gt "$limit" ]; then
+            echo "::error::Worker bundle exceeds the 3 MiB gzipped free-plan limit."
+            exit 1
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy
+        if: github.event_name != 'pull_request'
+        run: pnpm exec opennextjs-cloudflare deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Runs after the deploy is live, because it reads the deployed sitemap to
+      # collect the URL set. The script swallows its own failures — a flaky
+      # search-engine endpoint must never fail a deploy.
+      - name: Ping IndexNow
+        if: github.event_name != 'pull_request'
+        run: node scripts/indexnow.mjs --force
