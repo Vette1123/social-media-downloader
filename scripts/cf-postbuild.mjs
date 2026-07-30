@@ -224,11 +224,59 @@ function mib(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MiB`
 }
 
+/**
+ * Recompress the generated OG/Twitter cards.
+ *
+ * satori writes full 32-bit RGBA PNGs, which for 1200x630 comes out around
+ * 550 KB each. There are 28 of them, so they were 12.5 MB of a 17.5 MB export —
+ * by far the largest thing we ship.
+ *
+ * Palette quantisation with dithering is the right tool: these cards are flat
+ * background, one gradient and text, so a 256-colour palette reproduces them
+ * essentially exactly while cutting ~72%. `quality: 100` keeps the full palette
+ * rather than trading colours away, because gradients are what would band, and
+ * `effort: 10` spends build time (not runtime) finding a better encoding.
+ *
+ * Deliberately still PNG. WebP is 92% smaller here and very tempting, but
+ * og:image support across scrapers is inconsistent — X handles WebP, several
+ * others silently drop the preview — and a card nobody renders is worth less
+ * than a card that's 100 KB bigger.
+ *
+ * Sharp is a build-time dependency only; nothing here runs on the Worker.
+ */
+async function optimizeImages(files) {
+  const { default: sharp } = await import('sharp')
+  const targets = files.filter((file) => isPng(file))
+
+  let before = 0
+  let after = 0
+  for (const file of targets) {
+    const original = readFileSync(file)
+    const encoded = await sharp(original)
+      .png({ palette: true, quality: 100, effort: 10 })
+      .toBuffer()
+
+    before += original.length
+    // Keep whichever is smaller: a card that somehow defeats quantisation
+    // should not get bigger just because we ran it through the optimiser.
+    if (encoded.length < original.length) {
+      writeFileSync(file, encoded)
+      after += encoded.length
+    } else {
+      after += original.length
+    }
+  }
+
+  return { count: targets.length, before, after }
+}
+
 // -------------------------------------------------------------------- main
 
 const files = walk(OUT_DIR)
 const routes = verifySitemapRoutes(files)
 const images = buildHeaders(files)
+// Before checkLimits, so the reported total reflects what actually ships.
+const optimized = await optimizeImages(files)
 const total = checkLimits(files)
 
 // A stable fingerprint of the deployable output, handy when checking whether a
@@ -245,6 +293,8 @@ console.log(
     `    ${files.length} assets, ${mib(total)} total`,
     `    ${routes} sitemap routes verified`,
     `    ${images} generated PNGs given an explicit Content-Type`,
+    `    ${optimized.count} PNGs recompressed: ${mib(optimized.before)} -> ${mib(optimized.after)}` +
+      ` (${Math.round((1 - optimized.after / optimized.before) * 100)}% smaller)`,
     '',
   ].join('\n'),
 )
