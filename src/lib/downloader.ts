@@ -17,6 +17,7 @@ import {
   parseYouTubeId,
   type SupportedPlatform,
 } from './validator'
+import { htmlScrapingAvailable } from './nativeMedia'
 import { getMediaReferer } from './proxyHeaders'
 import { ytdlpInfo } from './ytdlp'
 
@@ -547,9 +548,13 @@ export class Downloader {
       resolvedUrl = await this.resolveRedirect(url)
     }
 
+    // tryFacebookScrape pulls the whole post page and scans it; it is skipped
+    // where that cannot work. See htmlScrapingAvailable().
     const methods: Array<() => Promise<VideoData | null>> = [
       () => this.tryFacebookPlugin(resolvedUrl, url),
-      () => this.tryFacebookScrape(resolvedUrl, url),
+      ...(htmlScrapingAvailable()
+        ? [() => this.tryFacebookScrape(resolvedUrl, url)]
+        : []),
       () => this.tryCobaltInstances(resolvedUrl),
     ]
 
@@ -913,13 +918,21 @@ export class Downloader {
     //      Vercel, so it sits after Cobalt and returns null there.
     //   4-6. The remaining public scrapers as last resorts (snaptik ships
     //      obfuscated JS, ssstik needs a rotating token).
+    //
+    // 4-6 are skipped where page scraping cannot work — see
+    // htmlScrapingAvailable(). They are the expensive half of this list and, on
+    // a datacenter IP, the half that always misses.
     const methods = [
       () => this.tryTikwmMethod(url),
       () => this.tryTikTokCobalt(url),
       () => this.tryYtDlpTikTok(url),
-      () => this.trySnaptikMethod(url),
-      () => this.trySSSMethod(url),
-      () => this.tryDirectTikTokScraping(url),
+      ...(htmlScrapingAvailable()
+        ? [
+            () => this.trySnaptikMethod(url),
+            () => this.trySSSMethod(url),
+            () => this.tryDirectTikTokScraping(url),
+          ]
+        : []),
     ]
 
     for (const method of methods) {

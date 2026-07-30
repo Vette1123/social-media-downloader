@@ -18,6 +18,38 @@ export function nativeMediaAvailable(): boolean {
 }
 
 /**
+ * Whether this runtime can afford to fetch a full social-platform page and scan
+ * it for an embedded media URL.
+ *
+ * On Cloudflare it cannot, for two independent reasons:
+ *
+ *   - CPU. A TikTok video page ships megabytes of markup; locating the state
+ *     blob in it and unescaping the URL is the single most expensive thing the
+ *     extractor does. Measured on the deployed Worker, a TikTok resolve that
+ *     reached these strategies cost 8-13 ms of CPU against a 10 ms budget,
+ *     while the same request with them skipped costs low single digits.
+ *
+ *   - It cannot work anyway. Every one of these strategies depends on the
+ *     origin serving real markup to the caller, and TikTok, Facebook and the
+ *     public scraper front-ends all answer a Cloudflare egress IP with a bot
+ *     wall. Verified against the deployment: with all six TikTok strategies
+ *     enabled, every one of them failed, and the request still spent ~3.8 s of
+ *     wall time and the whole CPU budget getting there.
+ *
+ * So this is not a capability being traded away for speed — it is dead weight
+ * that was both the most expensive path and a guaranteed miss. The extraction
+ * that does work from a datacenter IP is Cobalt, or the self-hosted resolver
+ * discovered through Upstash (see deploy/resolver/OPERATIONS.md), and both stay
+ * enabled everywhere.
+ *
+ * Locally and on any host with a residential or unblocked IP, the scrapers stay
+ * on and nothing changes.
+ */
+export function htmlScrapingAvailable(): boolean {
+  return process.env.DEPLOY_TARGET !== 'cloudflare'
+}
+
+/**
  * 501 for the routes that cannot run here. Not a 500: nothing failed, the
  * capability is simply absent on this host, and the client already treats a
  * non-OK response from these routes as "use the fallback path".
