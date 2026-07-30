@@ -4,9 +4,16 @@ import { siteConfig } from '@/config/site'
 import { platforms } from '@/lib/platforms'
 
 export const metadata: Metadata = {
-  title: `Page not found — ${siteConfig.name}`,
+  // `absolute` bypasses the layout's `%s — <name>` template, which was
+  // appending the site name to a title that already ended with it.
+  title: { absolute: `Page not found — ${siteConfig.name}` },
   description:
     'The page you are looking for does not exist. Head back to the downloader or pick a platform-specific tool.',
+  // Required, not redundant. The root layout declares `index, follow` for the
+  // whole site, and without an override here that value is inherited and
+  // rendered alongside the `noindex` Next emits for the not-found page — two
+  // robots tags saying opposite things. Next's own tag is not suppressible, so
+  // the goal is for both to agree.
   robots: { index: false, follow: true },
 }
 
