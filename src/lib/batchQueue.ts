@@ -36,6 +36,9 @@ function messageOf(error: unknown): string {
   return 'Failed to resolve'
 }
 
+/** Distinct error text for an item cancelled before it ever reached `resolveFn`. */
+export const CANCELLED_ERROR = 'Cancelled'
+
 /**
  * A bounded-concurrency queue. Workers pull from a shared cursor rather than
  * the list being chunked, so one slow link does not idle the other lane: as
@@ -43,15 +46,21 @@ function messageOf(error: unknown): string {
  * a batch of [slow, fast, fast, fast] keeps both lanes busy instead of one
  * lane sitting idle behind the slow item.
  *
- * Cancellation note: there is no `signal` parameter here on purpose. The
- * underlying `resolve()` (src/lib/resolve.ts) calls `resolveTikTokInBrowser`
- * first for TikTok links, which runs its own internal 6-second
- * AbortController and takes no external signal (src/lib/tikwmClient.ts:29).
- * That means even a future "cancel this item" feature cannot interrupt the
- * TikTok phase early — the caller would still wait out up to 6 seconds of
- * uncancellable work per in-flight TikTok item. This queue does not pretend
- * otherwise: it has no cancellation API at all rather than one that lies
- * about being immediate.
+ * Cancellation is best-effort and split in two, matched to what is actually
+ * reachable:
+ *  - Items still `'queued'` are stoppable for free: as soon as `signal` fires,
+ *    the shared cursor stops handing out new work, and every item that never
+ *    started is resolved immediately to `status: 'failed'` with
+ *    `error: CANCELLED_ERROR` — distinguishable from a real resolve failure.
+ *  - Items already in flight (up to `BATCH_CONCURRENCY` of them) are NOT cut
+ *    short. `signal` is forwarded into `resolveFn`, so a `resolveFn` built on
+ *    `resolve()` (src/lib/resolve.ts) can abort its `/api/download` fetch —
+ *    but `resolve()` calls `resolveTikTokInBrowser` first for TikTok links,
+ *    which runs its own internal 6-second AbortController and takes no
+ *    external signal at all (src/lib/tikwmClient.ts:29). So an in-flight
+ *    TikTok item can still take up to ~6 seconds to actually stop after
+ *    abort — this function does not claim otherwise. New work stops at once;
+ *    in-flight work stops when `resolveFn` lets it.
  *
  * Per-item failure handling: `resolve()` can both reject (network failure,
  * or a non-JSON/error response body since it has no `response.ok` check) and
@@ -61,23 +70,42 @@ function messageOf(error: unknown): string {
  */
 export async function runBatch(
   urls: string[],
-  resolveFn: (url: string) => Promise<ResolveResult>,
+  resolveFn: (url: string, signal?: AbortSignal) => Promise<ResolveResult>,
   onUpdate: (items: BatchItem[]) => void,
+  signal?: AbortSignal,
 ): Promise<BatchItem[]> {
   const items: BatchItem[] = urls.map((url) => ({ url, status: 'queued' }))
   let cursor = 0
 
   const publish = () => onUpdate(items.map((item) => ({ ...item })))
 
+  /** Resolves every still-queued item to a cancelled failure. Idempotent. */
+  function cancelQueuedItems(): boolean {
+    let changed = false
+    for (const item of items) {
+      if (item.status === 'queued') {
+        item.status = 'failed'
+        item.error = CANCELLED_ERROR
+        changed = true
+      }
+    }
+    return changed
+  }
+
   async function worker(): Promise<void> {
     while (cursor < items.length) {
+      if (signal?.aborted) {
+        if (cancelQueuedItems()) publish()
+        return
+      }
+
       const index = cursor++
       const item = items[index]
       item.status = 'resolving'
       publish()
 
       try {
-        const result = await resolveFn(item.url)
+        const result = await resolveFn(item.url, signal)
         if (result?.success) {
           item.status = 'done'
           item.result = result
