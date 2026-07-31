@@ -37,8 +37,7 @@ import { useIsIOSLike } from '@/lib/clientEnv'
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { buildDownloadFilename } from '@/lib/filename'
 import { friendlyError } from '@/lib/errorMessages'
-import { detectPlatform } from '@/lib/validator'
-import { resolveTikTokInBrowser } from '@/lib/tikwmClient'
+import { resolve } from '@/lib/resolve'
 import {
   addHistory,
   clearHistory,
@@ -498,46 +497,33 @@ export function DownloaderApp() {
   // mode, and the result-card re-pick. `opts` overrides the current format/
   // quality prefs so the re-pick can request a different rendition without
   // waiting for a setState round-trip. Returns the parsed response (or throws
-  // on network failure).
-  const resolveOne = async (
+  // on network failure). The pipeline itself lives in lib/resolve so the batch
+  // queue can run it without importing this component.
+  const resolveOne = (
     target: string,
     opts?: { quality?: 'hd' | 'sd'; format?: 'video' | 'audio' },
-  ) => {
-    const wantQuality = opts?.quality ?? quality
-    const wantFormat = opts?.format ?? format
-
-    // TikTok resolves ~25x faster straight from the browser, and costs us
-    // nothing at all when it works — see lib/tikwmClient. It returns null on
-    // any hiccup, which lands us on the server path below unchanged.
-    if (wantFormat === 'video' && detectPlatform(target) === 'tiktok') {
-      const local = await resolveTikTokInBrowser(target, wantQuality)
-      if (local) return local
-    }
-
-    const response = await fetch('/api/download', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: target,
-        type: state.downloadType,
-        quality: wantQuality,
-        format: wantFormat,
-      }),
+  ) =>
+    resolve(target, {
+      type: state.downloadType,
+      quality: opts?.quality ?? quality,
+      format: opts?.format ?? format,
     })
-    return response.json()
-  }
 
   // Snapshot the thumbnail off the main flow and prepend the link to Recent so
   // the card always shows an image (even after the source URL expires) and the
   // title never reads as a raw link.
   const rememberInHistory = async (
     target: string,
-    meta: {
-      title?: string
-      author?: string
-      platform?: HistoryEntry['platform']
-      thumbnail?: string
-    },
+    // Optional because a resolve response is typed with `metadata?` — every
+    // read below was already `meta?.…`, so undefined has always been handled.
+    meta:
+      | {
+          title?: string
+          author?: string
+          platform?: HistoryEntry['platform']
+          thumbnail?: string
+        }
+      | undefined,
   ) => {
     const snap = await captureThumbnail(meta?.thumbnail || '')
     addHistory({
@@ -577,7 +563,9 @@ export function DownloaderApp() {
           payload: {
             downloadUrl: data.downloadUrl,
             audioUrl: data.audioUrl,
-            metadata: data.metadata,
+            // A successful resolve always carries metadata; the response type
+            // marks it optional because the failure branch has none.
+            metadata: data.metadata as VideoMetadata,
             originalUrl: target,
           },
         })
@@ -633,7 +621,8 @@ export function DownloaderApp() {
           payload: {
             downloadUrl: data.downloadUrl,
             audioUrl: data.audioUrl,
-            metadata: data.metadata,
+            // See reResolve: success implies metadata, the type does not.
+            metadata: data.metadata as VideoMetadata,
             originalUrl: target,
           },
         })
