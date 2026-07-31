@@ -168,7 +168,7 @@ All optional — the app runs without any config.
 | --------------------- | -------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`| Canonical site URL used for metadata, sitemap, and OG images.                    |
 | `COBALT_API_URL`      | Self-hosted [Cobalt](https://github.com/imputnet/cobalt) instance to harden the extraction fallback chain. |
-| `IG_SESSIONID`        | Instagram session cookie — only needed to resolve Instagram stories.             |
+| `IG_SESSIONID`        | Instagram session cookie from a burner account. Sent only for licensed (Pro) requests, to resolve login-gated posts. Public posts resolve without it. |
 
 ## How to use
 
@@ -333,7 +333,7 @@ The downloader tries providers in order and falls back automatically on failure.
 
 - **TikTok videos:** Tikwm → Snaptik → SSSTik → direct scraping
 - **Twitter/X videos:** vxTwitter → public Cobalt instances
-- **Instagram posts/reels:** embed page (`shortcode_media`) → public Cobalt instances → web GraphQL (stories need `IG_SESSIONID`)
+- **Instagram posts/reels:** embed page (`shortcode_media`) → public Cobalt instances → web GraphQL (login-gated posts/stories need `IG_SESSIONID`, sent only for licensed/Pro requests)
 - **YouTube videos/Shorts:** public Cobalt instances → public Piped instances → `youtube-dl-exec` (metadata enriched via YouTube oEmbed)
 - **Facebook videos/reels:** video plugin page (`/plugins/video.php`) → direct page scrape (`browser_native_*_url`) → public Cobalt instances
 - **Vimeo:** dedicated extractor
