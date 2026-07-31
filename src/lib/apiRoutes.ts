@@ -64,8 +64,9 @@ function asDirectTunnel(url: string | undefined): string | undefined {
 }
 
 /**
- * A Pro token only changes resolver ordering — nothing is gated behind it, so
- * an absent, malformed, or expired token degrades silently to the normal free
+ * A Pro token unlocks resolver ordering and (via `authenticated`) sending the
+ * operator's Instagram session cookie — never anything that can error. An
+ * absent, malformed, or expired token degrades silently to the normal free
  * path rather than erroring.
  */
 async function isPriorityRequest(request: Request): Promise<boolean> {
@@ -101,6 +102,11 @@ export async function handleDownload(
 
     const platform = detectPlatform(url)
 
+    // A Pro token only changes resolver ordering and Instagram authentication —
+    // nothing is gated behind it in a way that errors, so an absent or stale
+    // token degrades silently to the normal free path.
+    const priority = await isPriorityRequest(request)
+
     // Serve an identical recent resolve from cache — skips a full extractor
     // round-trip for repeats (double-tap, HD/SD/MP3 re-pick, Recent re-tap, or
     // simply a link several people paste). Keyed on everything that changes the
@@ -111,7 +117,12 @@ export async function handleDownload(
     // the same warm isolate, which is a minority of them; the edge cache is
     // shared across every isolate in the colo and is what makes a popular link
     // essentially free to re-resolve.
-    const cacheKey = `${type}|${preferredQuality}|${mode}|${url}`
+    //
+    // `auth` is part of the key because an authenticated resolve can return a
+    // login-gated post an anonymous one cannot. Ordering (priority) is NOT in
+    // the key — it does not change the payload. See Task 15.
+    const tier = priority ? 'auth' : 'anon'
+    const cacheKey = `${tier}|${type}|${preferredQuality}|${mode}|${url}`
     const cached = getCached(cacheKey)
     if (cached) return cachedResponse(cached, 'HIT')
 
@@ -124,11 +135,12 @@ export async function handleDownload(
       return cachedResponse(edge, 'EDGE')
     }
 
-    // A Pro token only changes resolver ordering — nothing is gated behind it,
-    // so an absent or stale token degrades silently to the normal free path.
-    const priority = await isPriorityRequest(request)
-
-    const downloader = new Downloader({ quality: preferredQuality, mode, priority })
+    const downloader = new Downloader({
+      quality: preferredQuality,
+      mode,
+      priority,
+      authenticated: priority,
+    })
     const videoData = await downloader.downloadVideo(url)
 
     // Accept the result if it yielded any downloadable media: a video stream, a

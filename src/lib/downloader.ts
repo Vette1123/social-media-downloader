@@ -217,14 +217,19 @@ export class Downloader {
   // Pro requests try the operator's own instances first. See cobaltInstances.
   private readonly priority: boolean
 
+  // Pro requests may send the Instagram session cookie. See instagramSessionId.
+  private readonly authenticated: boolean
+
   constructor(opts?: {
     quality?: 'hd' | 'sd'
     mode?: 'auto' | 'audio'
     priority?: boolean
+    authenticated?: boolean
   }) {
     this.videoQuality = opts?.quality === 'sd' ? 'sd' : 'hd'
     this.mode = opts?.mode === 'audio' ? 'audio' : 'auto'
     this.priority = opts?.priority === true
+    this.authenticated = opts?.authenticated === true
   }
 
   private readonly userAgent =
@@ -286,7 +291,16 @@ export class Downloader {
   // posts work without it, and the extractor degrades gracefully when it's
   // absent or expired. Use a burner account: Instagram may flag an account for
   // automated access from datacenter (e.g. Vercel) IPs.
-  private readonly instagramSessionId = process.env.IG_SESSIONID?.trim() || ''
+  //
+  // Sending it is a Pro entitlement. The burner account is a scarce, flaggable
+  // resource — Instagram bans accounts for automated access from datacenter
+  // IPs — so it is spent on paying users rather than on all traffic. A free
+  // request resolves exactly as it does today: public posts succeed, and
+  // login-gated ones fail the same way they already do.
+  private get instagramSessionId(): string {
+    if (!this.authenticated) return ''
+    return process.env.IG_SESSIONID?.trim() || ''
+  }
 
   // Main entry point: auto-detects platform and routes accordingly
   async downloadVideo(url: string): Promise<VideoData> {
