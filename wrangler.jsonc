@@ -59,9 +59,9 @@
   // env in the deploy workflow instead.
   //
   // Secrets (COBALT_API_KEY, IG_SESSIONID, UPSTASH_REDIS_REST_URL,
-  // UPSTASH_REDIS_REST_TOKEN, REGISTRY_KEY, COBALT_API_URL) must NOT be listed
-  // here — this file is committed. Set them with `wrangler secret put <NAME>`
-  // or in the Workers dashboard.
+  // UPSTASH_REDIS_REST_TOKEN, REGISTRY_KEY, COBALT_API_URL, LICENSE_TOKEN_SECRET)
+  // must NOT be listed here — this file is committed. Set them with
+  // `wrangler secret put <NAME>` or in the Workers dashboard.
   "vars": {
     // Signals to the extractors that native-binary paths (yt-dlp/ffmpeg) are
     // unavailable in this runtime, so they short-circuit instead of failing
