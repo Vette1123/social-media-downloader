@@ -64,6 +64,15 @@ function AdUnit() {
 }
 
 /**
+ * Accessible label for the dismiss button, derived from the content type.
+ * When ads are enabled, the user is dismissing an ad; when disabled, they are
+ * dismissing a sponsor offer. Screen-reader text must match the content.
+ */
+function getDismissLabel(adsEnabled: boolean): string {
+  return adsEnabled ? 'Hide this ad' : 'Hide this sponsor card'
+}
+
+/**
  * The one surface on this site that carries commercial content, and therefore
  * the one place the rules live:
  *
@@ -101,7 +110,11 @@ export function PromoSlot({
     [placement, platform, seed],
   )
 
-  if (!offer) return null
+  const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === '1'
+
+  // When ads are disabled, an offer is required to render anything. When ads
+  // are enabled, the slot renders on its own terms without a live offer.
+  if (!offer && !adsEnabled) return null
 
   const suppressed =
     tier === 'pro' || dismissed || (hydrated && isPromoDismissed(nowMs()))
@@ -116,7 +129,6 @@ export function PromoSlot({
   // visitor sees the card appear slightly after paint instead of pre-painted,
   // which is the correct price for "nobody who shouldn't see it, ever does."
   const showContent = hydrated && !suppressed
-  const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === '1'
 
   const cardContent = showContent && (
     <div className='animate-section-in group relative overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'>
@@ -124,27 +136,29 @@ export function PromoSlot({
         {adsEnabled ? (
           <AdUnit />
         ) : (
-          <div className='flex min-w-0 items-start gap-3'>
-            {offer.image && (
-              <img
-                src={offer.image}
-                alt={offer.headline}
-                width={40}
-                height={40}
-                className='h-10 w-10 shrink-0 rounded-lg object-cover'
-              />
-            )}
-            <div className='min-w-0'>
-              <p className='text-sm font-semibold text-white'>{offer.headline}</p>
-              <p className='mt-1 text-xs leading-relaxed text-white/60 md:text-sm'>
-                {offer.body}
-              </p>
+          offer && (
+            <div className='flex min-w-0 items-start gap-3'>
+              {offer.image && (
+                <img
+                  src={offer.image}
+                  alt={offer.headline}
+                  width={40}
+                  height={40}
+                  className='h-10 w-10 shrink-0 rounded-lg object-cover'
+                />
+              )}
+              <div className='min-w-0'>
+                <p className='text-sm font-semibold text-white'>{offer.headline}</p>
+                <p className='mt-1 text-xs leading-relaxed text-white/60 md:text-sm'>
+                  {offer.body}
+                </p>
+              </div>
             </div>
-          </div>
+          )
         )}
         <button
           type='button'
-          aria-label='Hide this ad'
+          aria-label={getDismissLabel(adsEnabled)}
           onClick={() => {
             dismissPromo(nowMs())
             setDismissed(true)
@@ -155,7 +169,7 @@ export function PromoSlot({
         </button>
       </div>
 
-      {!adsEnabled && (
+      {!adsEnabled && offer && (
         <div className='mt-3 flex items-center justify-between gap-3'>
           <a
             href={offerHref(offer, placement, platform)}
