@@ -8,6 +8,7 @@ import {
   scriptContaining,
   textOfFirstWithClass,
 } from './htmlExtract'
+import { extractMediaFromHtml, readCappedText } from './pageScrape'
 import { VideoData, ImageData } from './types'
 import {
   parseVideoId,
@@ -469,6 +470,13 @@ export class Downloader {
     // resolve Vimeo), so try it first.
     if (platform === 'vimeo') methods.push(() => this.tryVimeo(url))
     methods.push(() => this.tryCobaltInstances(url))
+    // Last resort, and the only extractor that runs with nothing configured.
+    // Cobalt's public instance serves a fixed platform list, so before this a
+    // `generic` link had no path at all unless the operator had stood up a
+    // resolver. Reading the page's own og:video/JSON-LD costs one fetch and a
+    // handful of bounded regexes, and it is the honest majority of the long
+    // tail: small hosts, blogs, and news sites publish their media URL.
+    methods.push(() => this.tryPageScrape(url))
 
     for (const method of methods) {
       try {
@@ -483,6 +491,53 @@ export class Downloader {
     throw new Error(
       `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`,
     )
+  }
+
+  /**
+   * Fetch the page and take the media URL it publishes about itself.
+   *
+   * Note this deliberately ignores `htmlScrapingAvailable()`, which is off on
+   * Cloudflare. That gate exists for the TikTok/Facebook strategies, and both
+   * of its reasons are specific to them: multi-megabyte state blobs (this reads
+   * at most MAX_SCAN_BYTES and never unescapes a state tree), and origins that
+   * bot-wall a datacenter IP (TikTok and Facebook do; they also never reach
+   * here, having bespoke extractors). The long-tail hosts on this path serve
+   * their markup to anyone who asks.
+   *
+   * A live stream (m3u8/mpd) is rejected rather than returned: turning one into
+   * a file needs ffmpeg, which no deployment target here has.
+   */
+  private async tryPageScrape(url: string): Promise<VideoData | null> {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': this.userAgent,
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000),
+    })
+    if (!response.ok) return null
+    // A direct media link pasted as-is: no page to scrape, and the URL is
+    // already the answer.
+    const contentType = response.headers.get('content-type') ?? ''
+    if (!contentType.includes('html')) return null
+
+    const html = await readCappedText(response)
+    // Redirects mean the final URL, not the pasted one, is what relative srcs
+    // resolve against.
+    const media = extractMediaFromHtml(html, response.url || url)
+    if (!media || media.isStream) return null
+
+    return {
+      id: parseVideoId(url) || media.mediaUrl.slice(-32),
+      title: media.title,
+      url,
+      thumbnail: media.thumbnail,
+      duration: 0,
+      author: new URL(url).hostname.replace(/^www\./, ''),
+      description: '',
+      downloadUrl: media.mediaUrl,
+    }
   }
 
   /**
