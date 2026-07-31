@@ -1419,9 +1419,12 @@ export function DownloaderApp() {
         )}
       </div>
 
-      {/* Recent — locally-stored links (never leaves the device). Hidden once a
-          result is on screen so it doesn't compete with it. Tap to re-resolve. */}
-      {history.length > 0 && !state.videoMetadata && !state.loading && (
+      {/* Recent — locally-stored links (never leaves the device). Stays on
+          screen alongside a result: it is the way back to an earlier link, and
+          hiding it exactly when you have something to compare against is when
+          it's least useful. Only a resolve in flight hides it, so the list
+          can't be re-tapped mid-request. Tap to re-resolve. */}
+      {history.length > 0 && !state.loading && (
         <div className='animate-section-in mt-4'>
           <div className='mb-2 flex items-center justify-between'>
             <span className='flex items-center gap-1.5 text-xs font-medium text-white/50'>
