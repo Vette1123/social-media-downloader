@@ -2,6 +2,11 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { GlowCard } from '@/components/GlowCard'
 import { ProLicensePanel } from '@/components/ProLicensePanel'
+import {
+  isProCheckoutConfigured,
+  PRO_CHECKOUT_URL,
+  PRO_CTA_LABEL,
+} from '@/config/pro'
 import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
@@ -11,22 +16,10 @@ export const metadata: Metadata = {
   alternates: { canonical: '/pro' },
 }
 
-// The live Lemon Squeezy hosted checkout — the product's own `buy_now_url`,
-// which is the only URL shape that resolves (the legacy `/buy/<variant-id>`
-// form 404s). Verified by `pnpm ls:finish`, which re-checks the price, the
-// license settings and that this URL is reachable before it will write here.
-// If it is ever reset to a TEMPLATE_ value, the buy button goes visibly
-// disabled rather than linking somewhere broken.
-const CHECKOUT_URL = 'https://gadolabs.lemonsqueezy.com/checkout/buy/00f77321-26bd-411c-9924-81c8256b819b'
-
-function isCheckoutConfigured(url: string): boolean {
-  return url.startsWith('https://')
-}
-
 const features = [
   {
     title: 'Priority resolve',
-    body: 'Your links go straight to the fastest resolver instead of walking the fallback chain. Free downloads are not throttled or queued — there is no rate limiter on this site — this only changes which resolver a Pro link tries first.',
+    body: 'Your links go straight to the fastest resolver instead of walking the fallback chain. Free downloads are not throttled or queued (there is no rate limiter on this site); this only changes which resolver a Pro link tries first.',
   },
   {
     title: 'Batch, up to 20 links',
@@ -34,16 +27,16 @@ const features = [
   },
   {
     title: 'No sponsor card',
-    body: 'Removes the one sponsor card that can appear after a download finishes, site-wide — the only paid placement on this site.',
+    body: 'Removes the one sponsor card that can appear after a download finishes, site-wide. It is the only paid placement here.',
   },
   {
     title: 'Login-gated Instagram posts',
-    body: 'Resolves login-gated Instagram posts when a working session cookie is configured on our end. Public Instagram content is free for everyone and always has been — this only reaches the private, login-gated posts free requests already could not, and only when that cookie is set up.',
+    body: 'Resolves login-gated Instagram posts when a working session cookie is configured on our end. Public Instagram content is free for everyone and always has been. This only reaches the private, login-gated posts free requests already could not, and only when that cookie is set up.',
   },
 ] as const
 
 export default function Pro() {
-  const checkoutReady = isCheckoutConfigured(CHECKOUT_URL)
+  const checkoutReady = isProCheckoutConfigured()
 
   return (
     <div className='app-bg relative min-h-[100dvh] overflow-clip'>
@@ -56,7 +49,7 @@ export default function Pro() {
             One key. <span className='text-grad'>Lifetime.</span>
           </h1>
           <p className='mx-auto mt-3 max-w-xl text-sm text-white/70 md:text-base'>
-            $9, one time. No subscription, no renewal, no account — the
+            $9, one time. No subscription, no renewal, no account. The
             downloader stays exactly as free as it is today either way.
           </p>
         </div>
@@ -72,10 +65,10 @@ export default function Pro() {
             </p>
             {checkoutReady ? (
               <a
-                href={CHECKOUT_URL}
+                href={PRO_CHECKOUT_URL}
                 className='btn-grad mt-2 inline-flex rounded-xl px-6 py-3 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 active:scale-95'
               >
-                Buy Pro — $9
+                {PRO_CTA_LABEL}
               </a>
             ) : (
               <button
@@ -102,7 +95,7 @@ export default function Pro() {
           </ul>
 
           <p className='mt-6 text-center text-sm text-white/60'>
-            Everything that is free today stays free. Pro only adds — nothing
+            Everything that is free today stays free. Pro only adds, and nothing
             you can already do gets taken away or put behind a paywall.
           </p>
 
@@ -113,7 +106,7 @@ export default function Pro() {
 
         <p className='mt-6 text-center text-xs text-white/40'>
           Payments are processed by Lemon Squeezy, who act as merchant of
-          record. Refundable within 14 days — see the{' '}
+          record. Refundable within 14 days. See the{' '}
           <Link href='/terms' className='text-cyan-300 hover:text-cyan-200'>
             Terms
           </Link>
@@ -125,7 +118,7 @@ export default function Pro() {
         </p>
 
         <Link href='/' className='mt-10 inline-block text-sm text-cyan-300 hover:text-cyan-200'>
-          ← Back to the downloader
+          Back to the downloader
         </Link>
       </div>
     </div>

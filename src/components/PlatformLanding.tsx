@@ -18,6 +18,7 @@ import {
   VimeoIcon,
   YouTubeIcon,
 } from '@/components/icons'
+import { ProUpsell } from '@/components/ProUpsell'
 import { PromoSlot } from '@/components/PromoSlot'
 import { RafiqLink } from '@/components/RafiqLink'
 import { RafiqPromoCard } from '@/components/RafiqPromoCard'
@@ -343,6 +344,14 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             sub='One tool per platform — pick whichever you need.'
           />
           <CrossLinkNav activeSlug={platform.slug} />
+        </section>
+
+        {/* Compact, because these pages arrive from search with one link in
+            mind. The full split belongs on the home page, where someone is
+            already browsing; here it is a single line that names the one thing
+            worth paying for and gets out of the way. */}
+        <section className='mt-16 sm:mt-24'>
+          <ProUpsell variant='compact' />
         </section>
 
         <section className='mt-16 sm:mt-24'>
