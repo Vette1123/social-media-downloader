@@ -85,11 +85,13 @@ if (!a.has_license_keys) {
 if (a.license_activation_limit !== EXPECTED_ACTIVATION_LIMIT) {
   problems.push(
     `activation limit is ${a.license_activation_limit}, ` +
-      `but /pro and ProLicensePanel both say "three activation slots"`,
+      `but /pro and ProLicensePanel both say "five activation slots"`,
   )
 }
 if (a.is_license_limit_unlimited) {
-  problems.push('activation limit is set to unlimited — /pro claims a 3-device cap')
+  problems.push(
+    `activation limit is set to unlimited — /pro claims a ${EXPECTED_ACTIVATION_LIMIT}-device cap`,
+  )
 }
 if (!a.is_license_length_unlimited) {
   notes.push(
@@ -98,8 +100,24 @@ if (!a.is_license_length_unlimited) {
   )
 }
 
-const checkoutUrl = `https://${storeSlug}.lemonsqueezy.com/buy/${variant.id}`
+// `buy_now_url` is what the dashboard's own Share dialog hands out, and the
+// only form that resolves. The legacy `/buy/<variant-id>` shape this used to
+// construct 404s — it predates the UUID checkout URLs — so the constructed one
+// survives strictly as a fallback for a payload without the field.
+const checkoutUrl =
+  product.attributes.buy_now_url ||
+  `https://${storeSlug}.lemonsqueezy.com/buy/${variant.id}`
 console.log(`checkout: ${checkoutUrl}`)
+if (!product.attributes.buy_now_url) {
+  notes.push('product had no buy_now_url; fell back to a constructed checkout URL')
+}
+
+// A single-price product reports its default variant as `pending` even once the
+// product itself is published, so this is a note, not a blocker — the HEAD
+// below is what actually decides whether the checkout is reachable.
+if (a.status !== 'published') {
+  notes.push(`variant status is "${a.status}" (normal for a single-price product)`)
+}
 
 const head = await fetch(checkoutUrl, { method: 'HEAD', redirect: 'manual' })
 console.log(`checkout HEAD -> ${head.status}`)

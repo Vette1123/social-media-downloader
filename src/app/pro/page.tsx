@@ -11,10 +11,13 @@ export const metadata: Metadata = {
   alternates: { canonical: '/pro' },
 }
 
-// TEMPLATE — the Lemon Squeezy store does not exist yet. Replace this with
-// the real hosted-checkout URL before launch. Until then the buy button below
-// stays visibly disabled rather than link somewhere broken or fake-looking.
-const CHECKOUT_URL = 'TEMPLATE_LEMONSQUEEZY_CHECKOUT_URL'
+// The live Lemon Squeezy hosted checkout — the product's own `buy_now_url`,
+// which is the only URL shape that resolves (the legacy `/buy/<variant-id>`
+// form 404s). Verified by `pnpm ls:finish`, which re-checks the price, the
+// license settings and that this URL is reachable before it will write here.
+// If it is ever reset to a TEMPLATE_ value, the buy button goes visibly
+// disabled rather than linking somewhere broken.
+const CHECKOUT_URL = 'https://gadolabs.lemonsqueezy.com/checkout/buy/00f77321-26bd-411c-9924-81c8256b819b'
 
 function isCheckoutConfigured(url: string): boolean {
   return url.startsWith('https://')
