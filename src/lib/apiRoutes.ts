@@ -23,6 +23,7 @@ import { readEdgeCache, writeEdgeCache, type WaitUntilContext } from './edgeCach
 import { slugify } from './filename'
 import { nativeMediaAvailable, nativeMediaUnavailable } from './nativeMedia'
 import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
+import { hashKey, signToken, TOKEN_TTL_MS } from './licenseToken'
 
 type Handler = (
   request: Request,
@@ -280,6 +281,86 @@ function nativeMediaRoute(feature: string): Handler {
   }
 }
 
+const LEMON_API = 'https://api.lemonsqueezy.com/v1/licenses'
+
+/**
+ * Exchanges a Lemon Squeezy license key for a short-lived signed token.
+ *
+ * First call from a device activates (consuming one of the key's activation
+ * slots, capped at 3 in the Lemon Squeezy product settings); later calls
+ * validate the existing instance. Either way the answer is a token the resolve
+ * handler can check locally, so the hot path never calls Lemon Squeezy.
+ *
+ * The Lemon Squeezy round trip is network I/O, which costs no CPU on Workers —
+ * only the JSON parse is billed. There is deliberately no server-side cache:
+ * the client holds its token for 24 hours, so this runs about once per user per
+ * day.
+ */
+export async function handleLicense(request: Request): Promise<Response> {
+  const secret = process.env.LICENSE_TOKEN_SECRET?.trim()
+  if (!secret) {
+    return Response.json(
+      { success: false, error: 'Licensing is not configured on this deployment.' },
+      { status: 503 },
+    )
+  }
+
+  try {
+    const { licenseKey, instanceId } = await request.json()
+    if (!licenseKey || typeof licenseKey !== 'string') {
+      return Response.json(
+        { success: false, error: 'License key is required' },
+        { status: 400 },
+      )
+    }
+
+    const activating = !instanceId
+    const endpoint = activating ? `${LEMON_API}/activate` : `${LEMON_API}/validate`
+    const form = new URLSearchParams({ license_key: licenseKey })
+    if (activating) {
+      form.set('instance_name', 'socialdownloader-web')
+    } else {
+      form.set('instance_id', String(instanceId))
+    }
+
+    const upstream = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: form,
+    })
+    const data = await upstream.json()
+
+    const ok = data?.activated === true || data?.valid === true
+    if (!ok) {
+      return Response.json(
+        { success: false, error: data?.error || 'That license key was not accepted.' },
+        { status: 400 },
+      )
+    }
+
+    const expiresAt = Date.now() + TOKEN_TTL_MS
+    const token = await signToken(
+      { k: await hashKey(licenseKey), exp: expiresAt },
+      secret,
+    )
+
+    return Response.json({
+      success: true,
+      token,
+      instanceId: data?.instance?.id ?? instanceId ?? '',
+      expiresAt,
+    })
+  } catch {
+    return Response.json(
+      { success: false, error: 'Could not reach the license server. Try again.' },
+      { status: 502 },
+    )
+  }
+}
+
 /**
  * Pathname -> { method, handler }, consumed by cloudflare/worker.js.
  *
@@ -290,6 +371,7 @@ function nativeMediaRoute(feature: string): Handler {
 export const API_ROUTES: Record<string, { method: string; handler: Handler }> = {
   '/api/download': { method: 'POST', handler: handleDownload },
   '/api/images': { method: 'POST', handler: handleImages },
+  '/api/license': { method: 'POST', handler: handleLicense },
   '/api/slideshow': { method: 'POST', handler: nativeMediaRoute('Slideshow rendering') },
   '/api/tiktok': { method: 'GET', handler: nativeMediaRoute('Direct TikTok download') },
   '/api/youtube': { method: 'GET', handler: nativeMediaRoute('Direct YouTube download') },
