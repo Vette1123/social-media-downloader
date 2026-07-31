@@ -18,11 +18,32 @@ import {
   VimeoIcon,
   YouTubeIcon,
 } from '@/components/icons'
+import { PromoSlot } from '@/components/PromoSlot'
 import { RafiqLink } from '@/components/RafiqLink'
 import { RafiqPromoCard } from '@/components/RafiqPromoCard'
 import { siteConfig } from '@/config/site'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
 import { platforms } from '@/lib/platforms'
+
+/**
+ * `Platform.slug` is the URL slug ('tiktok-downloader'), but offers.ts and
+ * selectOffer() key platform targeting on detectPlatform()'s output
+ * ('tiktok') — see src/lib/validator.ts. This is the one place that maps
+ * between the two so PromoSlot never has to know about landing-page routing.
+ */
+const OFFER_PLATFORM_BY_SLUG: Record<PlatformSlug, string> = {
+  'tiktok-downloader': 'tiktok',
+  'twitter-video-downloader': 'twitter',
+  'instagram-downloader': 'instagram',
+  'youtube-downloader': 'youtube',
+  'facebook-downloader': 'facebook',
+  'pinterest-downloader': 'pinterest',
+  'reddit-video-downloader': 'reddit',
+  'threads-video-downloader': 'threads',
+  'snapchat-downloader': 'snapchat',
+  'twitch-clip-downloader': 'twitch',
+  'vimeo-downloader': 'vimeo',
+}
 
 const devLinks = [
   {
@@ -317,6 +338,13 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             sub='One tool per platform — pick whichever you need.'
           />
           <CrossLinkNav activeSlug={platform.slug} />
+        </section>
+
+        <section className='mt-16 sm:mt-24'>
+          <PromoSlot
+            placement='in-content'
+            platform={OFFER_PLATFORM_BY_SLUG[platform.slug]}
+          />
         </section>
 
         {/* SEO PROSE + FAQ */}

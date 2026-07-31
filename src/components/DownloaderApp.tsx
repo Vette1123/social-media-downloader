@@ -31,6 +31,7 @@ import {
   YouTubeIcon,
 } from '@/components/icons'
 import { InstallPrompt } from '@/components/InstallPrompt'
+import { PromoSlot } from '@/components/PromoSlot'
 import { useIsIOSLike } from '@/lib/clientEnv'
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { buildDownloadFilename } from '@/lib/filename'
@@ -2158,6 +2159,12 @@ export function DownloaderApp() {
             </div>
           )}
         </div>
+
+      {/* Sponsor card — only after a result exists, never while resolving or
+          downloading, and always below the download controls. */}
+      {state.videoMetadata && !state.loading && (
+        <PromoSlot placement='post-result' platform={state.videoMetadata.platform} />
+      )}
 
       {lightboxIndex !== null && state.videoMetadata?.images && (
         <ImageLightbox
