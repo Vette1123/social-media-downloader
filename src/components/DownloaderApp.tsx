@@ -31,6 +31,7 @@ import {
   TwitterXIcon,
   YouTubeIcon,
 } from '@/components/icons'
+import { BatchPanel } from '@/components/BatchPanel'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { PromoSlot } from '@/components/PromoSlot'
 import { useIsIOSLike } from '@/lib/clientEnv'
@@ -1428,6 +1429,10 @@ export function DownloaderApp() {
           </div>
         )}
       </div>
+
+      {/* Pro-only batch queue — self-hides for free users, so no conditional
+          is needed at the call site. */}
+      <BatchPanel />
 
       {/* Recent — locally-stored links (never leaves the device). Stays on
           screen alongside a result: it is the way back to an earlier link, and
