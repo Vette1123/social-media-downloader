@@ -3,6 +3,7 @@ import { DownloaderApp } from '@/components/DownloaderApp'
 import { GlowCard } from '@/components/GlowCard'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { LazyFAQ } from '@/components/LazyFAQ'
+import { PromoSlot } from '@/components/PromoSlot'
 import {
   FacebookIcon,
   GitHubIcon,
@@ -391,6 +392,14 @@ export default function Home() {
                 )
               })}
             </nav>
+          </section>
+
+          {/* The same below-the-fold slot the platform pages carry. No platform
+              prop here: the home page serves every platform, so only offers
+              marked `platforms: 'all'` are eligible. Sits after the grid and
+              before the prose, mirroring PlatformLanding exactly. */}
+          <section className='mt-16 sm:mt-24'>
+            <PromoSlot placement='in-content' />
           </section>
 
           {/* ---------------------------------------------------------------
