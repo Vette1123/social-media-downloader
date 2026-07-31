@@ -429,6 +429,9 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           <Link href='/terms' className='transition-colors hover:text-white/80'>
             Terms
           </Link>
+          <Link href='/pro' className='transition-colors hover:text-white/80'>
+            Pro
+          </Link>
           <a
             href='https://buymeacoffee.com/vetteotp'
             target='_blank'
