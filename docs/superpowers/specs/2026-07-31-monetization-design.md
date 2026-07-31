@@ -118,9 +118,16 @@ requires both pages to exist before approval. A one-line disclosure also sits
 inside the sponsor card itself.
 
 **Analytics** — Cloudflare Web Analytics. Free, cookieless, requires no consent
-banner, and does not contradict the privacy positioning. Without click data on
-the slot, the offer catalogue is guesswork. Track slot impressions, slot clicks,
-and `/pro` page views.
+banner, and does not contradict the privacy positioning.
+
+It reports page views only; it has no custom-event API. Rather than build an
+event pipeline — which would mean either a Worker request per click against the
+100k/day cap, or a third-party tracker that breaks the privacy claim —
+attribution rides on infrastructure that already exists: each offer URL carries a
+`subid` parameter encoding placement and platform, read back in the affiliate
+network's own dashboard, and Pro conversions are read from the Lemon Squeezy
+dashboard. Nothing about a click is reported to us, which is what keeps the
+privacy claim literally true.
 
 **Copy correction** — the README and site currently claim "no ads, no tracking".
 That becomes false on ship. Replacement wording: *"No popups, no redirects, no
@@ -166,16 +173,18 @@ to 3 devices, which supplies device capping for free.
 
 1. Client posts the key. Worker calls the Lemon Squeezy validate/activate
    endpoint. Network wait costs no CPU on Workers; only the JSON parse does.
-2. The result is cached in Upstash Redis with a 24-hour TTL. Upstash is already
-   wired in `src/lib/downloader.ts:134` for the resolver-URL registry, so this
-   introduces no new dependency.
-3. On success the Worker returns an HMAC-SHA256 token over `{keyHash, exp}`,
-   signed with an existing Worker secret via WebCrypto. Sub-millisecond to
-   verify.
-4. The client stores the token and sends it as `X-Pro-Token` on resolve requests.
-   The Worker verifies the signature locally — no Redis round trip, no Lemon
-   Squeezy call, well inside the 10 ms CPU budget.
-5. The client revalidates every 24 hours.
+2. On success the Worker returns an HMAC-SHA256 token over `{keyHash, exp}`,
+   signed with the `LICENSE_TOKEN_SECRET` Worker secret via WebCrypto.
+   Sub-millisecond to verify.
+3. The client stores the token and sends it as `X-Pro-Token` on resolve requests.
+   The Worker verifies the signature locally — no Lemon Squeezy call on the hot
+   path, well inside the 10 ms CPU budget.
+4. The client revalidates every 24 hours.
+
+There is deliberately **no server-side cache** of validations. An earlier draft
+put them in Upstash with a 24-hour TTL; that is redundant, because the client
+already holds its token for 24 hours, so a validation runs roughly once per user
+per day and the upstream call costs I/O rather than CPU.
 
 Ad-free is enforced client-side and is trivially bypassable. That is acceptable:
 the honest buyer is the customer, and the server-side entitlement (priority
