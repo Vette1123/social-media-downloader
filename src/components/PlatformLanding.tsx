@@ -392,6 +392,15 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           <span aria-hidden className='hidden sm:inline text-white/20'>
             •
           </span>
+          <Link href='/privacy' className='transition-colors hover:text-white/80'>
+            Privacy
+          </Link>
+          <Link href='/terms' className='transition-colors hover:text-white/80'>
+            Terms
+          </Link>
+          <span aria-hidden className='hidden sm:inline text-white/20'>
+            •
+          </span>
           <span className='inline-flex items-center gap-1.5'>
             <RafiqLink />
             <span className='text-white/40'>— an app made by us</span>

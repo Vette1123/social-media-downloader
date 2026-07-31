@@ -486,6 +486,15 @@ export default function Home() {
             <span aria-hidden className='hidden text-white/20 sm:inline'>
               ·
             </span>
+            <Link href='/privacy' className='transition-colors hover:text-white/80'>
+              Privacy
+            </Link>
+            <Link href='/terms' className='transition-colors hover:text-white/80'>
+              Terms
+            </Link>
+            <span aria-hidden className='hidden text-white/20 sm:inline'>
+              ·
+            </span>
             <span className='inline-flex items-center gap-1.5'>
               <RafiqLink />
               <span className='text-white/40'>— an app made by us</span>
