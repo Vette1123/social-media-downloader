@@ -7,6 +7,7 @@ import {
   PROMO_DISMISS_MS,
   selectOffer,
 } from './promo'
+import { OFFERS } from '../config/offers'
 import type { Offer } from '@/config/offers'
 
 /** Minimal in-memory Storage, enough to stand in for window.localStorage in node. */
@@ -222,5 +223,30 @@ describe('offerHref', () => {
       'tiktok',
     )
     expect(href).toBe('https://partner.com/deal?a=1&subid=post-result_tiktok#pricing')
+  })
+})
+
+/**
+ * The live catalogue, not a fixture. An offer only renders once its weight is
+ * raised, and the weight and the href are edited at different moments — so the
+ * failure this guards is real: a weight bumped while the href is still a
+ * placeholder ships a dead link to every visitor who just downloaded something.
+ */
+describe('the shipped offer catalogue', () => {
+  it('never gives a placeholder href a non-zero weight', () => {
+    const live = OFFERS.filter((o) => o.weight > 0)
+    const unfinished = live.filter((o) => o.href.startsWith('TEMPLATE_'))
+    expect(unfinished.map((o) => o.id)).toEqual([])
+  })
+
+  it('only ships https destinations for offers that can render', () => {
+    const live = OFFERS.filter((o) => o.weight > 0)
+    const insecure = live.filter((o) => !o.href.startsWith('https://'))
+    expect(insecure.map((o) => o.id)).toEqual([])
+  })
+
+  it('keeps offer ids unique, since the id is the React key and the subid', () => {
+    const ids = OFFERS.map((o) => o.id)
+    expect(ids).toEqual([...new Set(ids)])
   })
 })
