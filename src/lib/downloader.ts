@@ -8,7 +8,14 @@ import {
   scriptContaining,
   textOfFirstWithClass,
 } from './htmlExtract'
-import { extractMediaFromHtml, readCappedText } from './pageScrape'
+import {
+  extractMediaFromHtml,
+  filenameTitle,
+  isDirectMediaType,
+  looksLikeBotWall,
+  OriginBlockedError,
+  readCappedText,
+} from './pageScrape'
 import { VideoData, ImageData } from './types'
 import {
   parseVideoId,
@@ -485,6 +492,9 @@ export class Downloader {
           return result
         }
       } catch (e) {
+        // The one failure worth surfacing verbatim: it is a definite answer
+        // about a specific site, not another extractor declining to guess.
+        if (e instanceof OriginBlockedError) throw e
         console.warn(`${platform} method failed, trying next...`, e)
       }
     }
@@ -517,16 +527,40 @@ export class Downloader {
       signal: AbortSignal.timeout(10000),
     })
     if (!response.ok) return null
-    // A direct media link pasted as-is: no page to scrape, and the URL is
-    // already the answer.
     const contentType = response.headers.get('content-type') ?? ''
+    const finalUrl = response.url || url
+
+    // A direct media link pasted as-is: no page to scrape, and the URL is
+    // already the answer. Nothing reads the body, so cancel it rather than
+    // leaving a video streaming into a Worker that will never look at it.
+    if (isDirectMediaType(contentType)) {
+      await response.body?.cancel().catch(() => {})
+      return {
+        id: parseVideoId(url) || finalUrl.slice(-32),
+        title: filenameTitle(finalUrl),
+        url,
+        thumbnail: '',
+        duration: 0,
+        author: new URL(url).hostname.replace(/^www\./, ''),
+        description: '',
+        downloadUrl: finalUrl,
+      }
+    }
     if (!contentType.includes('html')) return null
 
     const html = await readCappedText(response)
     // Redirects mean the final URL, not the pasted one, is what relative srcs
     // resolve against.
-    const media = extractMediaFromHtml(html, response.url || url)
-    if (!media || media.isStream) return null
+    const media = extractMediaFromHtml(html, finalUrl)
+    if (!media || media.isStream) {
+      // Distinguish "this page has no video we can read" from "this site did
+      // not show us the page at all", which are the same failure to the code
+      // above and completely different news to the user.
+      if (!media && looksLikeBotWall(html)) {
+        throw new OriginBlockedError(new URL(url).hostname.replace(/^www\./, ''))
+      }
+      return null
+    }
 
     return {
       id: parseVideoId(url) || media.mediaUrl.slice(-32),

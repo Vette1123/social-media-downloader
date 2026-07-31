@@ -75,6 +75,69 @@ const VIDEO_EXT = /\.(mp4|webm|mov|m4v)(\?|#|$)/i
 /** Manifests: playable, but not saveable without ffmpeg. */
 const STREAM_EXT = /\.(m3u8|mpd)(\?|#|$)/i
 
+/**
+ * Content types that are the answer rather than a page containing it.
+ *
+ * A pasted `…/clip.mp4` has no markup to read, so the scraper found nothing and
+ * the link failed — while the URL in hand was already exactly what the user
+ * asked for.
+ */
+const DIRECT_MEDIA_TYPE = /^\s*(video|audio)\//i
+
+export function isDirectMediaType(contentType: string): boolean {
+  return DIRECT_MEDIA_TYPE.test(contentType)
+}
+
+/**
+ * A pasted link that *is* the file has no title but its own filename.
+ */
+export function filenameTitle(url: string): string {
+  try {
+    const { pathname } = new URL(url)
+    const name = decodeURIComponent(pathname.slice(pathname.lastIndexOf('/') + 1))
+    return name.replace(/\.[a-z0-9]{2,4}$/i, '').trim() || 'Video'
+  } catch {
+    return 'Video'
+  }
+}
+
+/**
+ * Below this, a 200 OK carrying HTML is not the page that was asked for.
+ *
+ * Measured against the live failure this was written for: eporner answers a
+ * Cloudflare datacenter IP with 369 bytes — a `<title>.</title>` and one
+ * obfuscated script that bounces the caller to the homepage — while the same
+ * URL fetched from a residential IP returns 88 KB of real markup. Pornhub
+ * behaves the same way. No header changes that; the block is on the IP, and a
+ * Worker has no other IP to offer.
+ *
+ * Detection is by size rather than by matching the stub's script, because the
+ * script is deliberately obfuscated (`top["loc"+"ation"]`, so the string
+ * "location" never appears) and every site's wall is written differently. Size
+ * is the property they share: a real video page is tens of kilobytes. This is
+ * only ever consulted after extraction has already found nothing, so a genuinely
+ * tiny page that *does* publish media has returned long before.
+ */
+export const MIN_REAL_PAGE_BYTES = 2_048
+
+export function looksLikeBotWall(html: string): boolean {
+  return html.trim().length < MIN_REAL_PAGE_BYTES
+}
+
+/**
+ * Thrown when the origin served a wall instead of its page, so the caller can
+ * say that plainly rather than offering the generic list of maybes. The user can
+ * act on "this site blocks us"; they cannot act on "possibly region-locked".
+ */
+export class OriginBlockedError extends Error {
+  constructor(hostname: string) {
+    super(
+      `${hostname} blocks automated requests from our servers, so this link cannot be resolved here. Sites that do this generally require a desktop app such as yt-dlp.`,
+    )
+    this.name = 'OriginBlockedError'
+  }
+}
+
 export interface ScrapedMedia {
   mediaUrl: string
   /** m3u8/mpd need a player, not a download — the caller must not offer "save". */

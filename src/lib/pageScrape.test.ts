@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   extractMediaFromHtml,
   FAST_SCAN_BYTES,
+  filenameTitle,
+  isDirectMediaType,
+  looksLikeBotWall,
   MAX_SCAN_BYTES,
+  MIN_REAL_PAGE_BYTES,
   readCappedText,
   scrapeTitle,
 } from './pageScrape'
@@ -265,5 +269,58 @@ describe('scrapeTitle', () => {
 
   it('never returns an empty string, so the result card always has a label', () => {
     expect(scrapeTitle('<html></html>')).toBe('Video')
+  })
+})
+
+describe('a link that is already the file', () => {
+  it('recognises video and audio content types', () => {
+    expect(isDirectMediaType('video/mp4')).toBe(true)
+    expect(isDirectMediaType('audio/mpeg')).toBe(true)
+    expect(isDirectMediaType('video/webm; codecs="vp9"')).toBe(true)
+  })
+
+  it('does not treat a page as its own media', () => {
+    expect(isDirectMediaType('text/html; charset=UTF-8')).toBe(false)
+    expect(isDirectMediaType('image/jpeg')).toBe(false)
+    expect(isDirectMediaType('')).toBe(false)
+  })
+
+  it('titles a direct link from its filename', () => {
+    expect(filenameTitle('https://cdn.example.com/clips/mov_bbb.mp4')).toBe('mov_bbb')
+  })
+
+  it('decodes a percent-encoded filename', () => {
+    expect(filenameTitle('https://x.test/a/My%20Holiday.mp4')).toBe('My Holiday')
+  })
+
+  it('never returns an empty title for a trailing-slash or unparseable URL', () => {
+    expect(filenameTitle('https://example.com/')).toBe('Video')
+    expect(filenameTitle('not a url')).toBe('Video')
+  })
+})
+
+describe('telling a bot wall apart from a page with no video', () => {
+  // The exact body eporner served a Cloudflare datacenter IP while the same URL
+  // returned 88 KB of real markup from a residential one.
+  const WALL = `<!doctype html><html><head><meta charset="utf-8"><title>.</title><script>(function(){var k=23,a=[127,99,99,103,100,45,56,56,96,96,96,57,114,103,120,101,121,114,101,57,116,120,122,56],u="",i=0;for(;i<a.length;i++){u+=String.fromCharCode(a[i]^k);}try{top["loc"+"ation"]["rep"+"lace"](u);}catch(e){window["loc"+"ation"]["href"]=u;}})();</script></head><body></body></html>`
+
+  it('flags the real measured stub', () => {
+    expect(looksLikeBotWall(WALL)).toBe(true)
+  })
+
+  it('finds no media in it, so the wall check is what the caller reaches', () => {
+    expect(extractMediaFromHtml(WALL, BASE)).toBeNull()
+  })
+
+  it('does not flag a real page that simply has no video', () => {
+    const article = `<html><head><title>An article</title></head><body>${'word '.repeat(
+      MIN_REAL_PAGE_BYTES,
+    )}</body></html>`
+    expect(looksLikeBotWall(article)).toBe(false)
+  })
+
+  it('flags an empty or whitespace-only body', () => {
+    expect(looksLikeBotWall('')).toBe(true)
+    expect(looksLikeBotWall('   \n  ')).toBe(true)
   })
 })
