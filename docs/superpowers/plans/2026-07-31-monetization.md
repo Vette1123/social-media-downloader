@@ -1970,6 +1970,147 @@ git commit -m "feat(promo): scaffold the flag-gated display-ad slot"
 
 ---
 
+### Task 18: Authenticated Instagram resolve for Pro
+
+**Files:**
+- Modify: `src/lib/downloader.ts:265-271`, `src/lib/apiRoutes.ts`, `README.md`, `src/app/pro/page.tsx`
+
+**Interfaces:**
+- Consumes: `isPriorityRequest` from Task 15's `src/lib/apiRoutes.ts`; the `Downloader` constructor options object from Task 15.
+- Produces: `Downloader` accepts `authenticated?: boolean`.
+
+**Why this is additive and not a paywall.** `IG_SESSIONID` is not set on the live deployment, so login-gated Instagram posts resolve for nobody today. Public reels, photos and carousels resolve without it and **must continue to, unchanged, for free users**. This task adds a capability that does not currently exist; it removes nothing. If the secret were already set in production this task would be a paywall and would not be in the plan.
+
+- [ ] **Step 1: Gate the session cookie on the tier**
+
+`src/lib/downloader.ts:271` currently reads the cookie unconditionally:
+
+```ts
+  private readonly instagramSessionId = process.env.IG_SESSIONID?.trim() || ''
+```
+
+Replace the field with a getter that returns it only for an authenticated request, and extend the existing comment block above it:
+
+```ts
+  // ... existing comment block, plus:
+  //
+  // Sending it is a Pro entitlement. The burner account is a scarce, flaggable
+  // resource — Instagram bans accounts for automated access from datacenter
+  // IPs — so it is spent on paying users rather than on all traffic. A free
+  // request resolves exactly as it does today: public posts succeed, and
+  // login-gated ones fail the same way they already do.
+  private get instagramSessionId(): string {
+    if (!this.authenticated) return ''
+    return process.env.IG_SESSIONID?.trim() || ''
+  }
+```
+
+Add the constructor option beside Task 15's `priority`:
+
+```ts
+  constructor(opts?: {
+    quality?: 'hd' | 'sd'
+    mode?: 'auto' | 'audio'
+    priority?: boolean
+    authenticated?: boolean
+  }) {
+    this.videoQuality = opts?.quality === 'sd' ? 'sd' : 'hd'
+    this.mode = opts?.mode === 'audio' ? 'audio' : 'auto'
+    this.priority = opts?.priority === true
+    this.authenticated = opts?.authenticated === true
+  }
+```
+
+and the field:
+
+```ts
+  // Pro requests may send the Instagram session cookie. See instagramSessionId.
+  private readonly authenticated: boolean
+```
+
+Confirm nothing else assigns to the old field:
+
+```bash
+grep -n "instagramSessionId" src/lib/downloader.ts
+```
+
+Every remaining read must be a read, not an assignment — a getter cannot be assigned to, so a stale assignment is a build error rather than a silent bug.
+
+- [ ] **Step 2: Pass the tier through, and split the cache key**
+
+In `src/lib/apiRoutes.ts`, `handleDownload` already computes `const priority = await isPriorityRequest(request)` (Task 15). Reuse that same boolean — a valid Pro token grants both entitlements, so there is no second token check:
+
+```ts
+    const downloader = new Downloader({
+      quality: preferredQuality,
+      mode,
+      priority,
+      authenticated: priority,
+    })
+```
+
+**The cache key must now include the tier.** Task 15 states the opposite for `priority`, and that remains correct for `priority` alone — resolver ordering does not change the payload. Authentication does: an authenticated resolve can return a login-gated post that an anonymous resolve cannot. Sharing one key across both tiers is a correctness and privacy defect in both directions — a free miss would be served to a Pro user, and a Pro user's login-gated result would be served to free users who are not entitled to it.
+
+Change the key at `src/lib/apiRoutes.ts:101`:
+
+```ts
+    // `auth` is part of the key because an authenticated resolve can return a
+    // login-gated post an anonymous one cannot. Ordering (priority) is NOT in
+    // the key — it does not change the payload. See Task 15.
+    const tier = priority ? 'auth' : 'anon'
+    const cacheKey = `${tier}|${type}|${preferredQuality}|${mode}|${url}`
+```
+
+This halves the hit rate only for Instagram-authenticated traffic, which is a small minority of requests, and correctness outranks hit rate here.
+
+- [ ] **Step 3: Verify the free path is byte-identical**
+
+With `IG_SESSIONID` unset — the current production state — an authenticated and an anonymous resolve must behave identically, because the getter returns `''` either way.
+
+Run `pnpm dev`, then:
+
+```bash
+curl -s -X POST http://localhost:3000/api/download \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://www.instagram.com/reel/C2DfBGSJKp1/"}' | head -c 300
+```
+
+Expected: a normal successful resolve for a public reel.
+
+Then set `IG_SESSIONID` to a deliberately invalid value in `.env.local` and repeat. Expected: the same successful resolve for a public reel — the extractor must degrade gracefully on a bad or expired cookie rather than erroring, which is the behaviour the existing comment at `src/lib/downloader.ts:268` already claims. If it does not degrade gracefully, that is a pre-existing bug: report it, do not fix it in this task.
+
+Finally confirm the cache split works — the same URL requested with and without a valid `X-Pro-Token` must produce two distinct `X-Cache: MISS` entries rather than the second returning `HIT`.
+
+- [ ] **Step 4: Update the copy**
+
+`README.md:171` currently reads:
+
+```
+| `IG_SESSIONID`        | Instagram session cookie — only needed to resolve Instagram stories.             |
+```
+
+Replace with:
+
+```
+| `IG_SESSIONID`        | Instagram session cookie from a burner account. Sent only for licensed (Pro) requests, to resolve login-gated posts. Public posts resolve without it. |
+```
+
+Add the entitlement to the `/pro` page's feature list (Task 12), worded so it does not overclaim: Instagram login-gated posts resolve **when** the operator has a working session cookie configured, and public Instagram content is free for everyone. Do not imply free users lost anything.
+
+- [ ] **Step 5: Verify**
+
+Run: `pnpm test && pnpm lint && pnpm cf:build`
+Expected: all pass.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add src/lib/downloader.ts src/lib/apiRoutes.ts README.md src/app/pro/page.tsx
+git commit -m "feat(pro): send the Instagram session cookie for licensed requests"
+```
+
+---
+
 ## What the author must do (cannot be automated)
 
 These require the site owner's identity, payment details, or a human signup. Everything else in this plan runs without them.
@@ -1989,6 +2130,9 @@ These require the site owner's identity, payment details, or a human signup. Eve
 
 **Before Task 16:**
 6. Run `wrangler secret put LICENSE_TOKEN_SECRET` with a random 32+ byte value.
+
+**Before Task 18 can unlock anything:**
+7. Run `wrangler secret put IG_SESSIONID` with the `sessionid` cookie from a **burner** Instagram account. Task 18 ships working without it — the entitlement simply resolves nothing extra until the secret exists. Instagram flags accounts for automated access from datacenter IPs, so never use a personal account, and expect to re-grab the cookie when login-gated downloads start failing.
 
 **Credentials I need from you, and how to hand them over.** Put them in `.env.local` (already gitignored — verify with `git check-ignore .env.local`), not in chat, and never in a file that gets committed:
 
