@@ -46,11 +46,18 @@ function reservesHeight(placement: OfferPlacement): boolean {
 /**
  * Scaffold for third-party display-ad integration. Structure only; no network
  * script. When a network is integrated, this container receives the ad unit
- * markup or script injection point. Rendered when NEXT_PUBLIC_ADS_ENABLED === '1'.
+ * markup or script injection point. Both this and the offer card are wrapped
+ * in the same dismissible shell, so the dismiss affordance applies to either
+ * branch identically.
+ *
+ * Note: NEXT_PUBLIC_ADS_ENABLED is a runtime off-switch, not a compile-time
+ * optimization. Both branches ship in the static bundle; Turbopack does not
+ * eliminate unused branches in 'use client' components during static export.
+ * The false branch executes when the flag is unset (the default).
  */
 function AdUnit() {
   return (
-    <div className='animate-section-in'>
+    <div>
       {/* Display ad unit will be rendered here when enabled */}
     </div>
   )
@@ -63,10 +70,12 @@ function AdUnit() {
  *  - never above the fold, never during a resolve, never during a download
  *    (the caller controls that by only mounting it once a result exists);
  *  - content never appears and then vanishes — see `showContent` below;
- *  - dismissible, and a dismissal sticks for a week;
- *  - no third-party script. This is a local <a> with rel="sponsored".
+ *  - dismissible for both sponsor offers and ads, and a dismissal sticks for a week;
+ *  - no third-party script. This is a local <a> with rel="sponsored", or a
+ *    display-ad scaffold when NEXT_PUBLIC_ADS_ENABLED === '1'.
  *
  * Task 11 adds the Pro check here; every call site stays as-is.
+ * Task 17 adds the flag-gated ad scaffold that shares the dismissal interface.
  */
 export function PromoSlot({
   placement,
@@ -110,11 +119,11 @@ export function PromoSlot({
   const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === '1'
 
   const cardContent = showContent && (
-    adsEnabled ? (
-      <AdUnit />
-    ) : (
-      <div className='animate-section-in group relative overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'>
-        <div className='flex items-start justify-between gap-3'>
+    <div className='animate-section-in group relative overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'>
+      <div className='flex items-start justify-between gap-3'>
+        {adsEnabled ? (
+          <AdUnit />
+        ) : (
           <div className='flex min-w-0 items-start gap-3'>
             {offer.image && (
               <img
@@ -132,19 +141,21 @@ export function PromoSlot({
               </p>
             </div>
           </div>
-          <button
-            type='button'
-            aria-label='Hide this sponsor card'
-            onClick={() => {
-              dismissPromo(nowMs())
-              setDismissed(true)
-            }}
-            className='shrink-0 rounded-md px-1.5 py-0.5 text-[11px] text-white/40 transition-colors hover:text-white/80'
-          >
-            Hide
-          </button>
-        </div>
+        )}
+        <button
+          type='button'
+          aria-label='Hide this ad'
+          onClick={() => {
+            dismissPromo(nowMs())
+            setDismissed(true)
+          }}
+          className='shrink-0 rounded-md px-1.5 py-0.5 text-[11px] text-white/40 transition-colors hover:text-white/80'
+        >
+          Hide
+        </button>
+      </div>
 
+      {!adsEnabled && (
         <div className='mt-3 flex items-center justify-between gap-3'>
           <a
             href={offerHref(offer, placement, platform)}
@@ -156,8 +167,8 @@ export function PromoSlot({
           </a>
           <span className='text-[11px] text-white/35'>Sponsored</span>
         </div>
-      </div>
-    )
+      )}
+    </div>
   )
 
   // `in-content` reserves its box unconditionally — the height must be held
