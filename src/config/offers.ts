@@ -30,6 +30,14 @@ export interface Offer {
   /** Platform slugs from detectPlatform(), or 'all'. */
   platforms: readonly string[] | 'all'
   placements: readonly OfferPlacement[]
+  /**
+   * Optional local creative, e.g. '/promo/pcloud.png'. Must live under
+   * /public — no remote host, no next/image (that's the "zero third-party
+   * script" rule and the CLS budget both at once). PromoSlot renders it at a
+   * fixed size so adding one later cannot shift layout. Omit to render a
+   * text-only card, which is what every current entry does.
+   */
+  image?: string
 }
 
 /**

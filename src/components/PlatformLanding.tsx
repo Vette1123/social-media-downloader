@@ -24,14 +24,17 @@ import { RafiqPromoCard } from '@/components/RafiqPromoCard'
 import { siteConfig } from '@/config/site'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
 import { platforms } from '@/lib/platforms'
+import type { SupportedPlatform } from '@/lib/validator'
 
 /**
  * `Platform.slug` is the URL slug ('tiktok-downloader'), but offers.ts and
  * selectOffer() key platform targeting on detectPlatform()'s output
  * ('tiktok') — see src/lib/validator.ts. This is the one place that maps
  * between the two so PromoSlot never has to know about landing-page routing.
+ * Typed against `SupportedPlatform` (not `string`) so a typo'd value fails
+ * the build instead of relying on review.
  */
-const OFFER_PLATFORM_BY_SLUG: Record<PlatformSlug, string> = {
+const OFFER_PLATFORM_BY_SLUG: Record<PlatformSlug, SupportedPlatform> = {
   'tiktok-downloader': 'tiktok',
   'twitter-video-downloader': 'twitter',
   'instagram-downloader': 'instagram',
