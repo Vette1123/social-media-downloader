@@ -137,10 +137,21 @@ export default function RootLayout({
   return (
     <html lang='en' dir='ltr'>
       <head>
-        {/* Icons, manifest, tile colour and site verification are all declared
+        {/* Icons, manifest, tile colour and Google verification are all declared
             in `metadata` above — Next renders them into <head> itself. Nothing
             static belongs here; only the two inline scripts, which have no
-            Metadata equivalent. */}
+            Metadata equivalent, and the Impact tag below. */}
+        {/* Impact publisher verification. Deliberately NOT in `metadata.other`:
+            that renders `content=`, and Impact reads the non-standard `value=`
+            attribute this tag is specified with. Inert — no script, no request. */}
+        {/* Spread, because React's JSX types reject `value` on <meta> — but the
+            DOM keeps unknown attributes, so the tag ships exactly as Impact
+            specified it. */}
+        <meta
+          name='impact-site-verification'
+          {...{ value: '6048f587-d18b-4e66-a399-27aa77470438' }}
+        />
+
         {/* Capability-based rendering: set before first paint so low-power devices
             get the cheap variant with no FOUC. No false positives — flagships and
             tablets keep the full effect set; only genuinely weak hardware (≤4
