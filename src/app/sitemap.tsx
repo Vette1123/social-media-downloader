@@ -42,5 +42,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   })
 
-  return [home, ...platformEntries]
+  // Static, image-free pages — no per-route opengraph-image exists for these,
+  // unlike the home and platform pages above.
+  const staticPages = ['/pro', '/privacy', '/terms'].map<MetadataRoute.Sitemap[number]>(
+    (path) => {
+      const url = `${siteConfig.url}${path}`
+      return {
+        url,
+        lastModified,
+        changeFrequency: 'monthly',
+        priority: 0.5,
+        alternates: {
+          languages: {
+            en: url,
+            'x-default': url,
+          },
+        },
+      }
+    },
+  )
+
+  return [home, ...platformEntries, ...staticPages]
 }

@@ -31,7 +31,7 @@ const features = [
   },
   {
     title: 'No sponsor card',
-    body: 'Removes the one sponsor card that can appear after a download finishes, site-wide. That card is the only ad on this site, so this is a completely ad-free experience — there is nothing else to remove.',
+    body: 'Removes the one sponsor card that can appear after a download finishes, site-wide — the only paid placement on this site.',
   },
   {
     title: 'Login-gated Instagram posts',
