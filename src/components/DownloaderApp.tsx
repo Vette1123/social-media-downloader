@@ -73,16 +73,50 @@ function extractAllUrls(s: string): string[] {
   return out
 }
 
+// How big a body we're willing to hold in memory to show a percentage. Past
+// this we hand the file to the browser's own download manager instead, which
+// streams to disk at no memory cost — a 300 MB blob is a tab crash on mobile.
+const MAX_IN_MEMORY_DOWNLOAD_BYTES = 80 * 1024 * 1024
+
+// A transfer we project to take longer than this also goes to the download
+// manager. Reading it ourselves is what buys the percentage, but it costs the
+// two things the browser's own downloader gives for free: bytes landing on disk
+// as they arrive, and a transfer that survives leaving the page. For a couple of
+// minutes that trade is worth it; for a 40-minute one it is not — and a slow
+// public tunnel instance can easily make a long video that.
+const MAX_STREAM_SECONDS = 120
+
+// Don't judge the rate off the first few chunks — TLS ramp-up and the
+// instance's own startup make the opening seconds unrepresentative.
+const RATE_SAMPLE_AFTER_MS = 5000
+
+// Total size of a response body, in bytes, or 0 when it can't be known.
+//
+// Cobalt tunnels are chunked and send no Content-Length at all; they publish
+// `estimated-content-length` instead and expose it via CORS. Our own media
+// proxy re-emits that as `x-estimated-content-length` when the upstream had
+// nothing better. An estimate is fine here: the percentage is clamped to 99
+// until the stream actually ends.
+function responseSize(response: Response): number {
+  const headers = response.headers
+  const declared =
+    headers.get('content-length') ||
+    headers.get('estimated-content-length') ||
+    headers.get('x-estimated-content-length')
+  return Number(declared) || 0
+}
+
 // Stream a download response, reporting progress as it lands. Emits a 0–100
-// percentage when the response carries a Content-Length; otherwise emits null
+// percentage when the response declares a size; otherwise emits null
 // (indeterminate) and lets the browser buffer. Buffering the chunks here is no
 // heavier than response.blob(), which also holds the whole body in memory — it
 // just lets us surface a real progress bar on big mobile downloads.
 async function streamToBlob(
   response: Response,
   onProgress: (pct: number | null) => void,
+  bail?: (received: number, total: number, elapsedMs: number) => boolean,
 ): Promise<Blob> {
-  const total = Number(response.headers.get('content-length')) || 0
+  const total = responseSize(response)
   const type = response.headers.get('content-type') || ''
   if (!response.body || !total) {
     onProgress(null)
@@ -92,6 +126,7 @@ async function streamToBlob(
   }
   const reader = response.body.getReader()
   const chunks: BlobPart[] = []
+  const startedAt = nowMs()
   let received = 0
   onProgress(0)
   for (;;) {
@@ -101,10 +136,31 @@ async function streamToBlob(
       chunks.push(value)
       received += value.length
       onProgress(Math.min(99, Math.round((received / total) * 100)))
+      if (bail?.(received, total, nowMs() - startedAt)) {
+        await reader.cancel().catch(() => {})
+        throw new StreamBailout()
+      }
     }
   }
   onProgress(100)
   return new Blob(chunks, type ? { type } : undefined)
+}
+
+/** Thrown by `streamToBlob` when its `bail` predicate asks it to stop. */
+class StreamBailout extends Error {}
+
+/**
+ * True once the measured rate says this transfer won't finish in a reasonable
+ * time. Waits for a stable sample before judging.
+ */
+function isTooSlowToStream(
+  received: number,
+  total: number,
+  elapsedMs: number,
+): boolean {
+  if (elapsedMs < RATE_SAMPLE_AFTER_MS || received === 0) return false
+  const projectedMs = (elapsedMs / received) * total
+  return projectedMs > MAX_STREAM_SECONDS * 1000
 }
 
 // Reading the clock is a side effect, and the React compiler flags a bare
@@ -201,6 +257,53 @@ function triggerDirectDownload(url: string, filename: string) {
   document.body.appendChild(iframe)
   // Give the navigation→download time to start, then tear the iframe down.
   setTimeout(() => iframe.remove(), 120000)
+}
+
+// Save an already-fetched body under our own filename. Same-origin blob URLs
+// honour the `download` attribute, which a cross-origin URL never does.
+function saveBlob(blob: Blob, filename: string) {
+  const blobUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = blobUrl
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(blobUrl)
+}
+
+// Pull a tunnel download through fetch() so we can report real progress, then
+// save it. The bytes still go browser→instance directly — the point of the
+// direct path is keeping them out of our Worker, and this preserves that; it
+// only replaces the hidden-iframe navigation (which is unobservable) with a
+// stream we can measure. Cobalt tunnels send `Access-Control-Allow-Origin: *`,
+// so the read is allowed.
+//
+// Returns false when the caller should fall back to `triggerDirectDownload`:
+// CORS/network failure, a body too large to hold in memory, or a transfer too
+// slow to be worth watching. Giving up costs only the bytes read so far — a
+// cobalt tunnel URL can be opened again, so the fallback still works.
+async function downloadDirectWithProgress(
+  url: string,
+  filename: string,
+  onProgress: (pct: number | null) => void,
+): Promise<boolean> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok || !response.body) return false
+    if (responseSize(response) > MAX_IN_MEMORY_DOWNLOAD_BYTES) {
+      await response.body.cancel().catch(() => {})
+      return false
+    }
+    const blob = await streamToBlob(response, onProgress, isTooSlowToStream)
+    saveBlob(blob, filename)
+    return true
+  } catch {
+    // Cross-origin block, an expired tunnel, a dropped connection, or our own
+    // bailout — the iframe path handles all of them, it just can't show
+    // progress.
+    return false
+  }
 }
 
 const PLATFORM_DISPLAY: Record<string, string> = {
@@ -631,24 +734,38 @@ export function DownloaderApp() {
     // download manager takes over instantly.
     const direct = state.videoMetadata?.directVideoUrl
     if (direct) {
-      // The instance resolves server-side before the first byte, so the
-      // browser's download dialog can take a moment to appear. Hold the button
-      // in a spinning "preparing" state and show a hint so the click clearly
-      // registered — the hidden-iframe download is cross-origin, so we can't
-      // observe the real start; release after a short beat with a confirmation.
+      const filename = buildDownloadFilename({
+        platform: state.videoMetadata?.platform,
+        author: state.videoMetadata?.author,
+        title: state.videoMetadata?.title,
+        ext: 'mp4',
+      })
+      // The instance resolves server-side before the first byte, so nothing
+      // moves for a moment after the click. Hold the button in a spinning
+      // "preparing" state until the stream starts reporting.
       dispatch({ type: 'SET_DOWNLOADING', payload: true })
+      dispatch({ type: 'SET_PROGRESS', payload: null })
       dispatch({ type: 'SET_MESSAGE', payload: 'Preparing your download…' })
-      triggerDirectDownload(
-        direct,
-        buildDownloadFilename({
-          platform: state.videoMetadata?.platform,
-          author: state.videoMetadata?.author,
-          title: state.videoMetadata?.title,
-          ext: 'mp4',
-        }),
+      const streamed = await downloadDirectWithProgress(direct, filename, (p) =>
+        dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
+      if (streamed) {
+        dispatch({ type: 'SET_DOWNLOADING', payload: false })
+        dispatch({ type: 'SET_PROGRESS', payload: null })
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: 'Video downloaded successfully! 🎉',
+        })
+        dispatch({ type: 'SET_URL', payload: '' })
+        return
+      }
+      // Fallback: hand it to the browser's download manager. That navigation is
+      // cross-origin, so the real start isn't observable — release after a short
+      // beat with a confirmation instead.
+      triggerDirectDownload(direct, filename)
       window.setTimeout(() => {
         dispatch({ type: 'SET_DOWNLOADING', payload: false })
+        dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({
           type: 'SET_MESSAGE',
           payload: 'Download started. Check your downloads. 🎉',
@@ -669,21 +786,15 @@ export function DownloaderApp() {
       const blob = await streamToBlob(response, (p) =>
         dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
-      const blobUrl = URL.createObjectURL(blob)
-
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = buildDownloadFilename({
-        platform: state.videoMetadata?.platform,
-        author: state.videoMetadata?.author,
-        title: state.videoMetadata?.title,
-        ext: 'mp4',
-      })
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-
-      URL.revokeObjectURL(blobUrl)
+      saveBlob(
+        blob,
+        buildDownloadFilename({
+          platform: state.videoMetadata?.platform,
+          author: state.videoMetadata?.author,
+          title: state.videoMetadata?.title,
+          ext: 'mp4',
+        }),
+      )
 
       dispatch({
         type: 'SET_MESSAGE',
@@ -732,20 +843,15 @@ export function DownloaderApp() {
       const blob = await streamToBlob(response, (p) =>
         dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
-      const blobUrl = URL.createObjectURL(blob)
-
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = buildDownloadFilename({
-        platform: state.videoMetadata?.platform,
-        author: state.videoMetadata?.author,
-        title: state.videoMetadata?.title,
-        ext: 'mp4',
-      })
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(blobUrl)
+      saveBlob(
+        blob,
+        buildDownloadFilename({
+          platform: state.videoMetadata?.platform,
+          author: state.videoMetadata?.author,
+          title: state.videoMetadata?.title,
+          ext: 'mp4',
+        }),
+      )
 
       dispatch({
         type: 'SET_MESSAGE',
@@ -775,22 +881,34 @@ export function DownloaderApp() {
     // (the "→ MP3" flow); re-serving a video stream as audio keeps the proxy.
     const direct = state.videoMetadata?.directAudioUrl
     if (direct) {
-      // Same as the video path: spin + hint while the browser's download
-      // manager takes over from the hidden iframe (cross-origin, so the real
-      // start isn't observable), then release with a confirmation.
+      // Same as the video path: stream it so the bar is real, and fall back to
+      // the browser's download manager when the stream can't be read.
+      const filename = buildDownloadFilename({
+        platform: state.videoMetadata?.platform,
+        author: state.videoMetadata?.author,
+        title: state.videoMetadata?.title,
+        ext: 'mp3',
+      })
       dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: true })
+      dispatch({ type: 'SET_PROGRESS', payload: null })
       dispatch({ type: 'SET_MESSAGE', payload: 'Preparing your download…' })
-      triggerDirectDownload(
-        direct,
-        buildDownloadFilename({
-          platform: state.videoMetadata?.platform,
-          author: state.videoMetadata?.author,
-          title: state.videoMetadata?.title,
-          ext: 'mp3',
-        }),
+      const streamed = await downloadDirectWithProgress(direct, filename, (p) =>
+        dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
+      if (streamed) {
+        dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
+        dispatch({ type: 'SET_PROGRESS', payload: null })
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: 'Audio downloaded successfully! 🎵',
+        })
+        dispatch({ type: 'SET_URL', payload: '' })
+        return
+      }
+      triggerDirectDownload(direct, filename)
       window.setTimeout(() => {
         dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
+        dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({
           type: 'SET_MESSAGE',
           payload: 'Download started. Check your downloads. 🎵',
@@ -811,21 +929,15 @@ export function DownloaderApp() {
       const blob = await streamToBlob(response, (p) =>
         dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
-      const blobUrl = URL.createObjectURL(blob)
-
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = buildDownloadFilename({
-        platform: state.videoMetadata?.platform,
-        author: state.videoMetadata?.author,
-        title: state.videoMetadata?.title,
-        ext: 'mp3',
-      })
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-
-      URL.revokeObjectURL(blobUrl)
+      saveBlob(
+        blob,
+        buildDownloadFilename({
+          platform: state.videoMetadata?.platform,
+          author: state.videoMetadata?.author,
+          title: state.videoMetadata?.title,
+          ext: 'mp3',
+        }),
+      )
 
       dispatch({
         type: 'SET_MESSAGE',
