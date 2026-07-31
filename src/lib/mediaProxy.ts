@@ -74,7 +74,27 @@ function streamingHeaders(
     'Access-Control-Allow-Methods': 'GET',
     'Access-Control-Allow-Headers': 'Content-Type, Range',
     'Accept-Ranges': 'bytes',
+    'Access-Control-Expose-Headers':
+      'Content-Length, Content-Range, X-Estimated-Content-Length',
   }
+}
+
+/**
+ * Pass an upstream's size *estimate* through to the client.
+ *
+ * Cobalt tunnels are chunked: they send no Content-Length, only their own
+ * `estimated-content-length`. It can't be re-emitted as a real Content-Length —
+ * it's an estimate, and a Content-Length that doesn't match the body is a
+ * malformed response — so it travels under its own name and the download UI
+ * uses it purely to draw a percentage.
+ */
+function attachEstimatedLength(
+  target: Record<string, string>,
+  upstream: Response,
+) {
+  if (target['Content-Length']) return
+  const estimated = upstream.headers.get('estimated-content-length')
+  if (estimated) target['X-Estimated-Content-Length'] = estimated
 }
 
 /**
@@ -179,6 +199,7 @@ export async function handleVideoProxy(request: Request): Promise<Response> {
     )
     if (ranged.contentLength) responseHeaders['Content-Length'] = ranged.contentLength
     if (ranged.contentRange) responseHeaders['Content-Range'] = ranged.contentRange
+    attachEstimatedLength(responseHeaders, response)
 
     return new Response(ranged.body, {
       status: ranged.status,
@@ -232,6 +253,7 @@ export async function handleAudioProxy(request: Request): Promise<Response> {
     )
     if (ranged.contentLength) responseHeaders['Content-Length'] = ranged.contentLength
     if (ranged.contentRange) responseHeaders['Content-Range'] = ranged.contentRange
+    attachEstimatedLength(responseHeaders, response)
 
     return new Response(ranged.body, {
       status: ranged.status,

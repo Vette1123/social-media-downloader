@@ -348,17 +348,28 @@ body {
 @media (hover: hover) and (pointer: fine) {
   .card-lift:hover {
     transform: translateY(-3px);
-    background-color: rgba(255, 255, 255, 0.07);
+    /* An OPAQUE panel, not a lighter translucent film. The card sits over the
+       grid and the cyan blobs, and a translucent hover surface let all of that
+       read straight through the card — the label and sub-copy ended up
+       competing with the background instead of standing on the card. Going
+       solid gives the type a stable, dark ground and is what actually makes the
+       hovered tile read as lifted. */
+    background-color: var(--panel);
     border-color: rgba(34, 211, 238, 0.45);
     /* The accent stays INSIDE the card, matching .glow-card. An outward cyan
        bloom (the old `0 18px 40px -20px`) lit the page background instead of
        the card: in a four-across band the halo bled over the neighbours and
        read as a backdrop effect, not as "this tile is active". So the ring and
        the light pool are both inset, and the only outward layer is a tight,
-       neutral shadow that carries elevation without tinting anything. */
+       neutral shadow that carries elevation without tinting anything.
+
+       The pool is deliberately shallow: at `-26px` spread and 0.5 alpha it
+       washed the top of the card — exactly where the icon and the label sit —
+       and dropped their contrast. Pulled tighter and dimmer, it grazes the top
+       edge and leaves the type on clean panel. */
     box-shadow:
-      inset 0 0 0 1px rgba(34, 211, 238, 0.2),
-      inset 0 22px 44px -26px rgba(34, 211, 238, 0.5),
+      inset 0 0 0 1px rgba(34, 211, 238, 0.22),
+      inset 0 14px 30px -24px rgba(34, 211, 238, 0.34),
       0 8px 18px -14px rgba(0, 0, 0, 0.85);
   }
 }
