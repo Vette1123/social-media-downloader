@@ -493,7 +493,7 @@ export default function Home() {
               Terms
             </Link>
             <a
-              href='https://github.com/sponsors/Vette1123'
+              href='https://buymeacoffee.com/vetteotp'
               target='_blank'
               rel='noopener noreferrer'
               className='transition-colors hover:text-white/80'

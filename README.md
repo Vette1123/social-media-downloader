@@ -117,11 +117,11 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 
 ## Supporting the project
 
-The site is free and stays free. It is paid for by one sponsor card that appears
-after a download — no popups, no redirects, no interstitials, and no tracking of
-what you download. You can remove that card for good with a
+The site is free and stays free. It will be paid for by a single sponsor card
+shown after a download — no popups, no redirects, no interstitials, and no
+tracking of what you download. You can remove that card for good with a
 [Pro license](https://www.socialdownloader.space/pro), or support the work
-directly through [GitHub Sponsors](https://github.com/sponsors/Vette1123).
+directly by [buying me a coffee](https://buymeacoffee.com/vetteotp).
 
 ## Tech stack
 
