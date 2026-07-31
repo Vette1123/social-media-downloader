@@ -530,6 +530,32 @@ function buildChecks() {
       },
     },
 
+    {
+      // /api/license is registered in API_ROUTES precisely so a request never
+      // falls through to Next's lazy server init (measured at 129 ms against
+      // a 10 ms CPU budget). This asserts it's still dispatched from here: an
+      // empty body must fail cleanly — 503 while LICENSE_TOKEN_SECRET is
+      // unset, or 400 once it is set — and must never be a 500 or the HTML
+      // 404 page, either of which would mean the route silently fell through.
+      name: 'api/license rejects an empty body cleanly',
+      request: { pathname: '/api/license', method: 'POST', json: {} },
+      check: async (response, body) => {
+        if (response.status !== 503 && response.status !== 400) {
+          return `expected 503 (unconfigured) or 400 (bad body), got ${response.status}`
+        }
+        const text = new TextDecoder().decode(body)
+        let payload
+        try {
+          payload = JSON.parse(text)
+        } catch {
+          return `non-JSON error body: ${text.slice(0, 120)}`
+        }
+        if (payload.success) return 'empty license request was accepted'
+        if (!payload.error) return 'rejection carried no error message'
+        return null
+      },
+    },
+
     nativeMediaGuard('api/slideshow', {
       pathname: '/api/slideshow',
       method: 'POST',

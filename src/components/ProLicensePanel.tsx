@@ -14,20 +14,43 @@ import { activateLicense, clearLicense, useTier } from '@/lib/entitlements'
  * it came from, so text is the only signal available here — and it is a
  * reliable one, since apiRoutes.ts writes exactly these two strings for the
  * unavailable cases and nothing else does.
+ *
+ * The two are split rather than lumped into one "unavailable" bucket: a dead
+ * upstream is transient, so "try again in a moment" is honest advice — but
+ * "not configured on this deployment" is a fixed deployment condition, and no
+ * amount of retrying will ever change it. Matched by exact string, not
+ * rewritten, so this stays in sync with the wire strings apiRoutes.ts returns.
  */
-const SERVER_UNAVAILABLE_MESSAGES = new Set<string>([
-  'Could not reach the license server. Try again.',
-  'Licensing is not configured on this deployment.',
-])
+const TRANSIENT_SERVER_MESSAGE = 'Could not reach the license server. Try again.'
+const NOT_CONFIGURED_MESSAGE = 'Licensing is not configured on this deployment.'
 
-function isServerUnavailableError(message: string): boolean {
-  return SERVER_UNAVAILABLE_MESSAGES.has(message)
+type ServerErrorKind = 'key' | 'transient' | 'not-configured'
+
+function serverErrorKind(message: string): ServerErrorKind {
+  if (message === TRANSIENT_SERVER_MESSAGE) return 'transient'
+  if (message === NOT_CONFIGURED_MESSAGE) return 'not-configured'
+  return 'key'
+}
+
+/**
+ * Retrying only ever helps the transient case — a dead upstream may answer
+ * next time. "Not configured" is a deployment condition retrying can never
+ * fix, so it gets its own explanation instead of the retry suffix.
+ */
+function errorSuffix(kind: ServerErrorKind): string | null {
+  if (kind === 'transient') {
+    return ' This is not a problem with your key — please try again in a moment.'
+  }
+  if (kind === 'not-configured') {
+    return ' Licensing isn’t live on this site yet — this is not a problem with your key.'
+  }
+  return null
 }
 
 type FormState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'error'; message: string; unavailable: boolean }
+  | { status: 'error'; message: string; kind: ServerErrorKind }
 
 /**
  * The only interactive part of /pro. Everything else on the page is static
@@ -76,7 +99,7 @@ export function ProLicensePanel() {
     setForm({
       status: 'error',
       message: result.error,
-      unavailable: isServerUnavailableError(result.error),
+      kind: serverErrorKind(result.error),
     })
   }
 
@@ -111,9 +134,7 @@ export function ProLicensePanel() {
       {form.status === 'error' && (
         <p role='alert' className='mt-3 text-sm text-amber-300'>
           {form.message}
-          {form.unavailable
-            ? ' This is not a problem with your key — please try again in a moment.'
-            : null}
+          {errorSuffix(form.kind)}
         </p>
       )}
     </form>
