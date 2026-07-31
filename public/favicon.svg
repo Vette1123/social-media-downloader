@@ -1,26 +1,28 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Social Media Downloader">
+  <!--
+    Inverted on purpose. The previous mark was a near-black tile carrying a
+    2.6px cyan stroke: on a dark browser theme that is a dark square on a dark
+    bar, and by 16px the strokes had thinned to nothing. A favicon has one job
+    at one size, so the tile now carries the colour and the glyph is knocked
+    out of it in solid ink. Saturated shape first, detail never.
+
+    Same teal -> cyan -> sky ramp the app already uses, so the tab matches the
+    product instead of introducing a second accent.
+  -->
   <defs>
-    <!-- Ink tile with a cyan-accented edge, matching the app's Ink + Cyan theme -->
     <linearGradient id="tile" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#17171d" />
-      <stop offset="1" stop-color="#0a0a0c" />
-    </linearGradient>
-    <!-- Accent gradient for the glyph: teal -> cyan -> sky -->
-    <linearGradient id="glyph" x1="9" y1="8" x2="23" y2="24" gradientUnits="userSpaceOnUse">
       <stop stop-color="#2dd4bf" />
       <stop offset="0.5" stop-color="#22d3ee" />
       <stop offset="1" stop-color="#38bdf8" />
     </linearGradient>
   </defs>
 
-  <!-- Rounded-square tile (1px transparent margin keeps the corners crisp in a tab) -->
-  <rect x="1" y="1" width="30" height="30" rx="8" fill="url(#tile)" />
-  <rect x="1.5" y="1.5" width="29" height="29" rx="7.5" fill="none" stroke="#22d3ee" stroke-opacity="0.45" />
+  <rect width="32" height="32" rx="7.5" fill="url(#tile)" />
 
-  <!-- Download-into-tray glyph -->
-  <g stroke="url(#glyph)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M16 8.5V18.6" />
-    <path d="M11 14.5 16 19.6 21 14.5" />
-    <path d="M9.5 23.5H22.5" />
+  <!-- Download-into-tray, drawn as solid masses rather than strokes. -->
+  <g fill="#08080a">
+    <rect x="14.1" y="6.6" width="3.8" height="10.4" rx="1.9" />
+    <path d="M16 21.8 9.7 14.4h12.6z" />
+    <rect x="8.3" y="23.2" width="15.4" height="3.2" rx="1.6" />
   </g>
 </svg>

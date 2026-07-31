@@ -1324,7 +1324,7 @@ export function DownloaderApp() {
               type='button'
               onClick={handlePaste}
               aria-label='Paste link from clipboard'
-              className='absolute right-1.5 flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-xs font-medium text-white/70 transition-colors hover:border-cyan-400/40 hover:text-white active:scale-95'
+              className='card-hover absolute right-1.5 flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-xs font-medium text-white/70 hover:text-white active:scale-95'
             >
               <ClipboardIcon className='h-3.5 w-3.5' />
               Paste
@@ -1465,7 +1465,7 @@ export function DownloaderApp() {
                 <button
                   type='button'
                   onClick={() => handleProcess(h.url)}
-                  className='group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pr-9 pl-2 text-left transition-colors hover:border-cyan-400/30 hover:bg-white/[0.05]'
+                  className='card-hover group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pr-9 pl-2 text-left'
                 >
                   {/* Branded tile sits underneath; the snapshot (a self-contained
                       data URL) overlays it. If a legacy remote thumb ever fails,
@@ -1516,7 +1516,7 @@ export function DownloaderApp() {
             <button
               type='button'
               onClick={() => setShowAllHistory((v) => !v)}
-              className='mt-2 w-full rounded-lg border border-white/[0.06] py-1.5 text-center text-[11px] font-medium text-white/50 transition-colors hover:border-cyan-400/30 hover:text-white/80'
+              className='card-hover mt-2 w-full rounded-lg border border-white/[0.06] py-1.5 text-center text-[11px] font-medium text-white/50 hover:text-white/80'
             >
               {showAllHistory ? 'Show less' : `View all (${history.length})`}
             </button>

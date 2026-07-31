@@ -101,7 +101,7 @@ export function LazyFAQ({
             <details
               key={f.q}
               open={i === defaultOpenIndex}
-              className='group border border-white/[0.08] rounded-xl bg-white/[0.03] overflow-hidden transition-colors hover:bg-white/[0.05]'
+              className='card-hover group border border-white/[0.08] rounded-xl bg-white/[0.03] overflow-hidden'
             >
               <summary className='flex flex-1 cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-left text-sm md:text-base font-semibold text-white transition-colors hover:text-cyan-200'>
                 {f.q}

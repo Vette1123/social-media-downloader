@@ -34,7 +34,7 @@ export function InteractiveFAQ({
         <AccordionPrimitive.Item
           key={f.q}
           value={`faq-${i + 1}`}
-          className='border border-white/[0.08] rounded-xl bg-white/[0.03] overflow-hidden transition-colors hover:bg-white/[0.05]'
+          className='card-hover border border-white/[0.08] rounded-xl bg-white/[0.03] overflow-hidden'
         >
           <AccordionPrimitive.Header className='flex'>
             <AccordionPrimitive.Trigger

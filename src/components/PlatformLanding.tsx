@@ -152,9 +152,11 @@ function PlatformIconRow({ activeSlug }: { activeSlug: PlatformSlug }) {
         {platforms.map((p) => {
           const { Icon, tile } = platformIcons[p.slug]
           const isActive = p.slug === activeSlug
+          // The hover accent belongs to `.icon-lift`; this only sets the
+          // resting ring, and the current page keeps a permanent bright one.
           const ring = isActive
             ? 'ring-2 ring-cyan-400/80'
-            : 'ring-1 ring-white/15 hover:ring-cyan-400/40'
+            : 'ring-1 ring-white/15'
           const opacity = isActive ? '' : 'opacity-80 hover:opacity-100'
           return (
             <Link
@@ -165,7 +167,7 @@ function PlatformIconRow({ activeSlug }: { activeSlug: PlatformSlug }) {
               className='block'
             >
               <span
-                className={`flex h-10 w-10 items-center justify-center rounded-xl md:h-12 md:w-12 ${tile} ${ring} ${opacity} shadow-lg shadow-black/30 transition-all duration-200 hover:-translate-y-0.5`}
+                className={`flex h-10 w-10 items-center justify-center rounded-xl md:h-12 md:w-12 ${tile} ${ring} ${opacity} icon-lift shadow-lg shadow-black/30`}
               >
                 {tile.startsWith('bg-transparent') ? (
                   <Icon className='h-full w-full' />
@@ -190,7 +192,7 @@ function CrossLinkNav({ activeSlug }: { activeSlug: PlatformSlug }) {
     >
       <Link
         href='/'
-        className='inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 hover:text-white'
+        className='card-lift inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 hover:text-white'
       >
         ← All platforms
       </Link>
@@ -201,7 +203,7 @@ function CrossLinkNav({ activeSlug }: { activeSlug: PlatformSlug }) {
           <Link
             key={p.slug}
             href={`/${p.slug}`}
-            className='inline-flex items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 hover:text-white'
+            className='card-lift inline-flex items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 hover:text-white'
           >
             <span
               className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${useBrandTile ? tile : ''}`}
@@ -291,7 +293,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
                 href={href}
                 target='_blank'
                 rel='noopener noreferrer'
-                className='group flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-400/40 active:scale-95 sm:flex-none sm:px-4'
+                className='card-lift group flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 sm:flex-none sm:px-4'
               >
                 <Icon className='h-[18px] w-[18px] shrink-0 text-white/80 transition-colors duration-300 group-hover:text-cyan-300' />
                 <span className='text-sm font-medium text-white/80 transition-colors duration-300 group-hover:text-white'>
@@ -325,7 +327,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             {platform.cards.map((card) => (
               <article
                 key={card.title}
-                className='rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5 transition-all duration-200 hover:-translate-y-1 hover:border-cyan-400/30'
+                className='card-lift rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
               >
                 <h3 className='mb-2 font-semibold text-white'>{card.title}</h3>
                 <p className='text-sm text-white/75'>{card.body}</p>

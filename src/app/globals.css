@@ -337,7 +337,23 @@ body {
    Everything expensive sits behind a hover-capable pointer query. A touch
    device can never trigger these rules, so it should not pay the cost of the
    box-shadow paint or carry the extra compositor layer. */
-.card-lift {
+/* Three primitives, so no surface has to invent its own hover again:
+
+     .card-lift  — a tile that lifts: feature cards, platform links, pills.
+     .card-hover — the same surface treatment with NO movement, for things that
+                   must not shift under the pointer: accordion rows that expand
+                   on click, list rows in a scrolling panel.
+     .icon-lift  — the small platform chips, which are a ring around an icon
+                   rather than a panel, so they take an accent ring and a
+                   smaller rise instead of the full card treatment.
+
+   Neutral control hovers (`hover:bg-white/10` on a close button, the lightbox
+   arrows) are a DIFFERENT language and stay as utilities — they tint a control,
+   they don't pretend to be a card. src/lib/hoverStyles.test.ts enforces the
+   split. */
+.card-hover,
+.card-lift,
+.icon-lift {
   transition:
     transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.22s ease-out,
@@ -346,8 +362,19 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .icon-lift:hover {
+    transform: translateY(-2px);
+    /* A chip is 40px of icon — an inset pool would have nowhere to land, so the
+       accent is carried by the ring alone. */
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.4);
+  }
+
   .card-lift:hover {
     transform: translateY(-3px);
+  }
+
+  .card-hover:hover,
+  .card-lift:hover {
     /* An OPAQUE panel, not a lighter translucent film. The card sits over the
        grid and the cyan blobs, and a translucent hover surface let all of that
        read straight through the card — the label and sub-copy ended up
@@ -375,11 +402,17 @@ body {
 }
 
 /* Touch has no hover state, but a tap should still be acknowledged. */
-.card-lift:active {
+.card-lift:active,
+.icon-lift:active {
   transform: scale(0.99);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .card-hover,
+  .card-hover:hover,
+  .icon-lift,
+  .icon-lift:hover,
+  .icon-lift:active,
   .card-lift,
   .card-lift:hover,
   .card-lift:active {
