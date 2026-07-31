@@ -158,12 +158,13 @@ export default function RootLayout({
         style={{ backgroundColor: '#08080a' }}
       >
         {children}
-        {/* Analytics is not mounted here. @vercel/analytics only reports to
-            Vercel's collector (/_vercel/insights), which does not exist off
-            that platform, so it shipped script weight and beaconed into a 404.
-            Cloudflare Web Analytics replaces it and needs no code: enable it
-            per-zone in the dashboard and the beacon is injected at the edge,
-            which also keeps it out of the client bundle. */}
+        {process.env.NEXT_PUBLIC_CF_BEACON_TOKEN ? (
+          <script
+            defer
+            src='https://static.cloudflareinsights.com/beacon.min.js'
+            data-cf-beacon={`{"token": "${process.env.NEXT_PUBLIC_CF_BEACON_TOKEN}"}`}
+          />
+        ) : null}
       </body>
     </html>
   )
