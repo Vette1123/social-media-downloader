@@ -73,7 +73,7 @@ export function ProLicensePanel() {
         <p className='mt-2 text-sm text-white/60'>
           No account was created — this browser is the only place your license
           lives. Activating on another device or browser uses one of your key&rsquo;s
-          three activation slots.
+          five activation slots.
         </p>
         <button
           type='button'
