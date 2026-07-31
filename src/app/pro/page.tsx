@@ -64,8 +64,8 @@ export default function Pro() {
               $9 <span className='text-base font-medium text-white/50'>one-time</span>
             </p>
             <p className='text-sm text-white/60'>
-              Lifetime access for one license key. Up to 3 activations, so it
-              covers a couple of your own devices.
+              Lifetime access for one license key. Up to 5 activations, so it
+              covers a few of your own devices and browsers.
             </p>
             {checkoutReady ? (
               <a
