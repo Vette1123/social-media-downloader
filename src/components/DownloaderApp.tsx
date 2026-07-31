@@ -1598,6 +1598,8 @@ export function DownloaderApp() {
                   <img
                     src={state.videoMetadata.thumbnail}
                     alt='Video thumbnail'
+                    loading='lazy'
+                    decoding='async'
                     className='w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover flex-shrink-0'
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
@@ -1738,7 +1740,7 @@ export function DownloaderApp() {
                       </video>
                     </div>
                     <p className='text-white/50 text-xs text-center'>
-                      Preview loaded — ready to download.
+                      Press play to preview — nothing streams until you do.
                     </p>
                   </div>
                 )}
@@ -1753,6 +1755,7 @@ export function DownloaderApp() {
                       title={state.videoMetadata.title || 'YouTube video'}
                       allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
                       allowFullScreen
+                      loading='lazy'
                       referrerPolicy='strict-origin-when-cross-origin'
                       className='absolute inset-0 h-full w-full'
                     />
@@ -1782,10 +1785,13 @@ export function DownloaderApp() {
                       )}
                     </div>
                   </div>
+                  {/* preload='none', not 'metadata': every carousel result
+                      would otherwise pull the head of the track through
+                      /api/audio for a visitor who never pressed play. */}
                   <audio
                     src={state.audioUrl}
                     controls
-                    preload='metadata'
+                    preload='none'
                     className='w-full'
                   >
                     Your browser does not support the audio element.

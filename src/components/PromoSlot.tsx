@@ -1,18 +1,10 @@
 'use client'
 
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo } from 'react'
 import { OFFERS, type OfferPlacement } from '@/config/offers'
 import { useHydrated } from '@/lib/clientEnv'
 import { useTier } from '@/lib/entitlements'
-import { dismissPromo, isPromoDismissed, offerHref, selectOffer } from '@/lib/promo'
-
-// Reading the clock is a side effect, and the React compiler flags a bare
-// Date.now() inside a component body as impure-during-render. Module scope
-// puts it behind a named function, out of that analysis, without changing
-// behaviour (same idiom as DownloaderApp.tsx's nowMs()).
-function nowMs(): number {
-  return Date.now()
-}
+import { offerHref, selectOffer } from '@/lib/promo'
 
 /**
  * djb2, truncated to a positive 31-bit int. Cheap, deterministic, and — the
@@ -64,27 +56,20 @@ function AdUnit() {
 }
 
 /**
- * Accessible label for the dismiss button, derived from the content type.
- * When ads are enabled, the user is dismissing an ad; when disabled, they are
- * dismissing a sponsor offer. Screen-reader text must match the content.
- */
-function getDismissLabel(adsEnabled: boolean): string {
-  return adsEnabled ? 'Hide this ad' : 'Hide this sponsor card'
-}
-
-/**
  * The one surface on this site that carries commercial content, and therefore
  * the one place the rules live:
  *
  *  - never above the fold, never during a resolve, never during a download
  *    (the caller controls that by only mounting it once a result exists);
  *  - content never appears and then vanishes — see `showContent` below;
- *  - dismissible for both sponsor offers and ads, and a dismissal sticks for a week;
  *  - no third-party script. This is a local <a> with rel="sponsored", or a
  *    display-ad scaffold when NEXT_PUBLIC_ADS_ENABLED === '1'.
  *
- * Task 11 adds the Pro check here; every call site stays as-is.
- * Task 17 adds the flag-gated ad scaffold that shares the dismissal interface.
+ * Not dismissible. The slot is one static card, below the result, with no
+ * script and no motion — the annoyance a hide button answers isn't present,
+ * and the button traded away the revenue this site runs on. Buying it off is
+ * what /pro is for. Paying visitors are suppressed by tier, not by a flag in
+ * localStorage.
  */
 export function PromoSlot({
   placement,
@@ -95,7 +80,6 @@ export function PromoSlot({
 }) {
   const hydrated = useHydrated()
   const tier = useTier()
-  const [dismissed, setDismissed] = useState(false)
 
   // useId() returns the same string during the static (server) render and
   // during client hydration, so hashing it into the seed guarantees the same
@@ -116,58 +100,41 @@ export function PromoSlot({
   // are enabled, the slot renders on its own terms without a live offer.
   if (!offer && !adsEnabled) return null
 
-  const suppressed =
-    tier === 'pro' || dismissed || (hydrated && isPromoDismissed(nowMs()))
-
   // Content only ever renders once `hydrated` is true, i.e. once the client
-  // has actually resolved tier and dismissal from real localStorage — not the
-  // always-'free'/always-not-dismissed values a server (or a hydrating
-  // client) is forced to assume. On `in-content`, which is present in the
-  // static HTML, that means a Pro or previously-dismissed visitor never sees
-  // the card at all — it never paints in the first place, let alone
-  // vanishes a beat later. The tradeoff is that a free, never-dismissed
-  // visitor sees the card appear slightly after paint instead of pre-painted,
-  // which is the correct price for "nobody who shouldn't see it, ever does."
-  const showContent = hydrated && !suppressed
+  // has actually resolved the tier from real localStorage — not the
+  // always-'free' value a server (or a hydrating client) is forced to assume.
+  // On `in-content`, which is present in the static HTML, that means a Pro
+  // visitor never sees the card at all — it never paints in the first place,
+  // let alone vanishes a beat later. The tradeoff is that a free visitor sees
+  // the card appear slightly after paint instead of pre-painted, which is the
+  // correct price for "nobody who shouldn't see it, ever does."
+  const showContent = hydrated && tier !== 'pro'
 
   const cardContent = showContent && (
     <div className='animate-section-in group relative overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'>
-      <div className='flex items-start justify-between gap-3'>
-        {adsEnabled ? (
-          <AdUnit />
-        ) : (
-          offer && (
-            <div className='flex min-w-0 items-start gap-3'>
-              {offer.image && (
-                <img
-                  src={offer.image}
-                  alt={offer.headline}
-                  width={40}
-                  height={40}
-                  className='h-10 w-10 shrink-0 rounded-lg object-cover'
-                />
-              )}
-              <div className='min-w-0'>
-                <p className='text-sm font-semibold text-white'>{offer.headline}</p>
-                <p className='mt-1 text-xs leading-relaxed text-white/60 md:text-sm'>
-                  {offer.body}
-                </p>
-              </div>
+      {adsEnabled ? (
+        <AdUnit />
+      ) : (
+        offer && (
+          <div className='flex min-w-0 items-start gap-3'>
+            {offer.image && (
+              <img
+                src={offer.image}
+                alt={offer.headline}
+                width={40}
+                height={40}
+                className='h-10 w-10 shrink-0 rounded-lg object-cover'
+              />
+            )}
+            <div className='min-w-0'>
+              <p className='text-sm font-semibold text-white'>{offer.headline}</p>
+              <p className='mt-1 text-xs leading-relaxed text-white/60 md:text-sm'>
+                {offer.body}
+              </p>
             </div>
-          )
-        )}
-        <button
-          type='button'
-          aria-label={getDismissLabel(adsEnabled)}
-          onClick={() => {
-            dismissPromo(nowMs())
-            setDismissed(true)
-          }}
-          className='shrink-0 rounded-md px-1.5 py-0.5 text-[11px] text-white/40 transition-colors hover:text-white/80'
-        >
-          Hide
-        </button>
-      </div>
+          </div>
+        )
+      )}
 
       {!adsEnabled && offer && (
         <div className='mt-3 flex items-center justify-between gap-3'>

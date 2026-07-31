@@ -33,11 +33,35 @@ import {
  * enough not to be worth scanning a multi-megabyte page for.
  *
  * The number is a CPU decision, not a correctness one. A handful of bounded
- * scans over 128 KB is a couple of milliseconds; over a 4 MB video page it is
+ * scans over 64 KB is well under a millisecond; over a 4 MB video page it is
  * the whole budget. `readCappedText` stops pulling bytes at this point too, so
  * an oversized page costs neither the transfer nor the scan.
+ *
+ * 64 KB because that is where `<head>` ends on essentially every page that
+ * bothers to publish og: tags. A site that pushes its metadata past it is
+ * indistinguishable, to us, from one that has none — and that is the right
+ * trade against a 10 ms budget shared with the rest of the resolve.
  */
-export const MAX_SCAN_BYTES = 131_072
+export const MAX_SCAN_BYTES = 65_536
+
+/**
+ * The most expensive scan in the file: an unanchored URL match with no tag to
+ * anchor on. Bounded well inside MAX_SCAN_BYTES because it only ever fires
+ * when every structured signal has already missed, and a player config that
+ * far down is not worth the sweep.
+ */
+const INLINE_SCAN_BYTES = 32_768
+
+/**
+ * Cheap reject before any extractor runs. One literal alternation, no capture,
+ * no backtracking, one pass.
+ *
+ * Most pages reaching this extractor have no media at all — a mistyped link, a
+ * paywall, an article. This settles that in a single sweep where the full
+ * candidate list would take seven.
+ */
+const MEDIA_HINT =
+  /og:video|twitter:player:stream|contentUrl|<video|<source|\.mp4|\.m3u8/i
 
 /** Extensions we are willing to hand to a browser as a direct download. */
 const VIDEO_EXT = /\.(mp4|webm|mov|m4v)(\?|#|$)/i
@@ -133,7 +157,9 @@ function videoElementSrc(html: string): string {
  * match so a page full of URLs cannot turn this into a long scan.
  */
 function inlineMediaUrl(html: string): string {
-  const match = html.match(
+  const scope =
+    html.length > INLINE_SCAN_BYTES ? html.slice(0, INLINE_SCAN_BYTES) : html
+  const match = scope.match(
     /https?:\\?\/\\?\/[^\s"'<>\\]+\.(?:mp4|webm|m3u8)(?:\?[^\s"'<>\\]*)?/i,
   )
   return match?.[0] ? match[0].replace(/\\\//g, '/') : ''
@@ -143,7 +169,21 @@ function inlineMediaUrl(html: string): string {
  * Ordered by how much the site is *asserting* the URL is its media. An
  * og:video tag is a publisher statement; a URL scraped out of inline JSON is a
  * guess, so it goes last.
+ *
+ * Thunks, not values: the common case is a hit on the first or third entry,
+ * and evaluating the list eagerly would run all seven scans — including the
+ * expensive inline sweep — every single time, to throw six of them away.
  */
+const CANDIDATES: Array<(html: string) => string | undefined> = [
+  (html) => metaContent(html, 'og:video:secure_url'),
+  (html) => metaContent(html, 'og:video:url'),
+  (html) => metaContent(html, 'og:video'),
+  (html) => metaContent(html, 'twitter:player:stream'),
+  jsonLdContentUrl,
+  videoElementSrc,
+  inlineMediaUrl,
+]
+
 export function extractMediaFromHtml(
   html: string,
   baseUrl: string,
@@ -151,17 +191,10 @@ export function extractMediaFromHtml(
   const scanned =
     html.length > MAX_SCAN_BYTES ? html.slice(0, MAX_SCAN_BYTES) : html
 
-  const candidates = [
-    metaContent(scanned, 'og:video:secure_url'),
-    metaContent(scanned, 'og:video:url'),
-    metaContent(scanned, 'og:video'),
-    metaContent(scanned, 'twitter:player:stream'),
-    jsonLdContentUrl(scanned),
-    videoElementSrc(scanned),
-    inlineMediaUrl(scanned),
-  ]
+  if (!MEDIA_HINT.test(scanned)) return null
 
-  for (const candidate of candidates) {
+  for (const read of CANDIDATES) {
+    const candidate = read(scanned)
     if (!candidate) continue
     const absolute = absolutise(candidate, baseUrl)
     if (!isUsableMedia(absolute)) continue

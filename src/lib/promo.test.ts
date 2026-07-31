@@ -1,68 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import {
-  dismissPromo,
-  isPromoDismissed,
-  offerHref,
-  PROMO_DISMISS_KEY,
-  PROMO_DISMISS_MS,
-  selectOffer,
-} from './promo'
+import { describe, expect, it } from 'vitest'
+import { offerHref, selectOffer } from './promo'
 import { OFFERS } from '../config/offers'
 import type { Offer } from '@/config/offers'
-
-/** Minimal in-memory Storage, enough to stand in for window.localStorage in node. */
-class FakeStorage implements Storage {
-  private store = new Map<string, string>()
-  get length(): number {
-    return this.store.size
-  }
-  clear(): void {
-    this.store.clear()
-  }
-  getItem(key: string): string | null {
-    return this.store.has(key) ? (this.store.get(key) as string) : null
-  }
-  key(index: number): string | null {
-    return Array.from(this.store.keys())[index] ?? null
-  }
-  removeItem(key: string): void {
-    this.store.delete(key)
-  }
-  setItem(key: string, value: string): void {
-    this.store.set(key, value)
-  }
-}
-
-/** Storage that behaves like private-mode Safari: every call throws. */
-class ThrowingStorage implements Storage {
-  get length(): number {
-    throw new Error('storage blocked')
-  }
-  clear(): void {
-    throw new Error('storage blocked')
-  }
-  getItem(): string | null {
-    throw new Error('storage blocked')
-  }
-  key(): string | null {
-    throw new Error('storage blocked')
-  }
-  removeItem(): void {
-    throw new Error('storage blocked')
-  }
-  setItem(): void {
-    throw new Error('storage blocked')
-  }
-}
-
-function setWindow(win: { localStorage: Storage } | undefined): void {
-  const g = globalThis as { window?: { localStorage: Storage } }
-  if (win === undefined) {
-    delete g.window
-    return
-  }
-  g.window = win
-}
 
 const offer = (over: Partial<Offer> & { id: string }): Offer => ({
   headline: 'h',
@@ -128,62 +67,6 @@ describe('selectOffer', () => {
     for (let seed = 0; seed < 20; seed++) {
       expect(selectOffer(offers, { placement: 'post-result', seed })?.id).toBe('good')
     }
-  })
-})
-
-describe('promo dismissal', () => {
-  beforeEach(() => {
-    setWindow(undefined)
-  })
-
-  afterEach(() => {
-    setWindow(undefined)
-  })
-
-  it('dismissPromo writes a timestamp under PROMO_DISMISS_KEY, and isPromoDismissed is true immediately after', () => {
-    const storage = new FakeStorage()
-    setWindow({ localStorage: storage })
-    const now = 1_700_000_000_000
-
-    dismissPromo(now)
-
-    expect(storage.getItem(PROMO_DISMISS_KEY)).toBe(String(now))
-    expect(isPromoDismissed(now)).toBe(true)
-  })
-
-  it('a dismissal exactly PROMO_DISMISS_MS old reads back as not dismissed (boundary)', () => {
-    const storage = new FakeStorage()
-    setWindow({ localStorage: storage })
-    const dismissedAt = 1_700_000_000_000
-
-    dismissPromo(dismissedAt)
-
-    expect(isPromoDismissed(dismissedAt + PROMO_DISMISS_MS - 1)).toBe(true)
-    expect(isPromoDismissed(dismissedAt + PROMO_DISMISS_MS)).toBe(false)
-  })
-
-  it('treats a corrupted stored value as not dismissed rather than throwing', () => {
-    const storage = new FakeStorage()
-    storage.setItem(PROMO_DISMISS_KEY, 'not-a-timestamp')
-    setWindow({ localStorage: storage })
-
-    expect(() => isPromoDismissed(Date.now())).not.toThrow()
-    expect(isPromoDismissed(Date.now())).toBe(false)
-  })
-
-  it('no-ops safely when there is no window at all', () => {
-    setWindow(undefined)
-
-    expect(() => dismissPromo(Date.now())).not.toThrow()
-    expect(isPromoDismissed(Date.now())).toBe(false)
-  })
-
-  it('no-ops safely when storage exists but throws on every access', () => {
-    setWindow({ localStorage: new ThrowingStorage() })
-
-    expect(() => dismissPromo(Date.now())).not.toThrow()
-    expect(() => isPromoDismissed(Date.now())).not.toThrow()
-    expect(isPromoDismissed(Date.now())).toBe(false)
   })
 })
 
