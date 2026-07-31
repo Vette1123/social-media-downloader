@@ -10,6 +10,7 @@
     "indexnow": "node scripts/indexnow.mjs",
     "start": "next start",
     "lint": "eslint .",
+    "test": "vitest run",
     "cf:build": "cross-env DEPLOY_TARGET=cloudflare next build && node scripts/cf-postbuild.mjs",
     "preview": "pnpm cf:build && wrangler dev",
     "deploy": "pnpm cf:build && wrangler deploy && node scripts/indexnow.mjs --force",
@@ -45,6 +46,7 @@
     "sharp": "^0.35.3",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
+    "vitest": "^4.1.10",
     "wrangler": "^4.114.0"
   }
 }
