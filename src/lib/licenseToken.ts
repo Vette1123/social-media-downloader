@@ -57,11 +57,20 @@ export async function signToken(
   return `${body}.${base64UrlEncode(new Uint8Array(signature))}`
 }
 
+// Comfortably above a real token (139 chars measured: a base64url-encoded
+// `{"k":"<43-char sha256 digest>","exp":<13-digit ms epoch>}` body plus a
+// 43-char signature). Rejecting oversized input before any decode/HMAC work
+// keeps the hot path bounded regardless of what fronts the Worker.
+const MAX_TOKEN_LENGTH = 512
+
 export async function verifyToken(
-  token: string,
+  token: unknown,
   secret: string,
   now: number,
 ): Promise<TokenPayload | null> {
+  if (typeof token !== 'string') return null
+  if (token.length > MAX_TOKEN_LENGTH) return null
+
   const parts = token.split('.')
   if (parts.length !== 2) return null
   const [body, signature] = parts
@@ -86,6 +95,11 @@ export async function verifyToken(
       return null
     }
     if (payload.exp <= now) return null
+    // Bounds the blast radius of a mis-issued token (arithmetic slip,
+    // seconds/milliseconds mixup, compromised admin path): no token is
+    // trusted for longer than TOKEN_TTL_MS from the moment it's checked,
+    // no matter what `exp` a caller of signToken put in it.
+    if (payload.exp - now > TOKEN_TTL_MS) return null
     return payload
   } catch {
     return null
