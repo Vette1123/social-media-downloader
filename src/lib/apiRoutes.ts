@@ -305,15 +305,25 @@ export async function handleLicense(request: Request): Promise<Response> {
     )
   }
 
+  let licenseKey: unknown
+  let instanceId: unknown
   try {
-    const { licenseKey, instanceId } = await request.json()
-    if (!licenseKey || typeof licenseKey !== 'string') {
-      return Response.json(
-        { success: false, error: 'License key is required' },
-        { status: 400 },
-      )
-    }
+    ;({ licenseKey, instanceId } = await request.json())
+  } catch {
+    return Response.json(
+      { success: false, error: 'Invalid request body' },
+      { status: 400 },
+    )
+  }
 
+  if (!licenseKey || typeof licenseKey !== 'string') {
+    return Response.json(
+      { success: false, error: 'License key is required' },
+      { status: 400 },
+    )
+  }
+
+  try {
     const activating = !instanceId
     const endpoint = activating ? `${LEMON_API}/activate` : `${LEMON_API}/validate`
     const form = new URLSearchParams({ license_key: licenseKey })
@@ -330,13 +340,35 @@ export async function handleLicense(request: Request): Promise<Response> {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: form,
+      // Covers the whole exchange (Workers bill wall-clock subrequest
+      // duration, so there is no useful platform-level deadline otherwise). A
+      // hung Lemon Squeezy would otherwise leave this handler — and the
+      // client waiting on it — hanging indefinitely instead of failing closed.
+      signal: AbortSignal.timeout(10_000),
     })
+
+    // Lemon Squeezy's own outage or its 60-req/min rate limit, not a verdict
+    // on this key. Genuine key rejections come back as 200 or 404 with an
+    // `activated`/`valid` body, never 5xx or 429, so this can't swallow a real
+    // "your key is wrong" — confirmed by requesting a nonexistent key live
+    // (404 + {"activated":false,...}) and a malformed request (422 Laravel
+    // validation body). Without this check, both cases fell through to the
+    // generic 400 below, handing the customer Lemon Squeezy's internal error
+    // text as if it explained why *their* key was rejected.
+    if (upstream.status >= 500 || upstream.status === 429) {
+      return Response.json(
+        { success: false, error: 'Could not reach the license server. Try again.' },
+        { status: 502 },
+      )
+    }
+
     const data = await upstream.json()
 
     const ok = data?.activated === true || data?.valid === true
     if (!ok) {
+      const upstreamError = typeof data?.error === 'string' ? data.error : undefined
       return Response.json(
-        { success: false, error: data?.error || 'That license key was not accepted.' },
+        { success: false, error: upstreamError || 'That license key was not accepted.' },
         { status: 400 },
       )
     }
