@@ -2,13 +2,19 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import {
-  CANCELLED_ERROR,
   MAX_BATCH_URLS,
   parseBatchInput,
   runBatch,
   type BatchItem,
   type BatchItemStatus,
 } from '@/lib/batchQueue'
+import {
+  categorizeResult,
+  isCancelled,
+  isZippable,
+  rowStatusColorClass,
+  rowStatusText,
+} from '@/lib/batchPresentation'
 import { buildDownloadFilename } from '@/lib/filename'
 import { resolve, type ResolveResult } from '@/lib/resolve'
 import { useProToken, useTier } from '@/lib/entitlements'
@@ -24,39 +30,19 @@ import { CheckIcon, SpinnerIcon } from '@/components/icons'
  *    Cobalt tunnel bytes keep bypassing the Worker.
  *  - Image and audio results collect into a single ZIP, built with the same
  *    lazily-imported JSZip the single-link image gallery already uses.
+ *
+ * The pure routing/labeling logic (`categorizeResult`, `isCancelled`,
+ * `rowStatusText`, `rowStatusColorClass`) lives in `@/lib/batchPresentation`,
+ * not here — it needs to be unit-testable, and this file cannot be (no jsdom
+ * in this repo's Vitest config).
  */
 
-/** What a finished item's result is made of, for the purposes of delivery. */
-type ResultKind = 'image' | 'audio' | 'video' | 'none'
-
-function categorizeResult(result: ResolveResult | undefined): ResultKind {
-  if (!result) return 'none'
-  if ((result.metadata?.images?.length ?? 0) > 0) return 'image'
-  if (result.downloadUrl) return 'video'
-  if (result.audioUrl) return 'audio'
-  return 'none'
-}
-
-function isCancelled(item: BatchItem): boolean {
-  return item.status === 'failed' && item.error === CANCELLED_ERROR
-}
-
-function rowStatusText(item: BatchItem): string {
-  if (isCancelled(item)) return 'Cancelled'
-  if (item.status === 'failed') return item.error || 'Failed to resolve'
-  if (item.status === 'done') return 'Done'
-  if (item.status === 'resolving') return 'Resolving…'
-  return 'Queued'
-}
-
-// Cancellation is a user action, not a failure — it gets the same neutral
-// tone as "queued", never the red used for a real resolve error.
-function rowStatusColorClass(item: BatchItem): string {
-  if (item.status === 'done') return 'text-emerald-300'
-  if (item.status === 'failed') return isCancelled(item) ? 'text-white/40' : 'text-red-300'
-  if (item.status === 'resolving') return 'text-cyan-300'
-  return 'text-white/40'
-}
+// Batch is one format for the whole run, not per-item — the queue has no UI
+// real estate for twenty individual toggles, and this is the choice that
+// actually matters: TikTok/Instagram creators are exactly the audience this
+// feature targets, and audio-only extraction is a common thing to want in
+// bulk. Threaded straight into `resolve()`'s existing `format` option.
+type BatchFormat = 'video' | 'audio'
 
 // Save one already-fetched body under our own filename — same technique the
 // single-link flow uses, duplicated locally rather than imported since the
@@ -114,7 +100,13 @@ async function saveVideoResult(result: ResolveResult): Promise<void> {
   }
 }
 
-/** Fetch every image/audio "done" item and fold it into one ZIP archive. */
+/**
+ * Fetch every zippable (image/audio) "done" item and fold it into one ZIP
+ * archive. Callers are expected to have already filtered to
+ * `isZippable(categorizeResult(item.result))` — this only branches on
+ * 'image'/'audio' and silently skips anything else, so a stray non-zippable
+ * item contributes nothing rather than erroring.
+ */
 async function buildBatchZip(zipCandidates: BatchItem[]): Promise<Blob> {
   const { default: JSZip } = await import('jszip')
   const zip = new JSZip()
@@ -175,6 +167,13 @@ async function buildBatchZip(zipCandidates: BatchItem[]): Promise<Blob> {
 
 function StatusIcon({ item }: { item: BatchItem }) {
   if (item.status === 'done') {
+    if (categorizeResult(item.result) === 'none') {
+      return (
+        <span aria-hidden className='shrink-0 text-white/40'>
+          –
+        </span>
+      )
+    }
     return <CheckIcon className='h-3.5 w-3.5 shrink-0 text-emerald-300' />
   }
   if (item.status === 'resolving') {
@@ -195,6 +194,7 @@ export function BatchPanel() {
   const proToken = useProToken()
 
   const [rawInput, setRawInput] = useState('')
+  const [format, setFormat] = useState<BatchFormat>('video')
   const [items, setItems] = useState<BatchItem[]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [isZipping, setIsZipping] = useState(false)
@@ -211,7 +211,7 @@ export function BatchPanel() {
   const zipCandidateCount = useMemo(
     () =>
       items.filter(
-        (item) => item.status === 'done' && categorizeResult(item.result) !== 'video',
+        (item) => item.status === 'done' && isZippable(categorizeResult(item.result)),
       ).length,
     [items],
   )
@@ -240,7 +240,7 @@ export function BatchPanel() {
     try {
       await runBatch(
         parsedUrls,
-        (url, signal) => resolve(url, { proToken, signal }),
+        (url, signal) => resolve(url, { format, proToken, signal }),
         handleUpdate,
         controller.signal,
       )
@@ -248,7 +248,7 @@ export function BatchPanel() {
       setIsRunning(false)
       abortRef.current = null
     }
-  }, [handleUpdate, isRunning, parsedUrls, proToken])
+  }, [format, handleUpdate, isRunning, parsedUrls, proToken])
 
   const handleCancel = useCallback(() => {
     abortRef.current?.abort()
@@ -256,7 +256,7 @@ export function BatchPanel() {
 
   const handleSaveAll = useCallback(async () => {
     const zipCandidates = items.filter(
-      (item) => item.status === 'done' && categorizeResult(item.result) !== 'video',
+      (item) => item.status === 'done' && isZippable(categorizeResult(item.result)),
     )
     if (zipCandidates.length === 0 || isZipping) return
     setIsZipping(true)
@@ -291,6 +291,32 @@ export function BatchPanel() {
         disabled={isRunning}
         className='mt-2 w-full resize-y rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 text-sm text-white placeholder-white/40 outline-none focus:border-cyan-400/60 disabled:opacity-60'
       />
+
+      {/* One format for the whole batch — see the BatchFormat comment above
+          for why this isn't per-item. */}
+      <div className='mt-2 flex items-center gap-2 text-xs'>
+        <span className='text-white/40'>Format</span>
+        <div
+          role='group'
+          aria-label='Batch download format'
+          className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
+        >
+          {(['video', 'audio'] as const).map((f) => (
+            <button
+              key={f}
+              type='button'
+              onClick={() => setFormat(f)}
+              disabled={isRunning}
+              aria-pressed={format === f}
+              className={`rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                format === f ? 'bg-cyan-400/90 text-[#04171b]' : 'text-white/55 hover:text-white'
+              }`}
+            >
+              {f === 'video' ? 'Video' : 'Audio (MP3)'}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className='mt-2 flex flex-wrap items-center gap-2'>
         <button
@@ -344,8 +370,9 @@ export function BatchPanel() {
       )}
 
       <p className='mt-3 text-xs text-white/40'>
-        Videos save individually as each one finishes. Photos and audio collect into one ZIP —
-        tap “Save all” once the queue is done.
+        {format === 'video'
+          ? 'Videos save individually as each one finishes. Photos collect into one ZIP — tap “Save all” once the queue is done.'
+          : 'Audio tracks collect into one ZIP — tap “Save all” once the queue is done. A link with nothing downloadable (e.g. a playable-only embed) is marked as such, not as a failure.'}
       </p>
     </div>
   )

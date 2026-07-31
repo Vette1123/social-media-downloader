@@ -115,7 +115,11 @@ export async function runBatch(
         }
       } catch (error) {
         item.status = 'failed'
-        item.error = messageOf(error)
+        // An in-flight item's `resolveFn` rejects with a browser-specific
+        // AbortError (its exact message varies by engine) once `signal` fires
+        // — represent that identically to a still-queued cancellation rather
+        // than surfacing the raw abort text as if it were a real failure.
+        item.error = signal?.aborted ? CANCELLED_ERROR : messageOf(error)
       }
       publish()
     }
