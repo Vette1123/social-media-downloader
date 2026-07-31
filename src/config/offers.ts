@@ -61,8 +61,11 @@ export const OFFERS: readonly Offer[] = [
     headline: 'Somewhere to keep them',
     body: 'pCloud lifetime storage — pay once, keep your library off a phone that fills up.',
     cta: 'See pCloud',
-    href: 'TEMPLATE_PCLOUD',
-    weight: 0,
+    // Redirects to pcloud.com/lifetime. 20% of a $199-399 lifetime plan, and
+    // the subid survives the redirect chain through to landing.pcloud.com, so
+    // placement attribution works off this one link.
+    href: 'https://partner.pcloud.com/r/156822',
+    weight: 1,
     platforms: 'all',
     placements: ['post-result', 'in-content'],
   },
