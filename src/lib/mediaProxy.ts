@@ -27,8 +27,14 @@ const VIDEO_ACCEPT =
   'video/webm,video/ogg,video/*;q=0.9,application/ogg;q=0.7,audio/*;q=0.6,*/*;q=0.5'
 const AUDIO_ACCEPT = 'video/webm,video/ogg,video/*;q=0.9,*/*;q=0.5'
 
-// Caps the /api/thumb payload so a huge source image can't bloat localStorage.
-const MAX_THUMB_BYTES = 300_000
+// Caps the /api/thumb payload. Two reasons, and the second is the binding one:
+// a huge source image would bloat localStorage, and base64-encoding it is the
+// single most CPU-expensive thing any of these handlers does — a real risk
+// against the Worker free plan's 10 ms budget, where everything else here is
+// pass-through streaming that costs ~nothing. The real inputs are platform
+// cover images (TikTok's are ~360px, 20-40 KB), so this bound is well clear of
+// what actually arrives while cutting the worst case by more than half.
+const MAX_THUMB_BYTES = 120_000
 
 /** Upstream request headers, including the Referer that hotlink-gated CDNs need. */
 function upstreamHeaders(
@@ -188,10 +194,12 @@ export async function handleVideoProxy(request: Request): Promise<Response> {
       )
     }
 
-    const ranged = await resolveRangeResponse(response, rangeHeader, () => {
-      const { Range: _omit, ...noRange } = headers
-      return fetch(videoUrl, { headers: noRange, redirect: 'follow' })
-    })
+    const ranged = await resolveRangeResponse(response, rangeHeader, (retry) =>
+      fetch(videoUrl, {
+        headers: { ...headers, Range: retry },
+        redirect: 'follow',
+      }),
+    )
 
     const responseHeaders = streamingHeaders(
       'video/mp4',
@@ -242,10 +250,12 @@ export async function handleAudioProxy(request: Request): Promise<Response> {
       )
     }
 
-    const ranged = await resolveRangeResponse(response, rangeHeader, () => {
-      const { Range: _omit, ...noRange } = headers
-      return fetch(audioUrl, { headers: noRange, redirect: 'follow' })
-    })
+    const ranged = await resolveRangeResponse(response, rangeHeader, (retry) =>
+      fetch(audioUrl, {
+        headers: { ...headers, Range: retry },
+        redirect: 'follow',
+      }),
+    )
 
     const responseHeaders = streamingHeaders(
       'audio/mpeg',
