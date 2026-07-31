@@ -44,6 +44,19 @@ function reservesHeight(placement: OfferPlacement): boolean {
 }
 
 /**
+ * Scaffold for third-party display-ad integration. Structure only; no network
+ * script. When a network is integrated, this container receives the ad unit
+ * markup or script injection point. Rendered when NEXT_PUBLIC_ADS_ENABLED === '1'.
+ */
+function AdUnit() {
+  return (
+    <div className='animate-section-in'>
+      {/* Display ad unit will be rendered here when enabled */}
+    </div>
+  )
+}
+
+/**
  * The one surface on this site that carries commercial content, and therefore
  * the one place the rules live:
  *
@@ -94,52 +107,57 @@ export function PromoSlot({
   // visitor sees the card appear slightly after paint instead of pre-painted,
   // which is the correct price for "nobody who shouldn't see it, ever does."
   const showContent = hydrated && !suppressed
+  const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === '1'
 
   const cardContent = showContent && (
-    <div className='animate-section-in group relative overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'>
-      <div className='flex items-start justify-between gap-3'>
-        <div className='flex min-w-0 items-start gap-3'>
-          {offer.image && (
-            <img
-              src={offer.image}
-              alt={offer.headline}
-              width={40}
-              height={40}
-              className='h-10 w-10 shrink-0 rounded-lg object-cover'
-            />
-          )}
-          <div className='min-w-0'>
-            <p className='text-sm font-semibold text-white'>{offer.headline}</p>
-            <p className='mt-1 text-xs leading-relaxed text-white/60 md:text-sm'>
-              {offer.body}
-            </p>
+    adsEnabled ? (
+      <AdUnit />
+    ) : (
+      <div className='animate-section-in group relative overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'>
+        <div className='flex items-start justify-between gap-3'>
+          <div className='flex min-w-0 items-start gap-3'>
+            {offer.image && (
+              <img
+                src={offer.image}
+                alt={offer.headline}
+                width={40}
+                height={40}
+                className='h-10 w-10 shrink-0 rounded-lg object-cover'
+              />
+            )}
+            <div className='min-w-0'>
+              <p className='text-sm font-semibold text-white'>{offer.headline}</p>
+              <p className='mt-1 text-xs leading-relaxed text-white/60 md:text-sm'>
+                {offer.body}
+              </p>
+            </div>
           </div>
+          <button
+            type='button'
+            aria-label='Hide this sponsor card'
+            onClick={() => {
+              dismissPromo(nowMs())
+              setDismissed(true)
+            }}
+            className='shrink-0 rounded-md px-1.5 py-0.5 text-[11px] text-white/40 transition-colors hover:text-white/80'
+          >
+            Hide
+          </button>
         </div>
-        <button
-          type='button'
-          aria-label='Hide this sponsor card'
-          onClick={() => {
-            dismissPromo(nowMs())
-            setDismissed(true)
-          }}
-          className='shrink-0 rounded-md px-1.5 py-0.5 text-[11px] text-white/40 transition-colors hover:text-white/80'
-        >
-          Hide
-        </button>
-      </div>
 
-      <div className='mt-3 flex items-center justify-between gap-3'>
-        <a
-          href={offerHref(offer, placement, platform)}
-          target='_blank'
-          rel='sponsored nofollow noopener noreferrer'
-          className='rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 transition-transform duration-200 hover:-translate-y-0.5 hover:text-white active:scale-95'
-        >
-          {offer.cta}
-        </a>
-        <span className='text-[11px] text-white/35'>Sponsored</span>
+        <div className='mt-3 flex items-center justify-between gap-3'>
+          <a
+            href={offerHref(offer, placement, platform)}
+            target='_blank'
+            rel='sponsored nofollow noopener noreferrer'
+            className='rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 transition-transform duration-200 hover:-translate-y-0.5 hover:text-white active:scale-95'
+          >
+            {offer.cta}
+          </a>
+          <span className='text-[11px] text-white/35'>Sponsored</span>
+        </div>
       </div>
-    </div>
+    )
   )
 
   // `in-content` reserves its box unconditionally — the height must be held
