@@ -73,7 +73,7 @@ export function getMediaReferer(url: string): string {
 export async function resolveRangeResponse(
   response: Response,
   rangeHeader: string | null,
-  refetchFull: () => Promise<Response>,
+  refetchFrom: (rangeHeader: string) => Promise<Response>,
 ): Promise<{
   status: number
   body: ReadableStream<Uint8Array> | null
@@ -95,24 +95,63 @@ export async function resolveRangeResponse(
   const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader)
   const len = contentLength ? parseInt(contentLength, 10) : NaN
   if (match && match[2] === '' && Number.isFinite(len)) {
-    const start = parseInt(match[1], 10)
-    const total = start + len
-    return {
-      status: 206,
-      body: response.body,
-      contentLength: String(len),
-      contentRange: `bytes ${start}-${total - 1}/${total}`,
-    }
+    return openEndedFrom(parseInt(match[1], 10), len, response.body)
   }
 
-  // Closed range with an unknown total — can't safely synthesize. Drop this
-  // partial body and serve the whole resource as a plain 200.
+  // A CLOSED range (`bytes=A-B`) with an unknown total — a seek. We can't
+  // synthesize a Content-Range from this response, but the open-ended form of
+  // the same request does carry enough to: ask for `bytes=A-` instead and the
+  // body is `[A .. EOF]`, so the total falls out as `A + length`.
+  //
+  // This used to re-fetch the resource from byte 0 and serve a plain 200, which
+  // both re-downloaded everything before the seek point and dropped the client
+  // back to the start of playback. Re-asking from A costs one request and
+  // answers the seek properly.
+  if (!match) return passthrough(response)
+
   response.body?.cancel().catch(() => {})
-  const full = await refetchFull()
+  const start = parseInt(match[1], 10)
+  const reopened = await refetchFrom(`bytes=${start}-`)
+  const reopenedLength = reopened.headers.get('content-length')
+  const reopenedRange = reopened.headers.get('content-range')
+  // A cooperative upstream may answer the retry with a proper Content-Range, in
+  // which case there is nothing left to synthesize.
+  if (reopenedRange) {
+    return {
+      status: reopened.status,
+      body: reopened.body,
+      contentLength: reopenedLength,
+      contentRange: reopenedRange,
+    }
+  }
+  const reopenedLen = reopenedLength ? parseInt(reopenedLength, 10) : NaN
+  if (Number.isFinite(reopenedLen)) {
+    return openEndedFrom(start, reopenedLen, reopened.body)
+  }
+  // Still no size to work with. Serve what we got rather than failing the seek.
+  return passthrough(reopened)
+}
+
+/** A spec-compliant 206 for a body known to be `[start .. EOF]` of `len` bytes. */
+function openEndedFrom(
+  start: number,
+  len: number,
+  body: ReadableStream<Uint8Array> | null,
+) {
+  const total = start + len
   return {
-    status: 200,
-    body: full.body,
-    contentLength: full.headers.get('content-length'),
-    contentRange: null,
+    status: 206,
+    body,
+    contentLength: String(len),
+    contentRange: `bytes ${start}-${total - 1}/${total}`,
+  }
+}
+
+function passthrough(response: Response) {
+  return {
+    status: response.status,
+    body: response.body,
+    contentLength: response.headers.get('content-length'),
+    contentRange: response.headers.get('content-range'),
   }
 }

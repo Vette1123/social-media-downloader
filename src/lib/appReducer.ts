@@ -31,6 +31,12 @@ export interface VideoMetadata {
   // downloadUrl/audioUrl (fetch + progress bar). Preview always uses the proxy.
   directVideoUrl?: string
   directAudioUrl?: string
+  // Whether the direct URL is served as `Content-Disposition: attachment`.
+  // True for cobalt tunnels, which the browser's download manager can be handed
+  // directly. False for a raw CDN URL (a browser-side tikwm resolve), where
+  // navigating at it would display the file instead of saving it — so a failed
+  // direct download must retry through the proxy rather than an iframe.
+  directIsAttachment?: boolean
 }
 
 export interface AppState {

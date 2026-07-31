@@ -35,6 +35,8 @@ import { useIsIOSLike } from '@/lib/clientEnv'
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { buildDownloadFilename } from '@/lib/filename'
 import { friendlyError } from '@/lib/errorMessages'
+import { detectPlatform } from '@/lib/validator'
+import { resolveTikTokInBrowser } from '@/lib/tikwmClient'
 import {
   addHistory,
   clearHistory,
@@ -259,6 +261,30 @@ function triggerDirectDownload(url: string, filename: string) {
   setTimeout(() => iframe.remove(), 120000)
 }
 
+/**
+ * Which URL (if any) to hand to the browser's download manager after a direct
+ * stream didn't finish.
+ *
+ * The manager needs a URL that downloads rather than displays, i.e. one served
+ * as an attachment:
+ *   - a cobalt tunnel already is one, so it can be used as-is;
+ *   - a raw CDN URL is not, but our own proxy re-serves it with the right
+ *     disposition — worth the egress only when the alternative is holding a
+ *     very large file in a tab's memory.
+ * An ordinary failure returns null: retrying through the proxy in-page is
+ * better there, because it keeps the progress bar.
+ */
+function downloadManagerUrl(
+  outcome: DirectDownloadOutcome,
+  directUrl: string,
+  isAttachment: boolean | undefined,
+  proxiedUrl: string,
+): string | null {
+  if (isAttachment) return directUrl
+  if (outcome === 'too-big' && proxiedUrl) return proxiedUrl
+  return null
+}
+
 // Save an already-fetched body under our own filename. Same-origin blob URLs
 // honour the `download` attribute, which a cross-origin URL never does.
 function saveBlob(blob: Blob, filename: string) {
@@ -279,30 +305,38 @@ function saveBlob(blob: Blob, filename: string) {
 // stream we can measure. Cobalt tunnels send `Access-Control-Allow-Origin: *`,
 // so the read is allowed.
 //
-// Returns false when the caller should fall back to `triggerDirectDownload`:
-// CORS/network failure, a body too large to hold in memory, or a transfer too
-// slow to be worth watching. Giving up costs only the bytes read so far — a
-// cobalt tunnel URL can be opened again, so the fallback still works.
+// Why three outcomes rather than a boolean: the right fallback differs. A body
+// too big (or too slow) to hold in memory should go to the browser's download
+// manager, which streams to disk; an outright failure should be retried through
+// the proxy, which can still show a progress bar. Giving up costs only the bytes
+// read so far — these URLs can all be opened again.
+type DirectDownloadOutcome = 'saved' | 'too-big' | 'failed'
+
 async function downloadDirectWithProgress(
   url: string,
   filename: string,
   onProgress: (pct: number | null) => void,
-): Promise<boolean> {
+): Promise<DirectDownloadOutcome> {
+  let oversize = false
   try {
     const response = await fetch(url)
-    if (!response.ok || !response.body) return false
+    if (!response.ok || !response.body) return 'failed'
     if (responseSize(response) > MAX_IN_MEMORY_DOWNLOAD_BYTES) {
       await response.body.cancel().catch(() => {})
-      return false
+      return 'too-big'
     }
-    const blob = await streamToBlob(response, onProgress, isTooSlowToStream)
+    const blob = await streamToBlob(response, onProgress, (...args) => {
+      const slow = isTooSlowToStream(...args)
+      if (slow) oversize = true
+      return slow
+    })
     saveBlob(blob, filename)
-    return true
+    return 'saved'
   } catch {
-    // Cross-origin block, an expired tunnel, a dropped connection, or our own
-    // bailout — the iframe path handles all of them, it just can't show
-    // progress.
-    return false
+    // Cross-origin block, an expired URL, a dropped connection, or our own
+    // bailout on a slow transfer — only the last of those wants the download
+    // manager, and it flagged itself on the way out.
+    return oversize ? 'too-big' : 'failed'
   }
 }
 
@@ -453,14 +487,25 @@ export function DownloaderApp() {
     target: string,
     opts?: { quality?: 'hd' | 'sd'; format?: 'video' | 'audio' },
   ) => {
+    const wantQuality = opts?.quality ?? quality
+    const wantFormat = opts?.format ?? format
+
+    // TikTok resolves ~25x faster straight from the browser, and costs us
+    // nothing at all when it works — see lib/tikwmClient. It returns null on
+    // any hiccup, which lands us on the server path below unchanged.
+    if (wantFormat === 'video' && detectPlatform(target) === 'tiktok') {
+      const local = await resolveTikTokInBrowser(target, wantQuality)
+      if (local) return local
+    }
+
     const response = await fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         url: target,
         type: state.downloadType,
-        quality: opts?.quality ?? quality,
-        format: opts?.format ?? format,
+        quality: wantQuality,
+        format: wantFormat,
       }),
     })
     return response.json()
@@ -746,10 +791,10 @@ export function DownloaderApp() {
       dispatch({ type: 'SET_DOWNLOADING', payload: true })
       dispatch({ type: 'SET_PROGRESS', payload: null })
       dispatch({ type: 'SET_MESSAGE', payload: 'Preparing your download…' })
-      const streamed = await downloadDirectWithProgress(direct, filename, (p) =>
+      const outcome = await downloadDirectWithProgress(direct, filename, (p) =>
         dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
-      if (streamed) {
+      if (outcome === 'saved') {
         dispatch({ type: 'SET_DOWNLOADING', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({
@@ -759,19 +804,29 @@ export function DownloaderApp() {
         dispatch({ type: 'SET_URL', payload: '' })
         return
       }
-      // Fallback: hand it to the browser's download manager. That navigation is
-      // cross-origin, so the real start isn't observable — release after a short
-      // beat with a confirmation instead.
-      triggerDirectDownload(direct, filename)
-      window.setTimeout(() => {
-        dispatch({ type: 'SET_DOWNLOADING', payload: false })
-        dispatch({ type: 'SET_PROGRESS', payload: null })
-        dispatch({
-          type: 'SET_MESSAGE',
-          payload: 'Download started. Check your downloads. 🎉',
-        })
-      }, 2800)
-      return
+      const handoff = downloadManagerUrl(
+        outcome,
+        direct,
+        state.videoMetadata?.directIsAttachment,
+        state.downloadUrl,
+      )
+      if (handoff) {
+        // The browser's own downloader streams to disk instead of holding the
+        // file in a tab. The navigation is opaque to us, so release after a
+        // short beat with a confirmation rather than a completion.
+        triggerDirectDownload(handoff, filename)
+        window.setTimeout(() => {
+          dispatch({ type: 'SET_DOWNLOADING', payload: false })
+          dispatch({ type: 'SET_PROGRESS', payload: null })
+          dispatch({
+            type: 'SET_MESSAGE',
+            payload: 'Download started. Check your downloads. 🎉',
+          })
+        }, 2800)
+        return
+      }
+      // Nothing to hand off to — retry through the proxy below, which still
+      // shows a progress bar.
     }
 
     dispatch({ type: 'SET_DOWNLOADING', payload: true })
@@ -892,10 +947,10 @@ export function DownloaderApp() {
       dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: true })
       dispatch({ type: 'SET_PROGRESS', payload: null })
       dispatch({ type: 'SET_MESSAGE', payload: 'Preparing your download…' })
-      const streamed = await downloadDirectWithProgress(direct, filename, (p) =>
+      const outcome = await downloadDirectWithProgress(direct, filename, (p) =>
         dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
-      if (streamed) {
+      if (outcome === 'saved') {
         dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({
@@ -905,16 +960,24 @@ export function DownloaderApp() {
         dispatch({ type: 'SET_URL', payload: '' })
         return
       }
-      triggerDirectDownload(direct, filename)
-      window.setTimeout(() => {
-        dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
-        dispatch({ type: 'SET_PROGRESS', payload: null })
-        dispatch({
-          type: 'SET_MESSAGE',
-          payload: 'Download started. Check your downloads. 🎵',
-        })
-      }, 2800)
-      return
+      const handoff = downloadManagerUrl(
+        outcome,
+        direct,
+        state.videoMetadata?.directIsAttachment,
+        state.audioUrl,
+      )
+      if (handoff) {
+        triggerDirectDownload(handoff, filename)
+        window.setTimeout(() => {
+          dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
+          dispatch({ type: 'SET_PROGRESS', payload: null })
+          dispatch({
+            type: 'SET_MESSAGE',
+            payload: 'Download started. Check your downloads. 🎵',
+          })
+        }, 2800)
+        return
+      }
     }
 
     dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: true })

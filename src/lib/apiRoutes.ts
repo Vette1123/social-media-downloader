@@ -176,6 +176,9 @@ export async function handleDownload(
         rawMusicUrl: videoData.musicUrl,
         directVideoUrl,
         directAudioUrl,
+        // Only ever set from a cobalt tunnel here, and a tunnel always answers
+        // with Content-Disposition: attachment.
+        directIsAttachment: true,
         images:
           videoData.images?.map((img) => ({
             ...img,
