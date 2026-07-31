@@ -194,9 +194,6 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_DOWNLOAD_SUCCESS': {
       const meta = action.payload.metadata
       const hasImages = !!meta.images && meta.images.length > 0
-      const isCarousel = meta.isPhotoCarousel || hasImages
-      const hasVideo = !!action.payload.downloadUrl
-      const hasEmbed = !!meta.embedUrl
       return {
         ...state,
         message: 'Content processed successfully!',
@@ -204,10 +201,13 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         audioUrl: action.payload.audioUrl || '',
         originalUrl: action.payload.originalUrl,
         videoMetadata: meta,
-        // Open the player by default for non-carousel posts (downloadable video
-        // or an embed-only YouTube fallback); for carousels keep it collapsed
-        // (user can toggle) so the gallery dominates.
-        showPreview: (hasVideo || hasEmbed) && !isCarousel,
+        // Always collapsed. Nothing plays, and nothing is fetched, until the
+        // visitor asks for it — they came here to download a file, not to
+        // stream one. Opening the player by default pulled the poster frame
+        // through our proxy on every single result, and on the YouTube path it
+        // loaded the entire third-party embed player, for people who were
+        // about to click Download and leave.
+        showPreview: false,
         showImageGallery: hasImages,
       }
     }

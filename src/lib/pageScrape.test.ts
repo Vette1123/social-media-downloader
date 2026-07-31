@@ -104,6 +104,22 @@ describe('extractMediaFromHtml', () => {
   })
 })
 
+describe('CPU budget guards', () => {
+  // The Worker gets 10 ms of CPU per request, shared with the rest of the
+  // resolve. Raising this constant is the easiest way to silently spend it, so
+  // the ceiling is asserted rather than left to a comment.
+  it('keeps the scan cap at or below 64 KB', () => {
+    expect(MAX_SCAN_BYTES).toBeLessThanOrEqual(65_536)
+  })
+
+  it('rejects a media-free page without running any extractor', () => {
+    // 64 KB of prose with no media token anywhere: the hint check must settle
+    // it, so this stays fast no matter how the candidate list grows.
+    const html = `<html><head><title>An Article</title></head><body>${'word '.repeat(13_000)}</body></html>`
+    expect(extractMediaFromHtml(html, BASE)).toBeNull()
+  })
+})
+
 describe('readCappedText', () => {
   it('stops reading at the cap instead of buffering the whole body', async () => {
     const body = 'a'.repeat(MAX_SCAN_BYTES * 3)

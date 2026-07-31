@@ -76,24 +76,3 @@ export function offerHref(
   const separator = base.includes('?') ? '&' : '?'
   return `${base}${separator}subid=${subid}${fragment}`
 }
-
-export function isPromoDismissed(now: number): boolean {
-  try {
-    const raw = window.localStorage.getItem(PROMO_DISMISS_KEY)
-    if (!raw) return false
-    const at = Number(raw)
-    if (!Number.isFinite(at)) return false
-    return now - at < PROMO_DISMISS_MS
-  } catch {
-    // Storage blocked (private mode) — treat as not dismissed.
-    return false
-  }
-}
-
-export function dismissPromo(now: number): void {
-  try {
-    window.localStorage.setItem(PROMO_DISMISS_KEY, String(now))
-  } catch {
-    // Nothing to do; the slot simply reappears next session.
-  }
-}
