@@ -9,6 +9,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
+import { Surface } from '@/components/Surface'
 import {
   appReducer,
   type AppState,
@@ -428,9 +429,10 @@ const ImageLightbox = dynamic(
 // late appearance.
 function ResultsSkeleton() {
   return (
-    <div
+    <Surface
       aria-hidden
-      className='animate-fade-in-up space-y-4 rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'
+      elevation='raised'
+      className='animate-fade-in-up space-y-4 p-4'
     >
       <div className='flex items-start gap-3'>
         <div className='h-16 w-16 shrink-0 animate-pulse rounded-lg bg-white/[0.07] md:h-20 md:w-20' />
@@ -453,7 +455,7 @@ function ResultsSkeleton() {
         <div className='h-11 animate-pulse rounded-xl bg-white/[0.06]' />
         <div className='h-11 animate-pulse rounded-xl bg-white/[0.05]' />
       </div>
-    </div>
+    </Surface>
   )
 }
 
@@ -1272,12 +1274,13 @@ export function DownloaderApp() {
   return (
     <div ref={containerRef} className='mx-auto w-full max-w-2xl'>
       {/* Paste bar — the hero action. Input + CTA share one focus-ring pill. */}
-      <div
+      <Surface
         ref={pasteBarRef}
-        className={`flex flex-col gap-2 rounded-2xl border bg-white/[0.04] p-2 transition-colors duration-200 sm:flex-row ${
+        elevation='raised'
+        className={`flex flex-col gap-2 p-2 transition-colors duration-200 sm:flex-row ${
           urlError
-            ? 'border-red-400/60'
-            : 'border-white/[0.1] focus-within:border-cyan-400/60'
+            ? '[--surface-line:rgba(248,113,113,0.6)]'
+            : 'focus-within:[--surface-line:rgba(34,211,238,0.6)]'
         }`}
       >
         <div className='relative flex min-w-0 flex-1 items-center'>
@@ -1354,7 +1357,7 @@ export function DownloaderApp() {
             <span className='relative'>Download</span>
           )}
         </button>
-      </div>
+      </Surface>
 
       {urlError && (
         <p
@@ -1560,8 +1563,9 @@ export function DownloaderApp() {
         {/* Batch mode: show a compact per-link progress line instead of the
             single-result skeleton while a pasted list resolves. */}
         {batch && (
-          <div
-            className='animate-section-in space-y-2 rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'
+          <Surface
+            elevation='raised'
+            className='animate-section-in space-y-2 p-4'
             role='status'
             aria-live='polite'
           >
@@ -1581,7 +1585,7 @@ export function DownloaderApp() {
                 }}
               />
             </div>
-          </div>
+          </Surface>
         )}
 
         {state.loading && !batch && !state.videoMetadata && <ResultsSkeleton />}
@@ -1592,7 +1596,7 @@ export function DownloaderApp() {
             // rAF animation-start and leaves the card stuck at opacity:0 for
             // seconds. animate-card-enter runs on the compositor and never
             // drops below 0.6 opacity, so the card is always visible.
-            <div className='animate-card-enter p-4 bg-white/[0.04] rounded-2xl border border-white/[0.1] space-y-4'>
+            <Surface elevation='raised' className='animate-card-enter p-4 space-y-4'>
               <div className='flex items-start space-x-3'>
                 {state.videoMetadata.thumbnail && (
                   <img
@@ -2176,7 +2180,7 @@ export function DownloaderApp() {
                     </div>
                   )
                 })()}
-            </div>
+            </Surface>
           )}
         </div>
 

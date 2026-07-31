@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { GlowCard } from '@/components/GlowCard'
 import { ProLicensePanel } from '@/components/ProLicensePanel'
+import { Surface } from '@/components/Surface'
 import {
   isProCheckoutConfigured,
   PRO_CHECKOUT_URL,
@@ -54,7 +54,11 @@ export default function Pro() {
           </p>
         </div>
 
-        <GlowCard className='animate-card-enter mt-8 rounded-3xl p-5 shadow-2xl sm:p-8'>
+        <Surface
+          glow
+          radius='3xl'
+          className='animate-card-enter mt-8 p-5 shadow-2xl sm:p-8'
+        >
           <div className='flex flex-col items-center gap-3 text-center'>
             <p className='text-4xl font-extrabold text-white'>
               $9 <span className='text-base font-medium text-white/50'>one-time</span>
@@ -84,13 +88,16 @@ export default function Pro() {
 
           <ul className='mt-8 grid gap-3 sm:grid-cols-2'>
             {features.map((f) => (
-              <li
+              <Surface
                 key={f.title}
-                className='card-lift rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4'
+                as='li'
+                elevation='raised'
+                interaction='lift'
+                className='p-4'
               >
                 <p className='font-semibold text-white'>{f.title}</p>
                 <p className='mt-1 text-sm leading-relaxed text-white/60'>{f.body}</p>
-              </li>
+              </Surface>
             ))}
           </ul>
 
@@ -102,7 +109,7 @@ export default function Pro() {
           <div className='mt-8'>
             <ProLicensePanel />
           </div>
-        </GlowCard>
+        </Surface>
 
         <p className='mt-6 text-center text-xs text-white/40'>
           Payments are processed by Lemon Squeezy, who act as merchant of

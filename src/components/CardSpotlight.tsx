@@ -8,10 +8,11 @@ import { useEffect, useRef } from 'react'
  * custom properties (--cx/--cy). The card's ::after radial gradient reads those
  * to paint the spotlight.
  *
- * This is deliberately split out from GlowCard so GlowCard can be a SERVER
+ * This is deliberately split out from Surface so Surface can be a SERVER
  * component — its static children (icon row, headline, chips, links) then render
  * as plain HTML and never enter the RSC flight payload or hydrate. Only this
- * tiny leaf hydrates, instead of the whole hero tree.
+ * tiny leaf hydrates, instead of the whole hero tree. Surface renders it only
+ * when `glow` is set, so ordinary cards cost nothing.
  *
  * It renders nothing visible (an empty, non-interacting marker). The listener is
  * bound to the PARENT card via closest('.glow-card'), so it never intercepts

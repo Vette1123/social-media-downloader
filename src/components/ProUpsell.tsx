@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { CheckIcon } from '@/components/icons'
+import { Surface } from '@/components/Surface'
 import { PRO_CHECKOUT_URL, PRO_CTA_LABEL, PRO_PRICE } from '@/config/pro'
 import { useTier } from '@/lib/entitlements'
 
@@ -39,7 +40,11 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
 
   if (variant === 'compact') {
     return (
-      <div className='card-lift flex flex-col items-start justify-between gap-4 rounded-2xl border border-cyan-400/20 bg-white/[0.03] p-5 sm:flex-row sm:items-center'>
+      <Surface
+        tone='accent'
+        interaction='lift'
+        className='flex flex-col items-start justify-between gap-4 p-5 sm:flex-row sm:items-center'
+      >
         <div className='min-w-0'>
           <p className='font-semibold text-white'>
             Downloading more than one? Pro takes 20 at a time.
@@ -55,12 +60,16 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
         >
           {PRO_CTA_LABEL}
         </Link>
-      </div>
+      </Surface>
     )
   }
 
   return (
-    <div className='animate-section-in grid items-center gap-8 rounded-3xl border border-cyan-400/20 bg-white/[0.03] p-6 sm:p-9 lg:grid-cols-12 lg:gap-12'>
+    <Surface
+      tone='accent'
+      radius='3xl'
+      className='animate-section-in grid items-center gap-8 p-6 sm:p-9 lg:grid-cols-12 lg:gap-12'
+    >
       <div className='lg:col-span-7'>
         <h2 className='text-2xl font-bold tracking-tight text-balance text-white sm:text-3xl'>
           Twenty links at once, for {PRO_PRICE} once
@@ -98,6 +107,6 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
           </li>
         ))}
       </ul>
-    </div>
+    </Surface>
   )
 }

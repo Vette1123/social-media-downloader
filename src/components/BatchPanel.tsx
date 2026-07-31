@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { Surface } from '@/components/Surface'
 import {
   MAX_BATCH_URLS,
   parseBatchInput,
@@ -275,7 +276,7 @@ export function BatchPanel() {
   if (tier !== 'pro') return null
 
   return (
-    <div className='animate-section-in mt-4 rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'>
+    <Surface elevation='raised' className='animate-section-in mt-4 p-4'>
       <div className='flex items-center justify-between gap-2'>
         <h2 className='text-sm font-semibold text-white/85'>Batch download</h2>
         <span className='text-xs text-white/40'>
@@ -374,6 +375,6 @@ export function BatchPanel() {
           ? 'Videos save individually as each one finishes. Photos collect into one ZIP — tap “Save all” once the queue is done.'
           : 'Audio tracks collect into one ZIP — tap “Save all” once the queue is done. A link with nothing downloadable (e.g. a playable-only embed) is marked as such, not as a failure.'}
       </p>
-    </div>
+    </Surface>
   )
 }
