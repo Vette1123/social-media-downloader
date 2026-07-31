@@ -214,9 +214,17 @@ export class Downloader {
   // downloadMode:'audio' for every platform.
   private readonly mode: 'auto' | 'audio'
 
-  constructor(opts?: { quality?: 'hd' | 'sd'; mode?: 'auto' | 'audio' }) {
+  // Pro requests try the operator's own instances first. See cobaltInstances.
+  private readonly priority: boolean
+
+  constructor(opts?: {
+    quality?: 'hd' | 'sd'
+    mode?: 'auto' | 'audio'
+    priority?: boolean
+  }) {
     this.videoQuality = opts?.quality === 'sd' ? 'sd' : 'hd'
     this.mode = opts?.mode === 'audio' ? 'audio' : 'auto'
+    this.priority = opts?.priority === true
   }
 
   private readonly userAgent =
@@ -251,12 +259,22 @@ export class Downloader {
   // needs a JWT, kwiatekmiki 403s, eepy.today/oceanofanything are down) since a
   // dead instance only adds a timeout to every request. Probed 2026-07: only
   // co.otomir23.me answers open POSTs.
-  private readonly cobaltInstances = [
-    'https://co.otomir23.me/',
-    ...(process.env.COBALT_API_URL ?? '')
+  //
+  // A Pro request flips this order. The private instances are ours: not
+  // rate-limited and not shared with the public internet, which is worth more
+  // to someone who paid than the public instance's warm start is.
+  private get cobaltInstances(): string[] {
+    const publicInstance = 'https://co.otomir23.me/'
+    const private_ = (process.env.COBALT_API_URL ?? '')
       .split(/[\s,]+/)
-      .map((s) => s.trim()),
-  ].filter((v): v is string => Boolean(v))
+      .map((s) => s.trim())
+      .filter(Boolean)
+
+    if (this.priority && private_.length > 0) {
+      return [...private_, publicInstance]
+    }
+    return [publicInstance, ...private_]
+  }
 
   // Public Instagram web app id — required by the GraphQL/web-API endpoints.
   // This is the same id Instagram's own web client sends and is not a secret.
