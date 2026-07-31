@@ -1,6 +1,7 @@
 'use client'
 
 import { useId, useState } from 'react'
+import { Surface } from '@/components/Surface'
 import { activateLicense, clearLicense, useTier } from '@/lib/entitlements'
 
 /**
@@ -65,7 +66,7 @@ export function ProLicensePanel() {
 
   if (tier === 'pro') {
     return (
-      <div className='rounded-2xl border border-emerald-400/25 bg-emerald-400/[0.06] p-5 sm:p-6'>
+      <Surface tone='positive' className='p-5 sm:p-6'>
         <div className='flex items-center gap-2'>
           <span className='h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]' />
           <p className='font-semibold text-white'>Pro is active on this browser</p>
@@ -82,7 +83,7 @@ export function ProLicensePanel() {
         >
           Remove this license from this browser
         </button>
-      </div>
+      </Surface>
     )
   }
 
@@ -104,7 +105,12 @@ export function ProLicensePanel() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className='rounded-2xl border border-white/[0.1] bg-white/[0.03] p-5 sm:p-6'>
+    <Surface
+      as='form'
+      onSubmit={handleSubmit}
+      elevation='raised'
+      className='p-5 sm:p-6'
+    >
       <label htmlFor={inputId} className='block text-sm font-semibold text-white'>
         Already bought a key?
       </label>
@@ -137,6 +143,6 @@ export function ProLicensePanel() {
           {errorSuffix(form.kind)}
         </p>
       )}
-    </form>
+    </Surface>
   )
 }

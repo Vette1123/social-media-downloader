@@ -1,6 +1,7 @@
 'use client'
 
 import { useId, useMemo } from 'react'
+import { Surface } from '@/components/Surface'
 import { OFFERS, type OfferPlacement } from '@/config/offers'
 import { useHydrated } from '@/lib/clientEnv'
 import { useTier } from '@/lib/entitlements'
@@ -111,7 +112,7 @@ export function PromoSlot({
   const showContent = hydrated && tier !== 'pro'
 
   const cardContent = showContent && (
-    <div className='animate-section-in group relative overflow-hidden rounded-2xl border border-white/[0.1] bg-white/[0.04] p-4'>
+    <Surface className='animate-section-in group overflow-hidden p-4'>
       {adsEnabled ? (
         <AdUnit />
       ) : (
@@ -138,18 +139,22 @@ export function PromoSlot({
 
       {!adsEnabled && offer && (
         <div className='mt-3 flex items-center justify-between gap-3'>
-          <a
+          <Surface
+            as='a'
             href={offerHref(offer, placement, platform)}
             target='_blank'
             rel='sponsored nofollow noopener noreferrer'
-            className='card-lift rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-medium text-white/80 hover:text-white'
+            elevation='raised'
+            interaction='lift'
+            radius='xl'
+            className='px-3 py-2 text-sm font-medium text-white/80 hover:text-white'
           >
             {offer.cta}
-          </a>
+          </Surface>
           <span className='text-[11px] text-white/35'>Sponsored</span>
         </div>
       )}
-    </div>
+    </Surface>
   )
 
   // `in-content` reserves its box unconditionally — the height must be held

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { DownloaderApp } from '@/components/DownloaderApp'
-import { GlowCard } from '@/components/GlowCard'
+import { Surface } from '@/components/Surface'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { LazyFAQ } from '@/components/LazyFAQ'
 import {
@@ -191,20 +191,26 @@ function CrossLinkNav({ activeSlug }: { activeSlug: PlatformSlug }) {
       aria-label='Other downloaders'
       className='flex flex-wrap justify-center gap-2.5'
     >
-      <Link
+      <Surface
+        as={Link}
         href='/'
-        className='card-lift inline-flex items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 hover:text-white'
+        interaction='lift'
+        radius='xl'
+        className='inline-flex items-center gap-1.5 px-4 py-2.5 text-sm text-white/80 hover:text-white'
       >
         ← All platforms
-      </Link>
+      </Surface>
       {others.map((p) => {
         const { Icon, tile } = platformIcons[p.slug]
         const useBrandTile = !tile.startsWith('bg-transparent')
         return (
-          <Link
+          <Surface
             key={p.slug}
+            as={Link}
             href={`/${p.slug}`}
-            className='card-lift inline-flex items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 hover:text-white'
+            interaction='lift'
+            radius='xl'
+            className='inline-flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 hover:text-white'
           >
             <span
               className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${useBrandTile ? tile : ''}`}
@@ -216,7 +222,7 @@ function CrossLinkNav({ activeSlug }: { activeSlug: PlatformSlug }) {
               )}
             </span>
             {p.brandLabel}
-          </Link>
+          </Surface>
         )
       })}
     </nav>
@@ -258,7 +264,11 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
       <div className='relative z-10 mx-auto max-w-6xl px-4 py-10 sm:py-16'>
         <main>
         {/* HERO — brand row, breadcrumb, headline, and the paste-bar. */}
-        <GlowCard className='animate-card-enter mx-auto w-full max-w-3xl rounded-3xl p-5 shadow-2xl sm:p-8 md:p-10'>
+        <Surface
+          glow
+          radius='3xl'
+          className='animate-card-enter mx-auto w-full max-w-3xl p-5 shadow-2xl sm:p-8 md:p-10'
+        >
           <div className='animate-fade-in-up text-center'>
             <PlatformIconRow activeSlug={platform.slug} />
             <Breadcrumb platform={platform} />
@@ -289,35 +299,40 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           {/* Dev / companion-app links */}
           <div className='mx-auto mt-6 flex max-w-md items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
             {devLinks.map(({ href, label, Icon }) => (
-              <a
+              <Surface
                 key={label}
+                as='a'
                 href={href}
                 target='_blank'
                 rel='noopener noreferrer'
-                className='card-lift group flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 sm:flex-none sm:px-4'
+                elevation='raised'
+                interaction='lift'
+                radius='xl'
+                className='group flex flex-1 items-center justify-center gap-2 px-3 py-2.5 sm:flex-none sm:px-4'
               >
                 <Icon className='h-[18px] w-[18px] shrink-0 text-white/80 transition-colors duration-300 group-hover:text-cyan-300' />
                 <span className='text-sm font-medium text-white/80 transition-colors duration-300 group-hover:text-white'>
                   {label}
                 </span>
-              </a>
+              </Surface>
             ))}
             <RafiqPromoCard />
           </div>
-        </GlowCard>
+        </Surface>
 
         {/* WHAT YOU CAN DO — platform feature list */}
         <section className='mt-16 sm:mt-24'>
           <SectionHead title={`With this ${platform.name} downloader you can`} />
           <ul className='mx-auto grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2'>
             {platform.featureList.map((f) => (
-              <li
+              <Surface
                 key={f}
-                className='flex items-start gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 text-sm text-white/80'
+                as='li'
+                className='flex items-start gap-3 p-4 text-sm text-white/80'
               >
                 <CheckMark className='mt-0.5 h-4 w-4 shrink-0 text-cyan-300' />
                 <span>{f}</span>
-              </li>
+              </Surface>
             ))}
           </ul>
         </section>
@@ -326,13 +341,15 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
         <section className='mt-16 sm:mt-24'>
           <div className='grid gap-4 md:grid-cols-3'>
             {platform.cards.map((card) => (
-              <article
+              <Surface
                 key={card.title}
-                className='card-lift rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
+                as='article'
+                interaction='lift'
+                className='p-5'
               >
                 <h3 className='mb-2 font-semibold text-white'>{card.title}</h3>
                 <p className='text-sm text-white/75'>{card.body}</p>
-              </article>
+              </Surface>
             ))}
           </div>
         </section>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Surface } from '@/components/Surface'
 import { siteConfig } from '@/config/site'
 import { platforms } from '@/lib/platforms'
 
@@ -29,7 +30,11 @@ export default function NotFound() {
         className='bg-blob pointer-events-none absolute -bottom-40 -right-32 h-[32rem] w-[32rem] rounded-full bg-sky-500/10 blur-3xl'
       />
 
-      <div className='glow-card relative z-10 w-full max-w-xl rounded-3xl p-6 md:p-8 text-center shadow-2xl backdrop-blur-md'>
+      <Surface
+        glow
+        radius='3xl'
+        className='relative z-10 w-full max-w-xl p-6 md:p-8 text-center shadow-2xl'
+      >
         <p className='text-grad text-sm md:text-base font-semibold tracking-wider uppercase'>
           404
         </p>
@@ -50,16 +55,20 @@ export default function NotFound() {
 
         <div className='mt-8 flex flex-wrap justify-center gap-2'>
           {platforms.map((p) => (
-            <Link
+            <Surface
               key={p.slug}
+              as={Link}
               href={`/${p.slug}`}
-              className='card-lift inline-flex items-center rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs md:text-sm text-white/80 hover:text-white'
+              elevation='raised'
+              interaction='lift'
+              radius='lg'
+              className='inline-flex items-center px-3 py-1.5 text-xs md:text-sm text-white/80 hover:text-white'
             >
               {p.brandLabel}
-            </Link>
+            </Surface>
           ))}
         </div>
-      </div>
+      </Surface>
     </div>
   )
 }

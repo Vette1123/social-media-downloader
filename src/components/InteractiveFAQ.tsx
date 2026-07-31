@@ -2,6 +2,7 @@
 
 import * as AccordionPrimitive from '@radix-ui/react-accordion'
 import { ChevronDown } from 'lucide-react'
+import { Surface } from '@/components/Surface'
 import { cn } from '@/lib/utils'
 
 /**
@@ -31,10 +32,13 @@ export function InteractiveFAQ({
       className='space-y-3'
     >
       {items.map((f, i) => (
-        <AccordionPrimitive.Item
+        <Surface
           key={f.q}
+          as={AccordionPrimitive.Item}
           value={`faq-${i + 1}`}
-          className='card-hover border border-white/[0.08] rounded-xl bg-white/[0.03] overflow-hidden'
+          interaction='hover'
+          radius='xl'
+          className='overflow-hidden'
         >
           <AccordionPrimitive.Header className='flex'>
             <AccordionPrimitive.Trigger
@@ -49,7 +53,7 @@ export function InteractiveFAQ({
           <AccordionPrimitive.Content className='overflow-hidden text-sm text-white/75 data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down'>
             <div className='px-4 pb-4 pt-0 leading-relaxed'>{f.a}</div>
           </AccordionPrimitive.Content>
-        </AccordionPrimitive.Item>
+        </Surface>
       ))}
     </AccordionPrimitive.Root>
   )

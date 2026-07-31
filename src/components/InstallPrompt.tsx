@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { CloseIcon, DownloadIcon, ExternalLinkIcon } from '@/components/icons'
+import { Surface } from '@/components/Surface'
 import {
   INSTALL_DISMISS_KEY,
   useInstallOfferable,
@@ -73,7 +74,10 @@ export function InstallPrompt() {
   }
 
   return (
-    <div className='animate-section-in relative mt-4 flex items-center gap-3 rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.06] p-3 pr-9'>
+    <Surface
+      tone='accent'
+      className='animate-section-in mt-4 flex items-center gap-3 p-3 pr-9'
+    >
       <span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#17171d] to-[#0a0a0c] ring-1 ring-cyan-400/40'>
         <DownloadIcon className='h-5 w-5 text-cyan-300' />
       </span>
@@ -110,6 +114,6 @@ export function InstallPrompt() {
       >
         <CloseIcon className='h-3.5 w-3.5' />
       </button>
-    </div>
+    </Surface>
   )
 }

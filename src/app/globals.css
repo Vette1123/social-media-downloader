@@ -147,9 +147,70 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
-   Glow card: a slow, low-luminance cyan sheen glides the perimeter (a single
-   comet with a long faint tail — no bright hot core), over a faint static
-   outline. A cursor spotlight lifts the surface where the pointer sits.
+   SURFACE — the one card. Every panel on this site is this class, applied by
+   <Surface> (src/components/Surface.tsx). There is deliberately no second way
+   to draw a card.
+
+   The fill is OPAQUE, and that is the entire point of the class existing. The
+   page ground carries a grid, a grain layer and three blurred accent blobs
+   (.bg-blob-*). Every translucent card fill this site has shipped —
+   bg-white/[0.03], bg-white/[0.04], bg-cyan-400/[0.06], --panel at 88% — let
+   that blob gradient paint straight through the card interior, so a panel read
+   as a smear of cyan light rising off the page instead of a solid object
+   sitting on it. The fix is an opaque fill; keeping the fill in ONE class is
+   what stops the leak from being reintroduced by the next hand-rolled panel.
+
+   Tints are mixed INTO the opaque panel colour, never layered over the page as
+   an alpha film, for the same reason.
+
+   --surface-bg-hover is read by .card-lift / .card-hover below, so a hovered
+   card steps up from its own resting fill instead of every tone snapping to
+   the same grey.
+--------------------------------------------------------------------------- */
+/* Registered so `transition-colors` can actually tween the border between
+   states (the paste bar's idle → focus → error). An unregistered custom
+   property snaps. This is a 1px border colour, not a gradient — nothing like
+   the per-frame conic repaint that --bd causes. */
+@property --surface-line {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(255, 255, 255, 0.08);
+}
+.surface {
+  --surface-bg: var(--panel);
+  --surface-bg-hover: var(--panel-2);
+  /* Border colour goes through a custom property rather than a Tailwind
+     `border-*` utility, because .surface is unlayered CSS and would win over
+     any utility a caller tried to pass in. A card that needs a state colour
+     (the paste bar's error/focus ring) sets --surface-line instead. */
+  --surface-line: var(--line);
+  position: relative;
+  background-color: var(--surface-bg);
+  border: 1px solid var(--surface-line);
+}
+/* A card that sits ON another surface. Two identical fills stacked read flat,
+   and the old answer to that was to make the inner one translucent — which is
+   what let the background through. It steps up one stop instead. */
+.surface-raised {
+  --surface-bg: var(--panel-2);
+  --surface-bg-hover: #1e1e26;
+}
+.surface-accent {
+  --surface-bg: color-mix(in srgb, var(--panel) 94%, #22d3ee);
+  --surface-bg-hover: color-mix(in srgb, var(--panel) 88%, #22d3ee);
+  --surface-line: rgba(34, 211, 238, 0.22);
+}
+.surface-positive {
+  --surface-bg: color-mix(in srgb, var(--panel) 94%, #34d399);
+  --surface-bg-hover: color-mix(in srgb, var(--panel) 88%, #34d399);
+  --surface-line: rgba(52, 211, 153, 0.25);
+}
+
+/* ---------------------------------------------------------------------------
+   Glow card: a .surface plus a slow, low-luminance cyan sheen that glides the
+   perimeter (a single comet with a long faint tail — no bright hot core). A
+   cursor spotlight lifts the surface where the pointer sits. The fill and the
+   border come from .surface; this class only adds the ring and the bloom.
 --------------------------------------------------------------------------- */
 @property --bd {
   syntax: '<angle>';
@@ -159,8 +220,10 @@ body {
 .glow-card {
   position: relative;
   --bd: 0deg;
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
-  border: 1px solid var(--line);
+  /* No background and no border here — .surface owns both, and a glow card is
+     always rendered with it (<Surface glow>). The `--panel 88%` fill this rule
+     used to carry was the biggest single leak: the hero card, the /pro card and
+     the 404 card all showed the blobs through their middle. */
   /* Static bloom halo: one paint, no per-frame cost, no mask/filter layer. This
      replaces the old animated drop-shadow on ::before, which forced a per-frame
      filtered recomposite of a masked layer and blanked the card on weak mobile
@@ -380,8 +443,13 @@ body {
        read straight through the card — the label and sub-copy ended up
        competing with the background instead of standing on the card. Going
        solid gives the type a stable, dark ground and is what actually makes the
-       hovered tile read as lifted. */
-    background-color: var(--panel);
+       hovered tile read as lifted.
+
+       The value comes from the card's own tone (.surface sets it), so an accent
+       or raised card steps up from ITS fill rather than every tone snapping to
+       the same grey on hover. The fallback covers the handful of non-.surface
+       controls that borrow this class. */
+    background-color: var(--surface-bg-hover, var(--panel));
     border-color: rgba(34, 211, 238, 0.45);
     /* The accent stays INSIDE the card, matching .glow-card. An outward cyan
        bloom (the old `0 18px 40px -20px`) lit the page background instead of

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { DownloaderApp } from '@/components/DownloaderApp'
-import { GlowCard } from '@/components/GlowCard'
+import { Surface } from '@/components/Surface'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { LazyFAQ } from '@/components/LazyFAQ'
 import { ProUpsell } from '@/components/ProUpsell'
@@ -225,7 +225,11 @@ export default function Home() {
               HERO — brand tiles, headline, and the paste-bar (the product).
               Download results expand directly under the bar, inside the card.
           ---------------------------------------------------------------- */}
-          <GlowCard className='animate-card-enter mx-auto w-full max-w-3xl rounded-3xl p-5 shadow-2xl sm:p-8 md:p-10'>
+          <Surface
+            glow
+            radius='3xl'
+            className='animate-card-enter mx-auto w-full max-w-3xl p-5 shadow-2xl sm:p-8 md:p-10'
+          >
             <div className='animate-fade-in-up text-center'>
               <div className='mb-6 flex justify-center'>
                 <div className='flex items-center gap-2 md:gap-2.5'>
@@ -282,22 +286,26 @@ export default function Home() {
             {/* Dev / companion-app links */}
             <div className='mx-auto mt-6 flex max-w-md items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
               {devLinks.map(({ href, label, Icon }) => (
-                <a
+                <Surface
                   key={label}
+                  as='a'
                   href={href}
                   target='_blank'
                   rel='noopener noreferrer'
-                  className='card-lift group flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/[0.1] bg-white/[0.03] px-3 py-2.5 sm:flex-none sm:px-4'
+                  elevation='raised'
+                  interaction='lift'
+                  radius='xl'
+                  className='group flex flex-1 items-center justify-center gap-2 px-3 py-2.5 sm:flex-none sm:px-4'
                 >
                   <Icon className='h-[18px] w-[18px] shrink-0 text-white/80 transition-colors duration-300 group-hover:text-cyan-300' />
                   <span className='text-sm font-medium text-white/80 transition-colors duration-300 group-hover:text-white'>
                     {label}
                   </span>
-                </a>
+                </Surface>
               ))}
               <RafiqPromoCard />
             </div>
-          </GlowCard>
+          </Surface>
 
           {/* ---------------------------------------------------------------
               WHAT YOU CAN DO — 4-across feature band
@@ -315,16 +323,17 @@ export default function Home() {
                 // four-across band you're meant to skim. `.card-lift` carries
                 // the shared geometry (see globals.css); only the copy and icon
                 // response, which are specific to this card, live here.
-                <div
+                <Surface
                   key={t.label}
-                  className='card-lift group rounded-2xl border border-white/[0.08] bg-white/[0.03] p-5'
+                  interaction='lift'
+                  className='group p-5'
                 >
                   <t.Icon className='mb-4 h-6 w-6 text-cyan-300 drop-shadow-[0_2px_6px_rgba(34,211,238,0.35)] transition-transform duration-200 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100' />
                   <p className='font-semibold text-white'>{t.label}</p>
                   <p className='mt-1 text-sm text-white/60 transition-colors duration-200 group-hover:text-white/85'>
                     {t.sub}
                   </p>
-                </div>
+                </Surface>
               ))}
             </div>
           </section>
@@ -339,17 +348,19 @@ export default function Home() {
             />
             <ol className='grid gap-3 md:grid-cols-3 md:gap-4'>
               {howItWorksSteps.map((s) => (
-                <li
+                <Surface
                   key={s.n}
+                  as='li'
                   id={`step-${s.n}`}
-                  className='card-lift group scroll-mt-24 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-6'
+                  interaction='lift'
+                  className='group scroll-mt-24 p-6'
                 >
                   <div className='btn-grad mb-4 flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold transition-transform duration-200 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100'>
                     {s.n}
                   </div>
                   <p className='font-semibold text-white'>{s.title}</p>
                   <p className='mt-1 text-sm text-white/60'>{s.sub}</p>
-                </li>
+                </Surface>
               ))}
             </ol>
           </section>
@@ -372,10 +383,13 @@ export default function Home() {
                 const { tile, Icon } = cfg
                 const useBrandTile = !tile.startsWith('bg-transparent')
                 return (
-                  <Link
+                  <Surface
                     key={p.slug}
+                    as={Link}
                     href={`/${p.slug}`}
-                    className='card-lift inline-flex w-full items-center gap-2.5 rounded-xl border border-white/[0.1] bg-white/[0.03] px-4 py-2.5 text-sm text-white/80 hover:text-white sm:w-auto'
+                    interaction='lift'
+                    radius='xl'
+                    className='inline-flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 hover:text-white sm:w-auto'
                   >
                     <span
                       className={`inline-flex h-6 w-6 items-center justify-center rounded-md ${
@@ -389,7 +403,7 @@ export default function Home() {
                       )}
                     </span>
                     {p.brandLabel}
-                  </Link>
+                  </Surface>
                 )
               })}
             </nav>

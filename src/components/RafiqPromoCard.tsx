@@ -1,6 +1,7 @@
 'use client'
 
 import { GooglePlayIcon } from '@/components/icons'
+import { Surface } from '@/components/Surface'
 import { openRafiqOnPlayStore, RAFIQ_PLAY_STORE_URL } from '@/lib/rafiq'
 
 // Attention-grabbing hero card promoting Rafiq, our companion app. Matches the
@@ -8,16 +9,20 @@ import { openRafiqOnPlayStore, RAFIQ_PLAY_STORE_URL } from '@/lib/rafiq'
 // native Play Store app (falling back to the web listing) on click.
 export function RafiqPromoCard() {
   return (
-    <a
+    <Surface
+      as='a'
       href={RAFIQ_PLAY_STORE_URL}
       target='_blank'
       rel='noopener noreferrer'
       title='Rafiq — an app made by us, on Google Play'
-      onClick={(e) => {
+      onClick={(e: React.MouseEvent) => {
         e.preventDefault()
         openRafiqOnPlayStore()
       }}
-      className='group relative flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 py-2.5 sm:px-4 card-lift rounded-xl bg-white/5 border border-white/15 overflow-hidden backdrop-blur-sm'
+      elevation='raised'
+      interaction='lift'
+      radius='xl'
+      className='group flex flex-1 sm:flex-none items-center justify-center gap-2 px-3 py-2.5 sm:px-4 overflow-hidden'
     >
       <span
         className='absolute inset-0 bg-gradient-to-r from-emerald-500/80 to-green-400/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300'
@@ -31,6 +36,6 @@ export function RafiqPromoCard() {
       <span className='relative text-white/80 group-hover:text-white text-sm font-medium transition-colors duration-300'>
         Rafiq
       </span>
-    </a>
+    </Surface>
   )
 }

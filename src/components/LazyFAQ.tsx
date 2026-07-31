@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
+import { Surface } from '@/components/Surface'
 import { cn } from '@/lib/utils'
 
 /**
@@ -98,10 +99,13 @@ export function LazyFAQ({
       {!interactive && (
         <div className='space-y-3'>
           {items.map((f, i) => (
-            <details
+            <Surface
               key={f.q}
+              as='details'
               open={i === defaultOpenIndex}
-              className='card-hover group border border-white/[0.08] rounded-xl bg-white/[0.03] overflow-hidden'
+              interaction='hover'
+              radius='xl'
+              className='group overflow-hidden'
             >
               <summary className='flex flex-1 cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-left text-sm md:text-base font-semibold text-white transition-colors hover:text-cyan-200'>
                 {f.q}
@@ -121,7 +125,7 @@ export function LazyFAQ({
               <div className={cn('px-4 pb-4 pt-0 text-sm leading-relaxed text-white/75')}>
                 {f.a}
               </div>
-            </details>
+            </Surface>
           ))}
         </div>
       )}
