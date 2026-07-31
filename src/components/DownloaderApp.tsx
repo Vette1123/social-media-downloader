@@ -11,6 +11,7 @@ import {
 } from 'react'
 import {
   appReducer,
+  type AppState,
   initialState,
   type VideoMetadata,
 } from '@/lib/appReducer'
@@ -172,6 +173,20 @@ function isTooSlowToStream(
 // without changing behaviour.
 function nowMs(): number {
   return Date.now()
+}
+
+// True while a link is being resolved or a file is actively transferring —
+// `state.loading` covers only the former; the latter is three independent
+// flags because video/audio/images can each be mid-transfer on their own.
+// The promo slot (and anything else that must stay off-screen for the whole
+// paste-to-download path) gates on this rather than inlining the four terms.
+function isResolvingOrDownloading(state: AppState): boolean {
+  return (
+    state.loading ||
+    state.downloading ||
+    state.downloadingAudio ||
+    state.downloadingImages
+  )
 }
 
 // Capture a tiny, self-contained snapshot of a thumbnail for the Recent list.
@@ -2162,7 +2177,7 @@ export function DownloaderApp() {
 
       {/* Sponsor card — only after a result exists, never while resolving or
           downloading, and always below the download controls. */}
-      {state.videoMetadata && !state.loading && (
+      {state.videoMetadata && !isResolvingOrDownloading(state) && (
         <PromoSlot placement='post-result' platform={state.videoMetadata.platform} />
       )}
 
