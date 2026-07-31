@@ -10,6 +10,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/vetteotp)
 
 ### 🚀 [Try it live →](https://www.socialdownloader.space)
 
@@ -117,11 +118,15 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 
 ## Supporting the project
 
-The site is free and stays free. It will be paid for by a single sponsor card
-shown after a download — no popups, no redirects, no interstitials, and no
-tracking of what you download. You can remove that card for good with a
+The site is free and stays free. It is paid for by a single sponsor card shown
+after a download — no popups, no redirects, no interstitials, and no tracking of
+what you download. You can remove that card for good with a
 [Pro license](https://www.socialdownloader.space/pro), or support the work
-directly by [buying me a coffee](https://buymeacoffee.com/vetteotp).
+directly:
+
+<a href="https://buymeacoffee.com/vetteotp">
+  <img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=vetteotp&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="48" />
+</a>
 
 ## Tech stack
 
