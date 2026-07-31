@@ -76,6 +76,23 @@ async function isPriorityRequest(request: Request): Promise<boolean> {
   return (await verifyToken(token, secret, Date.now())) !== null
 }
 
+/**
+ * The cache key for a resolve, pinning the one invariant the whole review
+ * cared most about: a free request can never read a cache entry produced by
+ * an authenticated resolve, because `tier` is baked into every key. Extracted
+ * so that invariant is asserted by a test rather than resting on an inline
+ * string literal — see apiRoutes.test.ts.
+ */
+export function resolveCacheKey(
+  tier: 'auth' | 'anon',
+  type: string,
+  quality: 'hd' | 'sd',
+  mode: 'auto' | 'audio',
+  url: string,
+): string {
+  return `${tier}|${type}|${quality}|${mode}|${url}`
+}
+
 export async function handleDownload(
   request: Request,
   ctx?: WaitUntilContext,
@@ -122,12 +139,21 @@ export async function handleDownload(
     // login-gated post an anonymous one cannot. Ordering (priority) is NOT in
     // the key — it does not change the payload. See Task 15.
     const tier = priority ? 'auth' : 'anon'
-    const cacheKey = `${tier}|${type}|${preferredQuality}|${mode}|${url}`
+    const cacheKey = resolveCacheKey(tier, type, preferredQuality, mode, url)
     const cached = getCached(cacheKey)
     if (cached) return cachedResponse(cached, 'HIT')
 
+    // The edge cache (caches.default) is a shared, externally-addressable
+    // store keyed on a URL anyone can construct from the open-source key
+    // format — the source URL is the only variable. An anonymous entry there
+    // is harmless (guessing one buys nothing a public resolve wouldn't
+    // already give you), but an `auth` entry can hold a login-gated
+    // Instagram result, which is a paid entitlement. So authenticated
+    // resolves skip this tier entirely, both read and write; the per-isolate
+    // Map above still absorbs repeats, and Pro traffic is a small fraction of
+    // requests, so nothing meaningful is lost.
     const origin = new URL(request.url).origin
-    const edge = await readEdgeCache(origin, cacheKey)
+    const edge = priority ? null : await readEdgeCache(origin, cacheKey)
     if (edge) {
       // Promote into this isolate so a second repeat skips even the edge
       // lookup, which is I/O and therefore latency the Map does not cost.
@@ -223,7 +249,7 @@ export async function handleDownload(
     // again for storage.
     const body = JSON.stringify(payload)
     setCached(cacheKey, body)
-    writeEdgeCache(origin, cacheKey, body, ctx)
+    if (!priority) writeEdgeCache(origin, cacheKey, body, ctx)
 
     return new Response(body, {
       headers: { 'Content-Type': 'application/json', 'X-Cache': 'MISS' },

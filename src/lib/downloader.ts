@@ -297,8 +297,16 @@ export class Downloader {
   // IPs — so it is spent on paying users rather than on all traffic. A free
   // request resolves exactly as it does today: public posts succeed, and
   // login-gated ones fail the same way they already do.
+  //
+  // IG_SESSIONID_FOR_ALL is the self-hoster's escape hatch: licensing
+  // (`authenticated`) only ever succeeds against the project owner's Lemon
+  // Squeezy account, so without this a self-hosted deployment can never reach
+  // the Pro branch and IG_SESSIONID would silently do nothing forever, even
+  // though it's a documented, previously-working feature. Setting it to '1'
+  // makes the cookie apply to every request instead of Pro-only. The hosted
+  // site must leave it unset — see README.
   private get instagramSessionId(): string {
-    if (!this.authenticated) return ''
+    if (!this.authenticated && process.env.IG_SESSIONID_FOR_ALL !== '1') return ''
     return process.env.IG_SESSIONID?.trim() || ''
   }
 
