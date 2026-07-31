@@ -170,6 +170,7 @@ All optional — the app runs without any config.
 | `COBALT_API_URL`      | Self-hosted [Cobalt](https://github.com/imputnet/cobalt) instance to harden the extraction fallback chain. |
 | `IG_SESSIONID`        | Instagram session cookie from a burner account. Sent only for licensed (Pro) requests, to resolve login-gated posts. Public posts resolve without it. |
 | `IG_SESSIONID_FOR_ALL`| Self-hosted escape hatch: set to `1` to make `IG_SESSIONID` apply to every request instead of Pro-only. Licensing only ever validates against the hosted project's own Lemon Squeezy account, so without this a self-hosted deployment can never unlock the Pro branch and `IG_SESSIONID` would do nothing. Same burner-account risk applies. Must stay unset on the hosted site. |
+| `NEXT_PUBLIC_CF_BEACON_TOKEN` | Enables Cloudflare Web Analytics by injecting the beacon script at build time. Build-time only, like `NEXT_PUBLIC_SITE_URL` — set it as build env, not a Worker var. If Web Analytics is already enabled at the zone level in the Cloudflare dashboard, Cloudflare injects the beacon at the edge automatically; setting this too would load it twice and double-count page views. Pick one mechanism. |
 
 ## How to use
 

@@ -32,9 +32,10 @@ export default function Privacy() {
           <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Analytics</h2>
             <p>
-              We use Cloudflare Web Analytics for page-view counts. It sets no
-              cookies, builds no cross-site profile, and does not fingerprint
-              your device. That is the only analytics on this site.
+              When enabled, we use Cloudflare Web Analytics for page-view
+              counts. It sets no cookies, builds no cross-site profile, and
+              does not fingerprint your device. It is the only analytics this
+              site ever runs.
             </p>
           </section>
 
