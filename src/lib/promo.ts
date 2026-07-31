@@ -63,8 +63,18 @@ export function offerHref(
   platform?: string,
 ): string {
   const subid = `${placement}_${platform || 'none'}`
-  const separator = offer.href.includes('?') ? '&' : '?'
-  return `${offer.href}${separator}subid=${subid}`
+
+  // The fragment has to be split off before `subid` is inserted and
+  // reattached last. Deciding the separator on `includes('?')` alone, without
+  // this split, put `subid` after a `#` on a fragment URL — inside the
+  // fragment, which is never sent to the server, so the click would never
+  // show up in the affiliate dashboard. subid is the only attribution
+  // mechanism this design has, so that failure is silent and total.
+  const hashIndex = offer.href.indexOf('#')
+  const base = hashIndex === -1 ? offer.href : offer.href.slice(0, hashIndex)
+  const fragment = hashIndex === -1 ? '' : offer.href.slice(hashIndex)
+  const separator = base.includes('?') ? '&' : '?'
+  return `${base}${separator}subid=${subid}${fragment}`
 }
 
 export function isPromoDismissed(now: number): boolean {

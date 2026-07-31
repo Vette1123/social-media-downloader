@@ -205,4 +205,22 @@ describe('offerHref', () => {
     )
     expect(href).toBe('https://example.com/x?ref=abc&subid=post-result_youtube')
   })
+
+  it('inserts subid before a fragment rather than after it', () => {
+    const href = offerHref(
+      offer({ id: 'x', href: 'https://partner.com/deal#pricing' }),
+      'post-result',
+      'tiktok',
+    )
+    expect(href).toBe('https://partner.com/deal?subid=post-result_tiktok#pricing')
+  })
+
+  it('inserts subid before a fragment that follows an existing query', () => {
+    const href = offerHref(
+      offer({ id: 'x', href: 'https://partner.com/deal?a=1#pricing' }),
+      'post-result',
+      'tiktok',
+    )
+    expect(href).toBe('https://partner.com/deal?a=1&subid=post-result_tiktok#pricing')
+  })
 })
