@@ -3,6 +3,7 @@
 import { useId, useMemo, useState } from 'react'
 import { OFFERS, type OfferPlacement } from '@/config/offers'
 import { useHydrated } from '@/lib/clientEnv'
+import { useTier } from '@/lib/entitlements'
 import { dismissPromo, isPromoDismissed, offerHref, selectOffer } from '@/lib/promo'
 
 // Reading the clock is a side effect, and the React compiler flags a bare
@@ -48,6 +49,7 @@ export function PromoSlot({
   platform?: string
 }) {
   const hydrated = useHydrated()
+  const tier = useTier()
   const [dismissed, setDismissed] = useState(false)
 
   // useId() returns the same string during the static (server) render and
@@ -68,7 +70,8 @@ export function PromoSlot({
   // The height is reserved unconditionally; only the contents are gated on
   // hydration and dismissal. Reserving after the checks would let the card
   // push the page down after paint, which is exactly the CLS we are avoiding.
-  const suppressed = dismissed || (hydrated && isPromoDismissed(nowMs()))
+  const suppressed =
+    tier === 'pro' || dismissed || (hydrated && isPromoDismissed(nowMs()))
 
   return (
     <div className='mt-4 min-h-[104px] sm:min-h-[92px]'>
