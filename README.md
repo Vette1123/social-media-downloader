@@ -17,7 +17,7 @@ A free, watermark-free downloader for **TikTok, Twitter/X, Instagram, Facebook, 
 
 It's also an **installable app (PWA)**: add it to your home screen and share links straight from the TikTok, Instagram, or YouTube app — no browser, no copy-paste.
 
-A free, open-source alternative to SnapTik, SSSTik, SaveTT, SnapInsta, Y2mate, and GetFvid — with **no ads, no tracking, and a multi-source fallback chain** so downloads keep working when any single provider goes down.
+A free, open-source alternative to SnapTik, SSSTik, SaveTT, SnapInsta, Y2mate, and GetFvid — with **no popups, no redirects, no tracking, and a multi-source fallback chain** so downloads keep working when any single provider goes down.
 
 ⭐ **If this tool is useful to you, please [star the repo](https://github.com/Vette1123/social-media-downloader/stargazers)** — it helps others find it.
 
@@ -114,6 +114,14 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 - Eleven dedicated, SEO-tuned landing pages (one per platform)
 - Production-grade SEO: dynamic OpenGraph and Twitter card images, per-platform OG images, JSON-LD (WebSite, Person, SoftwareApplication, HowTo, FAQPage), hreflang, sitemap, IndexNow ping on build, and a PWA-tuned manifest
 - No registration, no API keys, no daily limit
+
+## Supporting the project
+
+The site is free and stays free. It is paid for by one sponsor card that appears
+after a download — no popups, no redirects, no interstitials, and no tracking of
+what you download. You can remove that card for good with a
+[Pro license](https://www.socialdownloader.space/pro), or support the work
+directly through [GitHub Sponsors](https://github.com/sponsors/Vette1123).
 
 ## Tech stack
 

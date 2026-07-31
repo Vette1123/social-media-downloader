@@ -429,6 +429,14 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           <Link href='/terms' className='transition-colors hover:text-white/80'>
             Terms
           </Link>
+          <a
+            href='https://github.com/sponsors/Vette1123'
+            target='_blank'
+            rel='noopener noreferrer'
+            className='transition-colors hover:text-white/80'
+          >
+            Sponsor
+          </a>
           <span aria-hidden className='hidden sm:inline text-white/20'>
             •
           </span>
