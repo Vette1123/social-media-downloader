@@ -236,7 +236,7 @@ export default function Home() {
                       className='block'
                     >
                       <span
-                        className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl ring-1 ring-white/15 shadow-lg shadow-black/30 transition-transform duration-200 hover:-translate-y-0.5 hover:ring-cyan-400/40 md:h-12 md:w-12 ${
+                        className={`flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl icon-lift ring-1 ring-white/15 shadow-lg shadow-black/30 md:h-12 md:w-12 ${
                           p.brand ? '' : p.tile
                         }`}
                       >

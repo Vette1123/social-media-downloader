@@ -21,36 +21,43 @@
  */
 
 import {
-  firstTagAttr,
+  decodeEntities,
   metaContent,
+  mp4Hrefs,
   pageTitle,
   scriptContaining,
 } from './htmlExtract'
 
 /**
- * Only the head and the first stretch of body are scanned. Meta tags and
- * JSON-LD live in `<head>`, and a `<video>` element that far down is rare
- * enough not to be worth scanning a multi-megabyte page for.
+ * How much of the page is pulled off the wire at all. `readCappedText` stops
+ * here and cancels the stream, so a 4 MB video page never costs 4 MB.
  *
- * The number is a CPU decision, not a correctness one. A handful of bounded
- * scans over 64 KB is well under a millisecond; over a 4 MB video page it is
- * the whole budget. `readCappedText` stops pulling bytes at this point too, so
- * an oversized page costs neither the transfer nor the scan.
+ * This is a transfer bound, not a CPU bound: reading bytes is I/O, which does
+ * not count against the Worker's 10 ms CPU budget. The CPU bound is
+ * FAST_SCAN_BYTES below.
  *
- * 64 KB because that is where `<head>` ends on essentially every page that
- * bothers to publish og: tags. A site that pushes its metadata past it is
- * indistinguishable, to us, from one that has none — and that is the right
- * trade against a 10 ms budget shared with the rest of the resolve.
+ * 256 KB because real video sites bury their metadata deep. Measured on a live
+ * Pornhub page: 1.4 MB of markup with `og:video` at byte 100,601. A 64 KB
+ * window found nothing there, which was a large part of "it doesn't work
+ * everywhere".
  */
-export const MAX_SCAN_BYTES = 65_536
+export const MAX_SCAN_BYTES = 262_144
+
+/**
+ * The window scanned first. Most pages that publish media at all publish it in
+ * a normal-sized `<head>`, and those resolve here having paid one pass over
+ * 64 KB. Only a page that yields nothing in this window pays for the full
+ * MAX_SCAN_BYTES sweep — so the expensive path is taken exclusively by pages
+ * that would otherwise have failed outright.
+ */
+export const FAST_SCAN_BYTES = 65_536
 
 /**
  * The most expensive scan in the file: an unanchored URL match with no tag to
- * anchor on. Bounded well inside MAX_SCAN_BYTES because it only ever fires
- * when every structured signal has already missed, and a player config that
- * far down is not worth the sweep.
+ * anchor on. Bounded below the full window because it only fires when every
+ * structured signal has already missed.
  */
-const INLINE_SCAN_BYTES = 32_768
+const INLINE_SCAN_BYTES = 131_072
 
 /**
  * Cheap reject before any extractor runs. One literal alternation, no capture,
@@ -124,96 +131,259 @@ function absolutise(candidate: string, baseUrl: string): string {
   }
 }
 
-function isUsableMedia(candidate: string): boolean {
-  if (!candidate) return false
-  // Rejects javascript:, data: and blob: — `new URL` happily absolutises those.
-  if (!/^https?:\/\//i.test(candidate)) return false
-  return VIDEO_EXT.test(candidate) || STREAM_EXT.test(candidate)
+/**
+ * Pages that publish a *preview* under a tag meant for the real thing.
+ *
+ * This is the single biggest reason a scraped URL looks right and plays wrong.
+ * A large share of video sites put a short muted teaser in `og:video` so social
+ * embeds autoplay something cheap, and keep the actual file elsewhere. Taking
+ * the first tag that parsed therefore fetched a few seconds of preview rather
+ * than the video.
+ */
+const PREVIEW_TOKENS =
+  /(preview|teaser|trailer|sample|snippet|promo|thumb|poster|watermark|lowres|_low|[/_-]low[/_.-]|mobile)/i
+
+/**
+ * Resolution hints, best first. The number is the score adjustment.
+ *
+ * The low entries are negative on purpose. A site that offers several
+ * renditions often advertises its smallest one in `og:video` (measured: a
+ * Pornhub page whose og:video is the 240P file while the player carries 1080),
+ * and "we fetched the 240p" is indistinguishable to a user from "we fetched a
+ * preview". Ranking the small ones below zero means they only ever win when
+ * nothing else is on offer.
+ */
+const RESOLUTION_HINTS: Array<[RegExp, number]> = [
+  [/(2160p?|\b4k\b|uhd)/i, 46],
+  [/1440p?/i, 40],
+  [/(1080p?|fullhd|fhd)/i, 34],
+  [/(720p?|\bhd\b)/i, 22],
+  [/480p?/i, 6],
+  [/360p?/i, -18],
+  [/(240p?|144p?)/i, -30],
+]
+
+/**
+ * Player and embed pages, which are HTML rather than media. `new URL` is happy
+ * to absolutise one and the extension test cannot see it, so exclude by shape.
+ */
+const EMBED_PATH = /\/(embed|iframe|player|watch)(\/|$|\?|#)/i
+
+interface Candidate {
+  url: string
+  /** How hard the page asserts this is its media. A tiebreak, not the verdict. */
+  base: number
+  /** True when the source guarantees media, so a missing extension is fine. */
+  trusted: boolean
+}
+
+function looksLikeMedia(url: string): boolean {
+  return VIDEO_EXT.test(url) || STREAM_EXT.test(url)
 }
 
 /**
- * `contentUrl` inside a JSON-LD VideoObject. Parsing the whole graph would mean
+ * A URL is usable when it either ends in a media extension OR came from a tag
+ * whose whole purpose is naming a media file.
+ *
+ * The second half matters as much as the first: signed CDN URLs routinely carry
+ * no extension at all (`/v/9f21c?token=…`), and demanding one rejected every
+ * such site. That was a large part of "it doesn't work everywhere".
+ */
+function isUsableMedia(candidate: Candidate): boolean {
+  // Rejects javascript:, data: and blob: — `new URL` absolutises those happily.
+  if (!/^https?:\/\//i.test(candidate.url)) return false
+  if (looksLikeMedia(candidate.url)) return true
+  if (!candidate.trusted) return false
+  return !EMBED_PATH.test(candidate.url)
+}
+
+/** Higher is better. Decides which of several candidates is returned. */
+export function scoreCandidate(candidate: Candidate): number {
+  let score = candidate.base
+  const url = candidate.url
+
+  if (PREVIEW_TOKENS.test(url)) score -= 60
+
+  for (const [pattern, bonus] of RESOLUTION_HINTS) {
+    if (pattern.test(url)) {
+      score += bonus
+      break
+    }
+  }
+
+  // A progressive file can be handed to the browser; a manifest needs a player
+  // we do not have.
+  if (VIDEO_EXT.test(url)) score += 12
+
+  // Sites that publish an AV1 rendition publish an H.264 one beside it. AV1 is
+  // smaller but still decodes poorly in older players, and the whole point of
+  // this app is a file that opens anywhere, so the safe codec wins a tie.
+  if (/av1/i.test(url)) score -= 8
+
+  return score
+}
+
+/** Each present `content` among `keys`, in order. */
+function metaAll(html: string, keys: string[]): string[] {
+  const out: string[] = []
+  for (const key of keys) {
+    const value = metaContent(html, key)
+    if (value) out.push(value)
+  }
+  return out
+}
+
+/**
+ * Every `contentUrl` inside JSON-LD. Parsing the whole graph would mean
  * JSON.parse on an arbitrary blob, so pull the field directly — the shape is
  * standardised even when the surrounding graph is not. JSON-LD escapes forward
  * slashes, so `https:\/\/…` has to be unescaped.
  */
-function jsonLdContentUrl(html: string): string {
+function jsonLdContentUrls(html: string): string[] {
   const block = scriptContaining(html, '"contentUrl"')
-  if (!block) return ''
-  const direct = block.match(/"contentUrl"\s*:\s*"([^"]+)"/i)
-  return direct?.[1] ? direct[1].replace(/\\\//g, '/') : ''
-}
-
-/** `<video src>`, else the first `<source src>` (which is how most pages do it). */
-function videoElementSrc(html: string): string {
-  return (
-    firstTagAttr(html, 'video', 'src') ?? firstTagAttr(html, 'source', 'src') ?? ''
-  )
+  if (!block) return []
+  const out: string[] = []
+  const pattern = /"contentUrl"\s*:\s*"([^"]+)"/gi
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(block)) !== null) {
+    // decodeEntities matters as much here as in the tag readers: a signed URL
+    // that arrives carrying a literal `&amp;` in its query string is a
+    // guaranteed 403 from the CDN.
+    out.push(decodeEntities(match[1].replace(/\\\//g, '/')))
+  }
+  return out
 }
 
 /**
- * Last resort: a media URL sitting in an inline JSON payload, which is where
- * self-hosted players (Video.js, Plyr) keep their sources. Bounded to the first
- * match so a page full of URLs cannot turn this into a long scan.
+ * Every `<video src>` and `<source src>`, plus the `data-` attributes players
+ * read before they hydrate. A page with several `<source>` elements is offering
+ * qualities, and the scorer picks between them instead of the parser taking
+ * whichever happened to come first.
  */
-function inlineMediaUrl(html: string): string {
+function elementSrcs(html: string): string[] {
+  const out: string[] = []
+  const tag = /<(?:video|source)\b[^>]*>/gi
+  let match: RegExpExecArray | null
+  while ((match = tag.exec(html)) !== null) {
+    const attrs =
+      /\b(?:data-)?(?:src|video-src|video|mp4|file|url)\s*=\s*("[^"]*"|'[^']*')/gi
+    let attr: RegExpExecArray | null
+    while ((attr = attrs.exec(match[0])) !== null) {
+      out.push(decodeEntities(attr[1].slice(1, -1)))
+    }
+  }
+  return out
+}
+
+/**
+ * Media URLs sitting in an inline player config. Self-hosted players (Video.js,
+ * Plyr, JW) keep their sources here, and it is often the only place the full
+ * file appears when `og:video` holds a preview. Every match is collected so the
+ * scorer can prefer the 1080p entry over the 360p one.
+ */
+function inlineMediaUrls(html: string): string[] {
   const scope =
     html.length > INLINE_SCAN_BYTES ? html.slice(0, INLINE_SCAN_BYTES) : html
-  const match = scope.match(
-    /https?:\\?\/\\?\/[^\s"'<>\\]+\.(?:mp4|webm|m3u8)(?:\?[^\s"'<>\\]*)?/i,
-  )
-  return match?.[0] ? match[0].replace(/\\\//g, '/') : ''
+  const pattern =
+    /https?:\\?\/\\?\/[^\s"'<>\\]+\.(?:mp4|webm|mov|m4v|m3u8)(?:\?[^\s"'<>\\]*)?/gi
+  const out: string[] = []
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(scope)) !== null) {
+    out.push(decodeEntities(match[0].replace(/\\\//g, '/')))
+    // A page can embed hundreds of URLs; the scorer only needs a sane pool.
+    if (out.length >= 24) break
+  }
+  return out
 }
 
 /**
- * Ordered by how much the site is *asserting* the URL is its media. An
- * og:video tag is a publisher statement; a URL scraped out of inline JSON is a
- * guess, so it goes last.
+ * Collect every candidate the page offers, then return the best-scoring one.
  *
- * Thunks, not values: the common case is a hit on the first or third entry,
- * and evaluating the list eagerly would run all seven scans — including the
- * expensive inline sweep — every single time, to throw six of them away.
+ * The earlier version returned the first tag that parsed, in a fixed order with
+ * `og:video` at the top. That is exactly the wrong instinct: `og:video` is the
+ * tag most likely to hold a preview clip, because its job is to autoplay
+ * cheaply inside someone else's timeline. Collecting everything and ranking on
+ * what each URL says about itself fixes both that and the pages where the good
+ * URL simply was not in whichever tag was checked first.
  */
-const CANDIDATES: Array<(html: string) => string | undefined> = [
-  (html) => metaContent(html, 'og:video:secure_url'),
-  (html) => metaContent(html, 'og:video:url'),
-  (html) => metaContent(html, 'og:video'),
-  (html) => metaContent(html, 'twitter:player:stream'),
-  jsonLdContentUrl,
-  videoElementSrc,
-  inlineMediaUrl,
-]
+/** Every candidate a single window of markup offers, unscored. */
+function collectCandidates(scanned: string): Candidate[] {
+  return [
+    // The strongest signal on any page: a link the site itself offers as a
+    // download. Measured on Eporner, whose `/dload/<id>/720/<file>.mp4` anchors
+    // serve real bytes to any IP with no Referer, while the JSON-LD contentUrl
+    // the same page advertises answers 403. Ranked above everything else
+    // because a download link is the site stating where the file is, rather
+    // than where its player happens to point.
+    ...mp4Hrefs(scanned).map((url) => ({ url, base: 38, trusted: true })),
+    // Named by a schema whose entire purpose is "this is the file".
+    ...jsonLdContentUrls(scanned).map((url) => ({ url, base: 30, trusted: true })),
+    // The player's own markup — usually the real thing, often several qualities.
+    ...elementSrcs(scanned).map((url) => ({ url, base: 26, trusted: true })),
+    // A guess scraped from arbitrary script text, so it must look like media.
+    ...inlineMediaUrls(scanned).map((url) => ({ url, base: 20, trusted: false })),
+    // Trusted, but scored lowest: this is the preview tag. See PREVIEW_TOKENS.
+    ...metaAll(scanned, [
+      'og:video:secure_url',
+      'og:video:url',
+      'og:video',
+      'twitter:player:stream',
+    ]).map((url) => ({ url, base: 14, trusted: true })),
+  ]
+}
+
+function usableFrom(scanned: string, baseUrl: string): Candidate[] {
+  if (!MEDIA_HINT.test(scanned)) return []
+  return collectCandidates(scanned)
+    .map((candidate) => ({ ...candidate, url: absolutise(candidate.url, baseUrl) }))
+    .filter(isUsableMedia)
+}
 
 export function extractMediaFromHtml(
   html: string,
   baseUrl: string,
 ): ScrapedMedia | null {
-  const scanned =
-    html.length > MAX_SCAN_BYTES ? html.slice(0, MAX_SCAN_BYTES) : html
+  const full = html.length > MAX_SCAN_BYTES ? html.slice(0, MAX_SCAN_BYTES) : html
 
-  if (!MEDIA_HINT.test(scanned)) return null
+  // Two stages, so the cheap window pays for the common case and only a page
+  // that yields nothing there is scanned in full. A page with a normal <head>
+  // never touches the wide sweep; a page like Pornhub's, which buries og:video
+  // past 100 KB, is found instead of failing.
+  const fast = full.length > FAST_SCAN_BYTES ? full.slice(0, FAST_SCAN_BYTES) : full
+  let usable = usableFrom(fast, baseUrl)
+  let scanned = fast
+  if (usable.length === 0 && full.length > fast.length) {
+    usable = usableFrom(full, baseUrl)
+    scanned = full
+  }
 
-  for (const read of CANDIDATES) {
-    const candidate = read(scanned)
-    if (!candidate) continue
-    const absolute = absolutise(candidate, baseUrl)
-    if (!isUsableMedia(absolute)) continue
-    return {
-      mediaUrl: absolute,
-      isStream: STREAM_EXT.test(absolute),
-      title: scrapeTitle(scanned),
-      thumbnail: absolutise(
-        metaContent(scanned, 'og:image') ??
-          metaContent(scanned, 'twitter:image') ??
-          '',
-        baseUrl,
-      ),
+  if (usable.length === 0) return null
+
+  let best = usable[0]
+  let bestScore = scoreCandidate(best)
+  for (const candidate of usable) {
+    const score = scoreCandidate(candidate)
+    if (score > bestScore) {
+      best = candidate
+      bestScore = score
     }
   }
-  return null
+
+  return {
+    mediaUrl: best.url,
+    isStream: STREAM_EXT.test(best.url),
+    title: scrapeTitle(scanned),
+    thumbnail: absolutise(
+      metaContent(scanned, 'og:image') ??
+        metaContent(scanned, 'twitter:image') ??
+        '',
+      baseUrl,
+    ),
+  }
 }
 
 /** Never empty, so a result card always has a label. */
 export function scrapeTitle(html: string): string {
   return metaContent(html, 'og:title') ?? pageTitle(html) ?? 'Video'
 }
+

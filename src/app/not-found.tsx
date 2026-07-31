@@ -53,7 +53,7 @@ export default function NotFound() {
             <Link
               key={p.slug}
               href={`/${p.slug}`}
-              className='inline-flex items-center rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs md:text-sm text-white/80 transition-colors hover:border-cyan-400/40 hover:text-white'
+              className='card-lift inline-flex items-center rounded-lg border border-white/[0.1] bg-white/[0.03] px-3 py-1.5 text-xs md:text-sm text-white/80 hover:text-white'
             >
               {p.brandLabel}
             </Link>

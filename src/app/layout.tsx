@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
 import { siteConfig } from '@/config/site'
+import { versionedIcon } from '@/lib/appIcon'
 import { globalStructuredData } from '@/lib/structuredData'
 
 const geistSans = Geist({
@@ -110,15 +111,28 @@ export const metadata: Metadata = {
   // both favicons twice and apple-touch-icon three times. Duplicate icon links
   // are not merely noise: which one a client picks is unspecified, so an iOS
   // home-screen icon could resolve to the SVG, which iOS cannot render.
+  // `?v=` (see ICON_VERSION) is what actually delivers new art to someone who
+  // has been here before. A favicon is one of the stickiest things a browser
+  // caches, and it is keyed by URL, so changing the bytes behind an unchanged
+  // path can leave the old mark in the tab indefinitely.
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: versionedIcon('/favicon.svg'), type: 'image/svg+xml' },
+      // Legacy fallback only, and still the old art: an .ico needs an encoder
+      // we don't have in the build. Every browser that can read the SVG above
+      // prefers it, so this is reached by very old clients alone.
       { url: '/favicon.ico', sizes: '32x32' },
     ],
     // PNG only. `apple-touch-icon` has never supported SVG on iOS — listing
     // /apple-touch-icon.svg gave iOS a candidate it silently drops, leaving a
     // screenshot-of-the-page icon on the home screen instead of the logo.
-    apple: [{ url: '/icons/apple', sizes: '180x180', type: 'image/png' }],
+    apple: [
+      {
+        url: versionedIcon('/icons/apple'),
+        sizes: '180x180',
+        type: 'image/png',
+      },
+    ],
   },
   manifest: '/manifest.json',
   verification: {

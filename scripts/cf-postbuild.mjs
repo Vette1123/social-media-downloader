@@ -167,7 +167,12 @@ function verifyManifest(files) {
     ...shortcuts.flatMap((s) => (s.icons ?? []).map((i) => i.src)),
   ]
 
-  const missing = referenced.filter((src) => src && !present.has(src))
+  // Icons carry a `?v=` cache-buster (see ICON_VERSION in src/lib/appIcon.tsx)
+  // so returning visitors and installed PWAs actually pick up new art. The
+  // query string is not part of the emitted asset path, so compare on the path
+  // alone — otherwise every versioned icon reads as missing.
+  const assetPath = (src) => src.split('?')[0]
+  const missing = referenced.filter((src) => src && !present.has(assetPath(src)))
   if (missing.length > 0) {
     fail(`manifest.json references ${missing.length} missing asset(s):\n    ${[...new Set(missing)].join('\n    ')}`)
   }
