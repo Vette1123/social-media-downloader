@@ -105,6 +105,46 @@ export const initialState: AppState = {
   progress: null,
 }
 
+/**
+ * Whether a fresh result opens its player without being asked.
+ *
+ * Opening it is close to free on the ordinary path: the `<video>` is
+ * `preload='none'`, so no media byte moves until the visitor presses play, and
+ * the poster is the same URL as the thumbnail already painted in the card
+ * above it — a cache hit, not a second fetch. So for a TikTok or an Instagram
+ * reel, auto-opening costs nothing and saves a click.
+ *
+ * Three cases where it stays shut:
+ *
+ *   - `generic`. An unrecognised host is the one path where we know nothing
+ *     about what comes back. It is the route adult sites arrive on, and a
+ *     poster frame is a full-size still — painting one unasked is a real
+ *     problem for someone who pasted a link on a train. It is also where the
+ *     largest files live.
+ *   - An embed (the YouTube fallback). That iframe is not `preload='none'` and
+ *     cannot be: mounting it loads a megabyte of third-party player
+ *     immediately, for a visitor who is usually about to click Download.
+ *   - Carousels, which have no video to preview — the gallery is the content.
+ */
+export function autoOpensPreview({
+  platform,
+  hasVideo,
+  hasEmbed,
+  isCarousel,
+}: {
+  platform: SupportedPlatform | undefined
+  hasVideo: boolean
+  hasEmbed: boolean
+  isCarousel: boolean
+}): boolean {
+  if (isCarousel) return false
+  if (hasEmbed) return false
+  if (!hasVideo) return false
+  // `undefined` means an older/unknown payload shape — treated like `generic`,
+  // because the reason to stay shut is precisely not knowing what this is.
+  return platform !== undefined && platform !== 'generic'
+}
+
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SET_URL':
@@ -201,13 +241,12 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         audioUrl: action.payload.audioUrl || '',
         originalUrl: action.payload.originalUrl,
         videoMetadata: meta,
-        // Always collapsed. Nothing plays, and nothing is fetched, until the
-        // visitor asks for it — they came here to download a file, not to
-        // stream one. Opening the player by default pulled the poster frame
-        // through our proxy on every single result, and on the YouTube path it
-        // loaded the entire third-party embed player, for people who were
-        // about to click Download and leave.
-        showPreview: false,
+        showPreview: autoOpensPreview({
+          platform: meta.platform,
+          hasVideo: !!action.payload.downloadUrl,
+          hasEmbed: !!meta.embedUrl,
+          isCarousel: meta.isPhotoCarousel || hasImages,
+        }),
         showImageGallery: hasImages,
       }
     }
