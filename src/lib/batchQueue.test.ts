@@ -184,6 +184,40 @@ describe('runBatch', () => {
     expect(byUrl.d.error).toBe(CANCELLED_ERROR)
   })
 
+  it('represents an in-flight abort the same as a queued one, not the raw AbortError', async () => {
+    const controller = new AbortController()
+    const rejecters: Record<string, (err: unknown) => void> = {}
+    // Neither 'a' nor 'b' settles on its own; the test rejects them by hand
+    // (mimicking what `resolve()` does when its fetch is aborted mid-flight)
+    // so it can assert exactly what error text a cancelled in-flight item
+    // carries, with no timing races.
+    const resolveFn = vi.fn(
+      (url: string) =>
+        new Promise<ResolveResult>((_resolve, reject) => {
+          rejecters[url] = reject
+        }),
+    )
+
+    const runPromise = runBatch(['a', 'b'], resolveFn, () => {}, controller.signal)
+
+    // BATCH_CONCURRENCY is 2, so both lanes have already claimed 'a' and 'b'
+    // synchronously by this point.
+    controller.abort()
+    rejecters.a(new DOMException('The user aborted a request.', 'AbortError'))
+    rejecters.b(new DOMException('The operation was aborted.', 'AbortError'))
+
+    const items = await runPromise
+    const byUrl = Object.fromEntries(items.map((i) => [i.url, i]))
+
+    expect(byUrl.a.status).toBe('failed')
+    expect(byUrl.b.status).toBe('failed')
+    // Same sentinel regardless of which engine's AbortError text landed here —
+    // the UI must be able to tell "cancelled" from "genuinely failed" with a
+    // single exact-equality check, not by pattern-matching browser strings.
+    expect(byUrl.a.error).toBe(CANCELLED_ERROR)
+    expect(byUrl.b.error).toBe(CANCELLED_ERROR)
+  })
+
   it('behaves exactly as before when no signal is passed', async () => {
     const resolveFn = vi.fn(async () => ({ success: true }))
     const items = await runBatch(['a', 'b'], resolveFn, () => {})
