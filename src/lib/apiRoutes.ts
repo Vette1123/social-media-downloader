@@ -23,7 +23,7 @@ import { readEdgeCache, writeEdgeCache, type WaitUntilContext } from './edgeCach
 import { slugify } from './filename'
 import { nativeMediaAvailable, nativeMediaUnavailable } from './nativeMedia'
 import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
-import { hashKey, signToken, TOKEN_TTL_MS } from './licenseToken'
+import { hashKey, signToken, verifyToken, TOKEN_TTL_MS } from './licenseToken'
 
 type Handler = (
   request: Request,
@@ -61,6 +61,18 @@ function toMediaUrl(mediaUrl: string, proxyPath: string): string {
 function asDirectTunnel(url: string | undefined): string | undefined {
   if (!url || url.startsWith('/')) return undefined
   return url.replace(/^http:\/\//i, 'https://')
+}
+
+/**
+ * A Pro token only changes resolver ordering — nothing is gated behind it, so
+ * an absent, malformed, or expired token degrades silently to the normal free
+ * path rather than erroring.
+ */
+async function isPriorityRequest(request: Request): Promise<boolean> {
+  const token = request.headers.get('X-Pro-Token')
+  const secret = process.env.LICENSE_TOKEN_SECRET?.trim()
+  if (!token || !secret) return false
+  return (await verifyToken(token, secret, Date.now())) !== null
 }
 
 export async function handleDownload(
@@ -112,7 +124,11 @@ export async function handleDownload(
       return cachedResponse(edge, 'EDGE')
     }
 
-    const downloader = new Downloader({ quality: preferredQuality, mode })
+    // A Pro token only changes resolver ordering — nothing is gated behind it,
+    // so an absent or stale token degrades silently to the normal free path.
+    const priority = await isPriorityRequest(request)
+
+    const downloader = new Downloader({ quality: preferredQuality, mode, priority })
     const videoData = await downloader.downloadVideo(url)
 
     // Accept the result if it yielded any downloadable media: a video stream, a

@@ -38,6 +38,7 @@ import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { buildDownloadFilename } from '@/lib/filename'
 import { friendlyError } from '@/lib/errorMessages'
 import { resolve } from '@/lib/resolve'
+import { useProToken } from '@/lib/entitlements'
 import {
   addHistory,
   clearHistory,
@@ -487,6 +488,9 @@ export function DownloaderApp() {
   // Read straight from the browser rather than via an effect — see lib/clientEnv.
   const isIOS = useIsIOSLike()
   const didInit = useRef(false)
+  // Pro token, sent as X-Pro-Token so the server tries the operator's own
+  // resolvers first for a licensed request — see lib/entitlements.
+  const proToken = useProToken()
 
   // Thin aliases: the store already persists and notifies, so these exist only
   // to keep the call sites in this file reading the same as before.
@@ -507,6 +511,7 @@ export function DownloaderApp() {
       type: state.downloadType,
       quality: opts?.quality ?? quality,
       format: opts?.format ?? format,
+      proToken,
     })
 
   // Snapshot the thumbnail off the main flow and prepend the link to Recent so
