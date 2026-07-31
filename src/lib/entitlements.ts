@@ -1,6 +1,7 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
+import { TOKEN_TTL_MS } from './licenseToken'
 
 export const LICENSE_KEY_STORAGE = 'smd:license'
 
@@ -108,12 +109,69 @@ function currentTier(): 'free' | 'pro' {
 const serverTier = (): 'free' | 'pro' => 'free'
 
 /**
- * Free on the server and during hydration, so the markup never differs. A Pro
- * user sees the sponsor card for one frame at most, which is the correct
- * trade against a hydration mismatch.
+ * Revalidate once the stored token is within a quarter of its lifetime of
+ * expiring (6 hours, since TOKEN_TTL_MS is 24h) — early enough that even an
+ * occasional visitor gets silently refreshed before the token actually lapses,
+ * without re-hitting the license server on every mount of a token that just
+ * got minted. An already-expired token also counts (the difference is
+ * negative), so the very next visit after a lapse retries immediately instead
+ * of waiting for the user to notice and re-enter their key.
+ *
+ * Pure and exported so this boundary can be unit-tested without a DOM —
+ * {@link maybeRevalidate} is the only caller and is otherwise untestable
+ * (localStorage + fetch) under this repo's node-only Vitest config.
+ */
+export function needsRevalidation(expiresAt: number, now: number): boolean {
+  return expiresAt - now <= TOKEN_TTL_MS / 4
+}
+
+// Guards against every mounted useTier() consumer (PromoSlot at two
+// placements today, potentially more later) kicking off a duplicate request
+// the instant they all mount together.
+let revalidationInFlight = false
+
+/**
+ * Silent background refresh. The design calls for the client to revalidate
+ * daily; nothing else in this codebase schedules that, so without this a
+ * license quietly demotes to free at `expiresAt` and stays there until the
+ * customer re-enters their key — worse than the free tier they paid to leave.
+ *
+ * Deliberately not awaited by its caller: this is fire-and-forget so a mount
+ * is never blocked on a network round trip, and there is no UI for it to
+ * report through — success is invisible (the refreshed token lands via
+ * `saveLicense`'s `notify()`, same path as first activation) and failure is
+ * equally invisible. `activateLicense` never touches storage on a rejection,
+ * timeout, or network error, so a flaky revalidation cannot downgrade an
+ * in-session Pro user; a key that is genuinely dead simply keeps failing
+ * until `expiresAt` passes on its own, which bounds the worst case to about
+ * one TOKEN_TTL_MS — the same fail-safe behaviour as before this existed, not
+ * a new retry loop.
+ */
+function maybeRevalidate(): void {
+  if (revalidationInFlight) return
+  const license = readLicense()
+  if (!license) return
+  if (!needsRevalidation(license.expiresAt, Date.now())) return
+
+  revalidationInFlight = true
+  void activateLicense(license.key).finally(() => {
+    revalidationInFlight = false
+  })
+}
+
+/**
+ * Free on the server and during hydration, so the markup never differs.
+ * Consumers that render something whose presence must never flash (the
+ * sponsor card) additionally gate on `useHydrated()` themselves — see
+ * PromoSlot — because this hook alone only guarantees no hydration mismatch,
+ * not that the client value is known on the very first client render.
  */
 export function useTier(): 'free' | 'pro' {
-  return useSyncExternalStore(subscribe, currentTier, serverTier)
+  const tier = useSyncExternalStore(subscribe, currentTier, serverTier)
+  useEffect(() => {
+    maybeRevalidate()
+  }, [])
+  return tier
 }
 
 function currentToken(): string | null {
