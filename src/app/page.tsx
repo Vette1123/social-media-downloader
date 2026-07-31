@@ -3,6 +3,7 @@ import { DownloaderApp } from '@/components/DownloaderApp'
 import { GlowCard } from '@/components/GlowCard'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { LazyFAQ } from '@/components/LazyFAQ'
+import { ProUpsell } from '@/components/ProUpsell'
 import { PromoSlot } from '@/components/PromoSlot'
 import {
   FacebookIcon,
@@ -392,6 +393,13 @@ export default function Home() {
                 )
               })}
             </nav>
+          </section>
+
+          {/* ---------------------------------------------------------------
+              PRO — the only place it is sold outside /pro itself
+          ---------------------------------------------------------------- */}
+          <section className='mt-16 sm:mt-24'>
+            <ProUpsell />
           </section>
 
           {/* The same below-the-fold slot the platform pages carry. No platform
