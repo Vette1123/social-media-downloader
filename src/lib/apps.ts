@@ -1,13 +1,26 @@
-// Rafiq — our companion app, published on Google Play.
+// Our companion apps, published on Google Play.
 // Shared metadata + a store-open helper reused across footers, nav, and CTAs.
 
-export const RAFIQ_ANDROID_PACKAGE = 'com.mohamedgado.rafiq'
-export const RAFIQ_PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${RAFIQ_ANDROID_PACKAGE}`
+export type PlayApp = {
+  name: string
+  androidPackage: string
+  playStoreUrl: string
+}
 
-const RAFIQ_MARKET_URL = `market://details?id=${RAFIQ_ANDROID_PACKAGE}`
+const playApp = (name: string, androidPackage: string): PlayApp => ({
+  name,
+  androidPackage,
+  playStoreUrl: `https://play.google.com/store/apps/details?id=${androidPackage}`,
+})
+
+export const PLAY_APPS: readonly PlayApp[] = [
+  playApp('Rafiq', 'com.mohamedgado.rafiq'),
+  playApp('Masareef', 'com.mohamedgado.masareef'),
+  playApp('Nafis', 'com.mohamedgado.nafis'),
+]
 
 /**
- * Open Rafiq's Play listing, mirroring the app's own deep-link behaviour: try
+ * Open an app's Play listing, mirroring the apps' own deep-link behaviour: try
  * the native Play Store app first, then fall back to the web listing.
  *
  * - Non-Android (desktop, iOS): `market://` can't be handled, so we open the
@@ -18,17 +31,17 @@ const RAFIQ_MARKET_URL = `market://details?id=${RAFIQ_ANDROID_PACKAGE}`
  *   back to the web listing. A successful hand-off hides the page, which
  *   cancels the fallback.
  */
-export function openRafiqOnPlayStore(): void {
+export function openOnPlayStore(app: PlayApp): void {
   if (typeof window === 'undefined') return
 
   const isAndroid = /android/i.test(window.navigator.userAgent)
   if (!isAndroid) {
-    window.open(RAFIQ_PLAY_STORE_URL, '_blank', 'noopener,noreferrer')
+    window.open(app.playStoreUrl, '_blank', 'noopener,noreferrer')
     return
   }
 
   const fallback = window.setTimeout(() => {
-    window.location.href = RAFIQ_PLAY_STORE_URL
+    window.location.href = app.playStoreUrl
   }, 1200)
 
   const cancel = () => {
@@ -37,5 +50,5 @@ export function openRafiqOnPlayStore(): void {
   }
   document.addEventListener('visibilitychange', cancel)
 
-  window.location.href = RAFIQ_MARKET_URL
+  window.location.href = `market://details?id=${app.androidPackage}`
 }
