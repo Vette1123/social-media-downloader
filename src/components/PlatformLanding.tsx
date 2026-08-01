@@ -20,8 +20,8 @@ import {
 } from '@/components/icons'
 import { ProUpsell } from '@/components/ProUpsell'
 import { PromoSlot } from '@/components/PromoSlot'
+import { DevAppLinks } from '@/components/DevAppLinks'
 import { PlayAppLinks } from '@/components/PlayAppLinks'
-import { PlayAppPromoCards } from '@/components/PlayAppPromoCards'
 import { siteConfig } from '@/config/site'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
 import { platforms } from '@/lib/platforms'
@@ -48,19 +48,6 @@ const OFFER_PLATFORM_BY_SLUG: Record<PlatformSlug, SupportedPlatform> = {
   'twitch-clip-downloader': 'twitch',
   'vimeo-downloader': 'vimeo',
 }
-
-const devLinks = [
-  {
-    href: siteConfig.author.url,
-    label: 'Portfolio',
-    Icon: PortfolioIcon,
-  },
-  {
-    href: siteConfig.links.github,
-    label: 'GitHub',
-    Icon: GitHubIcon,
-  },
-] as const
 
 const heroChips = [
   'Free forever',
@@ -297,27 +284,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           </div>
 
           {/* Dev / companion-app links */}
-          <div className='mx-auto mt-6 flex max-w-md flex-wrap items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
-            {devLinks.map(({ href, label, Icon }) => (
-              <Surface
-                key={label}
-                as='a'
-                href={href}
-                target='_blank'
-                rel='noopener noreferrer'
-                elevation='raised'
-                interaction='lift'
-                radius='xl'
-                className='group flex flex-1 items-center justify-center gap-2 px-3 py-2.5 sm:flex-none sm:px-4'
-              >
-                <Icon className='h-[18px] w-[18px] shrink-0 text-white/80 transition-colors duration-300 group-hover:text-cyan-300' />
-                <span className='text-sm font-medium text-white/80 transition-colors duration-300 group-hover:text-white'>
-                  {label}
-                </span>
-              </Surface>
-            ))}
-            <PlayAppPromoCards />
-          </div>
+          <DevAppLinks />
         </Surface>
 
         {/* WHAT YOU CAN DO — platform feature list */}
