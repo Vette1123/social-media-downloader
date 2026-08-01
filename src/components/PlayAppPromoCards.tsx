@@ -2,22 +2,22 @@
 
 import { GooglePlayIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
-import { openRafiqOnPlayStore, RAFIQ_PLAY_STORE_URL } from '@/lib/rafiq'
+import { openOnPlayStore, PLAY_APPS, PlayApp } from '@/lib/apps'
 
-// Attention-grabbing hero card promoting Rafiq, our companion app. Matches the
-// dev-link cards' styling but with a Google-Play-green sheen, and prefers the
-// native Play Store app (falling back to the web listing) on click.
-export function RafiqPromoCard() {
+// Attention-grabbing hero card promoting one of our apps. Matches the dev-link
+// cards' styling but with a Google-Play-green sheen, and prefers the native
+// Play Store app (falling back to the web listing) on click.
+export function PlayAppPromoCard({ app }: { app: PlayApp }) {
   return (
     <Surface
       as='a'
-      href={RAFIQ_PLAY_STORE_URL}
+      href={app.playStoreUrl}
       target='_blank'
       rel='noopener noreferrer'
-      title='Rafiq — an app made by us, on Google Play'
+      title={`${app.name} — an app made by us, on Google Play`}
       onClick={(e: React.MouseEvent) => {
         e.preventDefault()
-        openRafiqOnPlayStore()
+        openOnPlayStore(app)
       }}
       elevation='raised'
       interaction='lift'
@@ -34,8 +34,19 @@ export function RafiqPromoCard() {
       />
       <GooglePlayIcon className='relative w-[18px] h-[18px] shrink-0 text-white/80 group-hover:text-white transition-colors duration-300' />
       <span className='relative text-white/80 group-hover:text-white text-sm font-medium transition-colors duration-300'>
-        Rafiq
+        {app.name}
       </span>
     </Surface>
+  )
+}
+
+// One card per app, in the hero's dev-link row.
+export function PlayAppPromoCards() {
+  return (
+    <>
+      {PLAY_APPS.map((app) => (
+        <PlayAppPromoCard key={app.androidPackage} app={app} />
+      ))}
+    </>
   )
 }

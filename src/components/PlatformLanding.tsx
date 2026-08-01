@@ -20,8 +20,8 @@ import {
 } from '@/components/icons'
 import { ProUpsell } from '@/components/ProUpsell'
 import { PromoSlot } from '@/components/PromoSlot'
-import { RafiqLink } from '@/components/RafiqLink'
-import { RafiqPromoCard } from '@/components/RafiqPromoCard'
+import { PlayAppLinks } from '@/components/PlayAppLinks'
+import { PlayAppPromoCards } from '@/components/PlayAppPromoCards'
 import { siteConfig } from '@/config/site'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
 import { platforms } from '@/lib/platforms'
@@ -297,7 +297,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           </div>
 
           {/* Dev / companion-app links */}
-          <div className='mx-auto mt-6 flex max-w-md items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
+          <div className='mx-auto mt-6 flex max-w-md flex-wrap items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
             {devLinks.map(({ href, label, Icon }) => (
               <Surface
                 key={label}
@@ -316,7 +316,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
                 </span>
               </Surface>
             ))}
-            <RafiqPromoCard />
+            <PlayAppPromoCards />
           </div>
         </Surface>
 
@@ -471,10 +471,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           <span aria-hidden className='hidden sm:inline text-white/20'>
             •
           </span>
-          <span className='inline-flex items-center gap-1.5'>
-            <RafiqLink />
-            <span className='text-white/40'>— an app made by us</span>
-          </span>
+          <PlayAppLinks />
         </footer>
       </div>
     </div>

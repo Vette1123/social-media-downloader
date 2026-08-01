@@ -20,8 +20,8 @@ import {
   VimeoIcon,
   YouTubeIcon,
 } from '@/components/icons'
-import { RafiqLink } from '@/components/RafiqLink'
-import { RafiqPromoCard } from '@/components/RafiqPromoCard'
+import { PlayAppLinks } from '@/components/PlayAppLinks'
+import { PlayAppPromoCards } from '@/components/PlayAppPromoCards'
 import { homepageFaqs } from '@/lib/homepageFaqs'
 import { platforms } from '@/lib/platforms'
 import { homepageStructuredData } from '@/lib/structuredData'
@@ -284,7 +284,7 @@ export default function Home() {
             </div>
 
             {/* Dev / companion-app links */}
-            <div className='mx-auto mt-6 flex max-w-md items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
+            <div className='mx-auto mt-6 flex max-w-md flex-wrap items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
               {devLinks.map(({ href, label, Icon }) => (
                 <Surface
                   key={label}
@@ -303,7 +303,7 @@ export default function Home() {
                   </span>
                 </Surface>
               ))}
-              <RafiqPromoCard />
+              <PlayAppPromoCards />
             </div>
           </Surface>
 
@@ -537,10 +537,7 @@ export default function Home() {
             <span aria-hidden className='hidden text-white/20 sm:inline'>
               ·
             </span>
-            <span className='inline-flex items-center gap-1.5'>
-              <RafiqLink />
-              <span className='text-white/40'>— an app made by us</span>
-            </span>
+            <PlayAppLinks />
           </footer>
         </div>
       </div>
