@@ -49,11 +49,7 @@
     {
       "binding": "DB",
       "database_name": "social-media-downloader",
-      // Placeholder until a human runs `wrangler d1 create` with a token that
-      // has the D1 permission scope — the token in this environment
-      // authenticates but can't create D1 databases. Local dev and
-      // `wrangler d1 execute --local` work fine without a real id.
-      "database_id": "PLACEHOLDER_SET_BY_WRANGLER_D1_CREATE"
+      "database_id": "a8831143-b1d2-43a6-916b-e1ac27349fb1"
     }
   ],
 
