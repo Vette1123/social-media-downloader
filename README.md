@@ -199,12 +199,30 @@ Setting this up for a fork or self-hosted deployment, in order:
    production here is the most common thing to get wrong): the `wrangler dev`
    origin's `/api/auth/callback` and the production origin's `/api/auth/callback`.
 2. **Lemon Squeezy** — set the product up as a subscription with monthly and
-   annual variants, turn off license key generation, register the webhook
-   endpoint with its signing secret, and subscribe it to the `subscription_*`
-   events.
-3. **Cloudflare** — create the D1 database, apply the migration, add the `DB`
+   annual variants, turn off license key generation, and register the webhook
+   endpoint (`/api/billing/webhook`) with its signing secret. Subscribe it to
+   the subscription lifecycle events — `subscription_created`,
+   `subscription_updated`, `subscription_cancelled`, `subscription_resumed`,
+   `subscription_expired`, `subscription_paused`, `subscription_unpaused`.
+   Payment events (`subscription_payment_success` and its siblings) may be left
+   on but carry no useful state: they describe an *invoice*, not the
+   subscription, so the handler ignores anything whose `data.type` is not
+   `subscriptions`.
+   Set the product's redirect URL to `/account?checkout=success` so a buyer
+   lands back on their account page; the page also polls for up to 30 seconds,
+   so it recovers even if the redirect is not configured.
+3. **Cloudflare** — create the D1 database, apply the migrations
+   (`wrangler d1 migrations apply <name> --remote` — use this rather than
+   executing the SQL files directly, or the `d1_migrations` bookkeeping table
+   will disagree with the schema and later migrations will fail), add the `DB`
    binding in `wrangler.jsonc`, then set the five secrets above with
    `pnpm cf:setup` (reads `.env.cloudflare`) or `wrangler secret put`.
+
+   Order matters for one of them: do not put live checkout URLs in
+   `src/config/pro.ts` until `LEMONSQUEEZY_WEBHOOK_SECRET` is set. The webhook
+   route fails closed with a 503 while that secret is missing, and Lemon Squeezy
+   eventually stops retrying — so a purchase made in that window is billed with
+   no subscription recorded.
 
 ## How to use
 
