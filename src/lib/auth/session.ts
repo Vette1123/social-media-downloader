@@ -95,9 +95,19 @@ export function clearCookieHeaders(): string[] {
   )
 }
 
-const USER_COLUMNS =
-  'id, google_sub, email, created_at, prefs, ls_subscription_id, ls_status, ' +
-  'ls_variant, ls_renews_at, ls_ends_at, ls_past_due_since, ls_updated_at'
+/**
+ * Every column is table-qualified, and must stay that way.
+ *
+ * The only query using these joins `sessions`, which also has an `id` and a
+ * `created_at`. Unqualified, SQLite rejects the whole statement with
+ * "ambiguous column name: id" — so sign-in would succeed and then every
+ * authenticated request would fail. `users.id` still selects as `id`, so the
+ * shape callers destructure is unchanged.
+ */
+export const USER_COLUMNS =
+  'users.id, users.google_sub, users.email, users.created_at, users.prefs, ' +
+  'users.ls_subscription_id, users.ls_status, users.ls_variant, users.ls_renews_at, ' +
+  'users.ls_ends_at, users.ls_past_due_since, users.ls_updated_at'
 
 /**
  * Mint a session, evicting the oldest if the user is already at the cap.
