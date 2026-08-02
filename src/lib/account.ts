@@ -1,0 +1,177 @@
+'use client'
+
+/**
+ * Client-side account state.
+ *
+ * The access token is held in memory only and never persisted: it lives 15
+ * minutes, and the durable credential is the httpOnly session cookie the
+ * browser sends on its own. Nothing here is trusted — every entitlement
+ * decision is made server-side and merely reported to this module.
+ *
+ * Modelled as an external store for the same reason as lib/prefs.ts: a
+ * useSyncExternalStore snapshot avoids the render → effect → setState cascade
+ * and the hydration mismatch that a mount effect would cause.
+ */
+
+import { useSyncExternalStore } from 'react'
+import { HINT_COOKIE } from './auth/cookies'
+
+/** Refresh this far before expiry, so a resolve never races the deadline. */
+const REFRESH_MARGIN_MS = 30_000
+
+export interface PlanState {
+  status: string | null
+  variant: string | null
+  renewsAt: number | null
+  endsAt: number | null
+  pastDueSince: number | null
+}
+
+export interface AccountState {
+  /** Undefined until the first refresh settles. */
+  signedIn: boolean | undefined
+  pro: boolean
+  email: string | null
+  plan: PlanState | null
+}
+
+interface Token {
+  token: string
+  expiresAt: number
+}
+
+export function tokenIsUsable(token: Token | null, now: number): boolean {
+  if (!token) return false
+  return token.expiresAt - now > REFRESH_MARGIN_MS
+}
+
+export function signInHref(redirectTo?: string): string {
+  if (!redirectTo) return '/api/auth/google'
+  return `/api/auth/google?redirect_to=${encodeURIComponent(redirectTo)}`
+}
+
+/**
+ * Whether the browser is probably signed in, answered synchronously with no
+ * network call. The header renders from this so that a page view still invokes
+ * no Worker at all — see src/lib/auth/cookies.ts.
+ */
+export function hasAccountHint(): boolean {
+  try {
+    return document.cookie.split(';').some((part) => part.trim().startsWith(`${HINT_COOKIE}=1`))
+  } catch {
+    return false
+  }
+}
+
+const SIGNED_OUT: AccountState = Object.freeze({
+  signedIn: false,
+  pro: false,
+  email: null,
+  plan: null,
+})
+
+const UNKNOWN: AccountState = Object.freeze({
+  signedIn: undefined,
+  pro: false,
+  email: null,
+  plan: null,
+})
+
+let state: AccountState = UNKNOWN
+let token: Token | null = null
+let inFlight: Promise<void> | null = null
+
+const listeners = new Set<() => void>()
+
+function notify(): void {
+  for (const listener of listeners) listener()
+}
+
+function subscribe(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+const getSnapshot = (): AccountState => state
+const getServerSnapshot = (): AccountState => UNKNOWN
+
+/**
+ * Lazy, never on a timer.
+ *
+ * A 15-minute heartbeat would be 96 requests per user per day; at a thousand
+ * subscribers that alone would exhaust the 100k/day request budget the
+ * downloader needs. Refreshing on demand ties cost to activity instead.
+ */
+export async function refreshAccount(opts: { force?: boolean } = {}): Promise<void> {
+  if (!opts.force && tokenIsUsable(token, Date.now())) return
+  if (inFlight) return inFlight
+
+  inFlight = (async () => {
+    try {
+      const response = await fetch(`/api/auth/refresh${opts.force ? '?reconcile=1' : ''}`, {
+        method: 'POST',
+      })
+      if (response.status === 401) {
+        token = null
+        state = SIGNED_OUT
+        notify()
+        return
+      }
+      if (!response.ok) return
+
+      const data = await response.json()
+      if (!data?.success) return
+
+      token = { token: data.token, expiresAt: data.expiresAt }
+      state = {
+        signedIn: true,
+        pro: data.pro === true,
+        email: data.email ?? null,
+        plan: data.plan ?? null,
+      }
+      notify()
+
+      const { adoptServerPrefs } = await import('./prefs')
+      adoptServerPrefs(data.prefs)
+    } catch {
+      // Network failure. Deliberately leaves the existing token in place: a
+      // paying customer must never be downgraded because one request failed.
+      // A genuinely dead session keeps failing until the token expires on its
+      // own, which bounds the worst case to one TTL.
+    } finally {
+      inFlight = null
+    }
+  })()
+
+  return inFlight
+}
+
+export async function signOut(all = false): Promise<void> {
+  try {
+    await fetch(`/api/auth/logout${all ? '?all=1' : ''}`, { method: 'POST' })
+  } catch {
+    // The cookies are cleared server-side; a failure here just means retrying.
+  }
+  token = null
+  state = SIGNED_OUT
+  notify()
+}
+
+export function useAccount(): AccountState {
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+}
+
+/** The in-memory access token, or null. Consumed by useProToken. */
+export function currentAccessToken(): string | null {
+  if (!token) return null
+  if (token.expiresAt <= Date.now()) return null
+  return token.token
+}
+
+/** Called before a resolve, so the token in hand is fresh enough to use. */
+export function ensureFreshToken(): void {
+  if (!hasAccountHint()) return
+  void refreshAccount()
+}
