@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 import type { D1Database } from '@cloudflare/workers-types'
 import {
   MAX_SESSIONS,
+  USER_COLUMNS,
   clearCookieHeaders,
   createSession,
+  loadSession,
   readCookie,
   sessionCookieHeaders,
   sessionsToEvict,
@@ -51,6 +53,32 @@ describe('sessionsToEvict', () => {
 
   it('evicts nothing for a first-time user', () => {
     expect(sessionsToEvict([])).toEqual([])
+  })
+})
+
+describe('loadSession query shape', () => {
+  // `sessions` has its own `id` and `created_at`. An unqualified column list
+  // makes SQLite reject the whole statement with "ambiguous column name: id",
+  // which shipped once: sign-in succeeded and then every authenticated request
+  // returned 500. A fake D1 cannot catch this — it never parses the SQL — so
+  // assert the property that makes the statement legal.
+  it('qualifies every selected column with its table', () => {
+    const unqualified = USER_COLUMNS.split(',')
+      .map((column) => column.trim())
+      .filter((column) => !column.startsWith('users.'))
+
+    expect(unqualified).toEqual([])
+  })
+
+  it('selects nothing that collides with a sessions column', async () => {
+    const { db, statements } = fakeDb([])
+    await loadSession(db, 'raw-cookie-value', 1_800_000_000_000)
+
+    const select = statements.find((s) => s.sql.includes('FROM users'))
+    expect(select?.sql).toContain('JOIN sessions')
+    for (const collision of ['id', 'created_at']) {
+      expect(select?.sql).not.toMatch(new RegExp(`(^|[\\s,])${collision}\\b`))
+    }
   })
 })
 
