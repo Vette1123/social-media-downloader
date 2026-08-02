@@ -224,11 +224,19 @@ function buildChecks() {
       pngImage(`/icons/${name}`, 1_000),
     ),
 
+    // iOS launch screens. One per device, and Safari matches them exactly, so
+    // a missing file is a blank launch screen rather than a fallback. Spot-check
+    // the smallest and the largest: they share one route and one renderer, so a
+    // break at either end is a break in the middle too.
+    ...['640x1136', '2048x2732'].map((size) => pngImage(`/splash/${size}`, 1_000)),
+
     staticFile('/robots.txt', 'text/plain', 100),
     staticFile('/sitemap.xml', 'xml', 500),
     staticFile('/manifest.json', 'json', 100),
     staticFile('/favicon.svg', 'svg'),
-    staticFile('/apple-touch-icon.svg', 'svg'),
+    // Google's crawler fetches this path literally for the search-result icon,
+    // ignoring both the SVG and the ?v= the <link> carries.
+    staticFile('/favicon.ico', 'icon', 500),
     staticFile('/ads.txt', 'text/plain'),
     staticFile('/f62bfbe4672c27f2ad3204b176eaab35.txt', 'text/plain'),
 

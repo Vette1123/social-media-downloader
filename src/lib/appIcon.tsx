@@ -47,27 +47,83 @@ const GLYPH_SVG =
       '</g></svg>',
   )
 
+/**
+ * The gradient tile, at any size. One definition, so the favicon, the PWA
+ * icons and the iOS launch screens cannot drift apart.
+ *
+ * The tile carries the colour and the glyph is the negative space, which is
+ * what makes this survive at 32px on a dark taskbar. The old arrangement (ink
+ * tile, thin cyan strokes) inverted both of those.
+ */
+function tile(size: number, radius: number, glyphRatio: number): React.ReactElement {
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #2dd4bf 0%, #22d3ee 50%, #38bdf8 100%)',
+        borderRadius: radius,
+      }}
+    >
+      {/* satori renders this, not a browser — next/image has no meaning here. */}
+      <img
+        src={GLYPH_SVG}
+        width={Math.round(size * glyphRatio)}
+        height={Math.round(size * glyphRatio)}
+        alt=''
+      />
+    </div>
+  )
+}
+
 export function renderAppIcon(size: number, maskable = false) {
-  const glyph = Math.round(size * (maskable ? 0.52 : 0.62))
-  const tileStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    // The tile carries the colour now and the glyph is the negative space,
-    // which is what makes this survive at 32px on a dark taskbar. The old
-    // arrangement (ink tile, thin cyan strokes) inverted both of those.
-    background: 'linear-gradient(135deg, #2dd4bf 0%, #22d3ee 50%, #38bdf8 100%)',
-    borderRadius: maskable ? 0 : Math.round(size * 0.22),
-  }
+  // A maskable icon is full-bleed and square: Android crops it to whatever
+  // shape the launcher uses, so the tile must not round its own corners, and
+  // the glyph shrinks to stay inside the ~80% safe zone.
+  return new ImageResponse(
+    tile(size, maskable ? 0 : Math.round(size * 0.22), maskable ? 0.52 : 0.62),
+    appIconSize(size),
+  )
+}
+
+/** Must equal manifest.json's background_color and the <body> background, or
+ *  the handover from launch screen to page flashes. Asserted in appIcon.test.ts. */
+export const SPLASH_BACKGROUND = '#08080a'
+
+/**
+ * The iOS launch screen.
+ *
+ * iOS is the only platform that needs one as an image. Android composes its own
+ * from the manifest's name, icon and `background_color`, which is why there is
+ * no Android equivalent here — providing one would be a second source of truth
+ * for the same screen.
+ *
+ * Deliberately just the mark on the app's own background: a launch screen is
+ * shown for a few hundred milliseconds and then replaced by the page, so it
+ * exists to make that handover invisible, not to say anything. Matching
+ * `background_color` and the body background exactly is what makes the
+ * transition read as one continuous surface instead of a flash.
+ */
+export function renderSplash(width: number, height: number) {
+  const mark = Math.round(Math.min(width, height) * 0.26)
   return new ImageResponse(
     (
-      <div style={tileStyle}>
-        {/* satori renders this, not a browser — next/image has no meaning here. */}
-        <img src={GLYPH_SVG} width={glyph} height={glyph} alt='' />
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: SPLASH_BACKGROUND,
+        }}
+      >
+        {tile(mark, Math.round(mark * 0.22), 0.62)}
       </div>
     ),
-    appIconSize(size),
+    { width, height },
   )
 }

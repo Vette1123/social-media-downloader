@@ -8,6 +8,7 @@
     "build": "next build",
     "postbuild": "node scripts/indexnow.mjs",
     "indexnow": "node scripts/indexnow.mjs",
+    "icons": "node scripts/make-favicon.mjs",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
