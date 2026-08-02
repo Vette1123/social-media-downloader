@@ -4,11 +4,11 @@ import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: `The terms for using ${siteConfig.name}: as-is service, your responsibility for content rights, and Pro license refunds.`,
+  description: `The terms for using ${siteConfig.name}: as-is service, your responsibility for content rights, and Pro subscription billing.`,
   alternates: { canonical: '/terms' },
 }
 
-const UPDATED = '31 July 2026'
+const UPDATED = '2 August 2026'
 
 export default function Terms() {
   return (
@@ -50,10 +50,31 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className='mb-2 text-lg font-semibold text-white'>Pro licenses and refunds</h2>
+            <h2 className='mb-2 text-lg font-semibold text-white'>Pro billing</h2>
             <p>
-              Pro licenses are sold and processed by Lemon Squeezy and are
-              refundable within 14 days of purchase through Lemon Squeezy.
+              Pro is a subscription, billed monthly or annually, processed by
+              Lemon Squeezy, who act as merchant of record. It renews
+              automatically at the end of each billing period until you
+              cancel.
+            </p>
+            <p className='mt-2'>
+              Cancel any time from your account&rsquo;s billing portal.
+              Cancelling stops future renewals but does not refund the current
+              period — Pro stays active until the end of the period you already
+              paid for, then reverts to free.
+            </p>
+            <p className='mt-2'>
+              If a renewal payment fails, we keep Pro active for 14 days while
+              Lemon Squeezy retries the charge, so a card update usually
+              recovers the subscription with no interruption. If payment still
+              has not gone through after 14 days, Pro access ends.
+            </p>
+            <p className='mt-2'>
+              The first charge on a new subscription is refundable within 14
+              days of purchase, through Lemon Squeezy. Later renewal charges
+              are not refunded for time already elapsed in the period, since
+              cancelling stops the next one — email us if a renewal charge was
+              a mistake and we will look at it.
             </p>
           </section>
 

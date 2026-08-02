@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { CheckIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
-import { PRO_CHECKOUT_URL, PRO_CTA_LABEL, PRO_PRICE } from '@/config/pro'
+import { PRO_CTA_LABEL, PRO_PRICE_ANNUAL, PRO_PRICE_MONTHLY } from '@/config/pro'
 import { useTier } from '@/lib/entitlements'
 
 /**
@@ -50,8 +50,8 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
             Downloading more than one? Pro takes 20 at a time.
           </p>
           <p className='mt-1 text-sm text-white/60'>
-            {PRO_PRICE} once, no account, no subscription. This page stays free
-            either way.
+            {PRO_PRICE_MONTHLY}/mo or {PRO_PRICE_ANNUAL}/yr, sign in with
+            Google. This page stays free either way.
           </p>
         </div>
         <Link
@@ -72,7 +72,7 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
     >
       <div className='lg:col-span-7'>
         <h2 className='text-2xl font-bold tracking-tight text-balance text-white sm:text-3xl'>
-          Twenty links at once, for {PRO_PRICE} once
+          Twenty links at once, from {PRO_PRICE_MONTHLY} a month
         </h2>
         <p className='mt-3 text-sm text-white/70 md:text-base'>
           Everything on this site stays free. Pro is for the days you have a
@@ -80,12 +80,12 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
         </p>
 
         <div className='mt-6 flex flex-wrap items-center gap-4'>
-          <a
-            href={PRO_CHECKOUT_URL}
+          <Link
+            href='/pro'
             className='btn-grad rounded-xl px-6 py-3 text-sm font-semibold whitespace-nowrap'
           >
             {PRO_CTA_LABEL}
-          </a>
+          </Link>
           <Link
             href='/pro'
             className='text-sm text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline'
@@ -95,7 +95,8 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
         </div>
 
         <p className='mt-4 text-xs text-white/40'>
-          One-time payment. Lifetime key, up to 5 activations.
+          {PRO_PRICE_ANNUAL} a year, or {PRO_PRICE_MONTHLY} a month. Cancel
+          anytime — signed in on up to 5 devices at once.
         </p>
       </div>
 
