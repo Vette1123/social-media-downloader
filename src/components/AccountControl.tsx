@@ -23,7 +23,8 @@
  */
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Pin, PinOff } from 'lucide-react'
 import { Avatar } from '@/components/Avatar'
 import {
   type CachedProfile,
@@ -45,6 +46,76 @@ function shortLabel(profile: CachedProfile | null): string {
   return local || 'Account'
 }
 
+const PIN_KEY = 'smd_pin_account'
+/** Below this the control overlaps content; above it there is room to spare. */
+const PHONE = '(max-width: 39.99rem)'
+/** Ignore the jitter of a finger resting on a scrolling page. */
+const SCROLL_THRESHOLD = 8
+/** Never hide it while the top of the page is still in view. */
+const SCROLL_FLOOR = 80
+
+function readPinned(): boolean {
+  try {
+    return window.localStorage.getItem(PIN_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writePinned(pinned: boolean): void {
+  try {
+    if (pinned) window.localStorage.setItem(PIN_KEY, '1')
+    else window.localStorage.removeItem(PIN_KEY)
+  } catch {
+    // Private mode. The choice lasts for this page view instead of for the
+    // device, which is the only thing lost.
+  }
+}
+
+/**
+ * Take the control away on the way down the page and bring it back on the way
+ * up, so it is reachable without sitting on top of what someone is reading.
+ *
+ * The class is written straight to the node through a ref. This is the reason
+ * a scroll here costs nothing: React never re-renders, so the work per frame
+ * is one `classList.toggle` behind a rAF gate, on a listener that is passive
+ * and only attached on the viewports that need it. Storing the position in
+ * state instead would re-render the tree on every frame of every scroll, on
+ * every page of the site, which is what the ban on scroll handlers is about.
+ */
+function usePeekOnScroll(ref: React.RefObject<HTMLElement | null>, enabled: boolean): void {
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+
+    node.classList.remove('account-slot--away')
+    if (!enabled || !window.matchMedia(PHONE).matches) return
+
+    let previous = window.scrollY
+    let frame = 0
+
+    const update = (): void => {
+      frame = 0
+      const y = window.scrollY
+      const delta = y - previous
+      if (Math.abs(delta) < SCROLL_THRESHOLD) return
+      previous = y
+      node.classList.toggle('account-slot--away', delta > 0 && y > SCROLL_FLOOR)
+    }
+
+    const onScroll = (): void => {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (frame) cancelAnimationFrame(frame)
+      node.classList.remove('account-slot--away')
+    }
+  }, [ref, enabled])
+}
+
 export function AccountControl() {
   const hydrated = useHydrated()
   const live = useAccount()
@@ -52,14 +123,67 @@ export function AccountControl() {
   // not seeded from this: only the server may decide what an account *is*, and
   // this is a paint hint for the corner of the screen.
   const [cached] = useState(cachedProfile)
+  // Safe as a lazy initialiser despite reading localStorage: this runs on the
+  // server too (where it catches and returns false), and nothing below renders
+  // until `hydrated`, so the value cannot reach the markup React compares.
+  const [pinned, setPinned] = useState(readPinned)
+  const slot = useRef<HTMLDivElement>(null)
+
+  usePeekOnScroll(slot, !pinned)
+
+  function togglePinned(): void {
+    // The write stays out of the updater: React may call an updater twice, and
+    // a side effect inside one runs twice with it.
+    const next = !pinned
+    setPinned(next)
+    writePinned(next)
+  }
 
   return (
     // `.account-slot` carries the top/right offsets, because they are notch-
     // aware and paired with the clearance `.app-bg` reserves for this control.
     // Taller on phones so the tap target is a thumb rather than a cursor.
-    <div className='account-slot pointer-events-none fixed z-50 flex h-10 items-center justify-end sm:h-9'>
-      {hydrated && <Control live={live} cached={cached} />}
+    <div
+      ref={slot}
+      className='account-slot pointer-events-none fixed z-50 flex h-10 items-center justify-end gap-1.5 sm:h-9'
+    >
+      {hydrated && (
+        <>
+          {/* Left of the account pill, and only for people who have an account
+              to get back to. An anonymous visitor gets the auto-hide and a
+              single button, rather than a preference about a button. */}
+          {(live.signedIn ?? hasAccountHint()) && (
+            <PinToggle pinned={pinned} onToggle={togglePinned} />
+          )}
+          <Control live={live} cached={cached} />
+        </>
+      )}
     </div>
+  )
+}
+
+/**
+ * Phones only. On a wider viewport the control never covers anything, so it
+ * never hides, so there is nothing to pin and no reason to spend a button
+ * saying so.
+ */
+function PinToggle({ pinned, onToggle }: { pinned: boolean; onToggle: () => void }) {
+  const Icon = pinned ? Pin : PinOff
+  return (
+    <button
+      type='button'
+      onClick={onToggle}
+      aria-pressed={pinned}
+      aria-label={pinned ? 'Unpin the account button' : 'Keep the account button on screen'}
+      title={pinned ? 'Unpin the account button' : 'Keep the account button on screen'}
+      className={`btn-press pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur sm:hidden ${
+        pinned
+          ? 'border-cyan-300/40 bg-cyan-400/15 text-cyan-200'
+          : 'border-white/10 bg-black/50 text-white/45'
+      }`}
+    >
+      <Icon size={14} strokeWidth={2} aria-hidden />
+    </button>
   )
 }
 

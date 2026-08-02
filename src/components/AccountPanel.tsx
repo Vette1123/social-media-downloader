@@ -507,7 +507,9 @@ function SignInPrompt() {
   return (
     <Surface glow radius='3xl' className='animate-card-enter p-6 text-center sm:p-8'>
       <p className='text-sm text-white/70'>Sign in to see your plan and manage your account.</p>
-      <a href={signInHref('/account')} className={`${ACTION_BUTTON_CLASS} mt-4`}>
+      {/* Home, not back to this page. Signing in is a means to using the
+          downloader, so it ends where the downloader is. */}
+      <a href={signInHref()} className={`${ACTION_BUTTON_CLASS} mt-4`}>
         Sign in with Google
       </a>
     </Surface>
