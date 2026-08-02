@@ -11,9 +11,9 @@
 
 import type { Google } from 'arctic'
 
-/** Short-lived, single-use, and gone by the time the callback returns. */
-export const OAUTH_STATE_COOKIE = 'smd_oauth_state'
-export const OAUTH_VERIFIER_COOKIE = 'smd_oauth_verifier'
+// Re-exported so existing importers of these two names from `./google` keep
+// working; see cookies.ts for why the constants themselves live there.
+export { OAUTH_STATE_COOKIE, OAUTH_VERIFIER_COOKIE } from './cookies'
 
 const OAUTH_TEMP_TTL_SECONDS = 10 * 60
 

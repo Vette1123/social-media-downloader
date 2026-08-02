@@ -13,22 +13,11 @@
 import type { D1Database } from '@cloudflare/workers-types'
 import { sha256Hex } from '../proToken'
 import type { BillingRow } from '../billing/entitlement'
+import { HINT_COOKIE, SESSION_COOKIE } from './cookies'
 
-export const SESSION_COOKIE = 'smd_session'
-
-/**
- * A second, deliberately script-readable cookie carrying no user data.
- *
- * The header control needs to know whether to render "Sign in" or an avatar,
- * and it renders on every page. Asking an endpoint would put every page view
- * back on the Worker and spend the 100k/day request budget drawing an avatar,
- * so the answer is a cookie the client can read with no network call.
- *
- * It is a hint, never a credential: every real decision still requires the
- * httpOnly session cookie, checked server-side. Forging it buys an avatar that
- * links to a page telling you to sign in.
- */
-export const HINT_COOKIE = 'smd_account'
+// Re-exported so existing importers of these two names from `./session` keep
+// working; see cookies.ts for why the constants themselves live there.
+export { SESSION_COOKIE, HINT_COOKIE } from './cookies'
 
 export const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000
 
