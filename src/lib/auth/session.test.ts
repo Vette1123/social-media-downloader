@@ -1,11 +1,38 @@
 import { describe, expect, it } from 'vitest'
+import type { D1Database } from '@cloudflare/workers-types'
 import {
   MAX_SESSIONS,
   clearCookieHeaders,
+  createSession,
   readCookie,
   sessionCookieHeaders,
   sessionsToEvict,
 } from './session'
+
+/**
+ * Records every statement createSession prepares, so the tests can assert on
+ * the SQL it builds without standing up a real D1.
+ */
+function fakeDb(existing: { id: string }[]) {
+  const statements: { sql: string; bindings: unknown[] }[] = []
+  const db = {
+    prepare(sql: string) {
+      const entry = { sql, bindings: [] as unknown[] }
+      statements.push(entry)
+      const stmt = {
+        bind(...bindings: unknown[]) {
+          entry.bindings = bindings
+          return stmt
+        },
+        all: async () => ({ results: existing }),
+        run: async () => ({}),
+        first: async () => null,
+      }
+      return stmt
+    },
+  }
+  return { db: db as unknown as D1Database, statements }
+}
 
 describe('sessionsToEvict', () => {
   const rows = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `s${i}` }))
@@ -24,6 +51,50 @@ describe('sessionsToEvict', () => {
 
   it('evicts nothing for a first-time user', () => {
     expect(sessionsToEvict([])).toEqual([])
+  })
+})
+
+describe('createSession', () => {
+  const NOW = 1_800_000_000_000
+
+  it('counts only unexpired sessions against the cap', async () => {
+    const { db, statements } = fakeDb([])
+    await createSession(db, 'u1', NOW)
+
+    const select = statements.find((s) => s.sql.startsWith('SELECT id FROM sessions'))
+    expect(select?.sql).toContain('expires_at > ?')
+    expect(select?.bindings).toEqual(['u1', NOW])
+  })
+
+  it('reclaims expired rows even when nothing is over the cap', async () => {
+    const { db, statements } = fakeDb([])
+    await createSession(db, 'u1', NOW)
+
+    const remove = statements.find((s) => s.sql.startsWith('DELETE FROM sessions'))
+    expect(remove?.sql).toContain('expires_at <= ?')
+    expect(remove?.sql).not.toContain('id IN')
+    expect(remove?.bindings).toEqual(['u1', NOW])
+  })
+
+  it('reclaims expired rows and evicts the surplus in one statement', async () => {
+    const existing = Array.from({ length: MAX_SESSIONS }, (_, i) => ({ id: `s${i}` }))
+    const { db, statements } = fakeDb(existing)
+    await createSession(db, 'u1', NOW)
+
+    const remove = statements.find((s) => s.sql.startsWith('DELETE FROM sessions'))
+    expect(remove?.sql).toContain('expires_at <= ?')
+    expect(remove?.sql).toContain('id IN (?)')
+    expect(remove?.bindings).toEqual(['u1', NOW, 's0'])
+  })
+
+  it('stores only the hash, never the raw cookie value', async () => {
+    const { db, statements } = fakeDb([])
+    const raw = await createSession(db, 'u1', NOW)
+
+    const insert = statements.find((s) => s.sql.startsWith('INSERT INTO sessions'))
+    expect(insert?.bindings[0]).not.toBe(raw)
+    expect(insert?.bindings[0]).toMatch(/^[0-9a-f]{64}$/)
+    expect(insert?.bindings).toEqual([expect.any(String), 'u1', NOW, NOW + 90 * 24 * 60 * 60 * 1000])
   })
 })
 

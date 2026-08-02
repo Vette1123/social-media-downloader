@@ -22,9 +22,15 @@ export { SESSION_COOKIE, HINT_COOKIE } from './cookies'
 export const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000
 
 /**
- * Five concurrent sessions per account. The successor to the license key's five
- * activation slots, and the only thing bounding how far one account can be
- * shared — a sixth sign-in evicts the oldest.
+ * Five concurrent sessions per account, the successor to the license key's five
+ * activation slots: a sixth sign-in evicts the oldest.
+ *
+ * It bounds concurrent *logins*, which is not the same as bounding sharing. The
+ * 15-minute access token is a bearer credential that no request re-checks
+ * against the database, so anyone willing to republish a fresh token every
+ * quarter hour routes around this cap entirely. Closing that would cost a D1
+ * read on every priority request, which the 10 ms CPU budget does not have —
+ * see the design doc's performance section.
  */
 export const MAX_SESSIONS = 5
 
@@ -52,6 +58,12 @@ export function sessionsToEvict(
   const surplus = existing.length - max + 1
   if (surplus <= 0) return []
   return existing.slice(0, surplus).map((row) => row.id)
+}
+
+/** The ` OR id IN (?, ?)` tail of the reclaim delete, empty when nothing is over the cap. */
+function evictClause(evict: string[]): string {
+  if (evict.length === 0) return ''
+  return ` OR id IN (${evict.map(() => '?').join(', ')})`
 }
 
 /**
@@ -96,19 +108,21 @@ export async function createSession(
   userId: string,
   now: number,
 ): Promise<string> {
+  // Only live sessions count against the cap. Counting expired ones would let
+  // five lapsed logins lock a user out of signing in again.
   const existing = await db
-    .prepare('SELECT id FROM sessions WHERE user_id = ? ORDER BY created_at ASC')
-    .bind(userId)
+    .prepare('SELECT id FROM sessions WHERE user_id = ? AND expires_at > ? ORDER BY created_at ASC')
+    .bind(userId, now)
     .all<{ id: string }>()
 
   const evict = sessionsToEvict(existing.results ?? [])
-  if (evict.length > 0) {
-    const placeholders = evict.map(() => '?').join(', ')
-    await db
-      .prepare(`DELETE FROM sessions WHERE id IN (${placeholders})`)
-      .bind(...evict)
-      .run()
-  }
+
+  // One write reclaims this user's expired rows and evicts any over the cap.
+  // Sign-in is the only moment we can be sure a row per user is worth spending.
+  await db
+    .prepare(`DELETE FROM sessions WHERE user_id = ? AND (expires_at <= ?${evictClause(evict)})`)
+    .bind(userId, now, ...evict)
+    .run()
 
   const raw = crypto.randomUUID() + crypto.randomUUID()
   await db
@@ -123,8 +137,8 @@ export async function createSession(
 
 /**
  * One indexed join, so D1 scans two rows rather than a table. An expired
- * session reads as absent; the row is left for the next write to clean up
- * rather than spending a write on every read.
+ * session reads as absent; the row itself is reclaimed by that user's next
+ * sign-in rather than spending a write on every read.
  */
 export async function loadSession(
   db: D1Database,
