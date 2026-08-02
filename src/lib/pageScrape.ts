@@ -36,10 +36,9 @@ import {
  * not count against the Worker's 10 ms CPU budget. The CPU bound is
  * FAST_SCAN_BYTES below.
  *
- * 256 KB because real video sites bury their metadata deep. Measured on a live
- * Pornhub page: 1.4 MB of markup with `og:video` at byte 100,601. A 64 KB
- * window found nothing there, which was a large part of "it doesn't work
- * everywhere".
+ * 256 KB because real video sites bury their metadata deep. Measured on one
+ * live host: 1.4 MB of markup with `og:video` at byte 100,601. A 64 KB window
+ * found nothing there, which was a large part of "it doesn't work everywhere".
  */
 export const MAX_SCAN_BYTES = 262_144
 
@@ -104,11 +103,11 @@ export function filenameTitle(url: string): string {
 /**
  * Below this, a 200 OK carrying HTML is not the page that was asked for.
  *
- * Measured against the live failure this was written for: eporner answers a
+ * Measured against the live failure this was written for: the host answers a
  * Cloudflare datacenter IP with 369 bytes — a `<title>.</title>` and one
  * obfuscated script that bounces the caller to the homepage — while the same
- * URL fetched from a residential IP returns 88 KB of real markup. Pornhub
- * behaves the same way. No header changes that; the block is on the IP, and a
+ * URL fetched from a residential IP returns 88 KB of real markup. Several
+ * hosts behave this way. No header changes it; the block is on the IP, and a
  * Worker has no other IP to offer.
  *
  * Detection is by size rather than by matching the stub's script, because the
@@ -259,8 +258,8 @@ const PREVIEW_TOKENS =
  * Resolution hints, best first. The number is the score adjustment.
  *
  * The low entries are negative on purpose. A site that offers several
- * renditions often advertises its smallest one in `og:video` (measured: a
- * Pornhub page whose og:video is the 240P file while the player carries 1080),
+ * renditions often advertises its smallest one in `og:video` (measured: a page
+ * whose og:video is the 240P file while its player carries 1080),
  * and "we fetched the 240p" is indistinguishable to a user from "we fetched a
  * preview". Ranking the small ones below zero means they only ever win when
  * nothing else is on offer.
@@ -422,7 +421,7 @@ function inlineMediaUrls(html: string): string[] {
 function collectCandidates(scanned: string): Candidate[] {
   return [
     // The strongest signal on any page: a link the site itself offers as a
-    // download. Measured on Eporner, whose `/dload/<id>/720/<file>.mp4` anchors
+    // download. Measured on a host whose `/dload/<id>/720/<file>.mp4` anchors
     // serve real bytes to any IP with no Referer, while the JSON-LD contentUrl
     // the same page advertises answers 403. Ranked above everything else
     // because a download link is the site stating where the file is, rather
@@ -459,8 +458,8 @@ export function extractMediaFromHtml(
 
   // Two stages, so the cheap window pays for the common case and only a page
   // that yields nothing there is scanned in full. A page with a normal <head>
-  // never touches the wide sweep; a page like Pornhub's, which buries og:video
-  // past 100 KB, is found instead of failing.
+  // never touches the wide sweep; a page that buries og:video past 100 KB is
+  // found instead of failing.
   const fast = full.length > FAST_SCAN_BYTES ? full.slice(0, FAST_SCAN_BYTES) : full
   let usable = usableFrom(fast, baseUrl)
   let scanned = fast

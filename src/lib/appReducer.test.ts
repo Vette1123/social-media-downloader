@@ -14,8 +14,8 @@ describe('autoOpensPreview', () => {
   })
 
   it('stays shut for a generic link', () => {
-    // The route adult sites and unknown hosts arrive on: we do not paint a
-    // full-size poster frame for content we know nothing about.
+    // The route unknown hosts arrive on: we do not paint a full-size poster
+    // frame for content we know nothing about.
     expect(autoOpensPreview({ ...base, platform: 'generic' })).toBe(false)
   })
 

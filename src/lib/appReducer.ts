@@ -117,10 +117,10 @@ export const initialState: AppState = {
  * Three cases where it stays shut:
  *
  *   - `generic`. An unrecognised host is the one path where we know nothing
- *     about what comes back. It is the route adult sites arrive on, and a
- *     poster frame is a full-size still — painting one unasked is a real
- *     problem for someone who pasted a link on a train. It is also where the
- *     largest files live.
+ *     about what comes back, and a poster frame is a full-size still. Painting
+ *     one unasked, for a host nothing has vetted, is a real problem for
+ *     someone who pasted a link on a train. It is also where the largest files
+ *     live.
  *   - An embed (the YouTube fallback). That iframe is not `preload='none'` and
  *     cannot be: mounting it loads a megabyte of third-party player
  *     immediately, for a visitor who is usually about to click Download.

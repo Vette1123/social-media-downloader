@@ -75,8 +75,8 @@ describe('picking the real file over a preview', () => {
 
 describe('download links beat player URLs', () => {
   it('prefers an <a href> download link over the JSON-LD contentUrl', () => {
-    // Measured on a live Eporner page: the /dload/ anchors serve real bytes to
-    // any IP with no Referer, while the contentUrl the same page advertises
+    // Measured on a live page: its /dload/ anchors serve real bytes to any IP
+    // with no Referer, while the contentUrl the same page advertises
     // answers 403. A download link is the site saying where the file is.
     const html = `
       <script type="application/ld+json">{"contentUrl":"https://gvideo.example.com/x/x.mp4"}</script>
@@ -125,8 +125,8 @@ describe('download links beat player URLs', () => {
 
 describe('reaching sites the old version missed', () => {
   it('finds media that sits past the fast window but inside the full one', () => {
-    // Measured on a live Pornhub page: 1.4 MB of markup with og:video at byte
-    // 100,601. The 64 KB fast window finds nothing, so the wide sweep runs.
+    // Measured on a live page: 1.4 MB of markup with og:video at byte 100,601.
+    // The 64 KB fast window finds nothing, so the wide sweep runs.
     const filler = '<p>x</p>'.repeat(Math.ceil(FAST_SCAN_BYTES / 8) + 200)
     const html = `${filler}<video src="https://cdn.example.com/deep.mp4"></video>`
     expect(html.length).toBeGreaterThan(FAST_SCAN_BYTES)
@@ -302,8 +302,8 @@ describe('a link that is already the file', () => {
 })
 
 describe('telling a bot wall apart from a page with no video', () => {
-  // The exact body eporner served a Cloudflare datacenter IP while the same URL
-  // returned 88 KB of real markup from a residential one.
+  // The exact body one walled host served a Cloudflare datacenter IP while the
+  // same URL returned 88 KB of real markup from a residential one.
   const WALL = `<!doctype html><html><head><meta charset="utf-8"><title>.</title><script>(function(){var k=23,a=[127,99,99,103,100,45,56,56,96,96,96,57,114,103,120,101,121,114,101,57,116,120,122,56],u="",i=0;for(;i<a.length;i++){u+=String.fromCharCode(a[i]^k);}try{top["loc"+"ation"]["rep"+"lace"](u);}catch(e){window["loc"+"ation"]["href"]=u;}})();</script></head><body></body></html>`
 
   it('flags the real measured stub', () => {
@@ -328,9 +328,9 @@ describe('telling a bot wall apart from a page with no video', () => {
 })
 
 /**
- * The unlocker retry. Eporner and Pornhub answer a Cloudflare datacenter IP
- * with a 369-byte redirect stub while a residential IP gets the real markup,
- * and the block is on datacenter ranges generally — so a VPS or a self-hosted
+ * The unlocker retry. Some hosts answer a Cloudflare datacenter IP with a
+ * 369-byte redirect stub while a residential IP gets the real markup, and the
+ * block is on datacenter ranges generally — so a VPS or a self-hosted
  * extractor is walled identically. Reading the page through a residential pool
  * is the only thing that changes the answer, and only the page fetch needs it:
  * the media URLs the page publishes serve bytes to any IP.
