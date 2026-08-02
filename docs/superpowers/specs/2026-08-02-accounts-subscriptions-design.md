@@ -83,7 +83,7 @@ The same applies to anything else heavy that lands in auth or billing code.
 |------|-----------|-----|-----------|
 | page view | every visit | 0 ms — Worker not invoked | 0% |
 | `/api/download` | every resolve | unchanged: 1 HMAC over ~60 B | unchanged |
-| `/api/auth/refresh` | on activity, ≤1 per 15 min | cookie parse, 1 SHA-256, 1 HMAC sign; D1 is I/O | <1 ms |
+| `/api/auth/refresh` | on activity, ≤1 per 15 min | cookie parse, 1 SHA-256, 1 HMAC sign; D1 is I/O; reconcile is deferred to `waitUntil` | <1 ms |
 | `/api/auth/callback` | once per login | arctic import, TLS exchange (I/O), JWT decode, 2 writes (I/O) | ~2–3 ms |
 | `/api/billing/webhook` | a few per day | 1 HMAC verify, 1 parse, 1 write | <1 ms |
 | `/api/billing/portal` | on click | 1 LS API call (I/O) | <1 ms |
@@ -178,6 +178,45 @@ Revocation still lands within 15 minutes *of the user doing anything*, which is
 the only window that matters — a revoked user sitting on an idle tab is not
 consuming anything.
 
+### Lazy reconcile: webhooks are an optimisation, not the truth
+
+Lemon Squeezy retries failed deliveries, but a webhook can still be lost for good —
+a deploy window, a bad response we returned, an endpoint misconfigured for an hour.
+If webhooks were the only writer, a lost one would leave a row permanently wrong:
+someone who cancelled keeping Pro, or worse, someone who paid not getting it.
+
+So `/api/auth/refresh` also repairs. When it loads a user who has an
+`ls_subscription_id` and whose `ls_updated_at` is older than 24 hours, it schedules
+`GET /v1/subscriptions/{id}` against the Lemon Squeezy API through
+`ctx.waitUntil()` and writes the authoritative status back. The token for *this*
+request is minted from the row as it stands; the repair lands before the next one,
+at most 15 minutes later.
+
+Three properties make this the right shape:
+
+- **It costs nothing when webhooks work.** The check is an integer comparison. The
+  fetch only fires on a row that is already stale, which in normal operation is
+  never — every webhook refreshes `ls_updated_at`.
+- **It is off the response path.** `ctx.waitUntil()` defers it past the response,
+  the same mechanism `/api/download` already uses for edge-cache writes. The user
+  waits for nothing.
+- **It repairs exactly the accounts that matter.** Reconciling is driven by someone
+  actually using the site. A user who never returns cannot be harmed by a stale
+  row, because entitlement requires a refresh they never make.
+
+**Forced reconcile** covers the worst case directly. The checkout-success poll
+described under *Returning from checkout* calls `/api/auth/refresh?reconcile=1`
+after ~10 seconds of no change, which skips the staleness check and asks Lemon
+Squeezy outright. "I paid and nothing happened" is the one failure a customer will
+not wait out, and it resolves in a single round trip instead of a support email.
+
+Deliberately **not** a Cron Trigger. A scheduled sweep would need a `scheduled`
+handler on the Worker entrypoint, would walk every subscriber on a timer, and would
+spend most of its work confirming rows that were already correct — to fix accounts
+whose owners are not there to notice. Demand-driven repair is less code, less
+infrastructure, and better targeted. It reuses `LEMONSQUEEZY_API_KEY`, already
+needed for the portal, so it adds no new configuration at all.
+
 ### Why not Better Auth
 
 It was considered and rejected. Better Auth solves sessions, OAuth, and
@@ -212,7 +251,8 @@ CREATE TABLE users (
   ls_variant          TEXT,     -- monthly|annual
   ls_renews_at        INTEGER,
   ls_ends_at          INTEGER,  -- set when cancelled: Pro remains valid until this
-  ls_updated_at       INTEGER   -- webhook replay guard
+  ls_past_due_since   INTEGER,  -- first past_due sighting; grace is capped from here
+  ls_updated_at       INTEGER   -- webhook replay guard, and reconcile staleness clock
 );
 
 CREATE TABLE sessions (
@@ -252,8 +292,6 @@ Recorded so these are not re-proposed later:
 - **A device-list UI.** ~150 lines of React for a feature the owner has said they
   will not use. `/account` gets "Sign out" and "Sign out everywhere"; killing one
   specific session is a D1 query.
-- **`ls_past_due_since`.** Only needed if `past_due` were granted a grace period.
-  It is not — see below.
 - **`ls_portal_url`.** Lemon Squeezy's `urls.customer_portal` is a *signed* URL
   that expires after 24 hours, and their documentation says not to store it.
   Cached, the "Manage billing" button would be dead a day after the last webhook.
@@ -268,7 +306,7 @@ is Pro.
 |-------------|------|-------|
 | `active`, `on_trial` | yes | — |
 | `cancelled` | yes | `ls_ends_at` |
-| `past_due` | **no** | — |
+| `past_due` | yes | `ls_past_due_since + 14 days` |
 | `paused`, `unpaid`, `expired` | no | — |
 | no subscription | no | — |
 
@@ -279,17 +317,24 @@ means *will not renew*, not *stopped now*. The customer has already paid through
 the end of the period. Cutting them off at the moment they click cancel is
 charging for service and not delivering it.
 
-**`past_due` is not Pro,** by explicit decision. Lemon Squeezy retries a failed
-payment four times over two weeks before flipping to `unpaid`, and their own
-documentation assumes the customer keeps access throughout. Granting that grace
-was recommended and declined. The consequence, recorded honestly: an expired card
-is the most common cause of involuntary churn, so some people will lose Pro on a
-day they fully intended to keep paying. The upside is one less column, one less
-time-based branch, and no window in which unpaid service is being delivered.
+**`past_due` keeps Pro for up to 14 days.** Lemon Squeezy retries a failed payment
+four times over two weeks before flipping to `unpaid`, and most of those retries
+succeed — an expired or momentarily declined card is the largest single cause of
+involuntary churn, and it is not a decision to leave. Switching Pro off the
+instant a renewal fails punishes customers for something their bank did, in the
+window where LS is actively fixing it on our behalf.
+
+The 14-day cap is ours, not LS's, and it exists because "serve Pro until Lemon
+Squeezy says otherwise" has no bound if something upstream breaks — a changed
+retry schedule, a wedged subscription, a webhook that never lands. `ls_past_due_since`
+is stamped the first time we see the status and cleared when it recovers, so the
+grace window is measured from an event we observed rather than inferred. In normal
+operation LS resolves the subscription first and the cap never fires.
 
 `isProAt` is unit-tested across every status and both sides of every date
-boundary. It is the one place where a mistake either gives away paid service or
-takes it from someone who paid.
+boundary, including a `past_due` user at 13 days, at exactly 14, and at 15. It is
+the one place where a mistake either gives away paid service or takes it from
+someone who paid.
 
 ## Endpoints
 
@@ -301,7 +346,7 @@ them without initialising Next — the same reason the existing routes are there
 |-------|--------|------|
 | `/api/auth/google` | GET | Generate state + PKCE verifier, set both as short-lived `httpOnly` cookies, 302 to Google |
 | `/api/auth/callback` | GET | Validate state, exchange code, decode `id_token`, upsert user, create session, set cookie, 302 back |
-| `/api/auth/refresh` | POST | Cookie → session → user → `isProAt` → 15-minute access token |
+| `/api/auth/refresh` | POST | Cookie → session → user → `isProAt` → 15-minute access token. Reconciles a stale row via `waitUntil`; `?reconcile=1` forces it |
 | `/api/auth/logout` | POST | Delete this session (or all with `?all=1`); clear both cookies |
 | `/api/account` | POST | Update `prefs`, or delete the account |
 | `/api/billing/portal` | GET | Fetch a fresh signed LS portal URL and 302 to it |
@@ -387,17 +432,22 @@ changes and offers exactly one action.
 | `active` monthly | "Pro · $3/month · renews 3 Sep" | Manage billing |
 | `active` annual | "Pro · $24/year · renews 3 Aug 2027" + booking link | Manage billing |
 | `cancelled` | "Pro until 3 Sep. Won't renew after that." | Resubscribe |
-| `past_due` | "Payment failed. Pro is paused." | **Update payment method** |
+| `past_due` | "We couldn't take payment. Pro stays on until 17 Aug." | **Update payment method** |
 | `unpaid` / `expired` | "Your subscription ended." | Subscribe again |
 
 `cancelled` is deliberately not phrased as a loss. The customer paid through the
 period and still has everything; the copy states the end date rather than warning
 them about it, and offers one button to undo.
 
-`past_due` gets the loudest treatment on the page, because Pro is switched off the
-moment a payment fails. Someone whose card expired has not decided to leave, and
-the only thing standing between them and working software is a card update — so
-that state leads with the fix, not an explanation.
+`past_due` gets the loudest treatment on the page, and it is the one state that
+also surfaces outside `/account`: a slim banner on the downloader itself, because
+someone in the grace window is still using Pro normally and has no reason to visit
+their account page before it runs out. It names the date Pro stops and leads with
+the fix rather than an explanation — nothing stands between them and working
+software except a card update, and they probably don't know yet.
+
+That banner is the only thing this entire design is ever allowed to interrupt the
+downloader with, and only for someone who is already paying.
 
 ### Cancelling
 
@@ -444,10 +494,8 @@ does not cancel a live subscription, so it warns and links to the portal first.
   free at its natural expiry. A paying customer is never downgraded because of one
   flaky request. This mirrors the fail-safe posture already documented in
   `maybeRevalidate`.
-- **A webhook is missed** → `/api/auth/refresh` reads live database state, so
-  entitlement converges within 15 minutes of the database being correct. Lemon
-  Squeezy retries deliveries. A scheduled reconcile against the LS API is
-  explicitly out of scope for v1.
+- **A webhook is missed** → self-healed by lazy reconcile (see *Architecture*).
+  Webhooks are treated as an optimisation, not as the source of truth.
 - **A webhook is replayed** → guarded by `ls_updated_at`; an event older than the
   stored value is dropped. Lemon Squeezy retries on any non-2xx, so handlers must
   be idempotent regardless.
@@ -492,7 +540,9 @@ does not cancel a live subscription, so it warns and links to the portal first.
 - `src/lib/auth/routes.ts` — the four auth handlers plus `/api/account`, ~150 lines
 - `src/lib/billing/webhook.ts` — signature verify + state apply, ~70 lines
 - `src/lib/billing/portal.ts` — fresh signed portal URL from the LS API, ~25 lines
-- `src/lib/billing/entitlement.ts` — `isProAt`, ~25 lines
+- `src/lib/billing/reconcile.ts` — staleness check + LS subscription re-sync, ~35 lines
+- `src/lib/billing/entitlement.ts` — `isProAt`, ~35 lines
+- `src/components/PastDueBanner.tsx` — the one interruption Pro users can see
 - `src/app/account/page.tsx` + `src/components/AccountPanel.tsx` — the Plan,
   Preferences, and Account sections
 - `src/components/AccountMenu.tsx` — the header control: "Sign in", or an avatar
@@ -524,7 +574,7 @@ licenses no longer exist; the old one is removed after the new one is set.
 | `GOOGLE_CLIENT_SECRET` | Worker secret | OAuth client |
 | `PRO_TOKEN_SECRET` | Worker secret | HMAC for access tokens and session-cookie values |
 | `LEMONSQUEEZY_WEBHOOK_SECRET` | Worker secret | `X-Signature` verification |
-| `LEMONSQUEEZY_API_KEY` | Worker secret | Fetching a fresh customer-portal URL |
+| `LEMONSQUEEZY_API_KEY` | Worker secret | Fresh customer-portal URLs, and lazy reconcile |
 
 `LEMONSQUEEZY_API_KEY` is new to this project. Both `.env.sample` and
 `.env.cloudflare.sample` currently state that no Lemon Squeezy API key is needed
@@ -593,7 +643,9 @@ webhook signature verification including a tampered body and a wrong secret;
 webhook replay rejection via `ls_updated_at`; access-token payload round-trip;
 the five-session cap's "evict oldest" selection; the `redirect_to` origin check
 against both a same-origin path and a hostile absolute URL; the first-login
-preference merge, which must not overwrite server values that already exist.
+preference merge, which must not overwrite server values that already exist; and
+the reconcile staleness predicate, including that a fresh row never triggers a
+fetch and that `?reconcile=1` bypasses the check.
 
 **Smoke, against a preview deployment** — `/api/auth/google` 302s to
 `accounts.google.com` and sets state and PKCE cookies; `/api/auth/refresh` with no
@@ -602,4 +654,7 @@ unsigned body; `/api/download` still succeeds anonymously and is unaffected by a
 malformed `X-Pro-Token`.
 
 **Manual, once** — the full purchase path: sign in, subscribe, confirm Pro
-activates within 15 minutes, cancel, confirm Pro persists to `ends_at`.
+activates within 15 minutes, cancel, confirm Pro persists to `ends_at`. Then the
+repair path, which is the one no unit test can prove: disable the webhook endpoint
+in Lemon Squeezy, change the subscription there, and confirm `/account` corrects
+itself on the next refresh.
