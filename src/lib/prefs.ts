@@ -14,37 +14,22 @@
  * the server snapshot while prerendering and during hydration, then reads the
  * stored value on the very first client pass — no effect, no extra render, and
  * no hydration mismatch. Writes update the cache, persist, and notify.
+ *
+ * The values and their validation live in ./prefsCore, which imports nothing:
+ * the Worker validates a POSTed body with the same code without loading React.
  */
 
 import { useSyncExternalStore } from 'react'
+import { DEFAULTS, type Format, type Prefs, type Quality, isFormat, isQuality, mergePrefs, normalisePrefs } from './prefsCore'
 
-export type Quality = 'hd' | 'sd'
-export type Format = 'video' | 'audio'
-
-export interface Prefs {
-  quality: Quality
-  format: Format
-}
+export { mergePrefs, normalisePrefs }
+export type { Format, Prefs, Quality }
 
 const QUALITY_KEY = 'smd:quality'
 const FORMAT_KEY = 'smd:format'
 
-/**
- * Stable reference on purpose. Snapshots are compared by identity, so handing
- * back a fresh object each call would re-render forever.
- */
-const DEFAULTS: Prefs = Object.freeze({ quality: 'hd', format: 'video' })
-
 let cache: Prefs | null = null
 const listeners = new Set<() => void>()
-
-function isQuality(value: string | null): value is Quality {
-  return value === 'hd' || value === 'sd'
-}
-
-function isFormat(value: string | null): value is Format {
-  return value === 'video' || value === 'audio'
-}
 
 function readStored(): Prefs {
   try {
@@ -105,46 +90,6 @@ export function setFormat(format: Format): void {
 
 export function usePrefs(): Prefs {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
-}
-
-/**
- * Validate whatever arrived from the network or the database.
- *
- * Accepts both the parsed object and the raw JSON string, because the `prefs`
- * column stores a string and the API hands back either. A missing field falls
- * back to its default; a *wrong* field is rejected outright, since that means
- * something upstream is confused and silently coercing it would hide the bug.
- */
-export function normalisePrefs(value: unknown): Prefs | null {
-  if (value === null || value === undefined) return null
-
-  let candidate = value
-  if (typeof candidate === 'string') {
-    try {
-      candidate = JSON.parse(candidate)
-    } catch {
-      return null
-    }
-  }
-  if (typeof candidate !== 'object' || candidate === null) return null
-
-  const { quality, format } = candidate as { quality?: unknown; format?: unknown }
-  if (quality !== undefined && !isQuality(quality as string)) return null
-  if (format !== undefined && !isFormat(format as string)) return null
-
-  return {
-    quality: (quality as Quality) ?? DEFAULTS.quality,
-    format: (format as Format) ?? DEFAULTS.format,
-  }
-}
-
-/**
- * Server wins when it has an opinion; otherwise the local choices are carried
- * up. Signing in must never silently change how the tool behaves for someone
- * who already set their preferences in this browser.
- */
-export function mergePrefs(local: Prefs, server: Prefs | null): Prefs {
-  return server ?? local
 }
 
 /**

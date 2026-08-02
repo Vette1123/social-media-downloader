@@ -30,6 +30,15 @@ export interface PlanState {
 export interface AccountState {
   /** Undefined until the first refresh settles. */
   signedIn: boolean | undefined
+  /**
+   * The last refresh could not be answered — offline, or the deployment has no
+   * `DB` binding / `PRO_TOKEN_SECRET` yet and answers 503. Without this the
+   * account page waits on `signedIn` forever and shows a skeleton that never
+   * resolves. It never clears account state: only an explicit 401 does that.
+   */
+  failed: boolean
+  /** The account's internal id, needed to attach a checkout to its buyer. */
+  userId: string | null
   pro: boolean
   email: string | null
   plan: PlanState | null
@@ -65,6 +74,8 @@ export function hasAccountHint(): boolean {
 
 const SIGNED_OUT: AccountState = Object.freeze({
   signedIn: false,
+  failed: false,
+  userId: null,
   pro: false,
   email: null,
   plan: null,
@@ -72,6 +83,8 @@ const SIGNED_OUT: AccountState = Object.freeze({
 
 const UNKNOWN: AccountState = Object.freeze({
   signedIn: undefined,
+  failed: false,
+  userId: null,
   pro: false,
   email: null,
   plan: null,
@@ -94,8 +107,24 @@ function subscribe(listener: () => void): () => void {
   }
 }
 
-const getSnapshot = (): AccountState => state
+/** The store's reader. Exported so the transitions can be tested without a renderer. */
+export function accountSnapshot(): AccountState {
+  return state
+}
+
+const getSnapshot = accountSnapshot
 const getServerSnapshot = (): AccountState => UNKNOWN
+
+/**
+ * A refresh that could not be answered. Everything already known is kept —
+ * a paying customer must never be downgraded because one request failed — and
+ * only the flag the UI needs in order to say so is added.
+ */
+function markFailed(): void {
+  if (state.failed) return
+  state = { ...state, failed: true }
+  notify()
+}
 
 /**
  * Lazy, never on a timer.
@@ -119,14 +148,24 @@ export async function refreshAccount(opts: { force?: boolean } = {}): Promise<vo
         notify()
         return
       }
-      if (!response.ok) return
+      // Anything else — notably the 503 a deployment without `DB` or
+      // `PRO_TOKEN_SECRET` returns — is unanswerable, not signed out.
+      if (!response.ok) {
+        markFailed()
+        return
+      }
 
       const data = await response.json()
-      if (!data?.success) return
+      if (!data?.success) {
+        markFailed()
+        return
+      }
 
       token = { token: data.token, expiresAt: data.expiresAt }
       state = {
         signedIn: true,
+        failed: false,
+        userId: data.userId ?? null,
         pro: data.pro === true,
         email: data.email ?? null,
         plan: data.plan ?? null,
@@ -140,6 +179,7 @@ export async function refreshAccount(opts: { force?: boolean } = {}): Promise<vo
       // paying customer must never be downgraded because one request failed.
       // A genuinely dead session keeps failing until the token expires on its
       // own, which bounds the worst case to one TTL.
+      markFailed()
     } finally {
       inFlight = null
     }
