@@ -13,6 +13,7 @@ Endpoints:
   POST /            Cobalt-shaped. Body: {url, downloadMode?, videoQuality?}.
                     Returns {status:"tunnel", url, filename} or {status:"error"}.
   GET  /t?d=<tok>   Streams the resolved media (Range-aware for progressive http).
+  GET  /html?url=   Returns a page's raw markup, fetched from this box's IP.
   GET  /health      Liveness probe / keep-warm ping target.
 """
 
@@ -31,7 +32,7 @@ from urllib.parse import quote
 
 import requests
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from yt_dlp import YoutubeDL
 
 app = FastAPI()
@@ -280,6 +281,66 @@ def health(request: Request) -> JSONResponse:
         except Exception as exc:
             out["geo"] = f"lookup failed: {type(exc).__name__}"
     return JSONResponse(out)
+
+
+# Page fetch, for sites that answer a datacenter IP with a redirect stub instead
+# of their real markup while returning the page normally to a residential one.
+# The block is on the IP, so nothing the app can send fixes it from a Worker —
+# but this box is wherever you run it, and run at home its egress is residential.
+#
+# GET rather than POST, and the key travels in the query string rather than a
+# header, because the app reaches this through SCRAPE_UNLOCKER_URL — a plain URL
+# template with no place to put headers. Keep the URL a secret accordingly; on a
+# tunnel with a random hostname it is not guessable, and the key is still checked.
+#
+# Only HTML comes back, capped: the caller wants tags out of a <head>, and a
+# resolver is not a media proxy — the tunnel path above is what streams bytes.
+HTML_MAX_BYTES = 262_144
+HTML_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+)
+
+
+@app.get("/html")
+def html(request: Request) -> Any:
+    key = request.query_params.get("key", "")
+    if API_KEY and not hmac.compare_digest(key, API_KEY):
+        return JSONResponse({"error": "auth"}, status_code=401)
+
+    target = request.query_params.get("url", "")
+    if not target.startswith(("http://", "https://")):
+        return JSONResponse({"error": "url"}, status_code=400)
+
+    proxies = {"http": PROXY, "https": PROXY} if PROXY else None
+    try:
+        # stream=True so a link that turns out to be a 4 GB video is capped at
+        # HTML_MAX_BYTES instead of pulled into memory before the check.
+        resp = requests.get(
+            target,
+            timeout=20,
+            proxies=proxies,
+            stream=True,
+            allow_redirects=True,
+            headers={
+                "User-Agent": HTML_UA,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+        )
+    except Exception as exc:
+        return JSONResponse({"error": type(exc).__name__}, status_code=502)
+
+    with resp:
+        if resp.status_code >= 400:
+            return JSONResponse({"error": "upstream"}, status_code=502)
+        body = resp.raw.read(HTML_MAX_BYTES, decode_content=True) or b""
+
+    charset = resp.encoding or "utf-8"
+    return Response(
+        content=body.decode(charset, errors="replace"),
+        media_type="text/html; charset=utf-8",
+    )
 
 
 @app.post("/")
