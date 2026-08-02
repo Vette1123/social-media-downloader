@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { WorkerEnv } from '../apiRoutes'
-import { handleAccount, packAuthState, unpackAuthState } from './routes'
+import { handleAccount, handleAuthCallback, packAuthState, unpackAuthState } from './routes'
 import type { UserRow } from './session'
 
 describe('the OAuth state cookie', () => {
@@ -73,6 +73,52 @@ function deleteRequest(): Request {
     body: JSON.stringify({ delete: true }),
   })
 }
+
+/**
+ * A callback with no usable state cookie is the common mobile failure: the
+ * sign-in started in an in-app webview and Google handed the callback to
+ * Chrome, or the trip through the consent and 2FA screens outlived the
+ * cookie. It used to answer that with raw JSON on a blank page, which is a
+ * dead end for the one person who most needs a retry button.
+ */
+describe('handleAuthCallback — a sign-in that cannot be completed', () => {
+  // Never reached: the state check runs before anything touches the database.
+  const env = { DB: {} } as unknown as WorkerEnv
+
+  function callback(headers: Record<string, string> = {}): Request {
+    return new Request('https://www.socialdownloader.space/api/auth/callback?code=x&state=y', {
+      headers,
+    })
+  }
+
+  it('sends a browser to the account page with a reason it can act on', async () => {
+    const response = await handleAuthCallback(callback({ 'Sec-Fetch-Mode': 'navigate' }), undefined, env)
+
+    expect(response.status).toBe(302)
+    expect(response.headers.get('Location')).toBe(
+      'https://www.socialdownloader.space/account?signin=expired',
+    )
+  })
+
+  it('clears the stale OAuth cookies so the retry starts clean', async () => {
+    const response = await handleAuthCallback(callback({ 'Sec-Fetch-Mode': 'navigate' }), undefined, env)
+
+    const cookies = response.headers.getSetCookie()
+    expect(cookies).toHaveLength(2)
+    for (const cookie of cookies) expect(cookie).toContain('Max-Age=0')
+  })
+
+  it('still answers a programmatic caller with JSON', async () => {
+    const response = await handleAuthCallback(
+      callback({ Accept: 'application/json' }),
+      undefined,
+      env,
+    )
+
+    expect(response.status).toBe(400)
+    await expect(response.json()).resolves.toMatchObject({ success: false })
+  })
+})
 
 describe('handleAccount — deleting an account', () => {
   it('refuses while a subscription is still entitling, so it cannot be stranded', async () => {
