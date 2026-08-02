@@ -79,7 +79,8 @@
   // Secrets (COBALT_API_KEY, IG_SESSIONID, UPSTASH_REDIS_REST_URL,
   // UPSTASH_REDIS_REST_TOKEN, REGISTRY_KEY, COBALT_API_URL, PRO_TOKEN_SECRET,
   // GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, LEMONSQUEEZY_API_KEY,
-  // LEMONSQUEEZY_WEBHOOK_SECRET) must NOT be listed here — this file is
+  // LEMONSQUEEZY_WEBHOOK_SECRET, SCRAPE_UNLOCKER_URL) must NOT be listed here
+  // — SCRAPE_UNLOCKER_URL carries an API key in its query string. This file is
   // committed. Set them with `wrangler secret put <NAME>` or in the dashboard.
   "vars": {
     // Signals to the extractors that native-binary paths (yt-dlp/ffmpeg) are

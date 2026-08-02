@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   extractMediaFromHtml,
   FAST_SCAN_BYTES,
+  fetchThroughUnlocker,
   filenameTitle,
   isDirectMediaType,
   looksLikeBotWall,
@@ -9,6 +10,7 @@ import {
   MIN_REAL_PAGE_BYTES,
   readCappedText,
   scrapeTitle,
+  unlockerUrl,
 } from './pageScrape'
 
 const BASE = 'https://example.com/watch/123'
@@ -322,5 +324,84 @@ describe('telling a bot wall apart from a page with no video', () => {
   it('flags an empty or whitespace-only body', () => {
     expect(looksLikeBotWall('')).toBe(true)
     expect(looksLikeBotWall('   \n  ')).toBe(true)
+  })
+})
+
+/**
+ * The unlocker retry. Eporner and Pornhub answer a Cloudflare datacenter IP
+ * with a 369-byte redirect stub while a residential IP gets the real markup,
+ * and the block is on datacenter ranges generally — so a VPS or a self-hosted
+ * extractor is walled identically. Reading the page through a residential pool
+ * is the only thing that changes the answer, and only the page fetch needs it:
+ * the media URLs the page publishes serve bytes to any IP.
+ */
+describe('unlockerUrl', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('is off when nothing is configured, so no request is ever spent', () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    expect(unlockerUrl('https://example.com/video-1/')).toBeNull()
+  })
+
+  it('percent-encodes the target into the template', () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?key=K&url={url}')
+    expect(unlockerUrl('https://site.example/video-1/?a=b&c=d')).toBe(
+      'https://api.example.com/?key=K&url=' +
+        encodeURIComponent('https://site.example/video-1/?a=b&c=d'),
+    )
+  })
+
+  it('refuses a template with no placeholder, rather than fetching the wrong page', () => {
+    // Without {url} the request would fetch the provider's own root on every
+    // blocked link, spending a credit to learn nothing.
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?key=K')
+    expect(unlockerUrl('https://site.example/v')).toBeNull()
+  })
+})
+
+describe('fetchThroughUnlocker', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('returns nothing, and calls nothing, when unconfigured', async () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toBeNull()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('returns the markup the unlocker saw', async () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
+    const page = `<html><body>${'word '.repeat(MIN_REAL_PAGE_BYTES)}</body></html>`
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(page)))
+
+    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
+  })
+
+  it('treats a wall relayed through the unlocker as still blocked', async () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html><title>.</title></html>')))
+
+    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toBeNull()
+  })
+
+  it('swallows an unlocker outage, so the user still gets the block message', async () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('network') }))
+
+    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toBeNull()
+  })
+
+  it('treats a non-200 from the unlocker as no answer', async () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('over quota', { status: 402 })))
+
+    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toBeNull()
   })
 })

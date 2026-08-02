@@ -125,6 +125,55 @@ export function looksLikeBotWall(html: string): boolean {
 }
 
 /**
+ * One last way to read a page that walled us: fetch it through an unlocker.
+ *
+ * The block these sites apply is on datacenter IP ranges, not on Cloudflare
+ * specifically — a VPS, a self-hosted Cobalt or a yt-dlp box gets the same
+ * 369-byte stub, so moving the work off Workers fixes nothing. The only thing
+ * that changes the answer is egress from an address that is not a datacenter,
+ * which means a third party's residential pool.
+ *
+ * Configured as a URL template rather than a vendor, because every one of these
+ * services is the same shape (`?api_key=…&url=…`) and none of them is worth
+ * writing a client for:
+ *
+ *   SCRAPE_UNLOCKER_URL="https://api.example.com/?api_key=KEY&url={url}"
+ *
+ * `{url}` is replaced with the percent-encoded target. Unset — which is how
+ * this ships — the whole path is skipped and the caller reports the block
+ * exactly as it does today. Nothing else changes, and no request is spent.
+ *
+ * Only ever reached after a wall has already been detected, so sites that
+ * answer us normally never touch it and never cost a credit.
+ */
+export function unlockerUrl(target: string): string | null {
+  const template = process.env.SCRAPE_UNLOCKER_URL?.trim()
+  if (!template || !template.includes('{url}')) return null
+  return template.replace('{url}', encodeURIComponent(target))
+}
+
+/**
+ * The page as the unlocker saw it, or null if there is no unlocker configured
+ * or it could not deliver. Never throws: this is a last resort, and its failure
+ * must read as "still blocked" rather than as a new error of its own.
+ */
+export async function fetchThroughUnlocker(target: string): Promise<string | null> {
+  const endpoint = unlockerUrl(target)
+  if (!endpoint) return null
+  try {
+    // Longer than the direct fetch: these services load the page themselves,
+    // sometimes in a real browser, and 10 seconds is not enough for that.
+    const response = await fetch(endpoint, { signal: AbortSignal.timeout(25_000) })
+    if (!response.ok) return null
+    const html = await readCappedText(response)
+    // A wall relayed through an unlocker is still a wall.
+    return looksLikeBotWall(html) ? null : html
+  } catch {
+    return null
+  }
+}
+
+/**
  * Thrown when the origin served a wall instead of its page, so the caller can
  * say that plainly rather than offering the generic list of maybes. The user can
  * act on "this site blocks us"; they cannot act on "possibly region-locked".
