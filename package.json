@@ -15,8 +15,7 @@
     "preview": "pnpm cf:build && wrangler dev",
     "deploy": "pnpm cf:build && wrangler deploy && node scripts/indexnow.mjs --force",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "cf:setup": "node scripts/cf-setup.mjs",
-    "ls:finish": "node scripts/ls-finish.mjs"
+    "cf:setup": "node scripts/cf-setup.mjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",

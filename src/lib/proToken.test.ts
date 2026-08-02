@@ -4,7 +4,7 @@ import { signToken, verifyToken, ACCESS_TOKEN_TTL_MS } from './proToken'
 const SECRET = 'test-secret-value'
 const NOW = 1_800_000_000_000
 
-describe('licenseToken', () => {
+describe('proToken', () => {
   it('round-trips a payload', async () => {
     const token = await signToken({ u: 'user-1', exp: NOW + 1000, p: true }, SECRET)
     const payload = await verifyToken(token, SECRET, NOW)
