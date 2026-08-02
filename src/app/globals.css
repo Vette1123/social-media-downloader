@@ -345,6 +345,16 @@ body {
 /* Loud gradient button: dark ink label for AA contrast on bright cyan.
    The solid background-color is a fallback: the dark-ink label must stay
    readable even if the gradient image ever fails to paint. */
+/* The accent ramp as a fill, with no elevation of its own — avatar rings,
+   badges, monograms: anything small enough that a cast glow would read as a
+   smudge rather than a light. `.btn-grad` is this plus the shadow, so the
+   gradient itself is defined once. */
+.grad-fill {
+  background-color: var(--accent);
+  background-image: linear-gradient(120deg, #2dd4bf, #22d3ee, #38bdf8);
+  color: var(--accent-ink);
+}
+
 .btn-grad {
   background-color: var(--accent);
   background-image: linear-gradient(120deg, #2dd4bf, #22d3ee, #38bdf8);
@@ -620,6 +630,41 @@ body {
       transparent 58%
     );
   background-repeat: no-repeat;
+
+  /* Clearance for the fixed account control (src/components/AccountControl.tsx).
+     Nothing in any page's layout knows that control is there, so the room it
+     needs is reserved once, here, on the wrapper every page already uses —
+     rather than as a top padding each page has to remember to carry.
+
+     Only on small screens: at `sm` the pages already open with `py-16`, which
+     clears the control on its own. On a phone they open with `py-10`, which put
+     the control's lower edge inside the top-right corner of the hero card.
+
+     The safe-area term is what keeps the first card out from under the status
+     bar in an installed iOS app, where `black-translucent` (see the
+     `appleWebApp` metadata) deliberately draws the page behind it. */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1.75rem);
+}
+
+@media (min-width: 40rem) {
+  .app-bg {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* The control's own offsets. Fixed elements are positioned against the
+   viewport, so they take the inset themselves — the padding above does nothing
+   for them. `max()` rather than a sum: on every device without a notch the
+   inset is 0 and the control keeps its designed 12px margin. */
+.account-slot {
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 40rem) {
+  .account-slot {
+    top: max(1rem, env(safe-area-inset-top, 0px));
+    right: max(1rem, env(safe-area-inset-right, 0px));
+  }
 }
 
 /* ---------------------------------------------------------------------------

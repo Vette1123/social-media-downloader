@@ -41,7 +41,62 @@ export interface AccountState {
   userId: string | null
   pro: boolean
   email: string | null
+  /** Google display name and avatar URL. Cosmetic, and null until the visitor
+   *  has signed in once since the `profile` scope was added. */
+  name: string | null
+  picture: string | null
   plan: PlanState | null
+}
+
+/**
+ * What the account control needs in order to paint, and nothing else.
+ *
+ * Mirrored into localStorage so the top-right avatar renders on the very first
+ * frame of any page, with no request: the hint cookie already says *whether*
+ * someone is signed in, and this says *who*, which is the other half of
+ * rendering an avatar instead of a placeholder. A page view still costs zero
+ * Worker invocations, which is the constraint the whole design is built around.
+ *
+ * It is a cache of the visitor's own public Google profile, not a credential.
+ * Anything that could be forged into entitlement (`userId`, the access token)
+ * stays out on purpose — this is display data, and the server is still the only
+ * thing that decides what someone is entitled to.
+ */
+export interface CachedProfile {
+  email: string | null
+  name: string | null
+  picture: string | null
+  pro: boolean
+}
+
+const PROFILE_CACHE_KEY = 'smd_profile'
+
+/** Synchronous, never throws: Safari private mode makes localStorage a trap. */
+export function cachedProfile(): CachedProfile | null {
+  try {
+    const raw = window.localStorage.getItem(PROFILE_CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    return {
+      email: typeof parsed.email === 'string' ? parsed.email : null,
+      name: typeof parsed.name === 'string' ? parsed.name : null,
+      picture: typeof parsed.picture === 'string' ? parsed.picture : null,
+      pro: parsed.pro === true,
+    }
+  } catch {
+    return null
+  }
+}
+
+function writeProfileCache(profile: CachedProfile | null): void {
+  try {
+    if (!profile) window.localStorage.removeItem(PROFILE_CACHE_KEY)
+    else window.localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile))
+  } catch {
+    // Quota, private mode, or a blocked origin. The avatar just waits for the
+    // next refresh instead of painting immediately; nothing else depends on it.
+  }
 }
 
 interface Token {
@@ -78,6 +133,8 @@ const SIGNED_OUT: AccountState = Object.freeze({
   userId: null,
   pro: false,
   email: null,
+  name: null,
+  picture: null,
   plan: null,
 })
 
@@ -87,6 +144,8 @@ const UNKNOWN: AccountState = Object.freeze({
   userId: null,
   pro: false,
   email: null,
+  name: null,
+  picture: null,
   plan: null,
 })
 
@@ -120,6 +179,19 @@ const getServerSnapshot = (): AccountState => UNKNOWN
  * a paying customer must never be downgraded because one request failed — and
  * only the flag the UI needs in order to say so is added.
  */
+/**
+ * The one path to signed-out state, so the profile cache can never outlive the
+ * session it describes. Every caller that used to assign SIGNED_OUT by hand
+ * left a stale avatar in localStorage for the next visitor to this browser.
+ */
+function settleSignedOut(): void {
+  token = null
+  writeProfileCache(null)
+  if (state === SIGNED_OUT) return
+  state = SIGNED_OUT
+  notify()
+}
+
 function markFailed(): void {
   if (state.failed) return
   state = { ...state, failed: true }
@@ -143,9 +215,7 @@ export async function refreshAccount(opts: { force?: boolean } = {}): Promise<vo
         method: 'POST',
       })
       if (response.status === 401) {
-        token = null
-        state = SIGNED_OUT
-        notify()
+        settleSignedOut()
         return
       }
       // Anything else — notably the 503 a deployment without `DB` or
@@ -168,8 +238,16 @@ export async function refreshAccount(opts: { force?: boolean } = {}): Promise<vo
         userId: data.userId ?? null,
         pro: data.pro === true,
         email: data.email ?? null,
+        name: data.name ?? null,
+        picture: data.picture ?? null,
         plan: data.plan ?? null,
       }
+      writeProfileCache({
+        email: state.email,
+        name: state.name,
+        picture: state.picture,
+        pro: state.pro,
+      })
       notify()
 
       const { adoptServerPrefs } = await import('./prefs')
@@ -194,9 +272,7 @@ export async function signOut(all = false): Promise<void> {
   } catch {
     // The cookies are cleared server-side; a failure here just means retrying.
   }
-  token = null
-  state = SIGNED_OUT
-  notify()
+  settleSignedOut()
 }
 
 export function useAccount(): AccountState {
@@ -227,8 +303,5 @@ export function ensureFreshToken(): void {
  * visitor on an error screen instead of the sign-in prompt.
  */
 export function markSignedOut(): void {
-  if (state === SIGNED_OUT) return
-  token = null
-  state = SIGNED_OUT
-  notify()
+  settleSignedOut()
 }

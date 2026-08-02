@@ -35,11 +35,18 @@ export default function Privacy() {
             <h2 className='mb-2 text-lg font-semibold text-white'>If you sign in for Pro</h2>
             <p>
               Signing in with Google creates an account. We store your email
-              address, your Google account ID, and a list of the sessions
+              address, your Google account ID, your display name and the link
+              to your Google profile photo, and a list of the sessions
               (devices/browsers) currently signed in — that list is what lets
               you sign out of one device from another, and what enforces the
-              5-device cap. We do not store a password; Google handles
+              5-device cap. The name and photo are only used to show you who
+              you are signed in as. We do not store a password; Google handles
               authentication and we never see one.
+            </p>
+            <p className='mt-2'>
+              Your name, email and photo link are also kept in your own
+              browser&rsquo;s storage, so the account button can render without
+              calling our server on every page. Signing out erases that copy.
             </p>
             <p className='mt-2'>
               No download activity is recorded for anyone, signed in or not.
