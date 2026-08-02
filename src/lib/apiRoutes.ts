@@ -25,6 +25,19 @@ import { nativeMediaAvailable, nativeMediaUnavailable } from './nativeMedia'
 import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
 import { hashKey, signToken, verifyToken, TOKEN_TTL_MS } from './licenseToken'
 
+// A scoped `import type`, not the ambient global from `wrangler types`.
+//
+// `pnpm cf-typegen` writes a git-ignored cloudflare-env.d.ts that redeclares
+// the whole workerd runtime, including a `Body.json()` that resolves to
+// `unknown` rather than `any` — which puts 26 type errors into files that have
+// nothing to do with D1. CI never runs cf-typegen, so committing code that
+// depends on those globals builds locally and fails in the pipeline.
+//
+// Importing the one type we actually need keeps the build identical in both
+// places. It is erased at compile time, so it adds nothing to the Worker
+// bundle and nothing to any request path.
+import type { D1Database } from '@cloudflare/workers-types'
+
 /**
  * D1 and any other binding live on the Worker's `env`, which is only available
  * to the Cloudflare entrypoint. The Next App Router wrappers under src/app/api
