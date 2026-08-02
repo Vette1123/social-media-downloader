@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useSyncExternalStore } from 'react'
-import { TOKEN_TTL_MS } from './licenseToken'
+import { ACCESS_TOKEN_TTL_MS } from './proToken'
 
 export const LICENSE_KEY_STORAGE = 'smd:license'
 
@@ -110,19 +110,19 @@ const serverTier = (): 'free' | 'pro' => 'free'
 
 /**
  * Revalidate once the stored token is within a quarter of its lifetime of
- * expiring (6 hours, since TOKEN_TTL_MS is 24h) — early enough that even an
- * occasional visitor gets silently refreshed before the token actually lapses,
- * without re-hitting the license server on every mount of a token that just
- * got minted. An already-expired token also counts (the difference is
- * negative), so the very next visit after a lapse retries immediately instead
- * of waiting for the user to notice and re-enter their key.
+ * expiring — early enough that even an occasional visitor gets silently
+ * refreshed before the token actually lapses, without re-hitting the license
+ * server on every mount of a token that just got minted. An already-expired
+ * token also counts (the difference is negative), so the very next visit
+ * after a lapse retries immediately instead of waiting for the user to
+ * notice and re-enter their key.
  *
  * Pure and exported so this boundary can be unit-tested without a DOM —
  * {@link maybeRevalidate} is the only caller and is otherwise untestable
  * (localStorage + fetch) under this repo's node-only Vitest config.
  */
 export function needsRevalidation(expiresAt: number, now: number): boolean {
-  return expiresAt - now <= TOKEN_TTL_MS / 4
+  return expiresAt - now <= ACCESS_TOKEN_TTL_MS / 4
 }
 
 // Guards against every mounted useTier() consumer (PromoSlot at two
@@ -144,7 +144,7 @@ let revalidationInFlight = false
  * timeout, or network error, so a flaky revalidation cannot downgrade an
  * in-session Pro user; a key that is genuinely dead simply keeps failing
  * until `expiresAt` passes on its own, which bounds the worst case to about
- * one TOKEN_TTL_MS — the same fail-safe behaviour as before this existed, not
+ * one ACCESS_TOKEN_TTL_MS — the same fail-safe behaviour as before this existed, not
  * a new retry loop.
  */
 function maybeRevalidate(): void {

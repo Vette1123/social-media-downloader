@@ -1,6 +1,6 @@
 /**
  * A minimal signed token, used so that a Pro request can be trusted by the
- * Worker without a round trip to Lemon Squeezy on every resolve.
+ * Worker without a database read on every resolve.
  *
  * Deliberately not a JWT: no library, no algorithm negotiation, no header to
  * get wrong. Payload plus HMAC-SHA256, base64url, verified with WebCrypto —
@@ -12,14 +12,24 @@
  */
 
 export interface TokenPayload {
-  /** An opaque hash of the license key. The raw key never enters the token. */
-  k: string
+  /** The user's id. Opaque to the client; only ever compared, never displayed. */
+  u: string
   /** Absolute expiry, epoch milliseconds. */
   exp: number
+  /**
+   * Whether this user is Pro. Carrying the entitlement in the token is what
+   * lets /api/download answer without a database read — the cost is that a
+   * change in entitlement takes up to one TTL to be felt.
+   */
+  p: boolean
 }
 
-/** Tokens live a day; the client re-validates against Lemon Squeezy after that. */
-export const TOKEN_TTL_MS = 24 * 60 * 60 * 1000
+/**
+ * Fifteen minutes. Short enough that revoking a session or losing a
+ * subscription is felt almost immediately, long enough that an active user
+ * refreshes at most four times an hour.
+ */
+export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000
 
 const encoder = new TextEncoder()
 
@@ -58,7 +68,7 @@ export async function signToken(
 }
 
 // Comfortably above a real token (139 chars measured: a base64url-encoded
-// `{"k":"<43-char sha256 digest>","exp":<13-digit ms epoch>}` body plus a
+// `{"u":"<opaque user id>","exp":<13-digit ms epoch>,"p":true}` body plus a
 // 43-char signature). Rejecting oversized input before any decode/HMAC work
 // keeps the hot path bounded regardless of what fronts the Worker.
 const MAX_TOKEN_LENGTH = 512
@@ -91,23 +101,32 @@ export async function verifyToken(
     const payload = JSON.parse(
       new TextDecoder().decode(base64UrlDecode(body)),
     ) as TokenPayload
-    if (typeof payload?.k !== 'string' || typeof payload?.exp !== 'number') {
+    if (
+      typeof payload?.u !== 'string' ||
+      typeof payload?.exp !== 'number' ||
+      typeof payload?.p !== 'boolean'
+    ) {
       return null
     }
     if (payload.exp <= now) return null
     // Bounds the blast radius of a mis-issued token (arithmetic slip,
     // seconds/milliseconds mixup, compromised admin path): no token is
-    // trusted for longer than TOKEN_TTL_MS from the moment it's checked,
-    // no matter what `exp` a caller of signToken put in it.
-    if (payload.exp - now > TOKEN_TTL_MS) return null
+    // trusted for longer than ACCESS_TOKEN_TTL_MS from the moment it's
+    // checked, no matter what `exp` a caller of signToken put in it.
+    if (payload.exp - now > ACCESS_TOKEN_TTL_MS) return null
     return payload
   } catch {
     return null
   }
 }
 
-/** SHA-256 of the raw key, so the key itself is never stored or transmitted in a token. */
-export async function hashKey(licenseKey: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(licenseKey))
-  return base64UrlEncode(new Uint8Array(digest))
+/**
+ * SHA-256, hex-encoded. Used to hash session cookie values before they are
+ * stored, so a leaked database read does not hand anyone a working session.
+ */
+export async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', encoder.encode(value))
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }

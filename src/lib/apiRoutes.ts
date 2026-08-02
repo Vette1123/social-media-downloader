@@ -23,7 +23,10 @@ import { readEdgeCache, writeEdgeCache, type WaitUntilContext } from './edgeCach
 import { slugify } from './filename'
 import { nativeMediaAvailable, nativeMediaUnavailable } from './nativeMedia'
 import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
-import { hashKey, signToken, verifyToken, TOKEN_TTL_MS } from './licenseToken'
+// `signToken`, `sha256Hex`, and `ACCESS_TOKEN_TTL_MS` are here only for
+// `handleLicense`, which still speaks the old license-key token shape until
+// Task 12 deletes it; `isPriorityRequest` needs only `verifyToken`.
+import { verifyToken, signToken, sha256Hex, ACCESS_TOKEN_TTL_MS } from './proToken'
 
 // A scoped `import type`, not the ambient global from `wrangler types`.
 //
@@ -107,12 +110,16 @@ function asDirectTunnel(url: string | undefined): string | undefined {
  * operator's Instagram session cookie — never anything that can error. An
  * absent, malformed, or expired token degrades silently to the normal free
  * path rather than erroring.
+ *
+ * A signed-in free user carries a valid token with `p: false`, which is not a
+ * priority request. The flag is checked, not merely the signature.
  */
 async function isPriorityRequest(request: Request): Promise<boolean> {
   const token = request.headers.get('X-Pro-Token')
-  const secret = process.env.LICENSE_TOKEN_SECRET?.trim()
+  const secret = process.env.PRO_TOKEN_SECRET?.trim()
   if (!token || !secret) return false
-  return (await verifyToken(token, secret, Date.now())) !== null
+  const payload = await verifyToken(token, secret, Date.now())
+  return payload?.p === true
 }
 
 /**
@@ -466,9 +473,12 @@ export async function handleLicense(request: Request): Promise<Response> {
       )
     }
 
-    const expiresAt = Date.now() + TOKEN_TTL_MS
+    // `signToken` now wants a { u, exp, p } shape built for accounts, not
+    // license keys. A validated license key is treated as a lone Pro "user"
+    // until Task 12 deletes this handler in favor of the accounts flow.
+    const expiresAt = Date.now() + ACCESS_TOKEN_TTL_MS
     const token = await signToken(
-      { k: await hashKey(licenseKey), exp: expiresAt },
+      { u: await sha256Hex(licenseKey), exp: expiresAt, p: true },
       secret,
     )
 
