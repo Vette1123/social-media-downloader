@@ -28,6 +28,14 @@ describe('safeRedirect', () => {
     expect(safeRedirect('//evil.example/phish', ORIGIN)).toBe('/')
   })
 
+  it('collapses a path that climbs back into protocol-relative form', () => {
+    // `/..//evil.example` resolves to a pathname of `//evil.example` on OUR
+    // origin, so the origin check passes and the bare result would read as
+    // protocol-relative all over again.
+    expect(safeRedirect('/..//evil.example', ORIGIN)).toBe('/evil.example')
+    expect(safeRedirect('/a/../..//evil.example', ORIGIN)).toBe('/evil.example')
+  })
+
   it('rejects a javascript: URL', () => {
     expect(safeRedirect('javascript:alert(1)', ORIGIN)).toBe('/')
   })

@@ -25,9 +25,14 @@ export interface TokenPayload {
 }
 
 /**
- * Fifteen minutes. Short enough that revoking a session or losing a
- * subscription is felt almost immediately, long enough that an active user
- * refreshes at most four times an hour.
+ * Fifteen minutes: long enough that an active user refreshes at most four times
+ * an hour, short enough to bound how stale an entitlement can get.
+ *
+ * "Bound", not "revoke". Nothing re-checks an issued token against the
+ * database, so signing out everywhere, deleting the account, or losing a
+ * subscription all leave a window of up to one TTL in which an already-minted
+ * token still buys Pro. That is the deliberate price of keeping /api/download
+ * free of a D1 read; the alternative does not fit the 10 ms CPU budget.
  */
 export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000
 

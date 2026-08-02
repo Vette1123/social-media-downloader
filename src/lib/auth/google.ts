@@ -43,13 +43,18 @@ export async function googleClient(origin: string): Promise<Google> {
  * Resolving against `origin` is what catches the awkward cases — a
  * protocol-relative `//evil.example` parses as another origin rather than a
  * path, and `javascript:` never matches.
+ *
+ * The origin check alone is not enough, though: `/..//evil.example` resolves to
+ * a pathname of `//evil.example` ON our own origin, which passes that check and
+ * then reads as protocol-relative again the moment it is used as a bare
+ * `Location`. So the result is also forced to a single leading slash.
  */
 export function safeRedirect(target: string | null, origin: string): string {
   if (!target) return '/'
   try {
     const url = new URL(target, origin)
     if (url.origin !== origin) return '/'
-    return `${url.pathname}${url.search}`
+    return `/${url.pathname.replace(/^\/+/, '')}${url.search}`
   } catch {
     return '/'
   }
