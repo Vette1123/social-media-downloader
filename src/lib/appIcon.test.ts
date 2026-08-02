@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { ICON_VERSION, versionedIcon } from './appIcon'
+import { ICON_VERSION, SPLASH_BACKGROUND, versionedIcon } from './appIcon'
 
 /**
  * The icon version lives in two places that cannot import each other:
@@ -50,5 +50,12 @@ describe('manifest icon versioning', () => {
     // They are the same value on purpose: a theme_color that differs from the
     // splash background shows as a visible band under the status bar on launch.
     expect(manifest.background_color).toBe(manifest.theme_color)
+  })
+
+  it('paints the iOS launch screen the same colour', () => {
+    // iOS uses the generated PNG rather than background_color, so the two are
+    // separate values describing one surface. If they drift, the handover from
+    // launch screen to first paint flashes.
+    expect(SPLASH_BACKGROUND).toBe(manifest.background_color)
   })
 })

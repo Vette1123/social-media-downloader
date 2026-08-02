@@ -4,6 +4,7 @@ import './globals.css'
 import { siteConfig } from '@/config/site'
 import { versionedIcon } from '@/lib/appIcon'
 import { globalStructuredData } from '@/lib/structuredData'
+import { SPLASH_DEVICES, splashMedia, splashPath } from '@/lib/splashDevices'
 import { AccountControl } from '@/components/AccountControl'
 
 const geistSans = Geist({
@@ -119,10 +120,15 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: versionedIcon('/favicon.svg'), type: 'image/svg+xml' },
-      // Legacy fallback only, and still the old art: an .ico needs an encoder
-      // we don't have in the build. Every browser that can read the SVG above
-      // prefers it, so this is reached by very old clients alone.
-      { url: '/favicon.ico', sizes: '32x32' },
+      // Not only a legacy fallback: Google's search-result crawler fetches
+      // /favicon.ico directly and ignores the SVG above, so this is the mark
+      // most people see first. Generated from the same favicon.svg by
+      // `pnpm icons` (scripts/make-favicon.mjs) and committed — it used to be
+      // hand-made, which is how it ended up two redesigns behind.
+      // Versioned for browsers, which cache a favicon by URL and would
+      // otherwise keep showing the old bytes; Google fetches the bare path and
+      // gets the new file either way.
+      { url: versionedIcon('/favicon.ico'), sizes: '16x16 32x32 48x48' },
     ],
     // PNG only. `apple-touch-icon` has never supported SVG on iOS — listing
     // /apple-touch-icon.svg gave iOS a candidate it silently drops, leaving a
@@ -136,6 +142,24 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/manifest.json',
+  /**
+   * The iOS half of "installed app". Android reads all of this from
+   * manifest.json; iOS reads none of it and needs these meta tags instead.
+   *
+   * `black-translucent` puts the page behind the status bar, which is what the
+   * `viewportFit: 'cover'` above and the safe-area padding in globals.css are
+   * already built for. `startupImage` is what replaces the blank white screen
+   * between tapping the home-screen icon and the first paint.
+   */
+  appleWebApp: {
+    capable: true,
+    title: siteConfig.shortName,
+    statusBarStyle: 'black-translucent',
+    startupImage: SPLASH_DEVICES.map((device) => ({
+      url: versionedIcon(splashPath(device)),
+      media: splashMedia(device),
+    })),
+  },
   verification: {
     google: 'aha64Aa3HDSFKw-xDlfpIGcBkGRU4lRV9xU-qR2SPwc',
   },

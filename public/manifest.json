@@ -129,6 +129,10 @@
       "url": "url"
     }
   },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
   "theme_color": "#08080a",
   "background_color": "#08080a",
   "display": "standalone",
