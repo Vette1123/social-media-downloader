@@ -16,6 +16,7 @@
 
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Surface } from '@/components/Surface'
+import { Avatar, type AvatarIdentity } from '@/components/Avatar'
 import {
   type PlanState,
   hasAccountHint,
@@ -42,7 +43,7 @@ import {
   isProCheckoutConfigured,
 } from '@/config/pro'
 import { PAST_DUE_GRACE_MS } from '@/lib/billing/entitlement'
-import { formatDate, nowMs } from '@/lib/clientEnv'
+import { formatDate, nowMs, useHydrated } from '@/lib/clientEnv'
 import { siteConfig } from '@/config/site'
 
 /**
@@ -348,7 +349,16 @@ async function deleteFailureMessage(response: Response): Promise<string> {
   }
 }
 
-function AccountSection({ email }: { email: string | null }) {
+function AccountSection({
+  identity,
+  hasSubscription,
+}: {
+  identity: AvatarIdentity
+  /** Whether Lemon Squeezy has a subscription for this account at all. The
+   *  billing portal 404s without one, so linking it unconditionally sent
+   *  free-plan visitors to an API error page. */
+  hasSubscription: boolean
+}) {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -370,7 +380,9 @@ function AccountSection({ email }: { email: string | null }) {
 
   async function handleDelete(): Promise<void> {
     const confirmed = window.confirm(
-      "Delete your account? This does not cancel a live subscription — cancel it from the billing portal first, or it will keep renewing after the account is gone.",
+      hasSubscription
+        ? 'Delete your account? This does not cancel your subscription. Cancel it in the billing portal first, or it will keep renewing after the account is gone.'
+        : 'Delete your account? Your email address, preferences and sessions are removed. This cannot be undone.',
     )
     if (!confirmed) return
 
@@ -398,7 +410,16 @@ function AccountSection({ email }: { email: string | null }) {
   return (
     <Surface radius='3xl' className='animate-card-enter p-5 sm:p-6'>
       <h2 className='text-lg font-semibold text-white'>Account</h2>
-      <p className='mt-2 text-sm text-white/70'>{email ?? 'Signed in'}</p>
+
+      <div className='mt-3 flex items-center gap-3'>
+        <Avatar identity={identity} size={44} />
+        <div className='min-w-0'>
+          {identity.name && (
+            <p className='truncate text-sm font-semibold text-white'>{identity.name}</p>
+          )}
+          <p className='truncate text-sm text-white/60'>{identity.email ?? 'Signed in'}</p>
+        </div>
+      </div>
 
       <div className='mt-4 flex flex-wrap gap-3'>
         <button
@@ -415,11 +436,17 @@ function AccountSection({ email }: { email: string | null }) {
 
       <div className='mt-6 border-t border-white/10 pt-4'>
         <p className='text-xs text-white/50'>
-          Deleting your account does not cancel a live subscription.{' '}
-          <a href='/api/billing/portal' className='text-cyan-300 hover:text-cyan-200'>
-            Cancel it from the billing portal
-          </a>{' '}
-          first if you have one.
+          {hasSubscription ? (
+            <>
+              Deleting your account does not cancel your subscription.{' '}
+              <a href='/api/billing/portal' className='text-cyan-300 hover:text-cyan-200'>
+                Cancel it in the billing portal
+              </a>{' '}
+              first.
+            </>
+          ) : (
+            'Deleting your account removes your email address, your preferences, and every signed-in session. It cannot be undone.'
+          )}
         </p>
         <button
           type='button'
@@ -531,9 +558,38 @@ function useCheckoutPolling(pro: boolean): 'idle' | 'polling' | 'timeout' {
   return phase
 }
 
+/**
+ * Why the billing portal sent someone back here instead of to Lemon Squeezy.
+ *
+ * `/api/billing/portal` has to be a server round trip — Lemon Squeezy signs
+ * portal URLs and expires them within a day, so one is minted per click — and
+ * it used to answer its failures as raw JSON. A visitor who clicked it with no
+ * subscription landed on `{"success":false,"error":"No subscription"}` with no
+ * way back. It now redirects here with a reason instead.
+ */
+const BILLING_NOTICES: Record<string, string> = {
+  none: 'There is no subscription on this account, so there is nothing to manage yet.',
+  unavailable: 'The billing portal could not be opened just now. Please try again in a minute.',
+}
+
+/**
+ * Read during render rather than in an effect: the query string is fixed for
+ * the life of the page, so there is nothing to synchronise and no reason to
+ * pay a second render for it. `useHydrated` is what keeps `window` out of the
+ * prerender.
+ */
+function useBillingNotice(): string | null {
+  const hydrated = useHydrated()
+  if (!hydrated) return null
+  const reason = new URLSearchParams(window.location.search).get('billing')
+  if (!reason || !(reason in BILLING_NOTICES)) return null
+  return BILLING_NOTICES[reason]
+}
+
 export function AccountPanel() {
-  const { signedIn, failed, userId, pro, email, plan } = useAccount()
+  const { signedIn, failed, userId, pro, email, name, picture, plan } = useAccount()
   const checkoutPhase = useCheckoutPolling(pro)
+  const billingNotice = useBillingNotice()
 
   useEffect(() => {
     // No hint cookie means no session to load, so there is nothing to ask the
@@ -555,9 +611,17 @@ export function AccountPanel() {
             : 'Your payment went through. This can take a minute — refresh, or email us if it persists.'}
         </Surface>
       )}
+      {billingNotice && (
+        <Surface tone='accent' radius='2xl' className='p-4 text-sm text-white/80'>
+          {billingNotice}
+        </Surface>
+      )}
       <PlanSection plan={plan} buyer={buyerOf(userId, email)} />
       <PreferencesSection />
-      <AccountSection email={email} />
+      <AccountSection
+        identity={{ name, email, picture }}
+        hasSubscription={plan?.status !== null && plan?.status !== undefined}
+      />
     </div>
   )
 }

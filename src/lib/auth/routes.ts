@@ -75,6 +75,21 @@ interface IdTokenClaims {
   sub?: string
   email?: string
   email_verified?: unknown
+  name?: unknown
+  picture?: unknown
+}
+
+/**
+ * A profile claim, bounded. Google is the only writer here and is not hostile,
+ * but these two strings are the one part of the ID token that goes into the
+ * database unvalidated and comes back out into a page — so they are length-
+ * capped at the boundary rather than trusted to be sane.
+ */
+function claimText(value: unknown, max: number): string | null {
+  if (typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  return trimmed.slice(0, max)
 }
 
 /** GET /api/auth/google */
@@ -93,10 +108,15 @@ export async function handleAuthStart(request: Request): Promise<Response> {
   const verifier = arctic.generateCodeVerifier()
   const google = await googleClient(url.origin)
 
-  // openid + email only. We need an identifier and an address to match an
-  // orphaned webhook against; a profile scope would collect a name and photo
-  // this design has nowhere to put.
-  const authorizationUrl = google.createAuthorizationURL(state, verifier, ['openid', 'email'])
+  // `profile` rides along with openid + email so the account control can show
+  // the visitor's own Google avatar and name instead of a generic pill. Both
+  // are cosmetic: nothing about entitlement or billing reads them, and a row
+  // without them renders a monogram.
+  const authorizationUrl = google.createAuthorizationURL(state, verifier, [
+    'openid',
+    'email',
+    'profile',
+  ])
 
   // The post-login destination rides in the state cookie's sibling rather than
   // through Google, so it cannot be tampered with in transit.
@@ -168,15 +188,28 @@ export async function handleAuthCallback(
   }
 
   const now = Date.now()
-  // ON CONFLICT keeps the email current for someone who changed it at Google,
-  // without disturbing their billing columns.
+  // ON CONFLICT keeps the email, name and avatar current for someone who
+  // changed them at Google, without disturbing their billing columns. COALESCE
+  // on the two profile fields so a token that omits them (an older account, a
+  // consent screen where `profile` was declined) leaves what we already have
+  // rather than blanking the avatar.
   await db
     .prepare(
-      `INSERT INTO users (id, google_sub, email, created_at)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(google_sub) DO UPDATE SET email = excluded.email`,
+      `INSERT INTO users (id, google_sub, email, name, picture, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(google_sub) DO UPDATE SET
+         email = excluded.email,
+         name = COALESCE(excluded.name, users.name),
+         picture = COALESCE(excluded.picture, users.picture)`,
     )
-    .bind(crypto.randomUUID(), claims.sub, claims.email, now)
+    .bind(
+      crypto.randomUUID(),
+      claims.sub,
+      claims.email,
+      claimText(claims.name, 128),
+      claimText(claims.picture, 512),
+      now,
+    )
     .run()
 
   const user = await db
@@ -262,6 +295,8 @@ export async function handleRefresh(
     userId: user.id,
     pro,
     email: user.email,
+    name: user.name,
+    picture: user.picture,
     plan: {
       status: user.ls_status,
       variant: user.ls_variant,

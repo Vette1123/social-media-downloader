@@ -44,6 +44,8 @@ const PRO_BODY = {
   userId: 'user-uuid',
   pro: true,
   email: 'buyer@example.com',
+  name: 'Amira Halabi',
+  picture: 'https://lh3.googleusercontent.com/a/abc123',
   plan: { status: 'active', variant: 'annual', renewsAt: null, endsAt: null, pastDueSince: null },
   // Present so the success path never falls through to persisting prefs.
   prefs: '{"quality":"hd","format":"video"}',
@@ -164,5 +166,101 @@ describe('the account store', () => {
 
     expect(accountSnapshot()).toMatchObject({ signedIn: false, pro: false, failed: false })
     expect(currentAccessToken()).toBeNull()
+  })
+})
+
+/**
+ * The profile cache is what lets the top-right avatar paint on the first frame
+ * without a request. Its whole risk is lifetime: a copy of someone's name and
+ * photo that outlives their session would show the previous user of a shared
+ * browser to the next one.
+ */
+describe('the profile cache', () => {
+  function stubLocalStorage(initial: Record<string, string> = {}) {
+    const store = new Map(Object.entries(initial))
+    vi.stubGlobal('window', {
+      localStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => void store.set(key, value),
+        removeItem: (key: string) => void store.delete(key),
+      },
+    })
+    return store
+  }
+
+  it('caches who is signed in after a successful refresh', async () => {
+    const store = stubLocalStorage()
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(200, PRO_BODY)))
+    const { cachedProfile, refreshAccount } = await loadStore()
+
+    await refreshAccount()
+
+    expect(cachedProfile()).toEqual({
+      email: 'buyer@example.com',
+      name: 'Amira Halabi',
+      picture: 'https://lh3.googleusercontent.com/a/abc123',
+      pro: true,
+    })
+    // The access token and the account id are deliberately absent: this is
+    // display data, and nothing here may be mistakable for a credential.
+    expect(store.get('smd_profile')).not.toContain('access-token')
+    expect(store.get('smd_profile')).not.toContain('user-uuid')
+  })
+
+  it('erases the cache on sign-out', async () => {
+    stubLocalStorage()
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(200, PRO_BODY)))
+    const { cachedProfile, refreshAccount, signOut } = await loadStore()
+
+    await refreshAccount()
+    await signOut()
+
+    expect(cachedProfile()).toBeNull()
+  })
+
+  it('erases a cache left behind by an expired session', async () => {
+    // The hint cookie is gone but localStorage is not, which is exactly the
+    // state a 90-day cookie expiring produces.
+    stubLocalStorage({ smd_profile: '{"email":"stale@example.com","pro":true}' })
+    const { cachedProfile, markSignedOut } = await loadStore()
+
+    markSignedOut()
+
+    expect(cachedProfile()).toBeNull()
+  })
+
+  it('erases the cache when the server says the session is gone', async () => {
+    stubLocalStorage()
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, PRO_BODY))
+      .mockResolvedValueOnce(jsonResponse(401, { success: false }))
+    vi.stubGlobal('fetch', fetchMock)
+    const { cachedProfile, refreshAccount } = await loadStore()
+
+    await refreshAccount()
+    await refreshAccount({ force: true })
+
+    expect(cachedProfile()).toBeNull()
+  })
+
+  it('survives junk in storage rather than taking the page down', async () => {
+    stubLocalStorage({ smd_profile: 'not json' })
+    const { cachedProfile } = await loadStore()
+
+    expect(cachedProfile()).toBeNull()
+  })
+
+  it('ignores a cached entry with the wrong shape', async () => {
+    stubLocalStorage({ smd_profile: '{"email":42,"pro":"yes"}' })
+    const { cachedProfile } = await loadStore()
+
+    expect(cachedProfile()).toEqual({ email: null, name: null, picture: null, pro: false })
+  })
+
+  it('does not throw where localStorage is unavailable', async () => {
+    // Safari private mode, and every server render.
+    const { cachedProfile } = await loadStore()
+    expect(cachedProfile()).toBeNull()
   })
 })

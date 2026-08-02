@@ -39,6 +39,10 @@ export interface UserRow extends BillingRow {
   id: string
   google_sub: string
   email: string
+  /** Google's display name and avatar URL. Null for rows created before the
+   *  `profile` scope was requested, until that user signs in again. */
+  name: string | null
+  picture: string | null
   created_at: number
   prefs: string | null
   ls_subscription_id: string | null
@@ -105,7 +109,8 @@ export function clearCookieHeaders(): string[] {
  * shape callers destructure is unchanged.
  */
 export const USER_COLUMNS =
-  'users.id, users.google_sub, users.email, users.created_at, users.prefs, ' +
+  'users.id, users.google_sub, users.email, users.name, users.picture, ' +
+  'users.created_at, users.prefs, ' +
   'users.ls_subscription_id, users.ls_status, users.ls_variant, users.ls_renews_at, ' +
   'users.ls_ends_at, users.ls_past_due_since, users.ls_updated_at'
 
