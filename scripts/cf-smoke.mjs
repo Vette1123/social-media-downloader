@@ -531,17 +531,15 @@ function buildChecks() {
     },
 
     {
-      // /api/license is registered in API_ROUTES precisely so a request never
-      // falls through to Next's lazy server init (measured at 129 ms against
-      // a 10 ms CPU budget). This asserts it's still dispatched from here: an
-      // empty body must fail cleanly — 503 while LICENSE_TOKEN_SECRET is
-      // unset, or 400 once it is set — and must never be a 500 or the HTML
-      // 404 page, either of which would mean the route silently fell through.
-      name: 'api/license rejects an empty body cleanly',
-      request: { pathname: '/api/license', method: 'POST', json: {} },
+      // The auth routes are registered in API_ROUTES precisely so a request
+      // never initialises Next. A refresh with no session cookie must fail
+      // cleanly — 401 when D1 is bound, 503 when it is not — and must never
+      // return the 404 page, which would mean the Worker is not serving it.
+      name: 'api/auth/refresh rejects an anonymous caller cleanly',
+      request: { pathname: '/api/auth/refresh', method: 'POST' },
       check: async (response, body) => {
-        if (response.status !== 503 && response.status !== 400) {
-          return `expected 503 (unconfigured) or 400 (bad body), got ${response.status}`
+        if (response.status !== 401 && response.status !== 503) {
+          return `expected 401 (no session) or 503 (unconfigured), got ${response.status}`
         }
         const text = new TextDecoder().decode(body)
         let payload
@@ -550,8 +548,18 @@ function buildChecks() {
         } catch {
           return `non-JSON error body: ${text.slice(0, 120)}`
         }
-        if (payload.success) return 'empty license request was accepted'
-        if (!payload.error) return 'rejection carried no error message'
+        if (payload.success) return 'anonymous refresh was accepted'
+        return null
+      },
+    },
+
+    {
+      name: 'api/billing/webhook rejects an unsigned body',
+      request: { pathname: '/api/billing/webhook', method: 'POST', json: {} },
+      check: async (response) => {
+        if (response.status !== 401 && response.status !== 503) {
+          return `expected 401 (bad signature) or 503 (unconfigured), got ${response.status}`
+        }
         return null
       },
     },

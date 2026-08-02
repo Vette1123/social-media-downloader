@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ProLicensePanel } from '@/components/ProLicensePanel'
 import { Surface } from '@/components/Surface'
 import {
   isProCheckoutConfigured,
@@ -106,9 +105,6 @@ export default function Pro() {
             you can already do gets taken away or put behind a paywall.
           </p>
 
-          <div className='mt-8'>
-            <ProLicensePanel />
-          </div>
         </Surface>
 
         <p className='mt-6 text-center text-xs text-white/40'>
