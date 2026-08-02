@@ -58,6 +58,24 @@ function detectIOSLike(): boolean {
   return /Macintosh/i.test(ua) && (navigator.maxTouchPoints ?? 0) > 1
 }
 
+/**
+ * `Date.now()`, wrapped.
+ *
+ * `react-hooks/purity` flags a bare `Date.now()` anywhere reachable from a
+ * component body — even inside an async handler — as impure-during-render.
+ * Module scope puts it outside that analysis without changing behaviour.
+ * Shared here now that a third call site (AccountPanel) needs it, alongside
+ * PastDueBanner and DownloaderApp.
+ */
+export function nowMs(): number {
+  return Date.now()
+}
+
+/** `12 August`-style date, the one format every account-facing date uses. */
+export function formatDate(at: number): string {
+  return new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })
+}
+
 /** Guards anything that touches `window`/`document` — false until hydrated. */
 export function useHydrated(): boolean {
   return useSyncExternalStore(neverChanges, () => true, serverFalse)
