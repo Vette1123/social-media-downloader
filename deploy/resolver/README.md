@@ -91,6 +91,48 @@ The image already installs `curl_cffi`, so the service impersonates a real
 browser's TLS fingerprint automatically. Cookies expire, so refresh them if a
 previously-working source starts failing.
 
+## Run it at home, for sites that block datacenter IPs
+
+Some sites answer any datacenter IP — Cloudflare, Koyeb, Back4app, a VPS, all
+of them — with a few hundred bytes of redirect stub instead of their markup,
+while the same URL from a home connection returns the real page. Nothing in a
+request fixes that: the block is on the address. The only thing that changes
+the answer is fetching from a residential connection.
+
+This container is that fetch, if you run it on a machine at home. Free, no
+provider, no per-request credit.
+
+1. Run the image on a home box that stays on — a spare PC, a Raspberry Pi:
+
+   ```bash
+   docker run -d --restart unless-stopped -p 8080:8080 \
+     -e RESOLVER_API_KEY=<long random string> \
+     --name media-resolver media-resolver
+   ```
+
+2. Give it a public hostname with a **Cloudflare Tunnel** (free, and it needs
+   no open port or static IP on your router):
+
+   ```bash
+   cloudflared tunnel --url http://localhost:8080
+   ```
+
+   For a hostname that survives restarts, create a named tunnel instead and
+   point a subdomain at it.
+
+3. On the Worker, set the page-fetch secret to this box's `/html` route.
+   `{url}` is substituted with the blocked page; the app only ever calls it
+   after it has already detected a wall, so nothing else routes through home:
+
+   ```bash
+   wrangler secret put SCRAPE_UNLOCKER_URL
+   # https://<your-tunnel-host>/html?key=<RESOLVER_API_KEY>&url={url}
+   ```
+
+Traffic to those pages now leaves from your home IP, which is the point, and
+is worth knowing before you switch it on. Everything else keeps resolving on
+the Worker exactly as before.
+
 ## Alt hosts
 
 - **Back4app Containers** — also no card (GitHub import, Docker). Only 256 MB
