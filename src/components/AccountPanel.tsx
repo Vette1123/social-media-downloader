@@ -3,10 +3,13 @@
 /**
  * The account page's content: plan, preferences, and account actions.
  *
- * Three fixed states drive the top of this file:
+ * Four fixed states drive the top of this file:
  *  - `signedIn === undefined` (no refresh has settled yet) renders a
  *    fixed-height skeleton, never the signed-out prompt — the latter would
  *    flash for every signed-in visitor on a cold load.
+ *  - `signedIn === undefined` *and* `failed` renders a message and a retry.
+ *    Without it, a 503 (the state of any deployment whose `DB` binding or
+ *    `PRO_TOKEN_SECRET` is not set yet) pulses that skeleton forever.
  *  - `signedIn === false` renders the sign-in prompt.
  *  - `signedIn === true` renders the three sections below.
  */
@@ -148,13 +151,23 @@ function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
 }
 
 /**
- * Attach the buyer to the checkout so the webhook can find them. `AccountState`
- * never exposes a user id (only email), and `checkoutHref`'s own contract is
- * that the webhook falls back to matching on email when the id is absent — so
- * an empty string here is the documented, correct value, not a workaround.
+ * Who to attach a checkout to. Both fields are required: the email is what
+ * Lemon Squeezy prefills, and the id is what the webhook matches on — the
+ * buyer can edit that email at checkout, and PayPal substitutes its own, so an
+ * id-less purchase can end up matching no row at all, unrepairably.
  */
-function checkoutLink(base: string, email: string): string {
-  return checkoutHref(base, '', email)
+interface Buyer {
+  userId: string
+  email: string
+}
+
+function buyerOf(userId: string | null, email: string | null): Buyer | null {
+  if (!CHECKOUT_READY || !userId || !email) return null
+  return { userId, email }
+}
+
+function checkoutLink(base: string, buyer: Buyer): string {
+  return checkoutHref(base, buyer.userId, buyer.email)
 }
 
 function checkoutBaseFor(variant: string | null | undefined): string {
@@ -174,8 +187,8 @@ function ComingSoonButton() {
   )
 }
 
-function PlanPicker({ email }: { email: string | null }) {
-  if (!CHECKOUT_READY || !email) return <ComingSoonButton />
+function PlanPicker({ buyer }: { buyer: Buyer | null }) {
+  if (!buyer) return <ComingSoonButton />
 
   return (
     <div className='grid gap-3 sm:grid-cols-2'>
@@ -187,7 +200,7 @@ function PlanPicker({ email }: { email: string | null }) {
           {PRO_PRICE_ANNUAL}
           <span className='text-sm font-medium text-white/50'>/year</span>
         </p>
-        <a href={checkoutLink(PRO_CHECKOUT_ANNUAL, email)} className={`${ACTION_BUTTON_CLASS} mt-3`}>
+        <a href={checkoutLink(PRO_CHECKOUT_ANNUAL, buyer)} className={`${ACTION_BUTTON_CLASS} mt-3`}>
           Get annual
         </a>
       </Surface>
@@ -196,7 +209,7 @@ function PlanPicker({ email }: { email: string | null }) {
           {PRO_PRICE_MONTHLY}
           <span className='text-sm font-medium text-white/50'>/month</span>
         </p>
-        <a href={checkoutLink(PRO_CHECKOUT_MONTHLY, email)} className={`${SECONDARY_BUTTON_CLASS} mt-3`}>
+        <a href={checkoutLink(PRO_CHECKOUT_MONTHLY, buyer)} className={`${SECONDARY_BUTTON_CLASS} mt-3`}>
           Get monthly
         </a>
       </Surface>
@@ -207,15 +220,15 @@ function PlanPicker({ email }: { email: string | null }) {
 function PlanAction({
   bucket,
   plan,
-  email,
+  buyer,
 }: {
   bucket: PlanBucket
   plan: PlanState | null
-  email: string | null
+  buyer: Buyer | null
 }) {
   switch (bucket) {
     case 'free':
-      return <PlanPicker email={email} />
+      return <PlanPicker buyer={buyer} />
     case 'active-monthly':
     case 'active-annual':
       return (
@@ -231,9 +244,9 @@ function PlanAction({
       )
     case 'cancelled':
     case 'ended': {
-      if (!CHECKOUT_READY || !email) return <ComingSoonButton />
+      if (!buyer) return <ComingSoonButton />
       const label = bucket === 'cancelled' ? 'Resubscribe' : 'Subscribe again'
-      const href = checkoutLink(checkoutBaseFor(plan?.variant), email)
+      const href = checkoutLink(checkoutBaseFor(plan?.variant), buyer)
       return (
         <a href={href} className={ACTION_BUTTON_CLASS}>
           {label}
@@ -243,7 +256,7 @@ function PlanAction({
   }
 }
 
-function PlanSection({ plan, email }: { plan: PlanState | null; email: string | null }) {
+function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | null }) {
   const bucket = classifyPlan(plan)
   const copy = planCopy(bucket, plan)
 
@@ -253,7 +266,7 @@ function PlanSection({ plan, email }: { plan: PlanState | null; email: string | 
       <p className='mt-2 text-sm text-white/70'>{copy.lede}</p>
       {copy.note && <p className='mt-1 text-xs text-white/50'>{copy.note}</p>}
       <div className='mt-4'>
-        <PlanAction bucket={bucket} plan={plan} email={email} />
+        <PlanAction bucket={bucket} plan={plan} buyer={buyer} />
       </div>
     </Surface>
   )
@@ -316,6 +329,23 @@ function PreferencesSection() {
   )
 }
 
+const DELETE_FAILED = 'Could not delete the account. Try again.'
+
+/**
+ * The delete endpoint refuses (409) while a subscription is still entitling,
+ * because deleting the row would leave Lemon Squeezy billing an account that no
+ * longer exists. That refusal explains what to do, so it is shown as-is rather
+ * than flattened into the generic failure.
+ */
+async function deleteFailureMessage(response: Response): Promise<string> {
+  try {
+    const body = await response.json()
+    return typeof body?.error === 'string' ? body.error : DELETE_FAILED
+  } catch {
+    return DELETE_FAILED
+  }
+}
+
 function AccountSection({ email }: { email: string | null }) {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -339,11 +369,15 @@ function AccountSection({ email }: { email: string | null }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delete: true }),
       })
-      if (!response.ok) throw new Error('delete failed')
+      if (!response.ok) {
+        setDeleteError(await deleteFailureMessage(response))
+        setDeleting(false)
+        return
+      }
       await signOut()
       window.location.href = '/'
     } catch {
-      setDeleteError('Could not delete the account. Try again.')
+      setDeleteError(DELETE_FAILED)
       setDeleting(false)
     }
   }
@@ -391,6 +425,37 @@ function Skeleton() {
       <Surface radius='3xl' className='h-28 p-5 sm:p-6' />
       <Surface radius='3xl' className='h-40 p-5 sm:p-6' />
     </div>
+  )
+}
+
+/**
+ * Shown instead of the skeleton when the refresh could not be answered at all.
+ * The retry is a button, not a timer: nothing on this page may poll.
+ */
+function LoadFailed() {
+  const [retrying, setRetrying] = useState(false)
+
+  async function retry(): Promise<void> {
+    setRetrying(true)
+    await refreshAccount()
+    setRetrying(false)
+  }
+
+  return (
+    <Surface radius='3xl' className='animate-card-enter p-6 text-center sm:p-8'>
+      <p className='text-sm text-white/70'>
+        We couldn&rsquo;t load your account. Accounts may not be switched on yet, or the connection
+        dropped.
+      </p>
+      <button
+        type='button'
+        onClick={() => void retry()}
+        disabled={retrying}
+        className={`${SECONDARY_BUTTON_CLASS} mt-4 disabled:cursor-not-allowed disabled:opacity-50`}
+      >
+        {retrying ? 'Trying…' : 'Try again'}
+      </button>
+    </Surface>
   )
 }
 
@@ -450,13 +515,14 @@ function useCheckoutPolling(pro: boolean): 'idle' | 'polling' | 'timeout' {
 }
 
 export function AccountPanel() {
-  const { signedIn, pro, email, plan } = useAccount()
+  const { signedIn, failed, userId, pro, email, plan } = useAccount()
   const checkoutPhase = useCheckoutPolling(pro)
 
   useEffect(() => {
     void refreshAccount()
   }, [])
 
+  if (signedIn === undefined && failed) return <LoadFailed />
   if (signedIn === undefined) return <Skeleton />
   if (signedIn === false) return <SignInPrompt />
 
@@ -469,7 +535,7 @@ export function AccountPanel() {
             : 'Your payment went through. This can take a minute — refresh, or email us if it persists.'}
         </Surface>
       )}
-      <PlanSection plan={plan} email={email} />
+      <PlanSection plan={plan} buyer={buyerOf(userId, email)} />
       <PreferencesSection />
       <AccountSection email={email} />
     </div>

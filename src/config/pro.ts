@@ -22,9 +22,13 @@ export function isProCheckoutConfigured(url: string): boolean {
 }
 
 /**
- * Attach the buyer to the checkout so the webhook can find them. Checkout
- * requires signing in first, so `userId` is always present in practice; the
- * webhook falls back to matching on email if it ever is not.
+ * Attach the buyer to the checkout so the webhook can find them.
+ *
+ * `userId` is the account's internal id and is what the webhook matches on.
+ * The email is a prefill and nothing more: the buyer can edit it at checkout,
+ * and paying with PayPal substitutes that account's address — so a checkout
+ * built without an id can produce a purchase that matches no row at all.
+ * Callers must never pass an empty one; see `buyerOf` in AccountPanel.
  */
 export function checkoutHref(base: string, userId: string, email: string): string {
   const url = new URL(base)

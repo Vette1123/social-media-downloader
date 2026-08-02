@@ -36,6 +36,47 @@ function redirect(location: string, cookies: string[]): Response {
   return new Response(null, { status: 302, headers })
 }
 
+/**
+ * The state cookie packs two fields into one value, so the separator has to be
+ * a character `encodeURIComponent` escapes and an OAuth state (base64url) can
+ * never contain. `.` was neither, which silently truncated `/pro.html` to
+ * `/pro`; `%7C` is what an encoded target turns a `|` into.
+ */
+const STATE_SEPARATOR = '|'
+
+export function packAuthState(state: string, target: string): string {
+  return `${state}${STATE_SEPARATOR}${encodeURIComponent(target)}`
+}
+
+/**
+ * The inverse. Never throws: a malformed percent-sequence in a cookie must fail
+ * to the safe default, not 500 the callback. The returned target is still
+ * untrusted — `safeRedirect` is what makes it safe to follow.
+ */
+export function unpackAuthState(cookie: string | null): { state: string; target: string } {
+  const [state = '', encodedTarget = ''] = (cookie ?? '').split(STATE_SEPARATOR)
+  try {
+    return { state, target: decodeURIComponent(encodedTarget) || '/' }
+  } catch {
+    return { state, target: '/' }
+  }
+}
+
+/**
+ * Google sends `email_verified` as a boolean, and older tokens as a string.
+ * Only an explicit negative rejects: an absent claim is not evidence of
+ * anything, and `users.email` is what billing matches on.
+ */
+function emailUnverified(value: unknown): boolean {
+  return value === false || value === 'false'
+}
+
+interface IdTokenClaims {
+  sub?: string
+  email?: string
+  email_verified?: unknown
+}
+
 /** GET /api/auth/google */
 export async function handleAuthStart(request: Request): Promise<Response> {
   const url = new URL(request.url)
@@ -62,7 +103,7 @@ export async function handleAuthStart(request: Request): Promise<Response> {
   const target = safeRedirect(url.searchParams.get('redirect_to'), url.origin)
 
   return redirect(authorizationUrl.toString(), [
-    oauthTempCookie(OAUTH_STATE_COOKIE, `${state}.${encodeURIComponent(target)}`),
+    oauthTempCookie(OAUTH_STATE_COOKIE, packAuthState(state, target)),
     oauthTempCookie(OAUTH_VERIFIER_COOKIE, verifier),
   ])
 }
@@ -83,7 +124,7 @@ export async function handleAuthCallback(
   const storedState = readCookie(cookies, OAUTH_STATE_COOKIE)
   const verifier = readCookie(cookies, OAUTH_VERIFIER_COOKIE)
 
-  const [expectedState, encodedTarget = '%2F'] = (storedState ?? '').split('.')
+  const { state: expectedState, target: requestedTarget } = unpackAuthState(storedState)
   if (!code || !state || !verifier || !expectedState || state !== expectedState) {
     return Response.json(
       { success: false, error: 'Sign-in could not be completed. Please try again.' },
@@ -94,14 +135,14 @@ export async function handleAuthCallback(
   const google = await googleClient(url.origin)
   const arctic = await import('arctic')
 
-  let claims: { sub?: string; email?: string }
+  let claims: IdTokenClaims
   try {
     const tokens = await google.validateAuthorizationCode(code, verifier)
     // Decoded, not signature-verified, and that is correct here: the token
     // arrived over TLS as the direct response to a server-side request
     // authenticated with our client secret. There is no untrusted path it could
     // have travelled.
-    claims = arctic.decodeIdToken(tokens.idToken()) as { sub?: string; email?: string }
+    claims = arctic.decodeIdToken(tokens.idToken()) as IdTokenClaims
   } catch {
     return Response.json(
       { success: false, error: 'Sign-in could not be completed. Please try again.' },
@@ -112,6 +153,16 @@ export async function handleAuthCallback(
   if (!claims.sub || !claims.email) {
     return Response.json(
       { success: false, error: 'Google did not return an email address.' },
+      { status: 400 },
+    )
+  }
+
+  // An unverified address must never reach `users.email`: that column is what
+  // an orphaned purchase is matched against, so accepting one would let anyone
+  // claim someone else's billing row by signing up with their address.
+  if (emailUnverified(claims.email_verified)) {
+    return Response.json(
+      { success: false, error: 'Google did not return a verified email address.' },
       { status: 400 },
     )
   }
@@ -141,7 +192,7 @@ export async function handleAuthCallback(
   }
 
   const raw = await createSession(db, user.id, now)
-  const target = safeRedirect(decodeURIComponent(encodedTarget), url.origin)
+  const target = safeRedirect(requestedTarget, url.origin)
 
   return redirect(`${url.origin}${target}`, [
     ...sessionCookieHeaders(raw, Math.floor(SESSION_TTL_MS / 1000)),
@@ -188,7 +239,10 @@ export async function handleRefresh(
   const forced = new URL(request.url).searchParams.get('reconcile') === '1'
   const { needsReconcile, reconcileSubscription } = await import('../billing/reconcile')
   if (needsReconcile(user, now, forced)) {
-    const work = reconcileSubscription(db, user.ls_subscription_id as string, now)
+    // The user row goes with it: a forced reconcile for someone whose webhook
+    // was lost has no `ls_subscription_id` to look up, and finds the
+    // subscription by the address they signed in with instead.
+    const work = reconcileSubscription(db, user.ls_subscription_id, now, user)
     if (ctx) ctx.waitUntil(work)
     else await work
   }
@@ -201,6 +255,11 @@ export async function handleRefresh(
     success: true,
     token,
     expiresAt: exp,
+    // The checkout link has to carry this as `custom_data.user_id`, or the
+    // webhook can only match the purchase by email — which is editable at
+    // checkout, and is the PayPal account's address when paying that way. An
+    // internal UUID handed to its own signed-in owner discloses nothing.
+    userId: user.id,
     pro,
     email: user.email,
     plan: {
@@ -247,10 +306,11 @@ export async function handleAccount(
   const db = requireDb(env)
   if (db instanceof Response) return db
 
+  const now = Date.now()
   const user = await loadSession(
     db,
     readCookie(request.headers.get('Cookie'), SESSION_COOKIE),
-    Date.now(),
+    now,
   )
   if (!user) {
     return Response.json({ success: false, error: 'Not signed in' }, { status: 401 })
@@ -264,15 +324,32 @@ export async function handleAccount(
   }
 
   if (body.delete === true) {
-    // Sessions cascade. This does not cancel a live subscription — the UI warns
-    // and links to the billing portal before offering this.
+    // Refuse while the subscription is still entitling. Deleting the row does
+    // not cancel anything at Lemon Squeezy: it would keep billing, every later
+    // webhook would match zero rows, a fresh sign-in would create a row with a
+    // NULL subscription that reconcile cannot repair, and the billing portal
+    // would 404 — paying forever with no Pro and no way back.
+    if (isProAt(user, now)) {
+      return Response.json(
+        {
+          success: false,
+          error:
+            'Cancel your subscription in the billing portal first. Deleting the account now would leave it billing you with no way to restore Pro.',
+        },
+        { status: 409 },
+      )
+    }
+
+    // Sessions cascade.
     await db.prepare('DELETE FROM users WHERE id = ?').bind(user.id).run()
     const headers = new Headers({ 'Content-Type': 'application/json' })
     for (const cookie of clearCookieHeaders()) headers.append('Set-Cookie', cookie)
     return new Response(JSON.stringify({ success: true }), { status: 200, headers })
   }
 
-  const { normalisePrefs } = await import('../prefs')
+  // ../prefsCore, never ../prefs: the latter is a `'use client'` module and
+  // pulls React's whole module scope into this isolate to run a validator.
+  const { normalisePrefs } = await import('../prefsCore')
   const prefs = normalisePrefs(body.prefs)
   if (!prefs) {
     return Response.json({ success: false, error: 'Invalid preferences' }, { status: 400 })
