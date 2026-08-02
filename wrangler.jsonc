@@ -18,6 +18,13 @@
   // would re-enter the Worker and recurse.
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
 
+  // No per-version *.workers.dev preview URLs. `wrangler versions upload` hands
+  // every uploaded version a public URL bound to the REAL D1 and the real
+  // secrets — an unreleased build, reachable by anyone with the link, and a
+  // second origin serving the same pages for search engines to find. Nothing
+  // here needs them: previews happen locally via `pnpm preview`.
+  "preview_urls": false,
+
   "assets": {
     // `next build` with `output: 'export'` writes the whole site here: 12
     // pages, the 404 page, 28 generated PNGs (OpenGraph, Twitter, app icons),
