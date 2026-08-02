@@ -74,7 +74,10 @@ const worker = {
       // /api/download writes its edge-cache entry that way, keeping the cache
       // write off the client's critical path. Handlers that don't need it
       // ignore the extra argument.
-      return route.handler(request, ctx)
+      //
+      // `env` carries the D1 binding. Handlers that do not need it ignore the
+      // extra argument, exactly as they already do with `ctx`.
+      return route.handler(request, ctx, env)
     }
 
     // An /api/* path with no handler — the only thing that reaches here, since

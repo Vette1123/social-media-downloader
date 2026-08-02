@@ -42,6 +42,21 @@
     "enabled": true
   },
 
+  // Accounts and subscription state. Only the auth and billing routes touch
+  // this; /api/download never reads it, which is what keeps the resolve path
+  // free of database latency. See the accounts design doc.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "social-media-downloader",
+      // Placeholder until a human runs `wrangler d1 create` with a token that
+      // has the D1 permission scope — the token in this environment
+      // authenticates but can't create D1 databases. Local dev and
+      // `wrangler d1 execute --local` work fine without a real id.
+      "database_id": "PLACEHOLDER_SET_BY_WRANGLER_D1_CREATE"
+    }
+  ],
+
   // Native binaries can't run on workerd (no subprocesses, no writable FS), so
   // the yt-dlp / ffmpeg packages are aliased to a stub that throws on use. The
   // three routes that touch them already degrade gracefully (they were dead on

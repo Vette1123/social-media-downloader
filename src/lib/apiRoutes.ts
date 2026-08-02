@@ -25,10 +25,36 @@ import { nativeMediaAvailable, nativeMediaUnavailable } from './nativeMedia'
 import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
 import { hashKey, signToken, verifyToken, TOKEN_TTL_MS } from './licenseToken'
 
+/**
+ * D1 and any other binding live on the Worker's `env`, which is only available
+ * to the Cloudflare entrypoint. The Next App Router wrappers under src/app/api
+ * call these same functions with no `env`, so a handler that needs a binding
+ * must degrade rather than throw — see `requireDb`.
+ */
+export interface WorkerEnv {
+  DB?: D1Database
+}
+
 type Handler = (
   request: Request,
   ctx?: WaitUntilContext,
+  env?: WorkerEnv,
 ) => Promise<Response> | Response
+
+/**
+ * The 503 a binding-backed route answers when it is running somewhere without
+ * that binding — `next dev`, or a misconfigured deployment. Mirrors the shape
+ * `nativeMediaUnavailable` uses for the same class of "not available here".
+ */
+export function requireDb(env?: WorkerEnv): D1Database | Response {
+  if (!env?.DB) {
+    return Response.json(
+      { success: false, error: 'Accounts are not configured on this deployment.' },
+      { status: 503 },
+    )
+  }
+  return env.DB
+}
 
 /**
  * A resolve served from cache. `X-Cache` distinguishes the two tiers so the
