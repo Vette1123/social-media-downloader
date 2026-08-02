@@ -37,6 +37,39 @@ function redirect(location: string, cookies: string[]): Response {
 }
 
 /**
+ * Whether a human is looking at this response.
+ *
+ * Both auth endpoints are reached by a browser following a redirect, so their
+ * failures are rendered by a browser — and a browser renders
+ * `{"success":false,"error":"Sign-in could not be completed."}` as exactly
+ * that, on a blank page, with no way back and no way to retry.
+ */
+function isNavigation(request: Request): boolean {
+  if (request.headers.get('Sec-Fetch-Mode') === 'navigate') return true
+  return (request.headers.get('Accept') ?? '').includes('text/html')
+}
+
+/**
+ * Hand a failed sign-in back to the account page, which renders the reason
+ * above a working "Sign in with Google" button. The expired cookies go with it
+ * so a retry starts from a clean slate rather than re-failing on the same
+ * stale state.
+ */
+function authFailure(
+  request: Request,
+  reason: 'expired' | 'failed' | 'email',
+  error: string,
+): Response {
+  const cookies = [oauthTempCookie(OAUTH_STATE_COOKIE, ''), oauthTempCookie(OAUTH_VERIFIER_COOKIE, '')]
+  if (!isNavigation(request)) {
+    const headers = new Headers({ 'Content-Type': 'application/json' })
+    for (const cookie of cookies) headers.append('Set-Cookie', cookie)
+    return new Response(JSON.stringify({ success: false, error }), { status: 400, headers })
+  }
+  return redirect(new URL(`/account?signin=${reason}`, request.url).toString(), cookies)
+}
+
+/**
  * The state cookie packs two fields into one value, so the separator has to be
  * a character `encodeURIComponent` escapes and an OAuth state (base64url) can
  * never contain. `.` was neither, which silently truncated `/pro.html` to
@@ -146,10 +179,11 @@ export async function handleAuthCallback(
 
   const { state: expectedState, target: requestedTarget } = unpackAuthState(storedState)
   if (!code || !state || !verifier || !expectedState || state !== expectedState) {
-    return Response.json(
-      { success: false, error: 'Sign-in could not be completed. Please try again.' },
-      { status: 400 },
-    )
+    // Nearly always a lost cookie rather than an attack: the sign-in was
+    // started in a different browser (an in-app webview handing off to
+    // Chrome), or the round trip through Google's consent and 2FA screens
+    // outlived the temporary cookie. Both are a retry, not an error.
+    return authFailure(request, 'expired', 'Sign-in could not be completed. Please try again.')
   }
 
   const google = await googleClient(url.origin)
@@ -164,27 +198,18 @@ export async function handleAuthCallback(
     // have travelled.
     claims = arctic.decodeIdToken(tokens.idToken()) as IdTokenClaims
   } catch {
-    return Response.json(
-      { success: false, error: 'Sign-in could not be completed. Please try again.' },
-      { status: 400 },
-    )
+    return authFailure(request, 'failed', 'Sign-in could not be completed. Please try again.')
   }
 
   if (!claims.sub || !claims.email) {
-    return Response.json(
-      { success: false, error: 'Google did not return an email address.' },
-      { status: 400 },
-    )
+    return authFailure(request, 'email', 'Google did not return an email address.')
   }
 
   // An unverified address must never reach `users.email`: that column is what
   // an orphaned purchase is matched against, so accepting one would let anyone
   // claim someone else's billing row by signing up with their address.
   if (emailUnverified(claims.email_verified)) {
-    return Response.json(
-      { success: false, error: 'Google did not return a verified email address.' },
-      { status: 400 },
-    )
+    return authFailure(request, 'email', 'Google did not return a verified email address.')
   }
 
   const now = Date.now()

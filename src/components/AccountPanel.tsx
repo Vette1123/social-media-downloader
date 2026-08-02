@@ -567,9 +567,24 @@ function useCheckoutPolling(pro: boolean): 'idle' | 'polling' | 'timeout' {
  * subscription landed on `{"success":false,"error":"No subscription"}` with no
  * way back. It now redirects here with a reason instead.
  */
-const BILLING_NOTICES: Record<string, string> = {
-  none: 'There is no subscription on this account, so there is nothing to manage yet.',
-  unavailable: 'The billing portal could not be opened just now. Please try again in a minute.',
+const NOTICES: Record<string, Record<string, string>> = {
+  billing: {
+    none: 'There is no subscription on this account, so there is nothing to manage yet.',
+    unavailable: 'The billing portal could not be opened just now. Please try again in a minute.',
+  },
+  /**
+   * A sign-in that came back from Google without a usable session. Sent here
+   * rather than answered as JSON for the same reason as the billing portal:
+   * these are reached by a browser following a redirect, so the reply is a
+   * page, and a page has to offer a way forward. The prompt below this notice
+   * is that way forward.
+   */
+  signin: {
+    expired:
+      'That sign-in took too long, or it started in a different browser. Please try again from here.',
+    failed: 'Google could not complete the sign-in. Please try again.',
+    email: 'Google did not return a verified email address, so no account could be created.',
+  },
 }
 
 /**
@@ -578,18 +593,29 @@ const BILLING_NOTICES: Record<string, string> = {
  * pay a second render for it. `useHydrated` is what keeps `window` out of the
  * prerender.
  */
-function useBillingNotice(): string | null {
+function useNotice(): string | null {
   const hydrated = useHydrated()
   if (!hydrated) return null
-  const reason = new URLSearchParams(window.location.search).get('billing')
-  if (!reason || !(reason in BILLING_NOTICES)) return null
-  return BILLING_NOTICES[reason]
+  const params = new URLSearchParams(window.location.search)
+  for (const [key, messages] of Object.entries(NOTICES)) {
+    const value = params.get(key)
+    if (value && value in messages) return messages[value]
+  }
+  return null
+}
+
+function Notice({ children }: { children: string }) {
+  return (
+    <Surface tone='accent' radius='2xl' className='p-4 text-sm text-white/80'>
+      {children}
+    </Surface>
+  )
 }
 
 export function AccountPanel() {
   const { signedIn, failed, userId, pro, email, name, picture, plan } = useAccount()
   const checkoutPhase = useCheckoutPolling(pro)
-  const billingNotice = useBillingNotice()
+  const notice = useNotice()
 
   useEffect(() => {
     // No hint cookie means no session to load, so there is nothing to ask the
@@ -600,22 +626,28 @@ export function AccountPanel() {
 
   if (signedIn === undefined && failed) return <LoadFailed />
   if (signedIn === undefined) return <Skeleton />
-  if (signedIn === false) return <SignInPrompt />
+
+  // The notice has to survive this branch: a failed sign-in lands here signed
+  // out, and the reason it failed is the only thing worth reading on the page.
+  if (signedIn === false) {
+    return (
+      <div className='space-y-6'>
+        {notice && <Notice>{notice}</Notice>}
+        <SignInPrompt />
+      </div>
+    )
+  }
 
   return (
     <div className='space-y-6'>
       {checkoutPhase !== 'idle' && (
-        <Surface tone='accent' radius='2xl' className='p-4 text-sm text-white/80'>
+        <Notice>
           {checkoutPhase === 'polling'
             ? 'Setting up your subscription…'
             : 'Your payment went through. This can take a minute — refresh, or email us if it persists.'}
-        </Surface>
+        </Notice>
       )}
-      {billingNotice && (
-        <Surface tone='accent' radius='2xl' className='p-4 text-sm text-white/80'>
-          {billingNotice}
-        </Surface>
-      )}
+      {notice && <Notice>{notice}</Notice>}
       <PlanSection plan={plan} buyer={buyerOf(userId, email)} />
       <PreferencesSection />
       <AccountSection

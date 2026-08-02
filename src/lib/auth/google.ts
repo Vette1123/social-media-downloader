@@ -15,7 +15,21 @@ import type { Google } from 'arctic'
 // working; see cookies.ts for why the constants themselves live there.
 export { OAUTH_STATE_COOKIE, OAUTH_VERIFIER_COOKIE } from './cookies'
 
-const OAUTH_TEMP_TTL_SECONDS = 10 * 60
+/**
+ * How long the state and PKCE verifier survive.
+ *
+ * This bounds the round trip through Google, and ten minutes turned out to be
+ * too tight for it: an account picker, a password, a 2FA prompt and a consent
+ * screen on a phone is easily longer than that, and when the cookie expires
+ * mid-flow the callback cannot tell the difference between that and a forged
+ * request, so a legitimate sign-in fails.
+ *
+ * Half an hour costs little. Both values are single-use, HttpOnly, Secure and
+ * SameSite=Lax, cleared on success and on failure alike, and the verifier is
+ * useless without the authorization code — which Google expires on its own,
+ * far sooner than this.
+ */
+const OAUTH_TEMP_TTL_SECONDS = 30 * 60
 
 export function oauthTempCookie(name: string, value: string): string {
   const age = value === '' ? 0 : OAUTH_TEMP_TTL_SECONDS
