@@ -24,6 +24,8 @@ import { slugify } from './filename'
 import { nativeMediaAvailable, nativeMediaUnavailable } from './nativeMedia'
 import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
 import { verifyToken } from './proToken'
+import { handleWebhook } from './billing/webhook'
+import { handlePortal } from './billing/portal'
 
 // A scoped `import type`, not the ambient global from `wrangler types`.
 //
@@ -391,6 +393,8 @@ export const API_ROUTES: Record<string, { method: string; handler: Handler }> = 
   '/api/slideshow': { method: 'POST', handler: nativeMediaRoute('Slideshow rendering') },
   '/api/tiktok': { method: 'GET', handler: nativeMediaRoute('Direct TikTok download') },
   '/api/youtube': { method: 'GET', handler: nativeMediaRoute('Direct YouTube download') },
+  '/api/billing/webhook': { method: 'POST', handler: handleWebhook },
+  '/api/billing/portal': { method: 'GET', handler: handlePortal },
   ...Object.fromEntries(
     Object.entries(MEDIA_PROXY_HANDLERS).map(([pathname, handler]) => [
       pathname,
