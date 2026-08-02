@@ -4,6 +4,7 @@ import './globals.css'
 import { siteConfig } from '@/config/site'
 import { versionedIcon } from '@/lib/appIcon'
 import { globalStructuredData } from '@/lib/structuredData'
+import { AccountControl } from '@/components/AccountControl'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -182,6 +183,7 @@ export default function RootLayout({
         className={`${geistSans.variable} antialiased`}
         style={{ backgroundColor: '#08080a' }}
       >
+        <AccountControl />
         {children}
         {process.env.NEXT_PUBLIC_CF_BEACON_TOKEN ? (
           <script
