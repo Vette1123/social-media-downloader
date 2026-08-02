@@ -10,6 +10,7 @@ import {
 } from './htmlExtract'
 import {
   extractMediaFromHtml,
+  fetchThroughUnlocker,
   filenameTitle,
   isDirectMediaType,
   looksLikeBotWall,
@@ -551,16 +552,22 @@ export class Downloader {
     const html = await readCappedText(response)
     // Redirects mean the final URL, not the pasted one, is what relative srcs
     // resolve against.
-    const media = extractMediaFromHtml(html, finalUrl)
-    if (!media || media.isStream) {
-      // Distinguish "this page has no video we can read" from "this site did
-      // not show us the page at all", which are the same failure to the code
-      // above and completely different news to the user.
-      if (!media && looksLikeBotWall(html)) {
-        throw new OriginBlockedError(new URL(url).hostname.replace(/^www\./, ''))
-      }
-      return null
+    let media = extractMediaFromHtml(html, finalUrl)
+
+    // Distinguish "this page has no video we can read" from "this site did not
+    // show us the page at all", which are the same failure to the code above
+    // and completely different news to the user.
+    if (!media && looksLikeBotWall(html)) {
+      // Blocked. If an unlocker is configured, read the page from an address
+      // the site will actually answer and extract from that instead. The
+      // media URLs it publishes work from any IP — it is only the page fetch
+      // that is walled — so this one retry is the whole fix.
+      const unlocked = await fetchThroughUnlocker(url)
+      if (unlocked) media = extractMediaFromHtml(unlocked, url)
+      if (!media) throw new OriginBlockedError(new URL(url).hostname.replace(/^www\./, ''))
     }
+
+    if (!media || media.isStream) return null
 
     return {
       id: parseVideoId(url) || media.mediaUrl.slice(-32),
