@@ -352,9 +352,20 @@ function AccountSection({ email }: { email: string | null }) {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
+  /**
+   * Signing out on the account page leaves you looking at an account page you
+   * no longer have an account for. Send people home instead — the same landing
+   * deleting an account already used. A hard navigation, not a router push, so
+   * nothing client-side survives the sign-out.
+   */
+  async function signOutAndGoHome(all = false): Promise<void> {
+    await signOut(all)
+    window.location.href = '/'
+  }
+
   function handleSignOutEverywhere(): void {
     if (!window.confirm('Sign out of every device that is currently signed in?')) return
-    void signOut(true)
+    void signOutAndGoHome(true)
   }
 
   async function handleDelete(): Promise<void> {
@@ -390,7 +401,11 @@ function AccountSection({ email }: { email: string | null }) {
       <p className='mt-2 text-sm text-white/70'>{email ?? 'Signed in'}</p>
 
       <div className='mt-4 flex flex-wrap gap-3'>
-        <button type='button' onClick={() => void signOut()} className={SECONDARY_BUTTON_CLASS}>
+        <button
+          type='button'
+          onClick={() => void signOutAndGoHome()}
+          className={SECONDARY_BUTTON_CLASS}
+        >
           Sign out
         </button>
         <button type='button' onClick={handleSignOutEverywhere} className={SECONDARY_BUTTON_CLASS}>
