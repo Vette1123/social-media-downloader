@@ -26,6 +26,13 @@ import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
 import { verifyToken } from './proToken'
 import { handleWebhook } from './billing/webhook'
 import { handlePortal } from './billing/portal'
+import {
+  handleAccount,
+  handleAuthCallback,
+  handleAuthStart,
+  handleLogout,
+  handleRefresh,
+} from './auth/routes'
 
 // A scoped `import type`, not the ambient global from `wrangler types`.
 //
@@ -395,6 +402,11 @@ export const API_ROUTES: Record<string, { method: string; handler: Handler }> = 
   '/api/youtube': { method: 'GET', handler: nativeMediaRoute('Direct YouTube download') },
   '/api/billing/webhook': { method: 'POST', handler: handleWebhook },
   '/api/billing/portal': { method: 'GET', handler: handlePortal },
+  '/api/auth/google': { method: 'GET', handler: handleAuthStart },
+  '/api/auth/callback': { method: 'GET', handler: handleAuthCallback },
+  '/api/auth/refresh': { method: 'POST', handler: handleRefresh },
+  '/api/auth/logout': { method: 'POST', handler: handleLogout },
+  '/api/account': { method: 'POST', handler: handleAccount },
   ...Object.fromEntries(
     Object.entries(MEDIA_PROXY_HANDLERS).map(([pathname, handler]) => [
       pathname,
