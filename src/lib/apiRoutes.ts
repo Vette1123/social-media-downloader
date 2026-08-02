@@ -145,6 +145,47 @@ export function resolveCacheKey(
   return `${tier}|${type}|${quality}|${mode}|${url}`
 }
 
+/**
+ * A failed resolve, with a status that says whose fault it was.
+ *
+ * Almost every failure here is a fact about the link, not a fault in this
+ * Worker: the post is private, the account is login-only, the video was
+ * deleted, the platform is rate-limiting us. Those were all answered with 500,
+ * which meant Cloudflare's dashboard counted a perfectly healthy day of people
+ * pasting private Instagram links as seventeen server errors — and buried any
+ * real exception among them.
+ *
+ * The discriminator is the error's own constructor. Every "we could not get
+ * this" throw in downloader.ts is a deliberate `new Error(message)`, and the
+ * runtime's own faults are always subclasses: a TypeError from reading a
+ * property of undefined, a ReferenceError from a typo. So a base Error, or the
+ * one named extraction error, is content; anything else is a bug and keeps its
+ * 500 so it still shows up as one.
+ *
+ * `AbortError` is neither: an upstream that never answered is a gateway
+ * timeout, and reads as one in the logs.
+ *
+ * The response body is unchanged, and the client branches on `success` rather
+ * than the status, so nothing about what a visitor sees changes.
+ */
+export function resolveFailure(error: unknown, fallback: string): Response {
+  const body = {
+    success: false,
+    error: error instanceof Error ? error.message : fallback,
+  }
+
+  if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
+    return Response.json(body, { status: 504 })
+  }
+  // Matched by name rather than `instanceof`: importing the class would pull
+  // pageScrape's whole module into every isolate that ever serves an /api/*
+  // request, which is exactly the module-scope cost this file avoids elsewhere.
+  if (error instanceof Error && (error.name === 'OriginBlockedError' || error.constructor === Error)) {
+    return Response.json(body, { status: 422 })
+  }
+  return Response.json(body, { status: 500 })
+}
+
 export async function handleDownload(
   request: Request,
   ctx?: WaitUntilContext,
@@ -233,9 +274,11 @@ export async function handleDownload(
         !hasImages &&
         !videoData.embedUrl)
     ) {
+      // 422, not 500: the extractors ran and the link simply yielded nothing
+      // downloadable. See resolveFailure.
       return Response.json(
         { success: false, error: 'Failed to extract download URL' },
-        { status: 500 },
+        { status: 422 },
       )
     }
 
@@ -307,13 +350,7 @@ export async function handleDownload(
       headers: { 'Content-Type': 'application/json', 'X-Cache': 'MISS' },
     })
   } catch (error) {
-    return Response.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to process video',
-      },
-      { status: 500 },
-    )
+    return resolveFailure(error, 'Failed to process video')
   }
 }
 
