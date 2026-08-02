@@ -28,7 +28,7 @@ import { homepageStructuredData } from '@/lib/structuredData'
 
 const heroChips = [
   'Free forever',
-  'No login required',
+  'No login to download',
   'No download limits',
   'HD quality',
 ] as const

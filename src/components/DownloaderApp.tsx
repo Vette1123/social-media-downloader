@@ -34,6 +34,7 @@ import {
 } from '@/components/icons'
 import { BatchPanel } from '@/components/BatchPanel'
 import { InstallPrompt } from '@/components/InstallPrompt'
+import { PastDueBanner } from '@/components/PastDueBanner'
 import { PromoSlot } from '@/components/PromoSlot'
 import { useIsIOSLike } from '@/lib/clientEnv'
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
@@ -1273,6 +1274,7 @@ export function DownloaderApp() {
 
   return (
     <div ref={containerRef} className='mx-auto w-full max-w-2xl'>
+      <PastDueBanner />
       {/* Paste bar — the hero action. Input + CTA share one focus-ring pill. */}
       <Surface
         ref={pasteBarRef}
