@@ -106,3 +106,73 @@ export function setFormat(format: Format): void {
 export function usePrefs(): Prefs {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 }
+
+/**
+ * Validate whatever arrived from the network or the database.
+ *
+ * Accepts both the parsed object and the raw JSON string, because the `prefs`
+ * column stores a string and the API hands back either. A missing field falls
+ * back to its default; a *wrong* field is rejected outright, since that means
+ * something upstream is confused and silently coercing it would hide the bug.
+ */
+export function normalisePrefs(value: unknown): Prefs | null {
+  if (value === null || value === undefined) return null
+
+  let candidate = value
+  if (typeof candidate === 'string') {
+    try {
+      candidate = JSON.parse(candidate)
+    } catch {
+      return null
+    }
+  }
+  if (typeof candidate !== 'object' || candidate === null) return null
+
+  const { quality, format } = candidate as { quality?: unknown; format?: unknown }
+  if (quality !== undefined && !isQuality(quality as string)) return null
+  if (format !== undefined && !isFormat(format as string)) return null
+
+  return {
+    quality: (quality as Quality) ?? DEFAULTS.quality,
+    format: (format as Format) ?? DEFAULTS.format,
+  }
+}
+
+/**
+ * Server wins when it has an opinion; otherwise the local choices are carried
+ * up. Signing in must never silently change how the tool behaves for someone
+ * who already set their preferences in this browser.
+ */
+export function mergePrefs(local: Prefs, server: Prefs | null): Prefs {
+  return server ?? local
+}
+
+/**
+ * Called after a refresh with whatever the `prefs` column held. Pushes local
+ * values up on a first login, and adopts the server's on every later one.
+ */
+export function adoptServerPrefs(raw: unknown): void {
+  const server = normalisePrefs(raw)
+  const merged = mergePrefs(getSnapshot(), server)
+
+  if (!server) {
+    void persistPrefs(merged)
+    return
+  }
+
+  if (merged.quality !== getSnapshot().quality) setQuality(merged.quality)
+  if (merged.format !== getSnapshot().format) setFormat(merged.format)
+}
+
+/** Write the current preferences to the account, if there is one. */
+export async function persistPrefs(prefs: Prefs): Promise<void> {
+  try {
+    await fetch('/api/account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prefs }),
+    })
+  } catch {
+    // Local storage already has the value; the next change retries.
+  }
+}
