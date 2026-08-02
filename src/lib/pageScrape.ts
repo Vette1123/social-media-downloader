@@ -152,20 +152,51 @@ export function unlockerUrl(target: string): string | null {
 }
 
 /**
- * The page as the unlocker saw it, or null if there is no unlocker configured
- * or it could not deliver. Never throws: this is a last resort, and its failure
- * must read as "still blocked" rather than as a new error of its own.
+ * The Internet Archive's copy of a page, unmodified.
+ *
+ * `/web/2id_/` is the raw-snapshot form: `2` means "closest to now" and the
+ * `id_` suffix asks for the bytes as captured, without the toolbar and URL
+ * rewriting a normal Wayback view injects. Relative hrefs therefore survive as
+ * the origin wrote them, which matters because the caller resolves them against
+ * the *original* URL — a rewritten snapshot would point every download link at
+ * web.archive.org.
+ *
+ * Free, unauthenticated, and it answers a datacenter IP, which is the whole
+ * reason it is worth trying before anything that bills. Its ceiling is real
+ * though: it only helps for a page that was crawled, and the crawler is itself
+ * a datacenter client, so a walled site may well have served it the same stub.
+ * That case is caught below like any other wall.
+ */
+function archiveUrl(target: string): string {
+  return `https://web.archive.org/web/2id_/${target}`
+}
+
+/**
+ * The page as some other client saw it, or null if nothing could deliver one.
+ *
+ * Ordered by cost: the archive is free and needs no configuration, so it goes
+ * first; the unlocker bills per request and is only reached when the archive
+ * has nothing usable. Never throws — this is already the last resort, and its
+ * failure must read as "still blocked" rather than as a new error of its own.
  */
 export async function fetchThroughUnlocker(target: string): Promise<string | null> {
-  const endpoint = unlockerUrl(target)
-  if (!endpoint) return null
+  const endpoints = [archiveUrl(target), unlockerUrl(target)]
+  for (const endpoint of endpoints) {
+    if (!endpoint) continue
+    const html = await relay(endpoint)
+    if (html) return html
+  }
+  return null
+}
+
+async function relay(endpoint: string): Promise<string | null> {
   try {
     // Longer than the direct fetch: these services load the page themselves,
     // sometimes in a real browser, and 10 seconds is not enough for that.
     const response = await fetch(endpoint, { signal: AbortSignal.timeout(25_000) })
     if (!response.ok) return null
     const html = await readCappedText(response)
-    // A wall relayed through an unlocker is still a wall.
+    // A wall relayed through anything is still a wall.
     return looksLikeBotWall(html) ? null : html
   } catch {
     return null

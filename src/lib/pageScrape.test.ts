@@ -367,19 +367,57 @@ describe('fetchThroughUnlocker', () => {
     vi.unstubAllGlobals()
   })
 
-  it('returns nothing, and calls nothing, when unconfigured', async () => {
+  const REAL_PAGE = `<html><body>${'word '.repeat(MIN_REAL_PAGE_BYTES)}</body></html>`
+  const WALLED = '<html><title>.</title></html>'
+
+  it('tries the free archive even with no unlocker configured', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
-    const fetchMock = vi.fn()
+    const fetchMock = vi.fn(async () => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toBeNull()
-    expect(fetchMock).not.toHaveBeenCalled()
+    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://web.archive.org/web/2id_/https://site.example/v',
+    )
+  })
+
+  it('asks the archive for the bytes as captured, not the rewritten view', async () => {
+    // Without `id_` every relative href in the snapshot comes back pointing at
+    // web.archive.org, and the caller resolves them against the original URL.
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    const fetchMock = vi.fn(async () => new Response(REAL_PAGE))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await fetchThroughUnlocker('https://site.example/v')
+    expect(fetchMock.mock.calls[0][0]).toContain('/web/2id_/')
+  })
+
+  it('spends no unlocker credit when the archive already answered', async () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
+    const fetchMock = vi.fn(async () => new Response(REAL_PAGE))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('falls through to the unlocker when the archive has only a wall', async () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(WALLED))
+      .mockResolvedValueOnce(new Response(REAL_PAGE))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1][0]).toContain('api.example.com')
   })
 
   it('returns the markup the unlocker saw', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
-    const page = `<html><body>${'word '.repeat(MIN_REAL_PAGE_BYTES)}</body></html>`
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(page)))
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(REAL_PAGE)))
 
     await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
   })
