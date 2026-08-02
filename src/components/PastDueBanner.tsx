@@ -11,18 +11,7 @@
 
 import { PAST_DUE_GRACE_MS } from '@/lib/billing/entitlement'
 import { useAccount } from '@/lib/account'
-
-function formatDate(at: number): string {
-  return new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })
-}
-
-// Reading the clock is a side effect, and the React compiler flags a bare
-// Date.now() inside a component body as impure-during-render. Module scope
-// puts it out of that analysis without changing behaviour — see the same
-// pattern in DownloaderApp.tsx.
-function nowMs(): number {
-  return Date.now()
-}
+import { formatDate, nowMs } from '@/lib/clientEnv'
 
 export function PastDueBanner() {
   const { plan } = useAccount()

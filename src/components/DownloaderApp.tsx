@@ -36,7 +36,7 @@ import { BatchPanel } from '@/components/BatchPanel'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { PastDueBanner } from '@/components/PastDueBanner'
 import { PromoSlot } from '@/components/PromoSlot'
-import { useIsIOSLike } from '@/lib/clientEnv'
+import { nowMs, useIsIOSLike } from '@/lib/clientEnv'
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { buildDownloadFilename } from '@/lib/filename'
 import { friendlyError } from '@/lib/errorMessages'
@@ -168,14 +168,6 @@ function isTooSlowToStream(
   if (elapsedMs < RATE_SAMPLE_AFTER_MS || received === 0) return false
   const projectedMs = (elapsedMs / received) * total
   return projectedMs > MAX_STREAM_SECONDS * 1000
-}
-
-// Reading the clock is a side effect, and the React compiler flags a bare
-// Date.now() inside a component body as impure-during-render even when the
-// caller is an async event handler. Module scope puts it out of that analysis
-// without changing behaviour.
-function nowMs(): number {
-  return Date.now()
 }
 
 // True while a link is being resolved or a file is actively transferring —
