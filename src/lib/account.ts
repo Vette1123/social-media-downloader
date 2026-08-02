@@ -215,3 +215,20 @@ export function ensureFreshToken(): void {
   if (!hasAccountHint()) return
   void refreshAccount()
 }
+
+/**
+ * Settle the store as signed out without spending a request.
+ *
+ * The hint cookie is the client's own answer to "is there a session?", so a
+ * visitor without one needs no round trip to learn they are signed out. That
+ * keeps a page view at zero Worker requests, which is the entire reason the
+ * hint exists — and it means a fetch that never completes (an extension
+ * blocking it, a dropped connection) can no longer strand a signed-out
+ * visitor on an error screen instead of the sign-in prompt.
+ */
+export function markSignedOut(): void {
+  if (state === SIGNED_OUT) return
+  token = null
+  state = SIGNED_OUT
+  notify()
+}

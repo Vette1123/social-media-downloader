@@ -18,6 +18,8 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Surface } from '@/components/Surface'
 import {
   type PlanState,
+  hasAccountHint,
+  markSignedOut,
   refreshAccount,
   signInHref,
   signOut,
@@ -519,7 +521,10 @@ export function AccountPanel() {
   const checkoutPhase = useCheckoutPolling(pro)
 
   useEffect(() => {
-    void refreshAccount()
+    // No hint cookie means no session to load, so there is nothing to ask the
+    // Worker and no request that could fail on the way.
+    if (hasAccountHint()) void refreshAccount()
+    else markSignedOut()
   }, [])
 
   if (signedIn === undefined && failed) return <LoadFailed />
