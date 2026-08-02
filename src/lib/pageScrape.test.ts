@@ -372,7 +372,7 @@ describe('fetchThroughUnlocker', () => {
 
   it('tries the free archive even with no unlocker configured', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
-    const fetchMock = vi.fn(async () => new Response(REAL_PAGE))
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
@@ -386,7 +386,7 @@ describe('fetchThroughUnlocker', () => {
     // Without `id_` every relative href in the snapshot comes back pointing at
     // web.archive.org, and the caller resolves them against the original URL.
     vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
-    const fetchMock = vi.fn(async () => new Response(REAL_PAGE))
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
     await fetchThroughUnlocker('https://site.example/v')
@@ -395,7 +395,7 @@ describe('fetchThroughUnlocker', () => {
 
   it('spends no unlocker credit when the archive already answered', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
-    const fetchMock = vi.fn(async () => new Response(REAL_PAGE))
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
