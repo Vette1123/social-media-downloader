@@ -121,7 +121,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 The site is free and stays free. It is paid for by a single sponsor card shown
 after a download — no popups, no redirects, no interstitials, and no tracking of
 what you download. You can remove that card for good with a
-[Pro license](https://www.socialdownloader.space/pro), or support the work
+[Pro subscription](https://www.socialdownloader.space/pro), or support the work
 directly:
 
 <a href="https://buymeacoffee.com/vetteotp">
@@ -167,15 +167,44 @@ pnpm build && pnpm start
 
 ### Environment variables
 
-All optional — the app runs without any config.
+All optional — the app runs without any config. Signing in and Pro billing are
+themselves optional: without the accounts/billing variables below, the site
+still works as a fully anonymous, free downloader; sign-in simply is not
+offered.
 
 | Variable              | Purpose                                                                          |
 | --------------------- | -------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`| Canonical site URL used for metadata, sitemap, and OG images.                    |
 | `COBALT_API_URL`      | Self-hosted [Cobalt](https://github.com/imputnet/cobalt) instance to harden the extraction fallback chain. |
-| `IG_SESSIONID`        | Instagram session cookie from a burner account. Sent only for licensed (Pro) requests, to resolve login-gated posts. Public posts resolve without it. |
-| `IG_SESSIONID_FOR_ALL`| Self-hosted escape hatch: set to `1` to make `IG_SESSIONID` apply to every request instead of Pro-only. Licensing only ever validates against the hosted project's own Lemon Squeezy account, so without this a self-hosted deployment can never unlock the Pro branch and `IG_SESSIONID` would do nothing. Same burner-account risk applies. Must stay unset on the hosted site. |
+| `IG_SESSIONID`        | Instagram session cookie from a burner account. Sent only for signed-in Pro requests, to resolve login-gated posts. Public posts resolve without it. |
+| `IG_SESSIONID_FOR_ALL`| Self-hosted escape hatch: set to `1` to make `IG_SESSIONID` apply to every request instead of Pro subscribers only. Without a Google OAuth client and a Lemon Squeezy subscription of your own, a self-hosted deployment can never unlock the Pro branch, so `IG_SESSIONID` would otherwise do nothing there. Same burner-account risk applies. Must stay unset on the hosted site. |
 | `NEXT_PUBLIC_CF_BEACON_TOKEN` | Enables Cloudflare Web Analytics by injecting the beacon script at build time. Build-time only, like `NEXT_PUBLIC_SITE_URL` — set it as build env, not a Worker var. If Web Analytics is already enabled at the zone level in the Cloudflare dashboard, Cloudflare injects the beacon at the edge automatically; setting this too would load it twice and double-count page views. Pick one mechanism. |
+| `PRO_TOKEN_SECRET`    | HMAC key (WebCrypto HMAC-SHA256) for signing Pro access tokens and session-cookie values. Generate 32+ random bytes yourself. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client used for sign-in. Created in Google Cloud console; both the dev and production redirect URIs must be registered on it. |
+| `LEMONSQUEEZY_API_KEY` | Fetches fresh, signed customer-portal URLs per click (they expire after 24 hours and are never stored) and backs the lazy subscription reconcile. |
+| `LEMONSQUEEZY_WEBHOOK_SECRET` | Verifies the `X-Signature` header on incoming Lemon Squeezy subscription webhooks. An unverified webhook endpoint would let anyone grant themselves Pro, so this is never optional once webhooks are registered. |
+
+### Accounts and Pro subscriptions
+
+Pro is a $3/month or $24/year subscription, sold by Lemon Squeezy. There are no
+license keys: signing in is with a Google account, entitlement is a signed,
+short-lived access token, and preferences (HD/SD, video/audio) sync across
+devices for anyone signed in — free or Pro. Signing in never changes what is
+free; it only unlocks Pro once someone subscribes.
+
+Setting this up for a fork or self-hosted deployment, in order:
+
+1. **Google Cloud console** — create an OAuth client and configure its consent
+   screen. Register **both** redirect URIs (a mismatch between dev and
+   production here is the most common thing to get wrong): the `wrangler dev`
+   origin's `/api/auth/callback` and the production origin's `/api/auth/callback`.
+2. **Lemon Squeezy** — set the product up as a subscription with monthly and
+   annual variants, turn off license key generation, register the webhook
+   endpoint with its signing secret, and subscribe it to the `subscription_*`
+   events.
+3. **Cloudflare** — create the D1 database, apply the migration, add the `DB`
+   binding in `wrangler.jsonc`, then set the five secrets above with
+   `pnpm cf:setup` (reads `.env.cloudflare`) or `wrangler secret put`.
 
 ## How to use
 

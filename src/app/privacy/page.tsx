@@ -4,11 +4,11 @@ import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
-  description: `How ${siteConfig.name} handles your data: no accounts, no download logs, no cross-site tracking.`,
+  description: `How ${siteConfig.name} handles your data: anonymous by default, a Google sign-in and nothing else for Pro, no download logs, no cross-site tracking.`,
   alternates: { canonical: '/privacy' },
 }
 
-const UPDATED = '31 July 2026'
+const UPDATED = '2 August 2026'
 
 export default function Privacy() {
   return (
@@ -21,11 +21,31 @@ export default function Privacy() {
 
         <div className='mt-8 space-y-6 text-sm leading-relaxed text-white/70 md:text-base'>
           <section>
-            <h2 className='mb-2 text-lg font-semibold text-white'>What we collect</h2>
+            <h2 className='mb-2 text-lg font-semibold text-white'>If you never sign in</h2>
             <p>
-              No accounts, no sign-up, no email address. We do not log the links
-              you paste or the files you download. Your Recent list is written to
-              your own browser&rsquo;s local storage and never leaves the device.
+              No account, no sign-up, nothing stored — you are fully anonymous.
+              We do not log the links you paste or the files you download. Your
+              Recent list is written to your own browser&rsquo;s local storage
+              and never leaves the device. This is unchanged from before Pro
+              existed, and it stays true whether or not anyone ever subscribes.
+            </p>
+          </section>
+
+          <section>
+            <h2 className='mb-2 text-lg font-semibold text-white'>If you sign in for Pro</h2>
+            <p>
+              Signing in with Google creates an account. We store your email
+              address, your Google account ID, and a list of the sessions
+              (devices/browsers) currently signed in — that list is what lets
+              you sign out of one device from another, and what enforces the
+              5-device cap. We do not store a password; Google handles
+              authentication and we never see one.
+            </p>
+            <p className='mt-2'>
+              No download activity is recorded for anyone, signed in or not.
+              We do not store IP addresses. Deleting your account, from{' '}
+              <Link href='/account' className='text-cyan-300 hover:text-cyan-200'>/account</Link>,
+              removes your record and every session immediately.
             </p>
           </section>
 
@@ -54,9 +74,9 @@ export default function Privacy() {
           <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Payments</h2>
             <p>
-              If you buy a Pro license, the payment is processed by Lemon
-              Squeezy, who act as merchant of record. We never see your card
-              details. Your license key is stored in your own browser.
+              Pro subscriptions are billed and processed by Lemon Squeezy, who
+              act as merchant of record. We never see your card details — only
+              your subscription&rsquo;s status, so the site knows to keep Pro on.
             </p>
           </section>
 
