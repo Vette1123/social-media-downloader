@@ -23,6 +23,7 @@
  */
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { Avatar } from '@/components/Avatar'
 import { PinIcon, PinOffIcon } from '@/components/icons'
@@ -119,6 +120,10 @@ function usePeekOnScroll(ref: React.RefObject<HTMLElement | null>, enabled: bool
 export function AccountControl() {
   const hydrated = useHydrated()
   const live = useAccount()
+  // Not `window.location.pathname`: this component lives in the root layout, so
+  // it survives client-side navigation and a value read once at mount would go
+  // stale the moment someone moved between pages.
+  const pathname = usePathname()
   // Read once, synchronously, on the first client render. The store itself is
   // not seeded from this: only the server may decide what an account *is*, and
   // this is a paint hint for the corner of the screen.
@@ -162,7 +167,7 @@ export function AccountControl() {
           {(live.signedIn ?? hasAccountHint()) && (
             <PinToggle pinned={pinned} onToggle={togglePinned} />
           )}
-          <Control live={live} cached={cached} />
+          <Control live={live} cached={cached} pathname={pathname} />
         </>
       )}
     </div>
@@ -197,9 +202,11 @@ function PinToggle({ pinned, onToggle }: { pinned: boolean; onToggle: () => void
 function Control({
   live,
   cached,
+  pathname,
 }: {
   live: ReturnType<typeof useAccount>
   cached: CachedProfile | null
+  pathname: string
 }) {
   // A settled `signedIn` always wins; the hint cookie answers for the common
   // case where nothing on this page has called the Worker at all.
@@ -211,8 +218,16 @@ function Control({
       // that does not exist in the static export, so the client router treats
       // it as a missing page and swallows the navigation instead of letting
       // the browser follow the redirect to Google.
+      //
+      // The control sits on every page, so it is the one entry point that has
+      // to come back to where it was used — being dropped on the homepage from
+      // a platform landing page loses the visitor's place for no reason.
+      // Pathname only, deliberately: the query string is where a failed
+      // sign-in's `?signin=expired` lives, and carrying that through a
+      // *successful* retry would land the visitor on their account under an
+      // error notice about the attempt that just worked.
       <a
-        href={signInHref()}
+        href={signInHref(pathname)}
         className='btn-grad btn-press pointer-events-auto rounded-full px-4 py-2 text-xs font-semibold sm:py-1.5'
       >
         Sign in

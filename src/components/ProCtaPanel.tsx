@@ -62,7 +62,10 @@ export function ProCtaPanel() {
 
       {state === 'signed-out' && (
         <a
-          href={signInHref()}
+          // Straight to /account, not back to /pro. Signing in here is a step
+          // in buying, and /account is where the plan is picked — a signed-in
+          // visitor returned to this panel would only be told to go there.
+          href={signInHref('/account')}
           className='btn-grad inline-flex rounded-xl px-6 py-3 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 active:scale-95'
         >
           Sign in with Google to get Pro
