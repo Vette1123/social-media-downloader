@@ -100,7 +100,7 @@ export function InstallPrompt() {
         <button
           type='button'
           onClick={install}
-          className='btn-grad btn-press shrink-0 cursor-pointer rounded-xl px-4 py-2 text-sm font-semibold'
+          className='btn-grad btn-press shrink-0 rounded-xl px-4 py-2 text-sm font-semibold'
         >
           Install
         </button>

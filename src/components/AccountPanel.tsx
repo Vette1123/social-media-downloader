@@ -17,6 +17,8 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Surface } from '@/components/Surface'
 import { Avatar, type AvatarIdentity } from '@/components/Avatar'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { ChevronDownIcon } from '@/components/icons'
 import {
   type PlanState,
   hasAccountHint,
@@ -361,6 +363,8 @@ function AccountSection({
 }) {
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  /** Which confirmation is on screen, if any. Only ever one at a time. */
+  const [confirming, setConfirming] = useState<'signout-all' | 'delete' | null>(null)
 
   /**
    * Signing out on the account page leaves you looking at an account page you
@@ -373,19 +377,8 @@ function AccountSection({
     window.location.href = '/'
   }
 
-  function handleSignOutEverywhere(): void {
-    if (!window.confirm('Sign out of every device that is currently signed in?')) return
-    void signOutAndGoHome(true)
-  }
-
   async function handleDelete(): Promise<void> {
-    const confirmed = window.confirm(
-      hasSubscription
-        ? 'Delete your account? This does not cancel your subscription. Cancel it in the billing portal first, or it will keep renewing after the account is gone.'
-        : 'Delete your account? Your email address, preferences and sessions are removed. This cannot be undone.',
-    )
-    if (!confirmed) return
-
+    setConfirming(null)
     setDeleting(true)
     setDeleteError(null)
     try {
@@ -429,35 +422,80 @@ function AccountSection({
         >
           Sign out
         </button>
-        <button type='button' onClick={handleSignOutEverywhere} className={SECONDARY_BUTTON_CLASS}>
+        <button
+          type='button'
+          onClick={() => setConfirming('signout-all')}
+          className={SECONDARY_BUTTON_CLASS}
+        >
           Sign out everywhere
         </button>
       </div>
 
-      <div className='mt-6 border-t border-white/10 pt-4'>
-        <p className='text-xs text-white/50'>
-          {hasSubscription ? (
-            <>
-              Deleting your account does not cancel your subscription.{' '}
-              <a href='/api/billing/portal' className='text-cyan-300 hover:text-cyan-200'>
-                Cancel it in the billing portal
-              </a>{' '}
-              first.
-            </>
-          ) : (
-            'Deleting your account removes your email address, your preferences, and every signed-in session. It cannot be undone.'
-          )}
-        </p>
-        <button
-          type='button'
-          onClick={() => void handleDelete()}
-          disabled={deleting}
-          className='mt-3 rounded-xl border border-red-400/30 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:border-red-400/50 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50'
-        >
-          {deleting ? 'Deleting…' : 'Delete account'}
-        </button>
-        {deleteError && <p className='mt-2 text-xs text-red-300'>{deleteError}</p>}
-      </div>
+      {/* Deleting an account is irreversible and is the least likely reason
+          anyone opened this page, so it does not get to sit next to "Sign out"
+          as an equally-weighted button waiting to be mis-tapped. It is folded
+          away behind a disclosure, and the button inside it still has to be
+          confirmed — three deliberate acts, none of them reachable by accident.
+          A native <details>, so the collapsed state costs no JavaScript. */}
+      <details className='group mt-6 border-t border-white/10 pt-4'>
+        <summary className='inline-flex list-none items-center gap-1.5 text-xs font-medium text-white/40 transition-colors hover:text-white/70'>
+          <ChevronDownIcon
+            className='h-3 w-3 transition-transform duration-200 group-open:rotate-180'
+            aria-hidden
+          />
+          Close this account
+        </summary>
+
+        <div className='mt-3'>
+          <p className='text-xs text-white/50'>
+            {hasSubscription ? (
+              <>
+                Deleting your account does not cancel your subscription.{' '}
+                <a href='/api/billing/portal' className='text-cyan-300 hover:text-cyan-200'>
+                  Cancel it in the billing portal
+                </a>{' '}
+                first.
+              </>
+            ) : (
+              'Deleting your account removes your email address, your preferences, and every signed-in session. It cannot be undone.'
+            )}
+          </p>
+          <button
+            type='button'
+            onClick={() => setConfirming('delete')}
+            disabled={deleting}
+            className='btn-danger btn-press mt-3 rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50'
+          >
+            {deleting ? 'Deleting…' : 'Delete account'}
+          </button>
+          {deleteError && <p className='mt-2 text-xs text-red-300'>{deleteError}</p>}
+        </div>
+      </details>
+
+      <ConfirmDialog
+        open={confirming === 'signout-all'}
+        tone='neutral'
+        title='Sign out everywhere?'
+        body='Every device currently signed in to this account will be signed out, including this one. Nothing else changes — you can sign back in with Google at any time.'
+        confirmLabel='Sign out everywhere'
+        onCancel={() => setConfirming(null)}
+        onConfirm={() => {
+          setConfirming(null)
+          void signOutAndGoHome(true)
+        }}
+      />
+      <ConfirmDialog
+        open={confirming === 'delete'}
+        title='Delete your account?'
+        body={
+          hasSubscription
+            ? 'This does not cancel your subscription — it will keep renewing after the account is gone. Cancel it in the billing portal first. Your email address, preferences and sessions are removed, and this cannot be undone.'
+            : 'Your email address, preferences and every signed-in session are removed. This cannot be undone.'
+        }
+        confirmLabel='Delete my account'
+        onCancel={() => setConfirming(null)}
+        onConfirm={() => void handleDelete()}
+      />
     </Surface>
   )
 }

@@ -1336,7 +1336,7 @@ export function DownloaderApp() {
             state.downloadingAudio ||
             state.downloadingImages
           }
-          className='btn-grad btn-press group relative flex shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl px-6 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 md:text-base'
+          className='btn-grad btn-press group relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl px-6 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 md:text-base'
         >
           <span
             className='pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-full'
@@ -1684,7 +1684,7 @@ export function DownloaderApp() {
               {(state.downloadUrl || state.videoMetadata?.embedUrl) && (
                 <button
                   onClick={togglePreview}
-                  className='btn-ghost btn-press w-full cursor-pointer py-2.5 px-4 font-semibold rounded-xl flex items-center justify-center text-sm md:text-base'
+                  className='btn-ghost btn-press w-full py-2.5 px-4 font-semibold rounded-xl flex items-center justify-center text-sm md:text-base'
                 >
                   <span className='relative'>
                     {state.showPreview ? 'Hide preview' : 'Show preview'}
@@ -1803,7 +1803,7 @@ export function DownloaderApp() {
                   <div className='space-y-3'>
                     <button
                       onClick={toggleImageGallery}
-                      className='btn-ghost btn-press w-full cursor-pointer py-2.5 px-4 font-semibold rounded-xl flex items-center justify-center text-sm md:text-base'
+                      className='btn-ghost btn-press w-full py-2.5 px-4 font-semibold rounded-xl flex items-center justify-center text-sm md:text-base'
                     >
                       <span className='relative'>
                         {state.showImageGallery
@@ -1826,13 +1826,13 @@ export function DownloaderApp() {
                           <div className='flex space-x-2'>
                             <button
                               onClick={() => selectAllImages(true)}
-                              className='btn-grad cursor-pointer px-3 py-1 text-xs font-semibold rounded-md transition-[box-shadow] duration-200'
+                              className='btn-grad px-3 py-1 text-xs font-semibold rounded-md transition-[box-shadow] duration-200'
                             >
                               All
                             </button>
                             <button
                               onClick={() => selectAllImages(false)}
-                              className='btn-ghost cursor-pointer px-3 py-1 text-xs font-medium rounded-md transition-colors'
+                              className='btn-ghost px-3 py-1 text-xs font-medium rounded-md transition-colors'
                             >
                               None
                             </button>
@@ -1932,7 +1932,7 @@ export function DownloaderApp() {
                             />
                             <label
                               htmlFor='downloadAsZip'
-                              className='text-white text-sm cursor-pointer'
+                              className='text-white text-sm'
                             >
                               Download as ZIP file
                             </label>
@@ -1952,7 +1952,7 @@ export function DownloaderApp() {
                               (img) => img.selected,
                             )
                           }
-                          className='btn-grad w-full cursor-pointer py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl transition-[box-shadow,transform] duration-200 flex items-center justify-center text-sm md:text-base gap-2'
+                          className='btn-grad w-full py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl transition-[box-shadow,transform] duration-200 flex items-center justify-center text-sm md:text-base gap-2'
                         >
                           {state.downloadingImages ? (
                             <>
@@ -2066,7 +2066,7 @@ export function DownloaderApp() {
                         disabled={
                           state.downloading || state.downloadingImages
                         }
-                        className='btn-grad btn-press group relative py-3 cursor-pointer px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2 overflow-hidden'
+                        className='btn-grad btn-press group relative py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2 overflow-hidden'
                       >
                         <span
                           className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out'
@@ -2101,7 +2101,7 @@ export function DownloaderApp() {
                         disabled={
                           state.downloadingAudio || state.downloadingImages
                         }
-                        className='btn-ghost btn-press py-3 cursor-pointer px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2'
+                        className='btn-ghost btn-press py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2'
                       >
                         {state.downloadingAudio ? (
                           <span className='relative flex items-center gap-2'>

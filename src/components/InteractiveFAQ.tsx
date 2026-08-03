@@ -40,7 +40,7 @@ export function InteractiveFAQ({
           className='overflow-hidden'
         >
           <AccordionPrimitive.Header className='flex'>
-            <AccordionPrimitive.Trigger className='flex flex-1 items-center justify-between gap-4 px-4 py-4 text-left text-sm md:text-base font-semibold text-white transition-all outline-none hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-0 rounded-lg cursor-pointer [&[data-state=open]>svg]:rotate-180'>
+            <AccordionPrimitive.Trigger className='flex flex-1 items-center justify-between gap-4 px-4 py-4 text-left text-sm md:text-base font-semibold text-white transition-all outline-none hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-400/60 focus-visible:ring-offset-0 rounded-lg [&[data-state=open]>svg]:rotate-180'>
               {f.q}
               <ChevronDownIcon className='h-4 w-4 shrink-0 text-white/60 transition-transform duration-200' />
             </AccordionPrimitive.Trigger>
