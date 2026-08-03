@@ -10,13 +10,14 @@ import {
 } from './htmlExtract'
 import {
   extractMediaFromHtml,
-  fetchThroughUnlocker,
+  fetchThroughRelay,
   filenameTitle,
   isDirectMediaType,
   looksLikeBotWall,
   OriginBlockedError,
   readCappedText,
 } from './pageScrape'
+import { resolveByRule } from './siteRules'
 import { VideoData, ImageData } from './types'
 import {
   parseVideoId,
@@ -558,12 +559,19 @@ export class Downloader {
     // show us the page at all", which are the same failure to the code above
     // and completely different news to the user.
     if (!media && looksLikeBotWall(html)) {
-      // Blocked. If an unlocker is configured, read the page from an address
-      // the site will actually answer and extract from that instead. The
-      // media URLs it publishes work from any IP — it is only the page fetch
-      // that is walled — so this one retry is the whole fix.
-      const unlocked = await fetchThroughUnlocker(url)
-      if (unlocked) media = extractMediaFromHtml(unlocked, url)
+      // Blocked: the site did not show us the page. Two ways round it, and the
+      // recipe goes first because it is the one that works on the hosts that
+      // wall hardest — those tend to wall the watch page everywhere while
+      // leaving an embed open, and an embed is enough to build the link.
+      media = await resolveByRule(url, fetchThroughRelay)
+
+      // Otherwise read the watch page itself from an address the site will
+      // answer, and extract from that exactly as if we had fetched it.
+      if (!media) {
+        const relayed = await fetchThroughRelay(url)
+        if (relayed) media = extractMediaFromHtml(relayed, url)
+      }
+
       if (!media) throw new OriginBlockedError(new URL(url).hostname.replace(/^www\./, ''))
     }
 

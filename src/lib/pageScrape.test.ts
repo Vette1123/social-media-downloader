@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   extractMediaFromHtml,
   FAST_SCAN_BYTES,
-  fetchThroughUnlocker,
+  fetchThroughRelay,
   filenameTitle,
   isDirectMediaType,
   looksLikeBotWall,
@@ -361,7 +361,7 @@ describe('unlockerUrl', () => {
   })
 })
 
-describe('fetchThroughUnlocker', () => {
+describe('fetchThroughRelay', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
@@ -375,7 +375,7 @@ describe('fetchThroughUnlocker', () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0][0]).toBe(
       'https://web.archive.org/web/2id_/https://site.example/v',
@@ -389,7 +389,7 @@ describe('fetchThroughUnlocker', () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
-    await fetchThroughUnlocker('https://site.example/v')
+    await fetchThroughRelay('https://site.example/v')
     expect(fetchMock.mock.calls[0][0]).toContain('/web/2id_/')
   })
 
@@ -398,11 +398,11 @@ describe('fetchThroughUnlocker', () => {
     const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('falls through to the unlocker when the archive has only a wall', async () => {
+  it('tries the free proxy before the unlocker, and stops there when it works', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
     const fetchMock = vi
       .fn()
@@ -410,36 +410,50 @@ describe('fetchThroughUnlocker', () => {
       .mockResolvedValueOnce(new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
-    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls[1][0]).toContain('api.example.com')
+    expect(fetchMock.mock.calls[1][0]).toContain('allorigins')
+  })
+
+  it('reaches the paid unlocker only once both free relays have failed', async () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(WALLED))
+      .mockResolvedValueOnce(new Response(WALLED))
+      .mockResolvedValueOnce(new Response(REAL_PAGE))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock.mock.calls[2][0]).toContain('api.example.com')
   })
 
   it('returns the markup the unlocker saw', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
     vi.stubGlobal('fetch', vi.fn(async () => new Response(REAL_PAGE)))
 
-    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toContain('word')
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
   })
 
   it('treats a wall relayed through the unlocker as still blocked', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
     vi.stubGlobal('fetch', vi.fn(async () => new Response('<html><title>.</title></html>')))
 
-    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toBeNull()
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toBeNull()
   })
 
   it('swallows an unlocker outage, so the user still gets the block message', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('network') }))
 
-    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toBeNull()
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toBeNull()
   })
 
   it('treats a non-200 from the unlocker as no answer', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
     vi.stubGlobal('fetch', vi.fn(async () => new Response('over quota', { status: 402 })))
 
-    await expect(fetchThroughUnlocker('https://site.example/v')).resolves.toBeNull()
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toBeNull()
   })
 })

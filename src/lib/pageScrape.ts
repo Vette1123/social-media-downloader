@@ -172,15 +172,30 @@ function archiveUrl(target: string): string {
 }
 
 /**
+ * A free public CORS proxy. It fetches from its own address, which is the only
+ * property that matters here: measured against a host that walls us, its egress
+ * is answered normally where ours is not, so the block is on particular
+ * networks rather than on datacenter address space as a whole.
+ *
+ * It is a free service with no guarantees and it does fail — roughly a third of
+ * the time under test, and more on large pages. That is survivable because it
+ * is one of several ordered attempts and because nothing routes here until a
+ * wall has already been detected.
+ */
+function corsProxyUrl(target: string): string {
+  return `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
+}
+
+/**
  * The page as some other client saw it, or null if nothing could deliver one.
  *
- * Ordered by cost: the archive is free and needs no configuration, so it goes
- * first; the unlocker bills per request and is only reached when the archive
- * has nothing usable. Never throws — this is already the last resort, and its
- * failure must read as "still blocked" rather than as a new error of its own.
+ * Ordered by cost: the free relays go first and the configured unlocker, which
+ * bills per request, is only reached when they come up empty. Never throws —
+ * this is already the last resort, and its failure must read as "still blocked"
+ * rather than as a new error of its own.
  */
-export async function fetchThroughUnlocker(target: string): Promise<string | null> {
-  const endpoints = [archiveUrl(target), unlockerUrl(target)]
+export async function fetchThroughRelay(target: string): Promise<string | null> {
+  const endpoints = [archiveUrl(target), corsProxyUrl(target), unlockerUrl(target)]
   for (const endpoint of endpoints) {
     if (!endpoint) continue
     const html = await relay(endpoint)
