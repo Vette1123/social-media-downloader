@@ -22,6 +22,19 @@ body {
   min-height: 100%;
 }
 
+/* Tailwind v4's preflight resets buttons to `cursor: default`, matching the
+   native control. Nothing on this site is a form widget — every button is a
+   call to action — so the pointer is what people expect. This had been patched
+   by hand with `cursor-pointer` on twelve elements and still missed most of
+   them (the account controls, every toggle, the whole account page). One rule
+   instead. `summary` is here for the same reason: the FAQ's native fallback
+   is a disclosure, and a UA gives it a text cursor. */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+summary {
+  cursor: pointer;
+}
+
 @theme {
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -378,6 +391,20 @@ body {
 .btn-ghost:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.09);
   border-color: var(--line-strong);
+}
+
+/* The one destructive button style: closing an account, and confirming it.
+   Outlined rather than filled — a solid red block competes with the accent for
+   attention on a page whose primary action is not deleting anything. */
+.btn-danger {
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fca5a5;
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.16);
+  border-color: rgba(248, 113, 113, 0.6);
+  color: #fecaca;
 }
 
 /* CSS micro-interactions — a drop-in replacement for the old motion.button

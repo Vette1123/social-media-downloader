@@ -10,15 +10,15 @@ import { Surface } from '@/components/Surface'
  *
  * The interactive version (the Radix Accordion) only downloads + hydrates after
  * the browser is idle, or the user scrolls toward / interacts with it. Until
- * then we render a NATIVE <details>/<summary> version —
- * zero JavaScript, fully accessible, keyboard-operable, and 100% crawlable.
+ * then we render a NATIVE <details>/<summary> version — zero JavaScript, fully
+ * accessible, keyboard-operable, and 100% crawlable.
  *
  * The FAQ text is in the initial server HTML either way (in the <details>
  * fallback), so this is SEO-NEUTRAL — Google sees the full Q&A regardless of
  * which version is shown. The only thing deferred is the styled Radix UI's JS.
  *
- * Net effect: the Radix accordion chunk + lucide icon move off the critical
- * path, so they no longer compete with first paint / LCP for main-thread time
+ * Net effect: the Radix accordion chunk moves off the critical
+ * path, so it no longer competes with first paint / LCP for main-thread time
  * on slow devices — yet the user never sees a degraded experience: native
  * <details> expands/collapses fine, and swaps to the styled version seamlessly.
  */
@@ -107,7 +107,7 @@ export function LazyFAQ({
               radius='xl'
               className='group overflow-hidden'
             >
-              <summary className='flex flex-1 cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-left text-sm md:text-base font-semibold text-white transition-colors hover:text-cyan-200'>
+              <summary className='flex flex-1 list-none items-center justify-between gap-4 px-4 py-4 text-left text-sm md:text-base font-semibold text-white transition-colors hover:text-cyan-200'>
                 {f.q}
                 {/* Same glyph the interactive version uses, so the swap is
                     invisible — one definition, in icons.tsx. */}
