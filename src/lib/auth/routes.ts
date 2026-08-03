@@ -7,6 +7,7 @@
  * either — see src/lib/auth/google.ts for why.
  */
 
+import type { D1Database } from '@cloudflare/workers-types'
 import { requireDb, type WorkerEnv } from '../apiRoutes'
 import type { WaitUntilContext } from '../edgeCache'
 import { ACCESS_TOKEN_TTL_MS, signToken } from '../proToken'
@@ -161,6 +162,35 @@ export async function handleAuthStart(request: Request): Promise<Response> {
   ])
 }
 
+/**
+ * Whether this callback is a *second* delivery of one that already worked.
+ *
+ * An OAuth authorization code is single-use. Android delivers the callback URL
+ * to more than one place — a sign-in started in Chrome is also handed to the
+ * installed app, because the callback is an in-scope URL — so both fetch it,
+ * one redeems the code, and the other gets `invalid_grant` from Google. The
+ * loser of that race used to render "Google could not complete the sign-in" at
+ * somebody who was, at that exact moment, signed in: the winner had already
+ * created the session and set the cookie that this request is carrying.
+ *
+ * So before reporting any callback failure, ask the only question that settles
+ * it — is there a live session on this browser? If there is, the sign-in
+ * succeeded and this is a duplicate to be swallowed, not an error to report.
+ *
+ * This grants nothing. No session is created here, and the caller has to hold a
+ * valid session cookie to reach the quiet path at all; the worst a forged
+ * callback buys is a redirect to a `safeRedirect`-validated path on our own
+ * origin, which is where the visitor was going anyway.
+ */
+async function sessionAlreadyLive(
+  db: D1Database,
+  request: Request,
+  now: number,
+): Promise<boolean> {
+  const raw = readCookie(request.headers.get('Cookie'), SESSION_COOKIE)
+  return (await loadSession(db, raw, now)) !== null
+}
+
 /** GET /api/auth/callback */
 export async function handleAuthCallback(
   request: Request,
@@ -177,8 +207,28 @@ export async function handleAuthCallback(
   const storedState = readCookie(cookies, OAUTH_STATE_COOKIE)
   const verifier = readCookie(cookies, OAUTH_VERIFIER_COOKIE)
 
+  const now = Date.now()
   const { state: expectedState, target: requestedTarget } = unpackAuthState(storedState)
+
+  /**
+   * The quiet ending for a duplicate callback: send them where the sign-in was
+   * headed, and expire the one-shot cookies on the way, exactly as the
+   * successful branch does. No notice — nothing went wrong.
+   */
+  const settled = async (): Promise<Response | null> => {
+    if (!(await sessionAlreadyLive(db, request, now))) return null
+    return redirect(`${url.origin}${safeRedirect(requestedTarget, url.origin)}`, [
+      oauthTempCookie(OAUTH_STATE_COOKIE, ''),
+      oauthTempCookie(OAUTH_VERIFIER_COOKIE, ''),
+    ])
+  }
+
   if (!code || !state || !verifier || !expectedState || state !== expectedState) {
+    // The one-shot cookies are cleared by whichever delivery redeemed the code,
+    // so a duplicate arriving after that lands here rather than on the exchange
+    // below — same non-event, same quiet ending.
+    const done = await settled()
+    if (done) return done
     // Nearly always a lost cookie rather than an attack: the sign-in was
     // started in a different browser (an in-app webview handing off to
     // Chrome), or the round trip through Google's consent and 2FA screens
@@ -198,6 +248,11 @@ export async function handleAuthCallback(
     // have travelled.
     claims = arctic.decodeIdToken(tokens.idToken()) as IdTokenClaims
   } catch {
+    // `invalid_grant`, most often — the code was already redeemed by another
+    // delivery of this same callback, in which case the session it created is
+    // on this browser right now and there is nothing to report.
+    const done = await settled()
+    if (done) return done
     return authFailure(request, 'failed', 'Sign-in could not be completed. Please try again.')
   }
 
@@ -212,7 +267,6 @@ export async function handleAuthCallback(
     return authFailure(request, 'email', 'Google did not return a verified email address.')
   }
 
-  const now = Date.now()
   // ON CONFLICT keeps the email, name and avatar current for someone who
   // changed them at Google, without disturbing their billing columns. COALESCE
   // on the two profile fields so a token that omits them (an older account, a
