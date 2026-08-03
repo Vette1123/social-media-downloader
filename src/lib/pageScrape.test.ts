@@ -370,30 +370,46 @@ describe('fetchThroughRelay', () => {
   const REAL_PAGE = `<html><body>${'word '.repeat(MIN_REAL_PAGE_BYTES)}</body></html>`
   const WALLED = '<html><title>.</title></html>'
 
-  it('tries the free archive even with no unlocker configured', async () => {
+  it('starts with the reader, and stops there when it works', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
     const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      'https://web.archive.org/web/2id_/https://site.example/v',
+    expect(fetchMock.mock.calls[0][0]).toBe('https://r.jina.ai/https://site.example/v')
+  })
+
+  it('asks the reader for HTML, since its default strips the markup away', async () => {
+    // Left to itself it returns the page as markdown prose — measured at 361
+    // bytes for a page whose markup is 8 KB, with the wanted attribute gone.
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(REAL_PAGE),
     )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await fetchThroughRelay('https://site.example/v')
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+      headers: { 'X-Return-Format': 'html' },
+    })
   })
 
   it('asks the archive for the bytes as captured, not the rewritten view', async () => {
     // Without `id_` every relative href in the snapshot comes back pointing at
     // web.archive.org, and the caller resolves them against the original URL.
     vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(WALLED))
+      .mockResolvedValueOnce(new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
     await fetchThroughRelay('https://site.example/v')
-    expect(fetchMock.mock.calls[0][0]).toContain('/web/2id_/')
+    expect(fetchMock.mock.calls[1][0]).toContain('/web/2id_/')
   })
 
-  it('spends no unlocker credit when the archive already answered', async () => {
+  it('spends no unlocker credit when a free relay already answered', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
     const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
@@ -402,31 +418,19 @@ describe('fetchThroughRelay', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('tries the free proxy before the unlocker, and stops there when it works', async () => {
+  it('reaches the paid unlocker only once every free relay has failed', async () => {
     vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(new Response(WALLED))
-      .mockResolvedValueOnce(new Response(REAL_PAGE))
-    vi.stubGlobal('fetch', fetchMock)
-
-    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock.mock.calls[1][0]).toContain('allorigins')
-  })
-
-  it('reaches the paid unlocker only once both free relays have failed', async () => {
-    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://api.example.com/?url={url}')
-    const fetchMock = vi
-      .fn()
       .mockResolvedValueOnce(new Response(WALLED))
       .mockResolvedValueOnce(new Response(WALLED))
       .mockResolvedValueOnce(new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
-    expect(fetchMock).toHaveBeenCalledTimes(3)
-    expect(fetchMock.mock.calls[2][0]).toContain('api.example.com')
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock.mock.calls[3][0]).toContain('api.example.com')
   })
 
   it('returns the markup the unlocker saw', async () => {
