@@ -82,7 +82,8 @@ function deleteRequest(): Request {
  * dead end for the one person who most needs a retry button.
  */
 describe('handleAuthCallback — a sign-in that cannot be completed', () => {
-  // Never reached: the state check runs before anything touches the database.
+  // `loadSession` short-circuits on a request with no session cookie, so the
+  // duplicate-delivery check below never reaches this stand-in.
   const env = { DB: {} } as unknown as WorkerEnv
 
   function callback(headers: Record<string, string> = {}): Request {
@@ -117,6 +118,54 @@ describe('handleAuthCallback — a sign-in that cannot be completed', () => {
 
     expect(response.status).toBe(400)
     await expect(response.json()).resolves.toMatchObject({ success: false })
+  })
+})
+
+/**
+ * Android delivers the callback URL to more than one place — a sign-in started
+ * in Chrome is handed to the installed app too, because the callback is an
+ * in-scope URL. Both fetch it, one redeems the single-use code, and the other
+ * fails. The loser used to tell a signed-in person their sign-in had failed.
+ */
+describe('handleAuthCallback — a duplicate delivery of a callback that worked', () => {
+  function duplicate(): Request {
+    // No state cookie: the delivery that won the race expired it. The session
+    // cookie it set is on the request, which is the proof that nothing failed.
+    return new Request('https://www.socialdownloader.space/api/auth/callback?code=x&state=y', {
+      headers: { Cookie: 'smd_session=raw-session-value', 'Sec-Fetch-Mode': 'navigate' },
+    })
+  }
+
+  it('sends them where the sign-in was headed, with no failure notice', async () => {
+    const { env } = fakeDb(userRow())
+
+    const response = await handleAuthCallback(duplicate(), undefined, env)
+
+    expect(response.status).toBe(302)
+    expect(response.headers.get('Location')).toBe('https://www.socialdownloader.space/')
+    expect(response.headers.get('Location')).not.toContain('signin=')
+  })
+
+  it('still expires the one-shot OAuth cookies', async () => {
+    const { env } = fakeDb(userRow())
+
+    const response = await handleAuthCallback(duplicate(), undefined, env)
+
+    const cookies = response.headers.getSetCookie()
+    expect(cookies).toHaveLength(2)
+    for (const cookie of cookies) expect(cookie).toContain('Max-Age=0')
+  })
+
+  it('still reports a real failure when there is no session to fall back on', async () => {
+    // Same request, but the session lookup finds nothing — so this genuinely
+    // did fail and the visitor needs to be told.
+    const { env } = fakeDb(null)
+
+    const response = await handleAuthCallback(duplicate(), undefined, env)
+
+    expect(response.headers.get('Location')).toBe(
+      'https://www.socialdownloader.space/account?signin=expired',
+    )
   })
 })
 
