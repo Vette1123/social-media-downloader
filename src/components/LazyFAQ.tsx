@@ -2,15 +2,15 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
+import { ChevronDownIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
-import { cn } from '@/lib/utils'
 
 /**
  * FAQ section that stays cheap on first paint.
  *
- * The interactive version (Radix Accordion + lucide-react ChevronDown) only
- * downloads + hydrates after the browser is idle, or the user scrolls toward /
- * interacts with it. Until then we render a NATIVE <details>/<summary> version —
+ * The interactive version (the Radix Accordion) only downloads + hydrates after
+ * the browser is idle, or the user scrolls toward / interacts with it. Until
+ * then we render a NATIVE <details>/<summary> version —
  * zero JavaScript, fully accessible, keyboard-operable, and 100% crawlable.
  *
  * The FAQ text is in the initial server HTML either way (in the <details>
@@ -109,22 +109,14 @@ export function LazyFAQ({
             >
               <summary className='flex flex-1 cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 text-left text-sm md:text-base font-semibold text-white transition-colors hover:text-cyan-200'>
                 {f.q}
-                <svg
+                {/* Same glyph the interactive version uses, so the swap is
+                    invisible — one definition, in icons.tsx. */}
+                <ChevronDownIcon
                   className='h-4 w-4 shrink-0 text-white/60 transition-transform duration-200 group-open:rotate-180'
-                  viewBox='0 0 24 24'
-                  fill='none'
-                  stroke='currentColor'
-                  strokeWidth={2}
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
                   aria-hidden
-                >
-                  <path d='m6 9 6 6 6-6' />
-                </svg>
+                />
               </summary>
-              <div className={cn('px-4 pb-4 pt-0 text-sm leading-relaxed text-white/75')}>
-                {f.a}
-              </div>
+              <div className='px-4 pb-4 pt-0 text-sm leading-relaxed text-white/75'>{f.a}</div>
             </Surface>
           ))}
         </div>

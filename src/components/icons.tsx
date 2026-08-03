@@ -331,6 +331,50 @@ export const VimeoIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
   </svg>
 )
 
+/**
+ * The three former lucide-react icons.
+ *
+ * `lucide-react` was pulled in for exactly these, and one of them — the pin
+ * pair in the account control — lives in the root layout, so its 7 KB gzipped
+ * chunk was on the critical path of every page in the site to draw two glyphs
+ * that only appear on phones, and only once you are signed in. Inline SVG in
+ * the file that already holds every other icon costs bytes we were already
+ * paying for.
+ *
+ * Paths are lucide's own (`pin`, `pin-off`, `chevron-down`), so nothing about
+ * the drawing changed; the stroke defaults below are lucide's too.
+ */
+const strokeIcon = {
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 2,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  viewBox: '0 0 24 24',
+} as const
+
+export const PinIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
+  <svg className={className} {...strokeIcon} {...props}>
+    <path d='M12 17v5' />
+    <path d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z' />
+  </svg>
+)
+
+export const PinOffIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
+  <svg className={className} {...strokeIcon} {...props}>
+    <path d='M12 17v5' />
+    <path d='M15 9.34V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H7.89' />
+    <path d='m2 2 20 20' />
+    <path d='M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h11' />
+  </svg>
+)
+
+export const ChevronDownIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
+  <svg className={className} {...strokeIcon} {...props}>
+    <path d='m6 9 6 6 6-6' />
+  </svg>
+)
+
 // Utility component for the default image placeholder
 export const getImagePlaceholderBase64 = () =>
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2U8L3RleHQ+PC9zdmc+'
