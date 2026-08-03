@@ -73,7 +73,10 @@ export function ConfirmDialog({
       }}
       className='m-auto w-[min(28rem,calc(100vw-2rem))] border-0 bg-transparent p-0 text-white backdrop:bg-black/70 backdrop:backdrop-blur-sm'
     >
-      <Surface radius='3xl' elevation='raised' className='p-6'>
+      {/* A direct child of the <dialog>, which is what `animate-dialog-in`
+          selects on — the panel and the backdrop animate separately because
+          `::backdrop` cannot inherit an animation from its element. */}
+      <Surface radius='3xl' elevation='raised' className='animate-dialog-in p-6'>
         <h2 id='confirm-dialog-title' className='text-lg font-semibold text-white'>
           {title}
         </h2>

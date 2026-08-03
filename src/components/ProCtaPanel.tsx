@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { Surface } from '@/components/Surface'
-import { signInHref, useAccount } from '@/lib/account'
+import { hasAccountHint, signInHref, useAccount } from '@/lib/account'
+import { useHydrated } from '@/lib/clientEnv'
 import {
   isProCheckoutConfigured,
   PRO_CHECKOUT_ANNUAL,
@@ -43,7 +44,12 @@ const CTA_COPY: Record<CtaState, { lede: string }> = {
  */
 export function ProCtaPanel() {
   const { signedIn } = useAccount()
-  const state = ctaState(signedIn)
+  const hydrated = useHydrated()
+  // The hint cookie answers this with no request, so a signed-in visitor is
+  // never shown the sign-in CTA first and then swapped to "Continue to your
+  // account" under their cursor. Gated on `hydrated` because the prerendered
+  // markup cannot know, and that gate settles before the first paint.
+  const state = ctaState(hydrated ? (signedIn ?? hasAccountHint()) : signedIn)
 
   return (
     <Surface elevation='raised' className='flex flex-col items-center gap-3 p-5 text-center sm:p-6'>
