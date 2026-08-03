@@ -167,8 +167,31 @@ export function unlockerUrl(target: string): string | null {
  * a datacenter client, so a walled site may well have served it the same stub.
  * That case is caught below like any other wall.
  */
-function archiveUrl(target: string): string {
-  return `https://web.archive.org/web/2id_/${target}`
+interface RelayAttempt {
+  url: string
+  headers?: Record<string, string>
+}
+
+function archiveUrl(target: string): RelayAttempt {
+  return { url: `https://web.archive.org/web/2id_/${target}` }
+}
+
+/**
+ * A reader service that fetches a page and returns it. Measured as the only
+ * relay of the three that answers us at all *and* is answered by a host that
+ * walls us — the free CORS proxy below refuses our requests outright, and the
+ * archive holds nothing for a robots-excluded domain.
+ *
+ * The header is load-bearing: by default it returns the page converted to
+ * markdown, which throws away exactly what is being looked for here (the same
+ * embed came back as 361 bytes of prose instead of 8 KB of markup). Asking for
+ * HTML keeps the document intact.
+ */
+function readerUrl(target: string): RelayAttempt {
+  return {
+    url: `https://r.jina.ai/${target}`,
+    headers: { 'X-Return-Format': 'html' },
+  }
 }
 
 /**
@@ -182,8 +205,8 @@ function archiveUrl(target: string): string {
  * is one of several ordered attempts and because nothing routes here until a
  * wall has already been detected.
  */
-function corsProxyUrl(target: string): string {
-  return `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
+function corsProxyUrl(target: string): RelayAttempt {
+  return { url: `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}` }
 }
 
 /**
@@ -195,20 +218,22 @@ function corsProxyUrl(target: string): string {
  * rather than as a new error of its own.
  */
 export async function fetchThroughRelay(target: string): Promise<string | null> {
-  const endpoints = [archiveUrl(target), corsProxyUrl(target), unlockerUrl(target)]
-  for (const endpoint of endpoints) {
-    if (!endpoint) continue
-    const html = await relay(endpoint)
+  const configured = unlockerUrl(target)
+  const attempts = [readerUrl(target), archiveUrl(target), corsProxyUrl(target)]
+  if (configured) attempts.push({ url: configured })
+
+  for (const attempt of attempts) {
+    const html = await relay(attempt)
     if (html) return html
   }
   return null
 }
 
-async function relay(endpoint: string): Promise<string | null> {
+async function relay({ url, headers }: RelayAttempt): Promise<string | null> {
   try {
     // Longer than the direct fetch: these services load the page themselves,
     // sometimes in a real browser, and 10 seconds is not enough for that.
-    const response = await fetch(endpoint, { signal: AbortSignal.timeout(25_000) })
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(25_000) })
     if (!response.ok) return null
     const html = await readCappedText(response)
     // A wall relayed through anything is still a wall.
