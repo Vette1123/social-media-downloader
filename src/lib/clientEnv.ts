@@ -18,7 +18,7 @@
  * are compared by reference, so a fresh object each call re-renders forever.
  */
 
-import { useSyncExternalStore } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 
 /**
  * These values are fixed for the life of the page, so there is nothing to
@@ -128,4 +128,41 @@ function detectInstallOfferable(): boolean {
 
 export function useInstallOfferable(): boolean {
   return useSyncExternalStore(neverChanges, detectInstallOfferable, serverFalse)
+}
+
+/**
+ * Run `fn` every time this page becomes visible again.
+ *
+ * Sign-in state can change in a context this document never hears from. The
+ * OAuth round trip leaves the origin entirely, and on Android it can come back
+ * into the installed app rather than into the tab that started it — the app and
+ * the tab share one cookie jar and one localStorage, so the session is real
+ * either way, but only the document that received the callback knows it yet.
+ * Re-reading on the way back is what stops the other one showing "Sign in" to
+ * somebody who is already signed in (and vice versa, after a sign-out
+ * elsewhere).
+ *
+ * `pageshow` is here for the bfcache: coming back with the Back button restores
+ * a document without ever firing `visibilitychange`.
+ *
+ * The callback is held in a ref so a caller may pass an inline closure without
+ * re-subscribing the listeners on every render.
+ */
+export function useOnPageVisible(fn: () => void): void {
+  const latest = useRef(fn)
+  useEffect(() => {
+    latest.current = fn
+  })
+
+  useEffect(() => {
+    const run = (): void => {
+      if (document.visibilityState === 'visible') latest.current()
+    }
+    document.addEventListener('visibilitychange', run)
+    window.addEventListener('pageshow', run)
+    return () => {
+      document.removeEventListener('visibilitychange', run)
+      window.removeEventListener('pageshow', run)
+    }
+  }, [])
 }

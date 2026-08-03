@@ -43,7 +43,7 @@ import {
   isProCheckoutConfigured,
 } from '@/config/pro'
 import { PAST_DUE_GRACE_MS } from '@/lib/billing/entitlement'
-import { formatDate, nowMs, useHydrated } from '@/lib/clientEnv'
+import { formatDate, nowMs, useHydrated, useOnPageVisible } from '@/lib/clientEnv'
 import { siteConfig } from '@/config/site'
 
 /**
@@ -619,12 +619,21 @@ export function AccountPanel() {
   const checkoutPhase = useCheckoutPolling(pro)
   const notice = useNotice()
 
-  useEffect(() => {
-    // No hint cookie means no session to load, so there is nothing to ask the
-    // Worker and no request that could fail on the way.
+  // No hint cookie means no session to load, so there is nothing to ask the
+  // Worker and no request that could fail on the way.
+  const syncAccount = (): void => {
     if (hasAccountHint()) void refreshAccount()
     else markSignedOut()
-  }, [])
+  }
+
+  useEffect(syncAccount, [])
+  // Again whenever this page comes back into view. The session can have been
+  // created or destroyed somewhere this document never heard about: another
+  // tab, or the installed app, which is where Android can land the OAuth
+  // callback even when the sign-in started here. `refreshAccount` is a no-op
+  // while the token in hand is still fresh, so a tab merely being switched
+  // back to costs nothing.
+  useOnPageVisible(syncAccount)
 
   if (signedIn === undefined && failed) return <LoadFailed />
   if (signedIn === undefined) return <Skeleton />

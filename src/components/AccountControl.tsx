@@ -24,8 +24,8 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
-import { Pin, PinOff } from 'lucide-react'
 import { Avatar } from '@/components/Avatar'
+import { PinIcon, PinOffIcon } from '@/components/icons'
 import {
   type CachedProfile,
   cachedProfile,
@@ -33,7 +33,7 @@ import {
   signInHref,
   useAccount,
 } from '@/lib/account'
-import { useHydrated } from '@/lib/clientEnv'
+import { useHydrated, useOnPageVisible } from '@/lib/clientEnv'
 
 /** First name, or the local part of the address. Never the whole email: this
  *  sits over page content at 12px and a long address would push the pill wide
@@ -122,12 +122,19 @@ export function AccountControl() {
   // Read once, synchronously, on the first client render. The store itself is
   // not seeded from this: only the server may decide what an account *is*, and
   // this is a paint hint for the corner of the screen.
-  const [cached] = useState(cachedProfile)
+  const [cached, setCached] = useState(cachedProfile)
   // Safe as a lazy initialiser despite reading localStorage: this runs on the
   // server too (where it catches and returns false), and nothing below renders
   // until `hydrated`, so the value cannot reach the markup React compares.
   const [pinned, setPinned] = useState(readPinned)
   const slot = useRef<HTMLDivElement>(null)
+
+  // Costs no request. Sign-in may have happened in another tab — or, on
+  // Android, in the installed app, which shares this browser's cookie jar and
+  // localStorage — and both of the things this control paints from are written
+  // there. Re-reading them on the way back is the difference between a stale
+  // "Sign in" button and the visitor's own avatar.
+  useOnPageVisible(() => setCached(cachedProfile()))
 
   usePeekOnScroll(slot, !pinned)
 
@@ -168,7 +175,7 @@ export function AccountControl() {
  * saying so.
  */
 function PinToggle({ pinned, onToggle }: { pinned: boolean; onToggle: () => void }) {
-  const Icon = pinned ? Pin : PinOff
+  const Icon = pinned ? PinIcon : PinOffIcon
   return (
     <button
       type='button'
@@ -182,7 +189,7 @@ function PinToggle({ pinned, onToggle }: { pinned: boolean; onToggle: () => void
           : 'border-white/10 bg-black/50 text-white/45'
       }`}
     >
-      <Icon size={14} strokeWidth={2} aria-hidden />
+      <Icon className='h-3.5 w-3.5' aria-hidden />
     </button>
   )
 }
