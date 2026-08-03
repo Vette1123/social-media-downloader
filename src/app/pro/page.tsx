@@ -115,7 +115,8 @@ export default function Pro() {
         <p className='mt-6 text-center text-xs text-white/40'>
           Payments are processed by Lemon Squeezy, who act as merchant of
           record. Billing renews automatically each period; cancel any time
-          from your account. See the{' '}
+          from your account and Pro runs to the end of the period you paid
+          for. Charges are final and no refunds are offered. See the{' '}
           <Link href='/terms' className='text-cyan-300 hover:text-cyan-200'>
             Terms
           </Link>

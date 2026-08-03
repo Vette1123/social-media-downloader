@@ -59,9 +59,10 @@ export default function Terms() {
             </p>
             <p className='mt-2'>
               Cancel any time from your account&rsquo;s billing portal.
-              Cancelling stops future renewals but does not refund the current
-              period — Pro stays active until the end of the period you already
-              paid for, then reverts to free.
+              Cancelling stops the next renewal and nothing else: Pro stays
+              active for the rest of the period you have already paid for, and
+              reverts to free when that period ends. There is no partial
+              period and nothing is cut off early.
             </p>
             <p className='mt-2'>
               If a renewal payment fails, we keep Pro active for 14 days while
@@ -70,11 +71,19 @@ export default function Terms() {
               has not gone through after 14 days, Pro access ends.
             </p>
             <p className='mt-2'>
-              The first charge on a new subscription is refundable within 14
-              days of purchase, through Lemon Squeezy. Later renewal charges
-              are not refunded for time already elapsed in the period, since
-              cancelling stops the next one — email us if a renewal charge was
-              a mistake and we will look at it.
+              Charges are final. We do not offer refunds, whole or partial, on
+              any billing period, including one you cancel part-way through.
+              Cancelling is what stops you being charged again, and you keep
+              Pro for the remainder of the period you paid for. Everything Pro
+              adds is described on the Pro page, and everything the site does
+              for free stays free, so you can judge it before paying anything.
+            </p>
+            <p className='mt-2'>
+              If you were charged after cancelling, or charged twice, that is a
+              billing error rather than a refund request: email us and we will
+              correct it. Nothing here affects the statutory rights you have
+              where you live, or the policies of Lemon Squeezy, who are the
+              merchant of record on every transaction.
             </p>
           </section>
 

@@ -262,6 +262,11 @@ function PlanAction({
   }
 }
 
+/** The two buckets with a live, renewing subscription behind them. */
+function isRenewing(bucket: PlanBucket): boolean {
+  return bucket === 'active-monthly' || bucket === 'active-annual'
+}
+
 function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | null }) {
   const bucket = classifyPlan(plan)
   const copy = planCopy(bucket, plan)
@@ -274,6 +279,16 @@ function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | n
       <div className='mt-4'>
         <PlanAction bucket={bucket} plan={plan} buyer={buyer} />
       </div>
+      {/* Said here rather than only in the Terms, because this is the screen
+          someone is on when they decide to cancel, and the two things they
+          want to know at that moment are whether access stops immediately
+          (it does not) and whether money comes back (it does not). */}
+      {isRenewing(bucket) && (
+        <p className='mt-3 text-xs text-white/40'>
+          Cancelling stops the next charge. Pro runs to the end of the period
+          you have paid for, and charges are final.
+        </p>
+      )}
     </Surface>
   )
 }
