@@ -488,6 +488,34 @@ it would be more damaging here than anywhere else on the site.
 control on the page. Deleting the account is available and cascades sessions; it
 does not cancel a live subscription, so it warns and links to the portal first.
 
+#### `handle_links` must stay `not-preferred`
+
+The manifest used to declare `"handle_links": "preferred"`, which asks the
+platform to route every in-scope URL into the installed app rather than the
+browser. The OAuth callback is an in-scope URL, and it arrives as a top-level
+navigation from `accounts.google.com` — so on Android the return leg of a
+sign-in started in Chrome was captured by the installed PWA. The user landed
+signed in inside the app, and the Chrome tab was left spinning on Google's
+domain forever, because the navigation it was waiting on had been handed to
+another process.
+
+Nothing this site needs depends on link capturing: the app is launched from its
+home-screen icon and, far more often, through `share_target` — which is a
+separate intent filter and is unaffected. Signing in *from inside* the PWA is
+also unaffected: that flow leaves and re-enters scope within the app's own
+browsing context, which is scope handling rather than link capturing. The only
+thing given up is that a link to the site tapped in another app now opens the
+browser instead of the app.
+
+Note that this is baked into the Android WebAPK at install time, so an existing
+install keeps the old behaviour until Chrome next updates it (roughly a day).
+`useOnPageVisible` is the belt-and-braces for that window, and for a sign-in
+that genuinely happened in another tab: both `AccountControl` and
+`AccountPanel` re-read the session when their page becomes visible again, so
+whichever document was left behind stops showing "Sign in" to somebody who is
+already signed in. The control's re-read costs no request at all — the hint
+cookie and the profile cache are both shared with the app.
+
 ## Failure handling
 
 - **Refresh fails on a network error** → keep the existing token and degrade to
