@@ -21,6 +21,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ChevronDownIcon } from '@/components/icons'
 import {
   type PlanState,
+  cachedProfile,
   hasAccountHint,
   markSignedOut,
   refreshAccount,
@@ -476,7 +477,7 @@ function AccountSection({
         open={confirming === 'signout-all'}
         tone='neutral'
         title='Sign out everywhere?'
-        body='Every device currently signed in to this account will be signed out, including this one. Nothing else changes — you can sign back in with Google at any time.'
+        body='Every device currently signed in to this account will be signed out, including this one. Nothing else changes, and you can sign back in with Google at any time.'
         confirmLabel='Sign out everywhere'
         onCancel={() => setConfirming(null)}
         onConfirm={() => {
@@ -489,7 +490,7 @@ function AccountSection({
         title='Delete your account?'
         body={
           hasSubscription
-            ? 'This does not cancel your subscription — it will keep renewing after the account is gone. Cancel it in the billing portal first. Your email address, preferences and sessions are removed, and this cannot be undone.'
+            ? 'This does not cancel your subscription. It will keep renewing after the account is gone, so cancel it in the billing portal first. Your email address, preferences and sessions are removed, and this cannot be undone.'
             : 'Your email address, preferences and every signed-in session are removed. This cannot be undone.'
         }
         confirmLabel='Delete my account'
@@ -507,6 +508,29 @@ function Skeleton() {
       <Surface radius='3xl' className='h-28 p-5 sm:p-6' />
       <Surface radius='3xl' className='h-40 p-5 sm:p-6' />
     </div>
+  )
+}
+
+/**
+ * Stands in for the plan card alone, at the size the card resolves to.
+ *
+ * Only reached by someone the profile cache remembers as paying: their plan is
+ * the one thing on this page the browser cannot answer on its own, and
+ * guessing "free" at somebody who is paying is worse than a moment of loading.
+ * Everyone else gets the real card immediately.
+ *
+ * ponytail: sized to the free/cancelled card, so a Pro card that lands with a
+ * renewal note is ~20px taller and settles by that much. Measure and pin the
+ * taller height if it ever reads as a jump.
+ */
+function PlanPlaceholder() {
+  return (
+    <Surface
+      glow
+      radius='3xl'
+      aria-hidden
+      className='animate-pulse h-[152px] p-5 shadow-2xl sm:h-40 sm:p-6'
+    />
   )
 }
 
@@ -654,8 +678,13 @@ function Notice({ children }: { children: string }) {
 
 export function AccountPanel() {
   const { signedIn, failed, userId, pro, email, name, picture, plan } = useAccount()
+  const hydrated = useHydrated()
   const checkoutPhase = useCheckoutPolling(pro)
   const notice = useNotice()
+  // Read once. Safe as a lazy initialiser despite touching localStorage: it
+  // catches and returns null on the server, and nothing renders from it until
+  // `hydrated`, so it can never reach the markup React compares.
+  const [cached] = useState(cachedProfile)
 
   // No hint cookie means no session to load, so there is nothing to ask the
   // Worker and no request that could fail on the way.
@@ -674,11 +703,32 @@ export function AccountPanel() {
   useOnPageVisible(syncAccount)
 
   if (signedIn === undefined && failed) return <LoadFailed />
-  if (signedIn === undefined) return <Skeleton />
+
+  // Until hydration finishes, the markup has to be what was prerendered.
+  // `useHydrated` settles in the re-render React does immediately after
+  // hydrating, before the browser paints, so nothing below is ever seen
+  // shifting into place.
+  if (!hydrated && signedIn === undefined) return <Skeleton />
+
+  /**
+   * What the browser already knows, for free.
+   *
+   * The hint cookie is the client's own answer to "is there a session?", and
+   * the profile cache is its answer to "whose?" — both written at sign-in,
+   * both readable with no request. The page used to ignore all of it and show
+   * three pulsing blocks until a round trip came back, then swap in three
+   * cards of entirely different heights. That reflow was the single largest
+   * layout shift on the site, and it fired on every visit to this page.
+   *
+   * Now only the genuinely unknown part waits. A signed-out visitor is
+   * answered on the first frame; a signed-in one gets their preferences and
+   * account card immediately, because both render from local state alone.
+   */
+  const settled = signedIn ?? hasAccountHint()
 
   // The notice has to survive this branch: a failed sign-in lands here signed
   // out, and the reason it failed is the only thing worth reading on the page.
-  if (signedIn === false) {
+  if (!settled) {
     return (
       <div className='space-y-6'>
         {notice && <Notice>{notice}</Notice>}
@@ -697,10 +747,23 @@ export function AccountPanel() {
         </Notice>
       )}
       {notice && <Notice>{notice}</Notice>}
-      <PlanSection plan={plan} buyer={buyerOf(userId, email)} />
+      {/* The plan is the one card the browser cannot answer on its own. It
+          waits only for someone the cache remembers as paying; for everyone
+          else `plan: null` IS their plan, so the real card renders at once. */}
+      {signedIn === undefined && cached?.pro ? (
+        <PlanPlaceholder />
+      ) : (
+        <PlanSection plan={plan} buyer={buyerOf(userId, email)} />
+      )}
       <PreferencesSection />
       <AccountSection
-        identity={{ name, email, picture }}
+        identity={{
+          // The cache covers all three while the refresh is in flight, so the
+          // avatar and name paint on the first frame rather than fading in.
+          name: name ?? cached?.name ?? null,
+          email: email ?? cached?.email ?? null,
+          picture: picture ?? cached?.picture ?? null,
+        }}
         hasSubscription={plan?.status !== null && plan?.status !== undefined}
       />
     </div>
