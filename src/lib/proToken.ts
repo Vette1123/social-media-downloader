@@ -38,13 +38,22 @@ export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000
 
 const encoder = new TextEncoder()
 
-function base64UrlEncode(bytes: Uint8Array): string {
+// Exported because auth/google.ts needs the same two: base64url is what both a
+// PKCE challenge and a JWT segment are written in. This module already owns the
+// codebase's other shared crypto primitive (`sha256Hex`, used by auth/session),
+// so it is where they belong rather than in a third file.
+export function base64UrlEncode(bytes: Uint8Array): string {
   let binary = ''
   for (const byte of bytes) binary += String.fromCharCode(byte)
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-function base64UrlDecode(value: string): Uint8Array<ArrayBuffer> {
+/**
+ * Padding is optional on the way in: `atob` implements WHATWG forgiving-base64,
+ * which restores it. Both callers produce unpadded base64url — this module's own
+ * tokens, and Google's ID tokens.
+ */
+export function base64UrlDecode(value: string): Uint8Array<ArrayBuffer> {
   const padded = value.replace(/-/g, '+').replace(/_/g, '/')
   const binary = atob(padded)
   const bytes = new Uint8Array(binary.length)
