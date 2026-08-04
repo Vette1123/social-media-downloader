@@ -353,6 +353,19 @@ function PreferencesSection() {
 const DELETE_FAILED = 'Could not delete the account. Try again.'
 
 /**
+ * A full page load of the home page, deliberately not `useRouter().push()`.
+ *
+ * Both callers have just destroyed the session, and a client-side transition
+ * would carry the old React tree — cached account state and all — into the
+ * signed-out page. The Next lint rule that flags relative `location.href`
+ * assumes a soft transition is always preferable; here the reload is the point.
+ */
+function hardNavigateHome(): void {
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional, see above
+  window.location.href = '/'
+}
+
+/**
  * The delete endpoint refuses (409) while a subscription is still entitling,
  * because deleting the row would leave Lemon Squeezy billing an account that no
  * longer exists. That refusal explains what to do, so it is shown as-is rather
@@ -385,12 +398,11 @@ function AccountSection({
   /**
    * Signing out on the account page leaves you looking at an account page you
    * no longer have an account for. Send people home instead — the same landing
-   * deleting an account already used. A hard navigation, not a router push, so
-   * nothing client-side survives the sign-out.
+   * deleting an account already used.
    */
   async function signOutAndGoHome(all = false): Promise<void> {
     await signOut(all)
-    window.location.href = '/'
+    hardNavigateHome()
   }
 
   async function handleDelete(): Promise<void> {
@@ -409,7 +421,7 @@ function AccountSection({
         return
       }
       await signOut()
-      window.location.href = '/'
+      hardNavigateHome()
     } catch {
       setDeleteError(DELETE_FAILED)
       setDeleting(false)
