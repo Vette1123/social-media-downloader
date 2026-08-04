@@ -2,9 +2,9 @@
  * The auth surface: five handlers, all shaped like every other route in
  * API_ROUTES so the Worker can dispatch them without initialising Next.
  *
- * `arctic` and the reconcile path are dynamically imported inside the handlers
- * that need them. An isolate that only ever serves downloads must never load
- * either — see src/lib/auth/google.ts for why.
+ * The reconcile path is dynamically imported inside the handler that needs it.
+ * An isolate that only ever serves downloads must never evaluate it — see
+ * src/lib/auth/google.ts for the CPU budget this is all in service of.
  */
 
 import type { D1Database } from '@cloudflare/workers-types'
@@ -15,8 +15,11 @@ import { isProAt } from '../billing/entitlement'
 import {
   OAUTH_STATE_COOKIE,
   OAUTH_VERIFIER_COOKIE,
-  googleClient,
+  createAuthorizationUrl,
+  decodeIdToken,
+  exchangeAuthorizationCode,
   oauthTempCookie,
+  randomToken,
   safeRedirect,
 } from './google'
 import {
@@ -137,26 +140,15 @@ export async function handleAuthStart(request: Request): Promise<Response> {
     )
   }
 
-  const arctic = await import('arctic')
-  const state = arctic.generateState()
-  const verifier = arctic.generateCodeVerifier()
-  const google = await googleClient(url.origin)
-
-  // `profile` rides along with openid + email so the account control can show
-  // the visitor's own Google avatar and name instead of a generic pill. Both
-  // are cosmetic: nothing about entitlement or billing reads them, and a row
-  // without them renders a monogram.
-  const authorizationUrl = google.createAuthorizationURL(state, verifier, [
-    'openid',
-    'email',
-    'profile',
-  ])
+  const state = randomToken()
+  const verifier = randomToken()
+  const authorizationUrl = await createAuthorizationUrl(url.origin, state, verifier)
 
   // The post-login destination rides in the state cookie's sibling rather than
   // through Google, so it cannot be tampered with in transit.
   const target = safeRedirect(url.searchParams.get('redirect_to'), url.origin)
 
-  return redirect(authorizationUrl.toString(), [
+  return redirect(authorizationUrl, [
     oauthTempCookie(OAUTH_STATE_COOKIE, packAuthState(state, target)),
     oauthTempCookie(OAUTH_VERIFIER_COOKIE, verifier),
   ])
@@ -236,17 +228,10 @@ export async function handleAuthCallback(
     return authFailure(request, 'expired', 'Sign-in could not be completed. Please try again.')
   }
 
-  const google = await googleClient(url.origin)
-  const arctic = await import('arctic')
-
   let claims: IdTokenClaims
   try {
-    const tokens = await google.validateAuthorizationCode(code, verifier)
-    // Decoded, not signature-verified, and that is correct here: the token
-    // arrived over TLS as the direct response to a server-side request
-    // authenticated with our client secret. There is no untrusted path it could
-    // have travelled.
-    claims = arctic.decodeIdToken(tokens.idToken()) as IdTokenClaims
+    const idToken = await exchangeAuthorizationCode(url.origin, code, verifier)
+    claims = decodeIdToken(idToken) as IdTokenClaims
   } catch {
     // `invalid_grant`, most often — the code was already redeemed by another
     // delivery of this same callback, in which case the session it created is
