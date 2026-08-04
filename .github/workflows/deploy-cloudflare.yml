@@ -60,19 +60,16 @@ jobs:
       - name: Build static site
         run: pnpm cf:build
 
-      # Fails the run before deploying if the bundle has outgrown the free
-      # plan's 3 MiB gzipped limit. wrangler would reject it at upload anyway,
-      # but catching it here also covers pull requests, where nothing deploys.
-      - name: Check bundle size against free-plan limit
+      # Fails the run before deploying on either budget the Worker has to stay
+      # inside: the free plan's 3 MiB gzipped upload limit, and the bundle size
+      # that decides how much CPU a new isolate spends compiling before it can
+      # answer anything. See scripts/worker-startup.mjs for why the second one
+      # is the tighter constraint in practice. Runs on pull requests too, where
+      # nothing deploys.
+      - name: Check bundle size and isolate startup cost
         run: |
           pnpm exec wrangler deploy --dry-run --outdir .worker-size-check
-          gzipped=$(cat .worker-size-check/*.js | gzip -9 | wc -c)
-          limit=$((3 * 1024 * 1024))
-          printf 'Worker bundle: %s bytes gzipped (limit %s)\n' "$gzipped" "$limit"
-          if [ "$gzipped" -gt "$limit" ]; then
-            echo "::error::Worker bundle exceeds the 3 MiB gzipped free-plan limit."
-            exit 1
-          fi
+          pnpm cf:startup .worker-size-check
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
