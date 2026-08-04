@@ -136,15 +136,25 @@ directly:
 | Language         | TypeScript 6                        |
 | Styling          | Tailwind CSS 4                      |
 | Animation        | Motion (formerly framer-motion) 12  |
-| Icons            | lucide-react                        |
-| HTTP             | Axios                               |
-| HTML scraping    | Cheerio                             |
-| ZIP bundling     | JSZip                               |
-| Slideshow video  | fluent-ffmpeg + @ffmpeg-installer   |
-| YouTube fallback | youtube-dl-exec                     |
-| Dynamic OG       | @vercel/og (edge runtime)           |
-| Analytics        | Vercel Analytics                    |
+| UI primitives    | Radix Accordion, `clsx`             |
+| Icons            | Hand-rolled SVG (`src/components/icons.tsx`) |
+| Hosting          | Cloudflare Workers — static export + a hand-written Worker for `/api/*` |
+| Accounts         | Google OAuth (PKCE, no SDK) + Cloudflare D1 |
+| Billing          | Lemon Squeezy subscriptions + webhooks |
+| HTTP             | Native `fetch` (`src/lib/httpClient.ts`) |
+| HTML scraping    | Regex extractors (`src/lib/htmlExtract.ts`) |
+| ZIP bundling     | JSZip, lazily imported **in the browser** |
+| Slideshow video  | fluent-ffmpeg + @ffmpeg-installer *(Node hosts only)* |
+| YouTube fallback | youtube-dl-exec *(Node hosts only)* |
+| Dynamic OG       | `next/og`, prerendered to PNG at build time |
 | App shell        | PWA manifest + Share Target + shortcuts |
+
+Four of these are *deliberate removals* rather than choices never made: **Axios**
+(~half the CPU of `/api/download` — see `src/lib/httpClient.ts`), **Cheerio**
+(too slow for the Worker CPU budget), **lucide-react** (three icons, hand-copied
+paths), and **arctic** (41% of the Worker bundle to reach one OAuth provider).
+Nothing in the deployed Worker comes from `node_modules` any more. Adding a
+dependency that the Worker imports is a CPU decision — run `pnpm cf:startup`.
 
 ## Getting started
 
