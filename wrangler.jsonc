@@ -25,6 +25,18 @@
   // here needs them: previews happen locally via `pnpm preview`.
   "preview_urls": false,
 
+  // esbuild's --keep-names emits a `__name(fn, "fn")` call per function, all of
+  // which run at module scope — 186 of them here, measured at 0.4 ms of the
+  // ~1 ms this Worker spends evaluating its global scope on every new isolate,
+  // plus 8 KiB of bundle.
+  //
+  // It buys nothing in this build. The shim exists so that names survive
+  // minification, and nothing minifies this bundle: all 171 function
+  // declarations are still `function handleDownload(...)` in the emitted
+  // worker.js, so stack traces in `wrangler tail` read exactly the same with it
+  // off. Turn it back on if minify is ever enabled.
+  "keep_names": false,
+
   "assets": {
     // `next build` with `output: 'export'` writes the whole site here: 12
     // pages, the 404 page, 28 generated PNGs (OpenGraph, Twitter, app icons),
