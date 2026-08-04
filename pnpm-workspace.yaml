@@ -36,3 +36,22 @@ onlyBuiltDependencies:
   - '@ffmpeg-installer/win32-x64'
   - '@ffmpeg-installer/darwin-x64'
   - '@ffmpeg-installer/darwin-arm64'
+# pnpm 11 refuses to install a package published within its minimum release age
+# (a supply-chain guard against a freshly compromised release). Next 16.3.0 and
+# its platform-specific SWC binaries were newer than that window when they were
+# added, so each one has to be named here or the install fails — including CI,
+# where `--frozen-lockfile` resolves the same set. pnpm writes these entries
+# itself; they can be pruned whenever the versions age past the window.
+minimumReleaseAgeExclude:
+  - '@next/env@16.3.0'
+  - '@next/swc-darwin-arm64@16.3.0'
+  - '@next/swc-darwin-x64@16.3.0'
+  - '@next/swc-linux-arm64-gnu@16.3.0'
+  - '@next/swc-linux-arm64-musl@16.3.0'
+  - '@next/swc-linux-x64-gnu@16.3.0'
+  - '@next/swc-linux-x64-musl@16.3.0'
+  - '@next/swc-win32-arm64-msvc@16.3.0'
+  - '@next/swc-win32-x64-msvc@16.3.0'
+  - next@16.3.0
+  - '@next/eslint-plugin-next@16.3.0'
+  - eslint-config-next@16.3.0
