@@ -1,10 +1,16 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Social Media Downloader">
   <!--
-    Inverted on purpose. The previous mark was a near-black tile carrying a
-    2.6px cyan stroke: on a dark browser theme that is a dark square on a dark
-    bar, and by 16px the strokes had thinned to nothing. A favicon has one job
-    at one size, so the tile now carries the colour and the glyph is knocked
-    out of it in solid ink. Saturated shape first, detail never.
+    Inverted on purpose. The tile carries the colour and the glyph is knocked
+    out of it in solid ink, so the mark survives at 16px on a dark browser
+    theme. Saturated shape first, detail never.
+
+    The glyph is a play triangle rotated to point down, over a tray: one mark
+    that says "video" and "save" at the same time, in two heavy masses. It
+    replaces a stem + arrowhead + tray built from three thin parts, which read
+    as noise below 24px.
+
+    GLYPH_MARK in src/lib/appIcon.tsx is the same art at the same scale. The
+    two are duplicated because the Worker cannot read this file at runtime.
 
     Same teal -> cyan -> sky ramp the app already uses, so the tab matches the
     product instead of introducing a second accent.
@@ -19,10 +25,9 @@
 
   <rect width="32" height="32" rx="7.5" fill="url(#tile)" />
 
-  <!-- Download-into-tray, drawn as solid masses rather than strokes. -->
-  <g fill="#08080a">
-    <rect x="14.1" y="6.6" width="3.8" height="10.4" rx="1.9" />
-    <path d="M16 21.8 9.7 14.4h12.6z" />
-    <rect x="8.3" y="23.2" width="15.4" height="3.2" rx="1.6" />
+  <!-- 0.66 = the glyph scale shared with the PNG icons, centred in the tile. -->
+  <g fill="#08080a" transform="translate(5.44 5.44) scale(0.66)">
+    <path d="M5.65 2.2H26.35Q30 2.2 27.78 5.09L17.74 18.13Q16 20.4 14.26 18.13L4.22 5.09Q2 2.2 5.65 2.2Z" />
+    <rect x="6" y="24.8" width="20" height="5" rx="2.5" />
   </g>
 </svg>

@@ -25,25 +25,30 @@ export const appIconContentType = 'image/png'
  * same `?v=` on each icon src and has to move with it. src/lib/appIcon.test.ts
  * fails when the two drift.
  */
-export const ICON_VERSION = '2'
+export const ICON_VERSION = '3'
 
 /** Appends the cache-busting version to an icon path. */
 export function versionedIcon(path: string): string {
   return `${path}?v=${ICON_VERSION}`
 }
 
-// The download-into-tray glyph, knocked out in ink, as a data URI so Satori can
-// rasterise it on top of the gradient. Solid masses rather than strokes: a
-// stroke tuned to read at 512 disappears at 32, and this same art backs the
-// favicon.
+// The glyph, knocked out in ink, as a data URI so Satori can rasterise it on
+// top of the gradient. A play triangle rotated to point down, over a tray: one
+// mark that says "video" and "save" at once, in two heavy masses. Solid masses
+// rather than strokes, because a stroke tuned to read at 512 disappears at 32.
+//
+// Byte-for-byte the same art as public/favicon.svg, which the Worker cannot
+// read at runtime. The viewBox is cropped square to the art, so `glyphRatio`
+// below is the mark's true share of the tile — the previous art sat in a padded
+// box and so rendered at 0.62 x 0.48 = 30% of the icon, a third of the size the
+// favicon drew from the same "one definition".
 const GLYPH_SVG =
   'data:image/svg+xml,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 32 32" fill="none">' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="2 2 28 28" fill="none">' +
       '<g fill="#08080a">' +
-      '<rect x="14.1" y="6.6" width="3.8" height="10.4" rx="1.9"/>' +
-      '<path d="M16 21.8 9.7 14.4h12.6z"/>' +
-      '<rect x="8.3" y="23.2" width="15.4" height="3.2" rx="1.6"/>' +
+      '<path d="M5.65 2.2H26.35Q30 2.2 27.78 5.09L17.74 18.13Q16 20.4 14.26 18.13L4.22 5.09Q2 2.2 5.65 2.2Z"/>' +
+      '<rect x="6" y="24.8" width="20" height="5" rx="2.5"/>' +
       '</g></svg>',
   )
 
@@ -79,12 +84,22 @@ function tile(size: number, radius: number, glyphRatio: number): React.ReactElem
   )
 }
 
+/** The mark's share of the tile. Mirrored by the `scale()` in favicon.svg. */
+const GLYPH_RATIO = 0.66
+
+/** Same mark, shrunk to clear the ~80% safe zone of a maskable tile. */
+const MASKABLE_GLYPH_RATIO = 0.56
+
 export function renderAppIcon(size: number, maskable = false) {
   // A maskable icon is full-bleed and square: Android crops it to whatever
   // shape the launcher uses, so the tile must not round its own corners, and
   // the glyph shrinks to stay inside the ~80% safe zone.
   return new ImageResponse(
-    tile(size, maskable ? 0 : Math.round(size * 0.22), maskable ? 0.52 : 0.62),
+    tile(
+      size,
+      maskable ? 0 : Math.round(size * 0.22),
+      maskable ? MASKABLE_GLYPH_RATIO : GLYPH_RATIO,
+    ),
     appIconSize(size),
   )
 }
@@ -121,7 +136,7 @@ export function renderSplash(width: number, height: number) {
           backgroundColor: SPLASH_BACKGROUND,
         }}
       >
-        {tile(mark, Math.round(mark * 0.22), 0.62)}
+        {tile(mark, Math.round(mark * 0.22), GLYPH_RATIO)}
       </div>
     ),
     { width, height },
