@@ -196,8 +196,8 @@ offered.
 ### Accounts and Pro subscriptions
 
 Pro is a $3/month or $24/year subscription, sold through Creem as merchant of
-record. There are no license keys: signing in is with a Google account,
-entitlement is a signed, short-lived access token, and preferences (HD/SD,
+record. Signing in is with a Google account, entitlement is a signed,
+short-lived access token, and preferences (HD/SD,
 video/audio) sync across devices for anyone signed in — free or Pro. Signing in
 never changes what is free; it only unlocks Pro once someone subscribes.
 

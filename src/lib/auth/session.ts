@@ -22,8 +22,9 @@ export { SESSION_COOKIE, HINT_COOKIE } from './cookies'
 export const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000
 
 /**
- * Five concurrent sessions per account, the successor to the license key's five
- * activation slots: a sixth sign-in evicts the oldest.
+ * Five concurrent sessions per account: a sixth sign-in evicts the oldest.
+ * Five covers a phone, a tablet and a couple of browsers, which is the honest
+ * ceiling for one person's own devices.
  *
  * It bounds concurrent *logins*, which is not the same as bounding sharing. The
  * 15-minute access token is a bearer credential that no request re-checks

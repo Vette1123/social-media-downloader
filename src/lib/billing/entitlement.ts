@@ -30,13 +30,12 @@ export interface BillingRow {
  * so a status Creem adds later fails closed instead of matching some broader
  * condition by accident.
  *
- * Note `scheduled_cancel` versus `canceled`, which is the one place Creem's
- * vocabulary is sharper than the provider this replaced. A single `cancelled`
- * status used to mean "will not renew, still paid up", and the end date was
- * what separated that from a subscription that had actually stopped. Creem
- * says which it is: `scheduled_cancel` is still running to the end of a paid
- * period, `canceled` has already stopped. Treating the two alike in either
- * direction is a bug that bills nobody but silently keeps or revokes Pro.
+ * Note `scheduled_cancel` versus `canceled`. They are two different states, not
+ * two names for one: `scheduled_cancel` is a subscription that will not renew
+ * but is still running to the end of a period the customer paid for, while
+ * `canceled` has already stopped. Treating them alike in either direction bills
+ * nobody and silently keeps or revokes Pro, so each is matched explicitly and
+ * only the first consults `ls_ends_at`.
  */
 export function isProAt(row: BillingRow | null, now: number): boolean {
   if (!row?.ls_status) return false

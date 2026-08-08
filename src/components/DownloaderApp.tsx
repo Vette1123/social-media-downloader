@@ -485,7 +485,7 @@ export function DownloaderApp() {
   const isIOS = useIsIOSLike()
   const didInit = useRef(false)
   // Pro token, sent as X-Pro-Token so the server tries the operator's own
-  // resolvers first for a licensed request — see lib/entitlements.
+  // resolvers first for a subscriber's request — see lib/entitlements.
   const proToken = useProToken()
 
   // Thin aliases: the store already persists and notifies, so these exist only

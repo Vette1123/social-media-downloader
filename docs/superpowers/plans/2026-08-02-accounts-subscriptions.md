@@ -1,5 +1,12 @@
 # Accounts and Subscriptions Implementation Plan
 
+> **Implemented, but the billing provider changed on 2026-08-08.** Lemon Squeezy
+> rejected the application, so the merchant of record is Creem. Every
+> `LEMONSQUEEZY_*` env var, `api.lemonsqueezy.com` URL, `X-Signature` header and
+> `cancelled` status in the code blocks below is stale — see the design doc's
+> banner for the four substantive differences. Read `src/lib/billing/` for what
+> actually runs. The accounts, session and reconcile work shipped as written.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the $9 one-time Lemon Squeezy license key with a $3/month or $24/year subscription behind a Google account, with D1-backed revocable sessions, without adding any work to the download path.

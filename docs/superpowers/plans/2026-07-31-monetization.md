@@ -1,5 +1,13 @@
 # Monetization Implementation Plan
 
+> **Superseded — historical record, do not implement from it.** The Pro layer
+> here (a $9 one-time Lemon Squeezy licence key in `localStorage`, `/api/license`,
+> activation slots) was replaced by a subscription behind a Google account, and
+> Lemon Squeezy later rejected the application, so the merchant of record is
+> Creem. The affiliate/offers and donation parts of this plan did ship and are
+> still accurate. The shipped billing contract is the README's "Accounts and Pro
+> subscriptions" section plus `src/lib/billing/`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add affiliate offers, a one-time Pro license (batch downloads, no sponsor card, priority resolve), donations, and a flag-gated display-ad slot to an existing free downloader, without breaking any UX promise it currently makes.
