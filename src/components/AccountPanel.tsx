@@ -100,7 +100,7 @@ type PlanBucket = 'free' | 'active-monthly' | 'active-annual' | 'cancelled' | 'p
  * and `ended` once it is not — `paidThrough` is imported rather than rewritten
  * so this screen cannot start disagreeing with entitlement about the same date.
  */
-function classifyPlan(plan: PlanState | null, now: number): PlanBucket {
+export function classifyPlan(plan: PlanState | null, now: number): PlanBucket {
   switch (plan?.status ?? null) {
     case null:
       return 'free'
@@ -129,7 +129,7 @@ interface PlanCopy {
   note?: ReactNode
 }
 
-function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
+export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
   switch (bucket) {
     case 'free':
       return { lede: "You're on the free plan." }
