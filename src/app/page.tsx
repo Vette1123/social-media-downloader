@@ -3,6 +3,7 @@ import { DownloaderApp } from '@/components/DownloaderApp'
 import { Surface } from '@/components/Surface'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { LazyFAQ } from '@/components/LazyFAQ'
+import { ProHeroLine } from '@/components/ProNudge'
 import { ProUpsell } from '@/components/ProUpsell'
 import { PromoSlot } from '@/components/PromoSlot'
 import {
@@ -247,11 +248,14 @@ export default function Home() {
                 Download any video,{' '}
                 <span className='text-grad'>watermark-free</span>
               </h1>
-              <p className='mx-auto mb-7 max-w-xl text-sm text-white/70 md:text-base'>
+              <p className='mx-auto mb-3 max-w-xl text-sm text-white/70 md:text-base'>
                 Save videos without watermarks, extract MP3 audio, or grab full
                 image galleries from TikTok, X, Instagram, Facebook, YouTube,
                 Pinterest, Reddit, Threads, Snapchat, Twitch &amp; Vimeo.
               </p>
+              {/* The first mention of Pro anywhere above the fold. Self-hides
+                  for a subscriber. */}
+              <ProHeroLine />
             </div>
 
             {/* Interactive island — paste bar + results */}

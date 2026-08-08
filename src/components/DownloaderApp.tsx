@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import {
   useCallback,
   useEffect,
+  useMemo,
   useReducer,
   useRef,
   useState,
@@ -14,6 +15,7 @@ import {
   appReducer,
   type AppState,
   initialState,
+  isSuccessMessage,
   type VideoMetadata,
 } from '@/lib/appReducer'
 import {
@@ -36,6 +38,9 @@ import { BatchPanel } from '@/components/BatchPanel'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { PastDueBanner } from '@/components/PastDueBanner'
 import { PromoSlot } from '@/components/PromoSlot'
+import { ProNudge } from '@/components/ProNudge'
+import { parseBatchInput } from '@/lib/batchQueue'
+import { recordResolve } from '@/lib/proSignals'
 import { nowMs, useIsIOSLike } from '@/lib/clientEnv'
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { buildDownloadFilename } from '@/lib/filename'
@@ -479,6 +484,10 @@ export function DownloaderApp() {
   } | null>(null)
   // Which rendition the result-card re-pick is currently fetching (null = idle).
   const [repicking, setRepicking] = useState<'hd' | 'sd' | 'audio' | null>(null)
+  // How many links are sitting in the field right now. The same parser the
+  // batch runner uses, so "two links" here means exactly what it will mean when
+  // Download is pressed — and memoised because this runs on every keystroke.
+  const pastedLinks = useMemo(() => parseBatchInput(state.url).length, [state.url])
   // iPhone/iPad Safari: downloads land in Files, not the camera roll, so we show
   // a one-line "save to Photos" hint on video results. Set once on mount.
   // Read straight from the browser rather than via an effect — see lib/clientEnv.
@@ -535,6 +544,10 @@ export function DownloaderApp() {
       thumbnail: snap || meta?.thumbnail || '',
       ts: nowMs(),
     })
+    // The one place a link is known to have resolved, which is why the day's
+    // count is kept here rather than at each of the download buttons. Local
+    // only — it decides whether the header pill has earned a sentence.
+    recordResolve()
   }
 
   // Re-resolve the current result at a different rendition (HD / Data saver /
@@ -1364,6 +1377,28 @@ export function DownloaderApp() {
         </p>
       )}
 
+      {/* The strongest moment to make the case, and it costs nothing to be
+          wrong: someone holding one link never sees it. A pasted list already
+          works on free — it resolves one at a time into Recent and leaves every
+          download to be tapped by hand — so this is describing the tedium the
+          visitor is one click away from, not gating the feature. */}
+      {pastedLinks > 1 && (
+        <ProNudge
+          id='paste-multi'
+          tone='attached'
+          action='Run them as a queue'
+          lede={
+            <>
+              <strong className='font-semibold text-white'>
+                {pastedLinks} links.
+              </strong>{' '}
+              Free saves them to Recent to download one at a time. Pro runs the
+              list as a queue.
+            </>
+          }
+        />
+      )}
+
       <p className='mt-3 text-center text-xs text-white/50'>
         Videos, reels, shorts, MP3 audio &amp; photo carousels — paste several
         links to grab them in one go
@@ -1542,16 +1577,32 @@ export function DownloaderApp() {
             role='status'
             aria-live='polite'
             className={`animate-section-in p-3 rounded-xl text-center text-sm md:text-base ${
-              state.message.includes('success') ||
-              state.message.includes('🎉') ||
-              state.message.includes('🎵') ||
-              state.message.includes('🎬')
+              isSuccessMessage(state.message)
                 ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                 : 'bg-red-500/20 text-red-300 border border-red-500/30'
             }`}
           >
             {state.message}
           </div>
+        )}
+
+        {/* Attached to the success line, and only ever to that one. This is the
+            single point in the flow where the visitor has what they came for
+            and is not waiting on anything — the one moment an ask is not an
+            interruption. It reads as a footnote to the confirmation above it
+            rather than a second banner. */}
+        {isSuccessMessage(state.message) && (
+          <ProNudge
+            id='post-download'
+            tone='attached'
+            action='See what Pro does'
+            lede={
+              <>
+                Doing this a few times a day? Pro queues a whole list, resolves
+                first, and drops the sponsor card.
+              </>
+            }
+          />
         )}
 
         {/* Batch mode: show a compact per-link progress line instead of the

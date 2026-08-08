@@ -375,6 +375,30 @@ export const ChevronDownIcon = ({ className = 'w-4 h-4', ...props }: IconProps) 
   </svg>
 )
 
+/**
+ * Pro's mark. A bolt, because what Pro sells is the same work happening faster
+ * and unattended — a crown or a star would be status, which is not what is
+ * being sold, and a lock would say Pro reaches something free does not, which
+ * is the one claim this product may never make.
+ */
+export const BoltIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
+  <svg className={className} viewBox='0 0 24 24' fill='currentColor' aria-hidden {...props}>
+    <path d='M13.5 2 4 13.2a.9.9 0 0 0 .7 1.5h4.6l-1.3 7.1a.6.6 0 0 0 1.05.5L20 11.1a.9.9 0 0 0-.7-1.5h-4.6l1.3-7.1A.6.6 0 0 0 15 2z' />
+  </svg>
+)
+
+/**
+ * Home, for the one navigation affordance the site has. A house rather than a
+ * back arrow: every page here is reachable directly from search, so "back" is
+ * frequently a different site, and "home" is the only honest label.
+ */
+export const HomeIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
+  <svg className={className} {...strokeIcon} {...props}>
+    <path d='M3 10.5 12 3l9 7.5' />
+    <path d='M5 9.6V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.6' />
+  </svg>
+)
+
 // Utility component for the default image placeholder
 export const getImagePlaceholderBase64 = () =>
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzMzMyIvPjx0ZXh0IHg9IjUwIiB5PSI1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2U8L3RleHQ+PC9zdmc+'

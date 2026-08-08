@@ -145,6 +145,26 @@ export function autoOpensPreview({
   return platform !== undefined && platform !== 'generic'
 }
 
+/**
+ * Whether the status line is reporting a win.
+ *
+ * `message` is a single string carrying both outcomes, so every reader has to
+ * decide which one it is holding. There are two such readers — the banner,
+ * which paints itself green or red, and the post-download Pro nudge, which may
+ * only appear after something actually saved — and a second copy of this list
+ * would drift the moment a new success path is added. One predicate, so a
+ * message that reads as success reads that way everywhere.
+ *
+ * The sign-off emoji is the marker because it is what the success paths
+ * already agreed on, and it is the only part of those strings that is not
+ * prose someone will reword.
+ */
+const SUCCESS_MARKERS = ['success', '🎉', '🎵', '🎬', '🖼️'] as const
+
+export function isSuccessMessage(message: string): boolean {
+  return SUCCESS_MARKERS.some((marker) => message.includes(marker))
+}
+
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SET_URL':
