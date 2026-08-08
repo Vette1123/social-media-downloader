@@ -20,9 +20,9 @@ export const PAST_DUE_GRACE_MS = 14 * 24 * 60 * 60 * 1000
 
 /** The subset of the `users` row that entitlement depends on. */
 export interface BillingRow {
-  ls_status: string | null
-  ls_ends_at: number | null
-  ls_past_due_since: number | null
+  sub_status: string | null
+  sub_ends_at: number | null
+  sub_past_due_since: number | null
 }
 
 /**
@@ -35,12 +35,12 @@ export interface BillingRow {
  * but is still running to the end of a period the customer paid for, while
  * `canceled` has already stopped. Treating them alike in either direction bills
  * nobody and silently keeps or revokes Pro, so each is matched explicitly and
- * only the first consults `ls_ends_at`.
+ * only the first consults `sub_ends_at`.
  */
 export function isProAt(row: BillingRow | null, now: number): boolean {
-  if (!row?.ls_status) return false
+  if (!row?.sub_status) return false
 
-  switch (row.ls_status) {
+  switch (row.sub_status) {
     case 'active':
     case 'trialing':
       return true
@@ -48,14 +48,14 @@ export function isProAt(row: BillingRow | null, now: number): boolean {
     // Cancelled but not yet lapsed: the customer has already paid through the
     // end of the current period and keeps Pro until it runs out.
     case 'scheduled_cancel':
-      return row.ls_ends_at !== null && now < row.ls_ends_at
+      return row.sub_ends_at !== null && now < row.sub_ends_at
 
     // A null start means we never observed the transition, so there is no
     // window to measure. Fail closed rather than grant an unbounded grace.
     case 'past_due':
       return (
-        row.ls_past_due_since !== null &&
-        now < row.ls_past_due_since + PAST_DUE_GRACE_MS
+        row.sub_past_due_since !== null &&
+        now < row.sub_past_due_since + PAST_DUE_GRACE_MS
       )
 
     // `canceled`, `expired`, `unpaid`, `paused` — all stopped, all fail here

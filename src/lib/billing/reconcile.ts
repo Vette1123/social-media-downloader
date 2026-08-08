@@ -41,13 +41,13 @@ export const RECONCILE_COOLDOWN_MS = 60 * 1000
  * this predicate.
  */
 export function needsReconcile(
-  row: { ls_subscription_id: string | null; ls_updated_at: number | null },
+  row: { sub_id: string | null; sub_updated_at: number | null },
   now: number,
   forced: boolean,
 ): boolean {
   if (forced) return true
-  if (!row.ls_subscription_id) return false
-  return (row.ls_updated_at ?? 0) + RECONCILE_STALE_MS <= now
+  if (!row.sub_id) return false
+  return (row.sub_updated_at ?? 0) + RECONCILE_STALE_MS <= now
 }
 
 /** The signed-in user, when the caller has one. Lets the email fallback work. */
@@ -58,10 +58,10 @@ export interface ReconcileOwner {
 
 interface TargetRow {
   id: string
-  ls_customer_id: string | null
-  ls_updated_at: number | null
-  ls_past_due_since: number | null
-  ls_reconciled_at: number | null
+  sub_customer_id: string | null
+  sub_updated_at: number | null
+  sub_past_due_since: number | null
+  sub_reconciled_at: number | null
 }
 
 async function getJson(url: string, apiKey: string): Promise<unknown | null> {
@@ -137,21 +137,21 @@ async function fetchSubscription(
 
 /**
  * Prefer the owner's primary key when the caller knows who is asking — it is
- * the only key that stays correct while `ls_subscription_id` is null or about
- * to change. `ls_subscription_id` is UNIQUE, so the fallback is still one row.
+ * the only key that stays correct while `sub_id` is null or about
+ * to change. `sub_id` is UNIQUE, so the fallback is still one row.
  */
 async function loadTarget(
   db: D1Database,
   subscriptionId: string | null,
   owner: ReconcileOwner | null | undefined,
 ): Promise<TargetRow | null> {
-  const columns = 'id, ls_customer_id, ls_updated_at, ls_past_due_since, ls_reconciled_at'
+  const columns = 'id, sub_customer_id, sub_updated_at, sub_past_due_since, sub_reconciled_at'
   if (owner) {
     return db.prepare(`SELECT ${columns} FROM users WHERE id = ?`).bind(owner.id).first<TargetRow>()
   }
   if (!subscriptionId) return null
   return db
-    .prepare(`SELECT ${columns} FROM users WHERE ls_subscription_id = ?`)
+    .prepare(`SELECT ${columns} FROM users WHERE sub_id = ?`)
     .bind(subscriptionId)
     .first<TargetRow>()
 }
@@ -159,7 +159,7 @@ async function loadTarget(
 /**
  * Ask Creem what the subscription actually is, and write it back.
  *
- * Pass `owner` to enable the repair for a user who has no `ls_subscription_id`
+ * Pass `owner` to enable the repair for a user who has no `sub_id`
  * yet: their subscription is looked up by customer and adopted.
  *
  * Failures are swallowed: this runs inside `waitUntil` with no one to report to,
@@ -177,19 +177,19 @@ export async function reconcileSubscription(
   try {
     const target = await loadTarget(db, subscriptionId, owner)
     if (!target) return
-    if ((target.ls_reconciled_at ?? 0) + RECONCILE_COOLDOWN_MS > now) return
+    if ((target.sub_reconciled_at ?? 0) + RECONCILE_COOLDOWN_MS > now) return
 
     // Stamped before the call, not after, so a hammered `?reconcile=1` spends a
     // cheap D1 write per request instead of a Creem request per request.
     await db
-      .prepare('UPDATE users SET ls_reconciled_at = ? WHERE id = ?')
+      .prepare('UPDATE users SET sub_reconciled_at = ? WHERE id = ?')
       .bind(now, target.id)
       .run()
 
     const subscription = await fetchSubscription(
       apiKey,
       subscriptionId,
-      target.ls_customer_id,
+      target.sub_customer_id,
       owner?.email ?? null,
     )
     if (!subscription) return
@@ -200,29 +200,29 @@ export async function reconcileSubscription(
     const patch = patchFromSubscription(subscription, target, now, now)
     if (!patch) return
 
-    // Writes `ls_subscription_id` and `ls_customer_id` too, since the email
+    // Writes `sub_id` and `sub_customer_id` too, since the email
     // fallback exists to adopt a subscription the row does not have yet. Keyed
     // on the primary key so the adoption and the plain refresh are the same
-    // statement. `ls_customer_id` coalesces rather than overwrites: a search
+    // statement. `sub_customer_id` coalesces rather than overwrites: a search
     // result with `customer` unexpanded would otherwise blank the id that
     // found it.
     await db
       .prepare(
         `UPDATE users SET
-           ls_subscription_id = ?, ls_customer_id = COALESCE(?, ls_customer_id),
-           ls_status = ?, ls_variant = ?, ls_renews_at = ?,
-           ls_ends_at = ?, ls_past_due_since = ?, ls_updated_at = ?
+           sub_id = ?, sub_customer_id = COALESCE(?, sub_customer_id),
+           sub_status = ?, sub_variant = ?, sub_renews_at = ?,
+           sub_ends_at = ?, sub_past_due_since = ?, sub_updated_at = ?
          WHERE id = ?`,
       )
       .bind(
-        patch.ls_subscription_id,
-        patch.ls_customer_id,
-        patch.ls_status,
-        patch.ls_variant,
-        patch.ls_renews_at,
-        patch.ls_ends_at,
-        patch.ls_past_due_since,
-        patch.ls_updated_at,
+        patch.sub_id,
+        patch.sub_customer_id,
+        patch.sub_status,
+        patch.sub_variant,
+        patch.sub_renews_at,
+        patch.sub_ends_at,
+        patch.sub_past_due_since,
+        patch.sub_updated_at,
         target.id,
       )
       .run()

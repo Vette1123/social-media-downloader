@@ -237,7 +237,7 @@ Setting this up for a fork or self-hosted deployment, in order:
    `subscription.expired`, `subscription.paused`. `checkout.completed` may be
    left on but carries no useful state — its `object` is a *checkout*, not a
    subscription, so the handler ignores it rather than writing a checkout id
-   into `ls_subscription_id`.
+   into `sub_id`.
 
    Set the product's success URL to `/account?checkout=success` so a buyer
    lands back on their account page; the page also polls for up to 30 seconds,

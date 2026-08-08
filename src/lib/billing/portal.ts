@@ -81,7 +81,7 @@ export async function handlePortal(
   // Creem generates the portal for a *customer*, so the customer id is what
   // this needs — not the subscription id. Both are written by the same
   // webhook, so a user missing this one has never had a purchase land.
-  if (!user?.ls_customer_id) {
+  if (!user?.sub_customer_id) {
     return portalFailure(request, 'none', 'No subscription', 404)
   }
 
@@ -89,7 +89,7 @@ export async function handlePortal(
     const response = await fetch(`${creemApi(apiKey)}/customers/billing`, {
       method: 'POST',
       headers: { ...creemHeaders(apiKey), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customer_id: user.ls_customer_id }),
+      body: JSON.stringify({ customer_id: user.sub_customer_id }),
       signal: AbortSignal.timeout(10_000),
     })
     if (!response.ok) throw new Error('upstream')
