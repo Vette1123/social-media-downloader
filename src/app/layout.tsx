@@ -6,6 +6,7 @@ import { versionedIcon } from '@/lib/appIcon'
 import { globalStructuredData } from '@/lib/structuredData'
 import { SPLASH_DEVICES, splashMedia, splashPath } from '@/lib/splashDevices'
 import { AccountControl } from '@/components/AccountControl'
+import { HomeControl } from '@/components/HomeControl'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -207,6 +208,7 @@ export default function RootLayout({
         className={`${geistSans.variable} antialiased`}
         style={{ backgroundColor: '#08080a' }}
       >
+        <HomeControl />
         <AccountControl />
         {children}
         {process.env.NEXT_PUBLIC_CF_BEACON_TOKEN ? (

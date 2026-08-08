@@ -51,6 +51,23 @@ export function proCheckoutBase(testMode: boolean, variant: ProVariant): string 
 export const PRO_PRICE_MONTHLY = '$3'
 export const PRO_PRICE_ANNUAL = '$24'
 
+/**
+ * What Pro does, in the order it matters, for anywhere a list is the right
+ * shape. The long-form version with a paragraph each lives on /pro; this is the
+ * same offer compressed to one line per item.
+ *
+ * Every line describes *less standing over it*, never more reach. Pro unlocks
+ * no content a free visitor cannot already download, and a line here that
+ * implied otherwise would be the merchant-of-record clause that got the
+ * previous store closed — not merely overstated copy.
+ */
+export const PRO_BENEFITS = [
+  'Paste a list and let the queue run',
+  'Priority resolving on every link',
+  'Images and audio bundled into one ZIP',
+  'No sponsor card, site-wide',
+] as const
+
 /** One label for one intent, used at every entry point. */
 export const PRO_CTA_LABEL = `Get Pro, ${PRO_PRICE_MONTHLY}/mo`
 

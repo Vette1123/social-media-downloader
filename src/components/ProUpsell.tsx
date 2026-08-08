@@ -3,7 +3,12 @@
 import Link from 'next/link'
 import { CheckIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
-import { PRO_CTA_LABEL, PRO_PRICE_ANNUAL, PRO_PRICE_MONTHLY } from '@/config/pro'
+import {
+  PRO_BENEFITS,
+  PRO_CTA_LABEL,
+  PRO_PRICE_ANNUAL,
+  PRO_PRICE_MONTHLY,
+} from '@/config/pro'
 import { useTier } from '@/lib/entitlements'
 
 /**
@@ -21,17 +26,6 @@ import { useTier } from '@/lib/entitlements'
  * carries the actual list, so the split is doing compositional work rather
  * than parking a paragraph in a corner.
  */
-
-/**
- * Convenience only — see the note on `features` in app/pro/page.tsx. Nothing
- * listed here may describe Pro as reaching content a free visitor cannot.
- */
-const BENEFITS = [
-  'Paste a list and let the queue run',
-  'Priority resolving on every link',
-  'Images and audio bundled into one ZIP',
-  'No sponsor card, site-wide',
-] as const
 
 export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }) {
   const tier = useTier()
@@ -105,7 +99,7 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
       </div>
 
       <ul className='space-y-3 lg:col-span-5'>
-        {BENEFITS.map((benefit) => (
+        {PRO_BENEFITS.map((benefit) => (
           <li key={benefit} className='flex items-start gap-3'>
             <CheckIcon className='mt-0.5 h-4 w-4 shrink-0 text-cyan-300' />
             <span className='text-sm text-white/75'>{benefit}</span>

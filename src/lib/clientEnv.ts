@@ -178,3 +178,61 @@ export function useOnPageVisible(fn: () => void): void {
     }
   }, [])
 }
+
+/** Below this a corner control overlaps content; above it there is room to spare. */
+const PHONE = '(max-width: 39.99rem)'
+/** Ignore the jitter of a finger resting on a scrolling page. */
+const SCROLL_THRESHOLD = 8
+/** Never hide anything while the top of the page is still in view. */
+const SCROLL_FLOOR = 80
+
+/**
+ * Take a fixed corner control away on the way down the page and bring it back
+ * on the way up, so it is reachable without sitting on top of what someone is
+ * reading. Both corner slots use it — the account control and the home button.
+ *
+ * The class is written straight to the node through a ref. This is the reason a
+ * scroll here costs nothing: React never re-renders, so the work per frame is
+ * one `classList.toggle` behind a rAF gate, on a listener that is passive and
+ * only attached on the viewports that need it. Storing the position in state
+ * instead would re-render the tree on every frame of every scroll, on every
+ * page of the site, which is what the ban on scroll handlers is about.
+ *
+ * The `--away` class it toggles is defined once in globals.css against
+ * `.corner-slot`, so both controls leave and return together.
+ */
+export function usePeekOnScroll(
+  ref: React.RefObject<HTMLElement | null>,
+  enabled: boolean,
+): void {
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+
+    node.classList.remove('corner-slot--away')
+    if (!enabled || !window.matchMedia(PHONE).matches) return
+
+    let previous = window.scrollY
+    let frame = 0
+
+    const update = (): void => {
+      frame = 0
+      const y = window.scrollY
+      const delta = y - previous
+      if (Math.abs(delta) < SCROLL_THRESHOLD) return
+      previous = y
+      node.classList.toggle('corner-slot--away', delta > 0 && y > SCROLL_FLOOR)
+    }
+
+    const onScroll = (): void => {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (frame) cancelAnimationFrame(frame)
+      node.classList.remove('corner-slot--away')
+    }
+  }, [ref, enabled])
+}

@@ -129,3 +129,76 @@ describe('planCopy', () => {
     expect(copy.lede).toContain('Pro stays on until')
   })
 })
+
+/**
+ * The card's at-a-glance layer. The chip and the fact rows are a second way to
+ * read the same six states, so the thing worth pinning is that they cannot
+ * contradict the sentence next to them — a card reading "Active" over "Won't
+ * renew" is worse than either alone.
+ */
+describe('the plan card at a glance', () => {
+  const BUCKETS = [
+    'free',
+    'active-monthly',
+    'active-annual',
+    'cancelled',
+    'past-due',
+    'ended',
+  ] as const
+
+  it('gives every state a heading and a badge', () => {
+    for (const bucket of BUCKETS) {
+      const copy = planCopy(bucket, plan())
+      expect(copy.title, bucket).toBeTruthy()
+      expect(copy.chip.label, bucket).toBeTruthy()
+    }
+  })
+
+  it('spends the warning colour only on the state that needs paying attention', () => {
+    const warned = BUCKETS.filter((b) => planCopy(b, plan()).chip.tone === 'warn')
+    expect(warned).toEqual(['past-due'])
+  })
+
+  it('prices only the states that are actually charging', () => {
+    const priced = BUCKETS.filter((b) => planCopy(b, plan()).price !== undefined)
+    expect(priced).toEqual(['active-monthly', 'active-annual'])
+  })
+
+  it('never shows a next charge to someone who has cancelled', () => {
+    const copy = planCopy('cancelled', plan({ status: 'canceled', endsAt: NOW + DAY }))
+    expect(copy.facts).toContainEqual({ label: 'Next charge', value: 'None' })
+  })
+
+  it('names the renewal date on both live variants', () => {
+    for (const bucket of ['active-monthly', 'active-annual'] as const) {
+      const next = planCopy(bucket, plan()).facts.find((f) => f.label === 'Next charge')
+      expect(next?.value, bucket).not.toBe('Soon')
+    }
+  })
+
+  it('falls back to a vaguer answer rather than a wrong date', () => {
+    const copy = planCopy('active-monthly', plan({ renewsAt: null }))
+    expect(copy.facts).toContainEqual({ label: 'Next charge', value: 'Soon' })
+  })
+
+  /**
+   * A live subscription's heading, price and fact rows already say all of it.
+   * A sentence repeating them put the same date and the same price on the card
+   * four times over.
+   */
+  it('does not repeat itself in prose on a live subscription', () => {
+    expect(planCopy('active-monthly', plan()).lede).toBeUndefined()
+    expect(planCopy('active-annual', plan()).lede).toBeUndefined()
+  })
+
+  it('keeps the explaining sentence on every state that needs one', () => {
+    for (const bucket of ['free', 'cancelled', 'past-due', 'ended'] as const) {
+      expect(planCopy(bucket, plan()).lede, bucket).toBeTruthy()
+    }
+  })
+
+  /** The free card sells; every other card reports. */
+  it('leaves the free state to the pitch rather than a table of nothing', () => {
+    expect(planCopy('free', null).facts).toEqual([])
+  })
+})

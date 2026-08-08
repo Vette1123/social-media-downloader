@@ -24,9 +24,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Avatar } from '@/components/Avatar'
-import { PinIcon, PinOffIcon } from '@/components/icons'
+import { BoltIcon, PinIcon, PinOffIcon } from '@/components/icons'
 import {
   type CachedProfile,
   cachedProfile,
@@ -34,7 +34,8 @@ import {
   signInHref,
   useAccount,
 } from '@/lib/account'
-import { useHydrated, useOnPageVisible } from '@/lib/clientEnv'
+import { useHydrated, useOnPageVisible, usePeekOnScroll } from '@/lib/clientEnv'
+import { HABIT_THRESHOLD, useProSignals } from '@/lib/proSignals'
 
 /** First name, or the local part of the address. Never the whole email: this
  *  sits over page content at 12px and a long address would push the pill wide
@@ -48,12 +49,6 @@ function shortLabel(profile: CachedProfile | null): string {
 }
 
 const PIN_KEY = 'smd_pin_account'
-/** Below this the control overlaps content; above it there is room to spare. */
-const PHONE = '(max-width: 39.99rem)'
-/** Ignore the jitter of a finger resting on a scrolling page. */
-const SCROLL_THRESHOLD = 8
-/** Never hide it while the top of the page is still in view. */
-const SCROLL_FLOOR = 80
 
 function readPinned(): boolean {
   try {
@@ -71,50 +66,6 @@ function writePinned(pinned: boolean): void {
     // Private mode. The choice lasts for this page view instead of for the
     // device, which is the only thing lost.
   }
-}
-
-/**
- * Take the control away on the way down the page and bring it back on the way
- * up, so it is reachable without sitting on top of what someone is reading.
- *
- * The class is written straight to the node through a ref. This is the reason
- * a scroll here costs nothing: React never re-renders, so the work per frame
- * is one `classList.toggle` behind a rAF gate, on a listener that is passive
- * and only attached on the viewports that need it. Storing the position in
- * state instead would re-render the tree on every frame of every scroll, on
- * every page of the site, which is what the ban on scroll handlers is about.
- */
-function usePeekOnScroll(ref: React.RefObject<HTMLElement | null>, enabled: boolean): void {
-  useEffect(() => {
-    const node = ref.current
-    if (!node) return
-
-    node.classList.remove('account-slot--away')
-    if (!enabled || !window.matchMedia(PHONE).matches) return
-
-    let previous = window.scrollY
-    let frame = 0
-
-    const update = (): void => {
-      frame = 0
-      const y = window.scrollY
-      const delta = y - previous
-      if (Math.abs(delta) < SCROLL_THRESHOLD) return
-      previous = y
-      node.classList.toggle('account-slot--away', delta > 0 && y > SCROLL_FLOOR)
-    }
-
-    const onScroll = (): void => {
-      if (!frame) frame = requestAnimationFrame(update)
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      if (frame) cancelAnimationFrame(frame)
-      node.classList.remove('account-slot--away')
-    }
-  }, [ref, enabled])
 }
 
 export function AccountControl() {
@@ -152,12 +103,13 @@ export function AccountControl() {
   }
 
   return (
-    // `.account-slot` carries the top/right offsets, because they are notch-
-    // aware and paired with the clearance `.app-bg` reserves for this control.
-    // Taller on phones so the tap target is a thumb rather than a cursor.
+    // `.corner-slot` carries the top/right offsets, because they are notch-
+    // aware and paired with the clearance `.app-bg` reserves for this control —
+    // and shared with the home button in the opposite corner, so the two stay
+    // on one line. Taller on phones so the tap target is a thumb, not a cursor.
     <div
       ref={slot}
-      className='account-slot pointer-events-none fixed z-50 flex h-10 items-center justify-end gap-1.5 sm:h-9'
+      className='corner-slot corner-slot--right pointer-events-none fixed z-50 flex h-10 items-center justify-end gap-1.5 sm:h-9'
     >
       {hydrated && (
         <>
@@ -167,10 +119,71 @@ export function AccountControl() {
           {(live.signedIn ?? hasAccountHint()) && (
             <PinToggle pinned={pinned} onToggle={togglePinned} />
           )}
+          <ProPill live={live} cached={cached} pathname={pathname} />
           <Control live={live} cached={cached} pathname={pathname} />
         </>
       )}
     </div>
+  )
+}
+
+/**
+ * Pro's only permanent presence outside the marketing sections.
+ *
+ * Two states, and the second one is the whole idea. At rest it is a quiet
+ * outlined pill reading "Pro" — permanently there, so there is always one
+ * findable answer to "is there a paid thing here", and small enough not to
+ * compete with the account control beside it. Once the visitor has resolved
+ * `HABIT_THRESHOLD` links in a day it earns a sentence, because at that point
+ * it is describing something they have just done by hand rather than
+ * advertising at a stranger.
+ *
+ * It never appears for a subscriber. The count is local and never leaves the
+ * device (see proSignals).
+ *
+ * The expanded copy is hidden below `sm`, where this control shares a fixed
+ * slot with the pin toggle and the account pill and there is genuinely no room
+ * — a phone gets the quiet pill in both states rather than a wrapped header.
+ */
+function ProPill({
+  live,
+  cached,
+  pathname,
+}: {
+  live: ReturnType<typeof useAccount>
+  cached: CachedProfile | null
+  pathname: string
+}) {
+  const { today } = useProSignals()
+
+  // Mirrors Control: a settled answer wins, the cache answers for the common
+  // page view that never called the Worker. Anyone who might be Pro is left
+  // alone — showing a subscriber a "get Pro" pill for one frame is worse than
+  // showing nobody anything.
+  const pro = live.signedIn ? live.pro : cached?.pro
+  if (pro) return null
+  // A link to the page you are reading is furniture, and on /pro it would sit
+  // directly above the plan picker it points at.
+  if (pathname === '/pro') return null
+
+  const earned = today >= HABIT_THRESHOLD
+
+  return (
+    // `.icon-lift` rather than an ad-hoc cyan hover: this is a chip, and the
+    // accent ring is the shared language for one (see globals.css).
+    <Link
+      href='/pro'
+      title='What Pro does'
+      className='icon-lift pointer-events-auto flex items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-400/10 py-1.5 pr-3 pl-2.5 text-xs font-semibold whitespace-nowrap text-cyan-200 backdrop-blur'
+    >
+      <BoltIcon className='h-3.5 w-3.5' />
+      <span>Pro</span>
+      {earned && (
+        <span className='hidden font-medium text-cyan-100/80 sm:inline'>
+          · {today} today, queue them instead
+        </span>
+      )}
+    </Link>
   )
 }
 

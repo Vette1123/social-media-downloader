@@ -719,46 +719,61 @@ dialog[open]::backdrop {
   }
 }
 
-/* The control's own offsets. Fixed elements are positioned against the
-   viewport, so they take the inset themselves — the padding above does nothing
-   for them. `max()` rather than a sum: on every device without a notch the
-   inset is 0 and the control keeps its designed 12px margin. */
-.account-slot {
+/* The fixed corner controls' own offsets — the account control top-right, the
+   home button top-left. Fixed elements are positioned against the viewport, so
+   they take the inset themselves; the padding above does nothing for them.
+   `max()` rather than a sum: on every device without a notch the inset is 0 and
+   the control keeps its designed 12px margin.
+
+   One shared class, because the two corners have to agree. They sit on the same
+   line, hide on the same scroll and return together, and when the offsets lived
+   in two places one corner drifted the moment the other was adjusted. */
+.corner-slot {
   top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+.corner-slot--right {
   right: max(0.75rem, env(safe-area-inset-right, 0px));
+}
+.corner-slot--left {
+  left: max(0.75rem, env(safe-area-inset-left, 0px));
 }
 
 /* Auto-hide, phones only.
-   A desktop viewport has room to spare and the control never covers anything,
-   so it simply stays. A phone does not, so scrolling down takes it away and
-   scrolling up brings it back, unless the reader has pinned it.
+   A desktop viewport has room to spare and the controls never cover anything,
+   so they simply stay. A phone does not, so scrolling down takes them away and
+   scrolling up brings them back, unless the reader has pinned the account one.
 
    `transform` and `opacity` only: this is compositor work, no layout, no paint.
-   The class is set from a ref rather than React state (see AccountControl), so
-   a scroll never re-renders the tree. It is gated to this media query as well
-   as in the script, so a stale class can never strand the control off-screen on
-   a viewport that was never meant to hide it. */
+   The class is set from a ref rather than React state (see usePeekOnScroll in
+   lib/clientEnv), so a scroll never re-renders the tree. It is gated to this
+   media query as well as in the script, so a stale class can never strand a
+   control off-screen on a viewport that was never meant to hide it. */
 @media (max-width: 39.99rem) {
-  .account-slot {
+  .corner-slot {
     transition:
       transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
       opacity 0.2s ease-out;
   }
-  .account-slot--away {
+  .corner-slot--away {
     transform: translateY(-160%);
     opacity: 0;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .account-slot {
+  .corner-slot {
     transition: none;
   }
 }
 @media (min-width: 40rem) {
-  .account-slot {
+  .corner-slot {
     top: max(1rem, env(safe-area-inset-top, 0px));
+  }
+  .corner-slot--right {
     right: max(1rem, env(safe-area-inset-right, 0px));
+  }
+  .corner-slot--left {
+    left: max(1rem, env(safe-area-inset-left, 0px));
   }
 }
 

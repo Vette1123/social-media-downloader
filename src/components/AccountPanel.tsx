@@ -18,7 +18,8 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Surface } from '@/components/Surface'
 import { Avatar, type AvatarIdentity } from '@/components/Avatar'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { ChevronDownIcon } from '@/components/icons'
+import { PlanChooser } from '@/components/PlanChooser'
+import { CheckIcon, ChevronDownIcon } from '@/components/icons'
 import {
   type PlanState,
   cachedProfile,
@@ -39,6 +40,7 @@ import {
   usePrefs,
 } from '@/lib/prefs'
 import {
+  PRO_BENEFITS,
   PRO_CHECKOUT_ANNUAL,
   PRO_CHECKOUT_MONTHLY,
   PRO_PRICE_ANNUAL,
@@ -129,26 +131,90 @@ export function classifyPlan(plan: PlanState | null, now: number): PlanBucket {
   }
 }
 
+/**
+ * The state badge, and the only piece of colour the card spends on itself.
+ *
+ * `warn` is reserved for the one state with money at stake and a deadline —
+ * a failed payment. A scheduled cancellation is `ending`, not a warning:
+ * nothing is wrong, nothing is lost, and painting it red would tell a customer
+ * who made a deliberate choice that they had made a mistake.
+ */
+interface PlanChip {
+  label: string
+  tone: 'live' | 'ending' | 'warn' | 'idle'
+}
+
+/**
+ * One labelled fact. Deliberately not free prose: these are the answers to
+ * "how much", "until when", "what happens next" — the three questions that
+ * bring anyone to this page — and a table answers them at a glance where a
+ * paragraph has to be read.
+ */
+interface PlanFact {
+  label: string
+  value: string
+}
+
 interface PlanCopy {
-  lede: string
+  /**
+   * The state in one plain sentence, for the states that need explaining —
+   * what "cancelled" means for access, what happens after a failed payment,
+   * what a free account is.
+   *
+   * A live subscription has no such sentence and must not be given one: the
+   * heading, the price and the two fact rows already say "Pro, annual, $24 a
+   * year, charged again on this date", and a lede repeating it word for word
+   * is the same fact printed four times on one card.
+   */
+  lede?: string
   note?: ReactNode
+  chip: PlanChip
+  /** What they are on, as a heading. */
+  title: string
+  /** The price, when money is involved at all. */
+  price?: string
+  facts: PlanFact[]
+}
+
+/** A date, or the honest vaguer answer when the row has no timestamp. */
+function dateOr(at: number | null | undefined, fallback: string): string {
+  return at ? formatDate(at) : fallback
+}
+
+/** When Pro actually switches off for an unpaid subscription. */
+function graceEndsAt(plan: PlanState | null): number | null {
+  if (plan?.pastDueSince === null || plan?.pastDueSince === undefined) return null
+  return plan.pastDueSince + PAST_DUE_GRACE_MS
 }
 
 export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
   switch (bucket) {
     case 'free':
-      return { lede: "You're on the free plan." }
+      return {
+        lede: "You're on the free plan.",
+        chip: { label: 'Free', tone: 'idle' },
+        title: 'Free',
+        facts: [],
+      }
     case 'active-monthly':
       return {
-        lede: `Pro · ${PRO_PRICE_MONTHLY}/month · renews ${
-          plan?.renewsAt ? formatDate(plan.renewsAt) : 'soon'
-        }`,
+        chip: { label: 'Active', tone: 'live' },
+        title: 'Pro, monthly',
+        price: `${PRO_PRICE_MONTHLY} / month`,
+        facts: [
+          { label: 'Next charge', value: dateOr(plan?.renewsAt, 'Soon') },
+          { label: 'Renews', value: 'Every month, until cancelled' },
+        ],
       }
     case 'active-annual':
       return {
-        lede: `Pro · ${PRO_PRICE_ANNUAL}/year · renews ${
-          plan?.renewsAt ? formatDate(plan.renewsAt) : 'soon'
-        }`,
+        chip: { label: 'Active', tone: 'live' },
+        title: 'Pro, annual',
+        price: `${PRO_PRICE_ANNUAL} / year`,
+        facts: [
+          { label: 'Next charge', value: dateOr(plan?.renewsAt, 'Soon') },
+          { label: 'Renews', value: 'Every year, until cancelled' },
+        ],
         note: (
           <>
             Annual includes a call with the developer.{' '}
@@ -164,29 +230,38 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
       }
     case 'cancelled':
       return {
-        lede: `Pro until ${
-          plan?.endsAt ? formatDate(plan.endsAt) : 'the end of the period'
-        }. Won't renew after that.`,
+        lede: `Pro until ${dateOr(plan?.endsAt, 'the end of the period')}. Won't renew after that.`,
         // Said because it is the question someone has straight after
         // cancelling, and because the honest answer is reassuring: they are
         // cancelled, they keep what they paid for, and no further money moves.
         note: 'You keep Pro until then, and nothing further will be charged.',
+        chip: { label: 'Ending', tone: 'ending' },
+        title: 'Pro, cancelled',
+        facts: [
+          { label: 'Pro until', value: dateOr(plan?.endsAt, 'End of the period') },
+          { label: 'Next charge', value: 'None' },
+        ],
       }
-    case 'past-due': {
-      const endsAt =
-        plan?.pastDueSince !== null && plan?.pastDueSince !== undefined
-          ? plan.pastDueSince + PAST_DUE_GRACE_MS
-          : null
+    case 'past-due':
       return {
-        lede: `We couldn't take payment. Pro stays on until ${
-          endsAt ? formatDate(endsAt) : 'the grace period ends'
-        }.`,
+        lede: `We couldn't take payment. Pro stays on until ${dateOr(
+          graceEndsAt(plan),
+          'the grace period ends',
+        )}.`,
+        chip: { label: 'Payment failed', tone: 'warn' },
+        title: 'Pro, payment failed',
+        // One row only: the button underneath already says what to do about it,
+        // and a "To fix it — update your card" row was the same instruction
+        // printed twice, six millimetres apart.
+        facts: [{ label: 'Pro until', value: dateOr(graceEndsAt(plan), 'The grace period ends') }],
       }
-    }
     case 'ended':
       return {
         lede: "Your subscription has ended, so you're back on the free plan.",
         note: 'Nothing further will be charged.',
+        chip: { label: 'Ended', tone: 'idle' },
+        title: 'Free',
+        facts: [{ label: 'Ended', value: dateOr(plan?.endsAt, 'Already') }],
       }
   }
 }
@@ -250,34 +325,16 @@ function CheckoutPendingButton() {
   )
 }
 
+/**
+ * The same pick-then-buy control /pro uses, so there is one place a plan is
+ * chosen and one place that knows how a choice becomes a checkout. This screen
+ * used to carry its own pair of price cards with a button on each — a second
+ * shape for one decision, which is how the two drifted apart in the first
+ * place.
+ */
 function PlanPicker({ buyer }: { buyer: Buyer | null }) {
   if (!buyer) return <CheckoutPendingButton />
-
-  return (
-    <div className='grid gap-3 sm:grid-cols-2'>
-      <Surface elevation='raised' className='relative p-4 text-center'>
-        <span className='btn-grad absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase'>
-          Best value
-        </span>
-        <p className='mt-2 text-2xl font-extrabold text-white'>
-          {PRO_PRICE_ANNUAL}
-          <span className='text-sm font-medium text-white/50'>/year</span>
-        </p>
-        <a href={checkoutLink('annual')} className={`${ACTION_BUTTON_CLASS} mt-3`}>
-          Get annual
-        </a>
-      </Surface>
-      <Surface elevation='raised' className='p-4 text-center'>
-        <p className='mt-2 text-2xl font-extrabold text-white'>
-          {PRO_PRICE_MONTHLY}
-          <span className='text-sm font-medium text-white/50'>/month</span>
-        </p>
-        <a href={checkoutLink('monthly')} className={`${SECONDARY_BUTTON_CLASS} mt-3`}>
-          Get monthly
-        </a>
-      </Surface>
-    </div>
-  )
+  return <PlanChooser />
 }
 
 /**
@@ -414,6 +471,68 @@ function isRenewing(bucket: PlanBucket): boolean {
   return bucket === 'active-monthly' || bucket === 'active-annual'
 }
 
+const CHIP_CLASS: Record<PlanChip['tone'], string> = {
+  live: 'border-cyan-300/40 bg-cyan-400/10 text-cyan-200',
+  ending: 'border-amber-300/40 bg-amber-400/10 text-amber-200',
+  warn: 'border-red-400/40 bg-red-500/10 text-red-200',
+  idle: 'border-white/15 bg-white/[0.06] text-white/60',
+}
+
+function StatusChip({ chip }: { chip: PlanChip }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide ${CHIP_CLASS[chip.tone]}`}
+    >
+      {/* Shape as well as colour, so the state survives being read by someone
+          who cannot separate the amber from the cyan. */}
+      <span aria-hidden className='h-1.5 w-1.5 rounded-full bg-current' />
+      {chip.label}
+    </span>
+  )
+}
+
+/**
+ * The facts, as rows.
+ *
+ * `dl` rather than a table: these are name/value pairs, not a grid of data, and
+ * the semantics are what makes "Next charge — 8 August 2027" survive being read
+ * out linearly. `tabular-nums` keeps the dates from shifting width between
+ * states.
+ */
+function PlanFacts({ facts }: { facts: PlanFact[] }) {
+  if (facts.length === 0) return null
+  return (
+    <dl className='mt-4 divide-y divide-white/[0.06] border-y border-white/[0.06] text-sm'>
+      {facts.map((fact) => (
+        <div key={fact.label} className='flex items-baseline justify-between gap-4 py-2.5'>
+          <dt className='text-white/50'>{fact.label}</dt>
+          <dd className='text-right font-medium text-white/85 tabular-nums'>{fact.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/**
+ * The free plan's card has to do a job the others don't: it is the one screen
+ * where someone has arrived, is signed in, and has not bought anything. So it
+ * carries the offer itself — the same four lines sold everywhere else, from
+ * `PRO_BENEFITS`, so a change to what Pro claims cannot land here and nowhere
+ * else.
+ */
+function FreePlanPitch() {
+  return (
+    <ul className='mt-4 grid gap-2 sm:grid-cols-2'>
+      {PRO_BENEFITS.map((benefit) => (
+        <li key={benefit} className='flex items-start gap-2 text-sm text-white/70'>
+          <CheckIcon className='mt-0.5 h-4 w-4 shrink-0 text-cyan-300' aria-hidden />
+          {benefit}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | null }) {
   // Read at render rather than held in state: nothing on this card counts down,
   // and the only boundary it decides — has the paid period run out — is months
@@ -425,10 +544,22 @@ function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | n
 
   return (
     <Surface glow radius='3xl' className='animate-card-enter p-5 shadow-2xl sm:p-6'>
-      <h2 className='text-lg font-semibold text-white'>Plan</h2>
-      <p className='mt-2 text-sm text-white/70'>{copy.lede}</p>
-      {copy.note && <p className='mt-1 text-xs text-white/50'>{copy.note}</p>}
-      <div className='mt-4'>
+      <div className='flex items-start justify-between gap-3'>
+        <div className='min-w-0'>
+          <h2 className='text-xs font-medium tracking-wide text-white/45 uppercase'>Plan</h2>
+          <p className='mt-1 text-xl font-bold text-white sm:text-2xl'>{copy.title}</p>
+          {copy.price && <p className='mt-0.5 text-sm text-white/55'>{copy.price}</p>}
+        </div>
+        <StatusChip chip={copy.chip} />
+      </div>
+
+      {/* Only for the states that need explaining — see the note on `lede`. */}
+      {copy.lede && <p className='mt-3 text-sm text-white/70'>{copy.lede}</p>}
+      {copy.note && <p className='mt-2 text-xs text-white/50'>{copy.note}</p>}
+
+      {bucket === 'free' ? <FreePlanPitch /> : <PlanFacts facts={copy.facts} />}
+
+      <div className='mt-5'>
         <PlanAction bucket={bucket} plan={plan} buyer={buyer} />
       </div>
       {/* Said here rather than only in the Terms, because this is the screen
