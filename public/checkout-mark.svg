@@ -1,0 +1,36 @@
+<svg width="640" height="640" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Social Downloader">
+  <!--
+    The app mark, alone, on nothing.
+
+    This is the checkout's product image. It carries no background of its own:
+    the checkout paints its own card behind it, so anything we put back there
+    is a second, competing card. Transparent means the mark sits on whatever
+    surface the page happens to be, light or dark.
+
+    Vector, so there is no resolution to get wrong. The width and height
+    attributes are only a default size; the viewBox is what renders, and it
+    scales to whatever box the checkout gives it without resampling.
+
+    The 20px inset keeps the rounded corners off the edge of the canvas, since
+    some renderers clip a shape that touches its own bounds.
+
+    Same two paths as public/favicon.svg and GLYPH_MARK in src/lib/appIcon.tsx.
+    Drawn in 32-unit space, so the 5.44 offset and 0.66 glyph scale are
+    multiplied by 18.75 to land in the 600-unit tile below.
+  -->
+  <defs>
+    <linearGradient id="tile" x1="20" y1="20" x2="620" y2="620" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2dd4bf" />
+      <stop offset="0.5" stop-color="#22d3ee" />
+      <stop offset="1" stop-color="#38bdf8" />
+    </linearGradient>
+  </defs>
+
+  <!-- rx keeps the mark's 7.5/32 corner ratio exactly: 600 * 7.5 / 32. -->
+  <rect x="20" y="20" width="600" height="600" rx="140.625" fill="url(#tile)" />
+
+  <g fill="#08080a" transform="translate(122 122) scale(12.375)">
+    <path d="M5.65 2.2H26.35Q30 2.2 27.78 5.09L17.74 18.13Q16 20.4 14.26 18.13L4.22 5.09Q2 2.2 5.65 2.2Z" />
+    <rect x="6" y="24.8" width="20" height="5" rx="2.5" />
+  </g>
+</svg>
