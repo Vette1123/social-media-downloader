@@ -3,14 +3,14 @@
 /**
  * Pro state, as the app sees it.
  *
- * The whole implementation moved from a license key in localStorage to a Google
- * account with a server session — but the two hooks below kept their exact
- * shapes, which is why DownloaderApp and PromoSlot did not change at all.
+ * Two hooks over the account store, deliberately narrow: consumers ask "is this
+ * visitor Pro" and "what token do I send", and know nothing about sessions,
+ * subscriptions or how any of it is stored.
  *
- * As before, the ad-free half of Pro is enforced client-side and is trivially
- * bypassable. That is accepted: the honest subscriber is the customer, and the
- * entitlement that actually costs us something (priority resolve) is checked
- * server-side against a signed token.
+ * The ad-free half of Pro is enforced client-side and is trivially bypassable.
+ * That is accepted: the honest subscriber is the customer, and the entitlement
+ * that actually costs us something (priority resolve) is checked server-side
+ * against a signed token.
  */
 
 import { useEffect } from 'react'

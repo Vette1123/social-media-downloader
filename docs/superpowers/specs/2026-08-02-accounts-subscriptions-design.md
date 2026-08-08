@@ -1,8 +1,19 @@
 # Accounts and Subscriptions Design
 
 Date: 2026-08-02
-Status: approved, pending implementation plan
+Status: implemented, **billing provider superseded**
 Supersedes: the "Pro license" layer of `2026-07-31-monetization-design.md`
+
+> **Provider changed 2026-08-08.** Lemon Squeezy rejected the application, so
+> the merchant of record is Creem. Wherever this document says Lemon Squeezy,
+> read Creem, and note four things it gets wrong as written: the webhook header
+> is `creem-signature`; the env vars are `CREEM_API_KEY` and
+> `CREEM_WEBHOOK_SECRET`; the portal is minted per *customer*
+> (`POST /v1/customers/billing`, hence `users.ls_customer_id`), not per
+> subscription; and `cancelled` split into `scheduled_cancel` (paid through,
+> still Pro) and `canceled` (stopped). The `ls_` column prefix is a leftover of
+> the original provider and is now just a name. Everything else — sessions,
+> entitlement, reconcile, the token design — shipped as described.
 
 ## Goal
 

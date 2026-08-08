@@ -1,7 +1,15 @@
 # Monetization Design
 
 Date: 2026-07-31
-Status: approved, pending implementation plan
+Status: **superseded** — historical record, do not implement from it
+
+> The Pro layer described here (a $9 one-time Lemon Squeezy license key held in
+> `localStorage`) never survived. Licence keys were replaced by a subscription
+> behind a Google account, and Lemon Squeezy rejected the application, so the
+> merchant of record is Creem. Everything below about Lemon Squeezy, licence
+> keys, `LEMONSQUEEZY_*` env vars, or `/api/license` is dead. The shipped
+> contract is the README's "Accounts and Pro subscriptions" section plus
+> `src/lib/billing/`.
 
 ## Goal
 

@@ -45,9 +45,9 @@ describe('isProAt', () => {
   })
 
   /**
-   * The distinction Creem draws and the previous provider did not: a stopped
-   * subscription must not be rescued by an end date that has not passed yet.
-   * `scheduled_cancel` is still running; `canceled` has already stopped.
+   * A stopped subscription must not be rescued by an end date that has not
+   * passed yet. `scheduled_cancel` is still running; `canceled` has already
+   * stopped, and only the first one is allowed to consult `ls_ends_at`.
    */
   it('is false when already cancelled, even with a future end date', () => {
     expect(isProAt(row({ ls_status: 'canceled', ls_ends_at: NOW + DAY }), NOW)).toBe(false)
