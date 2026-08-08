@@ -246,6 +246,51 @@ describe('reconcileSubscription', () => {
   })
 
   /**
+   * The unrepairable state this repair used to leave behind.
+   *
+   * A customer cancels, resubscribes, and the new subscription's webhook is
+   * lost. The row still holds the cancelled id, so asking Creem by that id
+   * returns the cancelled subscription, the patch agrees with the row, and
+   * nothing is written — on every attempt, forever. The live subscription has to
+   * be found by searching, exactly as it is for a row with no id at all.
+   */
+  it('adopts a live subscription when the stored one has stopped', async () => {
+    const dead = { ...SUBSCRIPTION, id: 'sub_dead', status: 'canceled' }
+    const live = { ...SUBSCRIPTION, id: 'sub_fresh', status: 'active' }
+    stubFetch({ byId: dead, search: page([dead, live]) })
+    const { db, statements } = fakeDb(PENDING_ROW)
+
+    await reconcileSubscription(db, 'sub_dead', NOW, { id: 'u1', email: 'paid@example.com' })
+
+    const write = writeOf(statements)
+    expect(write?.bindings[0]).toBe('sub_fresh')
+    expect(write?.bindings[2]).toBe('active')
+  })
+
+  it('keeps the stored subscription when the search turns up nothing live', async () => {
+    const dead = { ...SUBSCRIPTION, id: 'sub_dead', status: 'canceled' }
+    stubFetch({ byId: dead, search: page([dead]) })
+    const { db, statements } = fakeDb(PENDING_ROW)
+
+    await reconcileSubscription(db, 'sub_dead', NOW, { id: 'u1', email: 'paid@example.com' })
+
+    const write = writeOf(statements)
+    expect(write?.bindings[0]).toBe('sub_dead')
+    expect(write?.bindings[2]).toBe('canceled')
+  })
+
+  /** No search at all while the stored subscription is one Creem still bills. */
+  it('does not spend a search on a healthy subscriber', async () => {
+    const fetchMock = stubFetch({ byId: SUBSCRIPTION, search: page([SUBSCRIPTION]) })
+    const { db } = fakeDb(PENDING_ROW)
+
+    await reconcileSubscription(db, 'sub_new', NOW, { id: 'u1', email: 'paid@example.com' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('subscription_id=sub_new')
+  })
+
+  /**
    * A test key is routed to a different host entirely, and a test key sent to
    * production is rejected — so the host has to follow the key rather than a
    * second setting someone can forget to flip.

@@ -15,7 +15,12 @@
 
 import type { D1Database } from '@cloudflare/workers-types'
 import { creemApi, creemHeaders } from './creem'
-import { applySubscriptionPatch, patchFromSubscription, type CreemSubscription } from './webhook'
+import {
+  applySubscriptionPatch,
+  isLiveStatus,
+  patchFromSubscription,
+  type CreemSubscription,
+} from './webhook'
 
 export const RECONCILE_STALE_MS = 24 * 60 * 60 * 1000
 
@@ -141,6 +146,7 @@ async function findSubscription(
   customerId: string | null,
 ): Promise<CreemSubscription | null> {
   const api = creemApi(apiKey)
+  let fallback: CreemSubscription | null = null
 
   for (let page = 1; page <= SEARCH_MAX_PAGES; page++) {
     const body = (await getJson(
@@ -149,22 +155,38 @@ async function findSubscription(
     )) as SearchPage | null
 
     const items = body?.items
-    if (!Array.isArray(items) || items.length === 0) return null
+    if (!Array.isArray(items) || items.length === 0) return fallback
 
-    const match = items.find((item) => belongsTo(item, ownerId, email, customerId))
-    if (match) return match
+    // A customer can own several subscriptions — an old cancelled one and the
+    // one they are actually paying for. The live one is the answer, so a match
+    // that is merely dead is held as a fallback and the walk continues rather
+    // than returning the first thing that carries the right `user_id`.
+    for (const item of items) {
+      if (!belongsTo(item, ownerId, email, customerId)) continue
+      if (isLiveStatus(item.status)) return item
+      fallback ??= item
+    }
 
-    if (!body?.pagination?.next_page) return null
+    if (!body?.pagination?.next_page) return fallback
   }
-  return null
+  return fallback
 }
 
 /**
  * What Creem currently believes about this user's subscription.
  *
  * By id when we have one, which is one request and the overwhelmingly common
- * case. The search walk below is only for the user whose first webhook never
- * arrived, so they have no id to ask by.
+ * case. The search walk is for the two cases an id cannot answer: a user whose
+ * first webhook never arrived, so there is no id to ask by, and a user whose
+ * stored subscription has stopped.
+ *
+ * That second case is the one this used to get wrong. Asking by a stored id
+ * only ever returns that subscription, so a customer who resubscribed after
+ * cancelling stayed pinned to the dead one for good if the new subscription's
+ * webhook was lost — the repair would fetch the corpse, agree with itself, and
+ * write nothing, on every attempt forever. A stored subscription that Creem is
+ * no longer billing is therefore treated as a reason to go looking, with the
+ * stored one kept as the answer if no live subscription turns up.
  */
 async function fetchSubscription(
   apiKey: string,
@@ -177,7 +199,13 @@ async function fetchSubscription(
       `${creemApi(apiKey)}/subscriptions?subscription_id=${encodeURIComponent(subscriptionId)}`,
       apiKey,
     )) as CreemSubscription | null
-    return body?.id ? body : null
+    const stored = body?.id ? body : null
+
+    if (stored && isLiveStatus(stored.status)) return stored
+    if (!owner) return stored
+    // Costs a search only for a subscriber who is already lapsed or cancelled,
+    // and only once a minute per user — never on the healthy path.
+    return (await findSubscription(apiKey, owner.id, owner.email, customerId)) ?? stored
   }
 
   if (!owner) return null
