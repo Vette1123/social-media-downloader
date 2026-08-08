@@ -10,7 +10,9 @@
 
 // Creem product share links. The product name carries the plan — "Annual"
 // is what `variantOf` in billing/webhook.ts matches on — so renaming a
-// product in the dashboard silently relabels the plan on the account page.
+// product, from the dashboard or over the API, silently relabels the plan on
+// the account page. Any future name for the yearly product must keep the word
+// "annual" or "year" in it.
 export const PRO_CHECKOUT_MONTHLY = 'https://creem.io/product/prod_YlRkuWMTOagrCSiGSzdwU'
 export const PRO_CHECKOUT_ANNUAL = 'https://creem.io/product/prod_5UH0C3CxN8uL0HTlRCTuhG'
 
