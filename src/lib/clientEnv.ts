@@ -71,9 +71,21 @@ export function nowMs(): number {
   return Date.now()
 }
 
-/** `12 August`-style date, the one format every account-facing date uses. */
+/**
+ * `12 August`-style date, the one format every account-facing date uses, with
+ * the year added once the date is not obviously in the coming months.
+ *
+ * An annual subscriber renews on the same calendar day they bought, so the
+ * short form renders "renews August 8" to someone reading it on August 8. That
+ * is exactly a year out and reads as today. Anything past this December gets
+ * the year; a monthly renewal, which is what the short form was written for,
+ * still does not.
+ */
 export function formatDate(at: number): string {
-  return new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })
+  const date = new Date(at)
+  const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' }
+  if (date.getFullYear() !== new Date(nowMs()).getFullYear()) options.year = 'numeric'
+  return date.toLocaleDateString(undefined, options)
 }
 
 /** Guards anything that touches `window`/`document` — false until hydrated. */
