@@ -128,7 +128,7 @@ function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
           <>
             Annual includes a call with the developer.{' '}
             <a
-              href={`mailto:${siteConfig.author.email}?subject=${encodeURIComponent('Book a call — Pro annual')}`}
+              href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Book a call — Pro annual')}`}
               className='text-cyan-300 hover:text-cyan-200'
             >
               Book one

@@ -20,10 +20,21 @@ export const siteConfig = {
     'Social Media Downloader — paste a TikTok, X, Instagram, Facebook, or YouTube link to save HD video, MP3 audio, or images without a watermark.',
   locale: 'en_US',
   foundingYear: 2024,
+  /**
+   * The one public contact address, for support, billing receipts and takedown
+   * notices alike.
+   *
+   * A domain address rather than a personal inbox, for three reasons that all
+   * point the same way: the merchant of record prints it on every receipt and
+   * will not accept a free-provider address; a rights holder reading /terms
+   * should be answered by the product, not by someone's Yahoo account; and it
+   * used to be emitted as machine-readable JSON-LD, which is how a personal
+   * address ends up on scraper lists. Routed by Cloudflare Email Routing.
+   */
+  supportEmail: 'support@socialdownloader.space',
   author: {
     name: 'Mohamed Gado',
     url: 'https://www.mohamedgado.com',
-    email: 'boogado@yahoo.com',
     twitter: '@Sadge1996',
     jobTitle: 'Software Engineer',
   },

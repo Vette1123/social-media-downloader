@@ -13,7 +13,7 @@ const personNode = {
   '@id': `${siteConfig.url}/#person`,
   name: siteConfig.author.name,
   url: siteConfig.author.url,
-  email: `mailto:${siteConfig.author.email}`,
+  email: `mailto:${siteConfig.supportEmail}`,
   jobTitle: siteConfig.author.jobTitle,
   sameAs: [
     siteConfig.links.twitter,
