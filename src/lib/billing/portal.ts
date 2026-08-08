@@ -8,39 +8,8 @@
 
 import { requireDb, type WorkerEnv } from '../apiRoutes'
 import { loadSession, sessionCookieOf } from '../auth/session'
+import { billingFailure as portalFailure } from './clickResponse'
 import { creemApi, creemHeaders } from './creem'
-
-/**
- * Whether a human is looking at this response.
- *
- * This endpoint is reached by clicking a link, so its failures are rendered by
- * a browser — and a browser renders `{"success":false,"error":"No
- * subscription"}` as exactly that, on a blank page, with no way back to the
- * site. `Sec-Fetch-Mode: navigate` is sent by every browser that supports it;
- * the Accept sniff covers the rest.
- */
-function isNavigation(request: Request): boolean {
-  if (request.headers.get('Sec-Fetch-Mode') === 'navigate') return true
-  return (request.headers.get('Accept') ?? '').includes('text/html')
-}
-
-/**
- * Send a failed portal click back to the account page with a reason, so the
- * page can explain it in the site's own voice. Programmatic callers still get
- * the JSON they can act on.
- */
-function portalFailure(
-  request: Request,
-  reason: 'none' | 'unavailable',
-  error: string,
-  status: number,
-): Response {
-  if (!isNavigation(request)) {
-    return Response.json({ success: false, error }, { status })
-  }
-  const location = new URL(`/account?billing=${reason}`, request.url)
-  return new Response(null, { status: 302, headers: { Location: location.toString() } })
-}
 
 /**
  * Creem documents the field as `customer_portal_link`, but the response is

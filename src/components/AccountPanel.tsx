@@ -43,7 +43,7 @@ import {
   PRO_CHECKOUT_MONTHLY,
   PRO_PRICE_ANNUAL,
   PRO_PRICE_MONTHLY,
-  checkoutHref,
+  type ProVariant,
   isProCheckoutConfigured,
 } from '@/config/pro'
 import { PAST_DUE_GRACE_MS, paidThrough } from '@/lib/billing/entitlement'
@@ -62,6 +62,11 @@ const CHECKOUT_POLL_TIMEOUT_MS = 30_000
 
 const ACTION_BUTTON_CLASS =
   'btn-grad inline-flex rounded-xl px-5 py-2.5 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 active:scale-95'
+/**
+ * Stays below the 4.5:1 floor the rest of the muted text now clears, because
+ * looking unavailable is the whole job: WCAG 1.4.3 exempts inactive controls,
+ * and a disabled button legible as a live one is the worse bug.
+ */
 const DISABLED_BUTTON_CLASS =
   'inline-flex cursor-not-allowed rounded-xl bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white/40 ring-1 ring-white/10'
 const SECONDARY_BUTTON_CLASS =
@@ -78,7 +83,7 @@ const TOGGLE_GROUP_CLASS = 'inline-flex rounded-full border border-white/10 bg-w
  * customer.
  */
 const QUIET_BUTTON_CLASS =
-  'inline-flex rounded-xl px-3 py-2 text-sm font-medium text-white/45 outline-none transition-colors hover:text-white/80 focus-visible:ring-2 focus-visible:ring-cyan-400/60 disabled:cursor-not-allowed disabled:opacity-60'
+  'inline-flex rounded-xl px-3 py-2 text-sm font-medium text-white/50 outline-none transition-colors hover:text-white/80 focus-visible:ring-2 focus-visible:ring-cyan-400/60 disabled:cursor-not-allowed disabled:opacity-60'
 
 function toggleButtonClass(active: boolean): string {
   return `rounded-full px-3 py-1 text-xs font-medium transition-colors ${
@@ -203,12 +208,20 @@ function buyerOf(userId: string | null): Buyer | null {
   return { userId }
 }
 
-function checkoutLink(base: string, buyer: Buyer): string {
-  return checkoutHref(base, buyer.userId)
+/**
+ * Checkout goes through our own Worker, never straight to Creem.
+ *
+ * The route picks the store from the API key the Worker actually holds, so a
+ * test deployment cannot charge a real card, and it records the attempt so a
+ * buyer whose first webhook is lost can still be found. Neither is knowable
+ * here — this bundle is static, and the key is a secret it never sees.
+ */
+function checkoutLink(variant: ProVariant): string {
+  return `/api/billing/checkout?variant=${variant}`
 }
 
-function checkoutBaseFor(variant: string | null | undefined): string {
-  return variant === 'annual' ? PRO_CHECKOUT_ANNUAL : PRO_CHECKOUT_MONTHLY
+function checkoutVariantFor(variant: string | null | undefined): ProVariant {
+  return variant === 'annual' ? 'annual' : 'monthly'
 }
 
 /**
@@ -230,7 +243,7 @@ function CheckoutPendingButton() {
       >
         Card payments opening shortly
       </button>
-      <p className='text-xs text-white/40'>
+      <p className='text-xs text-white/50'>
         Your account is ready — nothing to redo once payments are live.
       </p>
     </div>
@@ -250,7 +263,7 @@ function PlanPicker({ buyer }: { buyer: Buyer | null }) {
           {PRO_PRICE_ANNUAL}
           <span className='text-sm font-medium text-white/50'>/year</span>
         </p>
-        <a href={checkoutLink(PRO_CHECKOUT_ANNUAL, buyer)} className={`${ACTION_BUTTON_CLASS} mt-3`}>
+        <a href={checkoutLink('annual')} className={`${ACTION_BUTTON_CLASS} mt-3`}>
           Get annual
         </a>
       </Surface>
@@ -259,7 +272,7 @@ function PlanPicker({ buyer }: { buyer: Buyer | null }) {
           {PRO_PRICE_MONTHLY}
           <span className='text-sm font-medium text-white/50'>/month</span>
         </p>
-        <a href={checkoutLink(PRO_CHECKOUT_MONTHLY, buyer)} className={`${SECONDARY_BUTTON_CLASS} mt-3`}>
+        <a href={checkoutLink('monthly')} className={`${SECONDARY_BUTTON_CLASS} mt-3`}>
           Get monthly
         </a>
       </Surface>
@@ -325,6 +338,7 @@ function CancelPlanButton({ plan }: { plan: PlanState | null }) {
             : 'Your next charge is stopped. You keep Pro to the end of the period you have already paid for, and nothing further will be charged.'
         }
         confirmLabel='Cancel my plan'
+        dismissLabel='Keep my plan'
         onCancel={() => setConfirming(false)}
         onConfirm={() => void cancel()}
       />
@@ -374,11 +388,22 @@ function PlanAction({
     case 'ended': {
       if (!buyer) return <CheckoutPendingButton />
       const label = bucket === 'cancelled' ? 'Resubscribe' : 'Subscribe again'
-      const href = checkoutLink(checkoutBaseFor(plan?.variant), buyer)
+      const href = checkoutLink(checkoutVariantFor(plan?.variant))
       return (
-        <a href={href} className={ACTION_BUTTON_CLASS}>
-          {label}
-        </a>
+        <div className='flex flex-wrap items-center gap-2'>
+          <a href={href} className={ACTION_BUTTON_CLASS}>
+            {label}
+          </a>
+          {/* A cancelled subscriber is still a paying one until the period ends:
+              they have a card on file and a receipt they may need. Dropping the
+              portal the moment they cancelled left the one screen that could
+              produce an invoice with no way to reach it. `ended` keeps it too —
+              Creem still holds the customer, and past invoices outlive the
+              subscription. */}
+          <a href='/api/billing/portal' className={SECONDARY_BUTTON_CLASS}>
+            Manage billing
+          </a>
+        </div>
       )
     }
   }
@@ -411,7 +436,7 @@ function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | n
           want to know at that moment are whether access stops immediately
           (it does not) and whether money comes back (it does not). */}
       {isRenewing(bucket) && (
-        <p className='mt-3 text-xs text-white/40'>
+        <p className='mt-3 text-xs text-white/50'>
           Cancelling stops the next charge. Pro runs to the end of the period
           you have paid for, and charges are final.
         </p>
@@ -438,7 +463,7 @@ function PreferencesSection() {
       <h2 className='text-lg font-semibold text-white'>Preferences</h2>
       <div className='mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs'>
         <div className='flex items-center gap-2'>
-          <span className='text-white/40'>Format</span>
+          <span className='text-white/50'>Format</span>
           <div role='group' aria-label='Download format' className={TOGGLE_GROUP_CLASS}>
             {(['video', 'audio'] as const).map((f) => (
               <button
@@ -456,7 +481,7 @@ function PreferencesSection() {
 
         {format === 'video' && (
           <div className='flex items-center gap-2'>
-            <span className='text-white/40'>Quality</span>
+            <span className='text-white/50'>Quality</span>
             <div role='group' aria-label='Preferred video quality' className={TOGGLE_GROUP_CLASS}>
               {(['hd', 'sd'] as const).map((q) => (
                 <button
@@ -593,7 +618,7 @@ function AccountSection({
           confirmed — three deliberate acts, none of them reachable by accident.
           A native <details>, so the collapsed state costs no JavaScript. */}
       <details className='group mt-6 border-t border-white/10 pt-4'>
-        <summary className='inline-flex list-none items-center gap-1.5 text-xs font-medium text-white/40 transition-colors hover:text-white/70'>
+        <summary className='inline-flex list-none items-center gap-1.5 text-xs font-medium text-white/50 transition-colors hover:text-white/70'>
           <ChevronDownIcon
             className='h-3 w-3 transition-transform duration-200 group-open:rotate-180'
             aria-hidden

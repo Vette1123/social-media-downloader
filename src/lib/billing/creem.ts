@@ -19,8 +19,12 @@ const TEST = 'https://test-api.creem.io/v1'
  * change, with no second setting to forget — and no way to point a live key at
  * the sandbox by accident.
  */
+export function isCreemTestKey(apiKey: string): boolean {
+  return apiKey.startsWith('creem_test_')
+}
+
 export function creemApi(apiKey: string): string {
-  return apiKey.startsWith('creem_test_') ? TEST : PRODUCTION
+  return isCreemTestKey(apiKey) ? TEST : PRODUCTION
 }
 
 /** Creem authenticates with a bare key header, not a Bearer token. */

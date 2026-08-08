@@ -51,6 +51,8 @@ export interface UserRow extends BillingRow {
   sub_variant: string | null
   sub_renews_at: number | null
   sub_updated_at: number | null
+  /** When this user last opened a checkout. See migrations/0006. */
+  sub_checkout_at: number | null
 }
 
 /**
@@ -125,7 +127,11 @@ export const USER_COLUMNS =
   'users.id, users.google_sub, users.email, users.name, users.picture, ' +
   'users.created_at, users.prefs, ' +
   'users.sub_id, users.sub_customer_id, users.sub_status, users.sub_variant, ' +
-  'users.sub_renews_at, users.sub_ends_at, users.sub_past_due_since, users.sub_updated_at'
+  'users.sub_renews_at, users.sub_ends_at, users.sub_past_due_since, users.sub_updated_at, ' +
+  // Read on every refresh so `needsReconcile` can spot a buyer whose first
+  // webhook was lost — they have no sub_id, so this stamp is the only trace
+  // that a purchase was ever attempted.
+  'users.sub_checkout_at'
 
 /**
  * Mint a session, evicting the oldest if the user is already at the cap.

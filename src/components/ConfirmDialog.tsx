@@ -28,6 +28,15 @@ export interface ConfirmDialogProps {
   /** The consequence, in plain words — this is the part people actually read. */
   body: string
   confirmLabel: string
+  /**
+   * The safe answer, when "Cancel" would be ambiguous.
+   *
+   * On a dialog that cancels a subscription, both buttons otherwise read as a
+   * cancel — "Cancel" to back out, "Cancel my plan" to go through — and the
+   * word means opposite things one button apart. Naming the outcome ("Keep my
+   * plan") is what makes the pair readable at a glance.
+   */
+  dismissLabel?: string
   /** `danger` paints the confirm red. `neutral` is for merely inconvenient. */
   tone?: 'danger' | 'neutral'
   onConfirm: () => void
@@ -39,6 +48,7 @@ export function ConfirmDialog({
   title,
   body,
   confirmLabel,
+  dismissLabel = 'Cancel',
   tone = 'danger',
   onConfirm,
   onCancel,
@@ -89,7 +99,7 @@ export function ConfirmDialog({
             onClick={onCancel}
             className='btn-ghost btn-press rounded-xl px-4 py-2 text-sm font-medium'
           >
-            Cancel
+            {dismissLabel}
           </button>
           <button
             type='button'

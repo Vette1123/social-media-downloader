@@ -16,6 +16,38 @@
 export const PRO_CHECKOUT_MONTHLY = 'https://creem.io/product/prod_YlRkuWMTOagrCSiGSzdwU'
 export const PRO_CHECKOUT_ANNUAL = 'https://creem.io/product/prod_5UH0C3CxN8uL0HTlRCTuhG'
 
+export type ProVariant = 'monthly' | 'annual'
+
+/**
+ * The same two products in Creem's test store.
+ *
+ * These exist so the *key decides the store*. Baking the live links into the
+ * static bundle while the Worker ran a test key meant a real visitor clicking
+ * "Get annual" was charged for real, their webhook failed its signature check
+ * against the test secret, and the repair path — holding a test key — could not
+ * see their live subscription to fix it. They paid and got nothing recoverable.
+ * Nobody can hit that now: the link is built per click from whichever key the
+ * Worker actually holds, so test secrets can only ever produce test checkouts.
+ */
+const PRO_CHECKOUT_TEST: Record<ProVariant, string> = {
+  monthly: 'https://creem.io/test/product/prod_6Naj4QA8zIEXVIpmHh9R3B',
+  annual: 'https://creem.io/test/product/prod_4JdUh8fUcY5OpmUwFeOkd4',
+}
+
+const PRO_CHECKOUT_LIVE: Record<ProVariant, string> = {
+  monthly: PRO_CHECKOUT_MONTHLY,
+  annual: PRO_CHECKOUT_ANNUAL,
+}
+
+export function isProVariant(value: string | null): value is ProVariant {
+  return value === 'monthly' || value === 'annual'
+}
+
+/** The product link for this variant in the store the given key belongs to. */
+export function proCheckoutBase(testMode: boolean, variant: ProVariant): string {
+  return (testMode ? PRO_CHECKOUT_TEST : PRO_CHECKOUT_LIVE)[variant]
+}
+
 export const PRO_PRICE_MONTHLY = '$3'
 export const PRO_PRICE_ANNUAL = '$24'
 
