@@ -15,7 +15,7 @@
 
 import type { D1Database } from '@cloudflare/workers-types'
 import { creemApi, creemHeaders } from './creem'
-import { patchFromSubscription, type CreemSubscription } from './webhook'
+import { applySubscriptionPatch, patchFromSubscription, type CreemSubscription } from './webhook'
 
 export const RECONCILE_STALE_MS = 24 * 60 * 60 * 1000
 
@@ -59,6 +59,7 @@ export interface ReconcileOwner {
 interface TargetRow {
   id: string
   sub_customer_id: string | null
+  sub_variant: string | null
   sub_updated_at: number | null
   sub_past_due_since: number | null
   sub_reconciled_at: number | null
@@ -193,7 +194,8 @@ async function loadTarget(
   subscriptionId: string | null,
   owner: ReconcileOwner | null | undefined,
 ): Promise<TargetRow | null> {
-  const columns = 'id, sub_customer_id, sub_updated_at, sub_past_due_since, sub_reconciled_at'
+  const columns =
+    'id, sub_customer_id, sub_variant, sub_updated_at, sub_past_due_since, sub_reconciled_at'
   if (owner) {
     return db.prepare(`SELECT ${columns} FROM users WHERE id = ?`).bind(owner.id).first<TargetRow>()
   }
@@ -248,32 +250,10 @@ export async function reconcileSubscription(
     const patch = patchFromSubscription(subscription, target, now, now)
     if (!patch) return
 
-    // Writes `sub_id` and `sub_customer_id` too, since the email
-    // fallback exists to adopt a subscription the row does not have yet. Keyed
-    // on the primary key so the adoption and the plain refresh are the same
-    // statement. `sub_customer_id` coalesces rather than overwrites: a search
-    // result with `customer` unexpanded would otherwise blank the id that
-    // found it.
-    await db
-      .prepare(
-        `UPDATE users SET
-           sub_id = ?, sub_customer_id = COALESCE(?, sub_customer_id),
-           sub_status = ?, sub_variant = ?, sub_renews_at = ?,
-           sub_ends_at = ?, sub_past_due_since = ?, sub_updated_at = ?
-         WHERE id = ?`,
-      )
-      .bind(
-        patch.sub_id,
-        patch.sub_customer_id,
-        patch.sub_status,
-        patch.sub_variant,
-        patch.sub_renews_at,
-        patch.sub_ends_at,
-        patch.sub_past_due_since,
-        patch.sub_updated_at,
-        target.id,
-      )
-      .run()
+    // Writes `sub_id` and `sub_customer_id` too, since the email fallback exists
+    // to adopt a subscription the row does not have yet — so the adoption and the
+    // plain refresh are the same statement, the one the webhook also writes.
+    await applySubscriptionPatch(db, target.id, patch)
   } catch {
     // Nothing to do — the next refresh tries again.
   }

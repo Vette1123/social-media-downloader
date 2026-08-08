@@ -45,12 +45,21 @@ describe('isProAt', () => {
   })
 
   /**
-   * A stopped subscription must not be rescued by an end date that has not
-   * passed yet. `scheduled_cancel` is still running; `canceled` has already
-   * stopped, and only the first one is allowed to consult `sub_ends_at`.
+   * The rule the whole cancel design rests on: an annual subscriber who cancels
+   * in Creem's portal gets `canceled` immediately, with eleven months still paid
+   * for. They keep those months. Creem treats that status as final; we treat the
+   * money as what settles it.
    */
-  it('is false when already cancelled, even with a future end date', () => {
-    expect(isProAt(row({ sub_status: 'canceled', sub_ends_at: NOW + DAY }), NOW)).toBe(false)
+  it('keeps Pro when cancelled outright but the paid period is still running', () => {
+    expect(isProAt(row({ sub_status: 'canceled', sub_ends_at: NOW + DAY }), NOW)).toBe(true)
+  })
+
+  it('drops Pro once an outright cancel has run past its paid period', () => {
+    expect(isProAt(row({ sub_status: 'canceled', sub_ends_at: NOW - DAY }), NOW)).toBe(false)
+  })
+
+  it('drops Pro exactly at the end of the paid period, not after it', () => {
+    expect(isProAt(row({ sub_status: 'canceled', sub_ends_at: NOW }), NOW)).toBe(false)
   })
 
   it('keeps Pro on day 13 of the past_due grace', () => {
@@ -72,6 +81,8 @@ describe('isProAt', () => {
     expect(isProAt(row({ sub_status: 'past_due', sub_past_due_since: null }), NOW)).toBe(false)
   })
 
+  // `canceled` is in this list on purpose: with no end date recorded there is no
+  // paid period to honour, so it fails closed like the rest.
   it.each(['paused', 'unpaid', 'expired', 'canceled'])('is false when %s', (status) => {
     expect(isProAt(row({ sub_status: status }), NOW)).toBe(false)
   })

@@ -26,6 +26,7 @@ import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
 import { verifyToken } from './proToken'
 import { handleWebhook } from './billing/webhook'
 import { handlePortal } from './billing/portal'
+import { handleCancel } from './billing/cancel'
 import {
   handleAccount,
   handleAuthCallback,
@@ -432,6 +433,7 @@ export const API_ROUTES: Record<string, { method: string; handler: Handler }> = 
   '/api/youtube': { method: 'GET', handler: nativeMediaRoute('Direct YouTube download') },
   '/api/billing/webhook': { method: 'POST', handler: handleWebhook },
   '/api/billing/portal': { method: 'GET', handler: handlePortal },
+  '/api/billing/cancel': { method: 'POST', handler: handleCancel },
   '/api/auth/google': { method: 'GET', handler: handleAuthStart },
   '/api/auth/callback': { method: 'GET', handler: handleAuthCallback },
   '/api/auth/refresh': { method: 'POST', handler: handleRefresh },

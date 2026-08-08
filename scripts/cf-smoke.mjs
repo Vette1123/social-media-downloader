@@ -572,6 +572,22 @@ function buildChecks() {
       },
     },
 
+    {
+      // A route that cancels a subscription must refuse an anonymous caller. If
+      // this ever answers 200 it is cancelling somebody's plan for them, so the
+      // check treats a success body as a failure regardless of the status.
+      name: 'api/billing/cancel refuses an anonymous caller',
+      request: { pathname: '/api/billing/cancel', method: 'POST', json: {} },
+      check: async (response, body) => {
+        if (response.status !== 401 && response.status !== 503) {
+          return `expected 401 (no session) or 503 (unconfigured), got ${response.status}`
+        }
+        const text = new TextDecoder().decode(body)
+        if (text.includes('"success":true')) return 'anonymous cancel was accepted'
+        return null
+      },
+    },
+
     nativeMediaGuard('api/slideshow', {
       pathname: '/api/slideshow',
       method: 'POST',

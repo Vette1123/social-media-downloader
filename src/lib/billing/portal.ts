@@ -7,7 +7,7 @@
  */
 
 import { requireDb, type WorkerEnv } from '../apiRoutes'
-import { SESSION_COOKIE, loadSession, readCookie } from '../auth/session'
+import { loadSession, sessionCookieOf } from '../auth/session'
 import { creemApi, creemHeaders } from './creem'
 
 /**
@@ -73,11 +73,7 @@ export async function handlePortal(
     )
   }
 
-  const user = await loadSession(
-    db,
-    readCookie(request.headers.get('Cookie'), SESSION_COOKIE),
-    Date.now(),
-  )
+  const user = await loadSession(db, sessionCookieOf(request), Date.now())
   // Creem generates the portal for a *customer*, so the customer id is what
   // this needs — not the subscription id. Both are written by the same
   // webhook, so a user missing this one has never had a purchase land.

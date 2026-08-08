@@ -138,6 +138,8 @@ export interface SubscriptionPatch {
 interface CurrentRow {
   sub_updated_at: number | null
   sub_past_due_since: number | null
+  /** Read only to be preserved — see `variantOf`. */
+  sub_variant?: string | null
 }
 
 /**
@@ -152,9 +154,19 @@ function parseTime(value: string | number | null | undefined): number | null {
   return Number.isNaN(parsed) ? null : parsed
 }
 
-/** Anything not obviously annual is monthly — the two products are ours. */
-function variantOf(name: string | undefined): string {
-  return /year|annual/i.test(name ?? '') ? 'annual' : 'monthly'
+/**
+ * Anything not obviously annual is monthly — the two products are ours.
+ *
+ * A payload with no product at all is a different question from a payload with a
+ * monthly one, so it keeps whatever the row already knows. Creem expands
+ * `product` on webhooks and on search results, but the cancel endpoint's reply
+ * need not, and defaulting there would quietly rewrite an annual subscriber to
+ * monthly the moment they cancelled — putting a $3 "Resubscribe" in front of
+ * someone who had been paying $24 a year.
+ */
+function variantOf(name: string | undefined, current: CurrentRow | null): string {
+  if (name) return /year|annual/i.test(name) ? 'annual' : 'monthly'
+  return current?.sub_variant ?? 'monthly'
 }
 
 /**
@@ -204,7 +216,7 @@ export function patchFromSubscription(
     sub_id: subscriptionId,
     sub_customer_id: customer?.id ?? null,
     sub_status: status,
-    sub_variant: variantOf(product?.name),
+    sub_variant: variantOf(product?.name, current),
     // Creem only sends a next charge date while one is actually scheduled, so
     // a subscription set to lapse falls back to the date it lapses on. Both
     // answer the same question for the account page: when does this change?
@@ -219,6 +231,7 @@ export function patchFromSubscription(
 interface TargetRow extends BillingRow {
   id: string
   sub_id: string | null
+  sub_variant: string | null
   sub_updated_at: number | null
 }
 
@@ -226,7 +239,7 @@ interface TargetRow extends BillingRow {
 // rows scanned, so both lookups touch one row (or the handful sharing an
 // address) rather than the table.
 const TARGET_COLUMNS =
-  'id, sub_id, sub_status, sub_ends_at, sub_past_due_since, sub_updated_at'
+  'id, sub_id, sub_status, sub_variant, sub_ends_at, sub_past_due_since, sub_updated_at'
 
 /** Which identifier found the row. Email is buyer-supplied; `user_id` is ours. */
 export type MatchedBy = 'user_id' | 'email'
@@ -285,6 +298,16 @@ async function resolveTarget(
 }
 
 /**
+ * Statuses that mean Creem is charging for this subscription right now.
+ *
+ * Used below as "this event is about the subscription the customer is actually
+ * on", which is the only thing that should be allowed to displace another.
+ */
+function isLiveStatus(status: string | undefined): boolean {
+  return status === 'active' || status === 'trialing'
+}
+
+/**
  * Whether this event may write over the row it resolved to.
  *
  * The row already holding this exact subscription, or holding none, is always
@@ -294,21 +317,79 @@ async function resolveTarget(
  *   a $3 subscription under a victim's address; letting that seize a row would
  *   orphan the victim's real subscription and point their "Manage billing"
  *   button at the attacker's portal.
- * - **Matched by our own `user_id`.** Only if what they hold is already dead.
- *   Someone who cancels monthly A and buys annual B still gets A's
- *   `subscription.expired` weeks later, with a newer timestamp than B — that
- *   event must not take Pro away from the annual subscriber it keeps billing.
+ * - **Matched by our own `user_id`, event is for a subscription Creem is
+ *   billing.** Always. A subscription being charged for supersedes whatever the
+ *   row holds, because that is the one the customer is on now.
+ * - **Matched by our own `user_id`, event is for a stopped subscription.** Only
+ *   if what they hold is already dead. Someone who cancels monthly A and buys
+ *   annual B still gets A's `subscription.expired` weeks later, with a newer
+ *   timestamp than B — that event must not take Pro away from the annual
+ *   subscriber Creem keeps billing.
+ *
+ * The live-supersedes rule is what makes resubscribing possible at all. Without
+ * it the row's own entitlement locks it: a customer whose cancelled annual still
+ * runs to next August cannot buy anything, because every event for the new
+ * subscription is refused for as long as the old one keeps them Pro. That was
+ * survivable while `canceled` revoked immediately and `scheduled_cancel` was
+ * rare; it stopped being survivable the moment paid-through became the rule for
+ * both — see `isProAt`.
+ *
+ * Staleness is not the hole it looks like. `patchFromSubscription`'s replay guard
+ * drops any event whose timestamp is not newer than what the row already holds,
+ * so a late redelivery of the *old* subscription's `active` cannot win this way;
+ * only an event that is genuinely newer gets here.
  */
 export function mayApply(
   row: BillingRow & { sub_id: string | null },
   subscriptionId: string,
   by: MatchedBy,
   now: number,
+  incomingStatus?: string,
 ): boolean {
   const stored = row.sub_id
   if (!stored || stored === subscriptionId) return true
   if (by === 'email') return false
+  if (isLiveStatus(incomingStatus)) return true
   return !isProAt(row, now)
+}
+
+/**
+ * The one statement that writes subscription state.
+ *
+ * Shared by the webhook, the reconcile repair and the cancel endpoint. All three
+ * write the same eight columns from the same patch, and a column added to one of
+ * them but not the others is a divergence nothing would catch — the row would
+ * simply be right or wrong depending on which writer got there first.
+ *
+ * Keyed on the primary key, never on `email`. `sub_customer_id` coalesces rather
+ * than overwrites, because a payload that arrives with `customer` unexpanded
+ * would otherwise blank the id the billing portal is reached by.
+ */
+export async function applySubscriptionPatch(
+  db: D1Database,
+  userId: string,
+  patch: SubscriptionPatch,
+): Promise<void> {
+  await db
+    .prepare(
+      `UPDATE users SET
+         sub_id = ?, sub_customer_id = COALESCE(?, sub_customer_id),
+         sub_status = ?, sub_variant = ?, sub_renews_at = ?,
+         sub_ends_at = ?, sub_past_due_since = ?, sub_updated_at = ?
+       WHERE id = ?`,
+    )
+    .bind(
+      patch.sub_id,
+      patch.sub_customer_id,
+      patch.sub_status,
+      patch.sub_variant,
+      patch.sub_renews_at,
+      patch.sub_ends_at,
+      patch.sub_past_due_since,
+      patch.sub_updated_at,
+      userId,
+    )
+    .run()
 }
 
 /**
@@ -394,33 +475,14 @@ export async function handleWebhook(
   if (!target) return ok()
 
   const now = Date.now()
-  if (!mayApply(target.row, subscriptionId, target.by, now)) return ok()
+  if (!mayApply(target.row, subscriptionId, target.by, now, subscription.status)) return ok()
 
   const patch = patchFromSubscription(subscription, target.row, now, payload.created_at)
   if (!patch) return ok()
 
   try {
-    // Keyed on the primary key, never on `email`: one row, always the one the
-    // guard above just cleared.
-    await db
-      .prepare(
-        `UPDATE users SET
-           sub_id = ?, sub_customer_id = ?, sub_status = ?, sub_variant = ?,
-           sub_renews_at = ?, sub_ends_at = ?, sub_past_due_since = ?, sub_updated_at = ?
-         WHERE id = ?`,
-      )
-      .bind(
-        patch.sub_id,
-        patch.sub_customer_id,
-        patch.sub_status,
-        patch.sub_variant,
-        patch.sub_renews_at,
-        patch.sub_ends_at,
-        patch.sub_past_due_since,
-        patch.sub_updated_at,
-        target.row.id,
-      )
-      .run()
+    // One row, always the one the guard above just cleared.
+    await applySubscriptionPatch(db, target.row.id, patch)
   } catch (error) {
     if (isUniqueViolation(error)) {
       // Another row already holds this subscription. Retrying cannot fix it, and
