@@ -67,6 +67,21 @@ export default function Terms() {
           </section>
 
           <section>
+            <h2 className='mb-2 text-lg font-semibold text-white'>Trademarks and affiliation</h2>
+            <p>
+              {siteConfig.name} is an independent tool and is{' '}
+              <strong className='text-white/90'>
+                not affiliated with, endorsed by, or sponsored by
+              </strong>{' '}
+              TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit,
+              Threads, Snapchat, Twitch, Vimeo, or any other platform named on
+              this site. Those names and logos belong to their respective
+              owners and are used only to describe which links this tool
+              accepts.
+            </p>
+          </section>
+
+          <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Rights holders</h2>
             <p>
               We do not host, store, or index media. Files are fetched from the
