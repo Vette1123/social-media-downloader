@@ -663,7 +663,13 @@ function useCheckoutPolling(pro: boolean): 'idle' | 'polling' | 'timeout' {
     return () => clearInterval(interval)
   }, [])
 
-  return phase
+  // Pro wins over the phase, rather than waiting for the next tick to notice.
+  // `tick` is what clears the interval, so the phase it holds lags the state
+  // change by up to one interval, and the whole point of this notice is to be
+  // gone the instant there is a plan to show. It also covers the case where
+  // the repair lands after the 30s timeout: someone looking at their own live
+  // subscription must not be told it is still being set up.
+  return pro ? 'idle' : phase
 }
 
 /**
