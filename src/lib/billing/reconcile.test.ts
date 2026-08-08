@@ -36,7 +36,7 @@ describe('needsReconcile', () => {
   it('is true when forced with no subscription id — that is the case it exists for', () => {
     // Only a webhook writes sub_id, so the user whose first webhook
     // was lost is exactly the user with none. `reconcileSubscription` finds
-    // theirs by customer; the outbound call is bounded by the cooldown, not here.
+    // theirs by searching; the outbound call is bounded by the cooldown, not here.
     expect(needsReconcile({ sub_id: null, sub_updated_at: null }, NOW, true)).toBe(true)
   })
 })
@@ -69,10 +69,24 @@ const SUBSCRIPTION = {
   status: 'active',
   product: { id: 'prod_m', name: 'Pro Monthly' },
   customer: { id: 'cust_1', email: 'paid@example.com' },
+  metadata: { user_id: 'u1' },
   next_transaction_date: '2026-09-02T00:00:00.000Z',
   current_period_end_date: null,
   updated_at: '2026-08-02T00:00:00.000Z',
 }
+
+/** Someone else's subscription, which the walk must step over. */
+const OTHER_SUBSCRIPTION = {
+  ...SUBSCRIPTION,
+  id: 'sub_someone_else',
+  customer: { id: 'cust_9', email: 'other@example.com' },
+  metadata: { user_id: 'u9' },
+}
+
+const page = (items: unknown[], nextPage: number | null = null) => ({
+  items,
+  pagination: { next_page: nextPage },
+})
 
 const PENDING_ROW = {
   id: 'u1',
@@ -83,16 +97,18 @@ const PENDING_ROW = {
 }
 
 /**
- * Answers by path, because the lost-first-webhook repair is two hops: the
- * address resolves to a customer, and the customer to their subscriptions.
+ * Answers by path. `search` may be a single page or one page per call, since
+ * the repair walks the store a page at a time.
  */
-function stubFetch(routes: { customer?: unknown; search?: unknown; byId?: unknown }) {
+function stubFetch(routes: { search?: unknown | unknown[]; byId?: unknown }) {
+  let searchCalls = 0
   const fetchMock = vi.fn(async (url: string | URL | Request) => {
     const href = String(url)
     const pick = () => {
-      if (href.includes('/customers?')) return routes.customer
-      if (href.includes('/subscriptions/search')) return routes.search
-      return routes.byId
+      if (!href.includes('/subscriptions/search')) return routes.byId
+      const pages = routes.search
+      if (!Array.isArray(pages)) return pages
+      return pages[searchCalls++]
     }
     return new Response(JSON.stringify(pick() ?? null), { status: 200 })
   })
@@ -115,21 +131,20 @@ describe('reconcileSubscription', () => {
     vi.unstubAllGlobals()
   })
 
-  it('finds a forced reconcile via the customer when the row has no subscription id', async () => {
-    const fetchMock = stubFetch({
-      customer: { id: 'cust_1' },
-      search: { items: [SUBSCRIPTION] },
-    })
+  /**
+   * The search endpoint accepts no filter at all — it 400s on `customer_id`,
+   * on `email`, on anything but paging — so the match happens here, against
+   * the `metadata.user_id` the checkout link put on the subscription.
+   */
+  it('finds a forced reconcile by walking the store when the row has no subscription id', async () => {
+    const fetchMock = stubFetch({ search: page([SUBSCRIPTION]) })
     const { db, statements } = fakeDb(PENDING_ROW)
 
     await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'paid@example.com' })
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
-      'https://api.creem.io/v1/customers?email=paid%40example.com',
-    )
-    expect(String(fetchMock.mock.calls[1]?.[0])).toBe(
-      'https://api.creem.io/v1/subscriptions/search?customer_id=cust_1',
+      'https://api.creem.io/v1/subscriptions/search?page_number=1&page_size=100',
     )
 
     // The subscription is adopted onto the row, keyed on the primary key.
@@ -141,20 +156,61 @@ describe('reconcileSubscription', () => {
     expect(write?.bindings.at(-1)).toBe('u1')
   })
 
-  it('skips the email lookup when the row already knows its customer', async () => {
-    const fetchMock = stubFetch({ search: { items: [SUBSCRIPTION] } })
-    const { db } = fakeDb({ ...PENDING_ROW, sub_customer_id: 'cust_known' })
+  it('steps over other people’s subscriptions on the way', async () => {
+    stubFetch({ search: page([OTHER_SUBSCRIPTION, SUBSCRIPTION]) })
+    const { db, statements } = fakeDb(PENDING_ROW)
+
+    await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'paid@example.com' })
+
+    expect(writeOf(statements)?.bindings[0]).toBe('sub_new')
+  })
+
+  it('follows next_page until it finds the owner', async () => {
+    const fetchMock = stubFetch({
+      search: [page([OTHER_SUBSCRIPTION], 2), page([SUBSCRIPTION])],
+    })
+    const { db, statements } = fakeDb(PENDING_ROW)
+
+    await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'paid@example.com' })
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain('page_number=2')
+    expect(writeOf(statements)?.bindings[0]).toBe('sub_new')
+  })
+
+  it('stops at the last page rather than paging forever', async () => {
+    const fetchMock = stubFetch({ search: page([OTHER_SUBSCRIPTION]) })
+    const { db, statements } = fakeDb(PENDING_ROW)
 
     await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'paid@example.com' })
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
-      'https://api.creem.io/v1/subscriptions/search?customer_id=cust_known',
-    )
+    expect(writeOf(statements)).toBeUndefined()
+  })
+
+  /** A purchase that arrived without our metadata still has to be findable. */
+  it('falls back to the address, case-insensitively', async () => {
+    const noMetadata = { ...SUBSCRIPTION, metadata: null }
+    stubFetch({ search: page([noMetadata]) })
+    const { db, statements } = fakeDb(PENDING_ROW)
+
+    await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'PAID@Example.com' })
+
+    expect(writeOf(statements)?.bindings[0]).toBe('sub_new')
+  })
+
+  it('matches on a stored customer id when there is neither metadata nor a match on email', async () => {
+    const noMetadata = { ...SUBSCRIPTION, metadata: null }
+    stubFetch({ search: page([noMetadata]) })
+    const { db, statements } = fakeDb({ ...PENDING_ROW, sub_customer_id: 'cust_1' })
+
+    await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'changed@example.com' })
+
+    expect(writeOf(statements)?.bindings[0]).toBe('sub_new')
   })
 
   it('stamps the cooldown before it calls Creem', async () => {
-    stubFetch({ customer: { id: 'cust_1' }, search: { items: [SUBSCRIPTION] } })
+    stubFetch({ search: page([SUBSCRIPTION]) })
     const { db, statements } = fakeDb(PENDING_ROW)
 
     await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'paid@example.com' })
@@ -166,7 +222,7 @@ describe('reconcileSubscription', () => {
   it('spends no Creem call while the cooldown is live', async () => {
     // ?reconcile=1 is a client-controlled flag: the checkout poll alone sends
     // fifteen of these in thirty seconds.
-    const fetchMock = stubFetch({ customer: { id: 'cust_1' }, search: { items: [SUBSCRIPTION] } })
+    const fetchMock = stubFetch({ search: page([SUBSCRIPTION]) })
     const { db } = fakeDb({ ...PENDING_ROW, sub_reconciled_at: NOW - RECONCILE_COOLDOWN_MS + 1 })
 
     await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'paid@example.com' })
@@ -216,8 +272,8 @@ describe('reconcileSubscription', () => {
     expect(statements).toHaveLength(0)
   })
 
-  it('leaves the row alone when Creem knows of no matching customer', async () => {
-    stubFetch({ customer: {} })
+  it('leaves the row alone when the store holds nothing for this user', async () => {
+    stubFetch({ search: page([]) })
     const { db, statements } = fakeDb(PENDING_ROW)
 
     await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'nobody@example.com' })
@@ -225,8 +281,8 @@ describe('reconcileSubscription', () => {
     expect(writeOf(statements)).toBeUndefined()
   })
 
-  it('leaves the row alone when the customer has no subscriptions', async () => {
-    stubFetch({ customer: { id: 'cust_1' }, search: { items: [] } })
+  it('leaves the row alone when the store is empty', async () => {
+    stubFetch({ search: page([]) })
     const { db, statements } = fakeDb(PENDING_ROW)
 
     await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'nobody@example.com' })

@@ -36,7 +36,7 @@ export const RECONCILE_COOLDOWN_MS = 60 * 1000
  *
  * Only a webhook ever writes that id, so the user whose very first webhook was
  * lost is precisely the user with no id — and they are the one asking "I paid
- * and nothing happened". `reconcileSubscription` falls back to an email lookup
+ * and nothing happened". `reconcileSubscription` finds theirs by searching
  * for them. The outbound call is bounded by `RECONCILE_COOLDOWN_MS`, not by
  * this predicate.
  */
@@ -50,7 +50,7 @@ export function needsReconcile(
   return (row.sub_updated_at ?? 0) + RECONCILE_STALE_MS <= now
 }
 
-/** The signed-in user, when the caller has one. Lets the email fallback work. */
+/** The signed-in user, when the caller has one. Lets the search below match. */
 export interface ReconcileOwner {
   id: string
   email: string | null
@@ -74,65 +74,113 @@ async function getJson(url: string, apiKey: string): Promise<unknown | null> {
 }
 
 /**
- * The customer id for an address, when we do not already hold one.
+ * How far the search is willing to walk.
  *
- * Only reached on the lost-first-webhook path: that user has no subscription
- * id and no customer id by definition, and the address they signed in with is
- * the sole thread back to what they bought.
+ * `/v1/subscriptions/search` takes no filter of any kind, so finding one
+ * subscription means paging the whole store and matching locally. These bounds
+ * cap that at 500 subscriptions, newest first.
+ *
+ * ponytail: linear scan, capped. Only the lost-first-webhook path reaches it,
+ * and only once a minute per user, so it is one request in practice. If the
+ * store ever outgrows 500 live subscriptions, ask Creem for a filter rather
+ * than raising this — an uncapped scan on a public endpoint is a way to get
+ * the API key rate-limited.
  */
-async function customerIdByEmail(apiKey: string, email: string): Promise<string | null> {
-  const body = (await getJson(
-    `${creemApi(apiKey)}/customers?email=${encodeURIComponent(email)}`,
-    apiKey,
-  )) as { id?: string } | null
-  return body?.id ?? null
+const SEARCH_PAGE_SIZE = 100
+const SEARCH_MAX_PAGES = 5
+
+interface SearchPage {
+  items?: CreemSubscription[]
+  pagination?: { next_page?: number | null }
 }
 
 /**
- * Creem returns a list envelope from the search endpoint whose key has varied,
- * so the array is found rather than assumed. A shape we do not recognise
- * yields nothing and the row is simply left for the next attempt — the same
- * outcome as any other failed repair.
+ * Whether this subscription belongs to the user we are repairing.
+ *
+ * `metadata.user_id` is ours, put there by the checkout link, and it is the
+ * binding to trust. Email is the fallback for a purchase that somehow arrived
+ * without it, and is compared case-insensitively because an address that
+ * differs only in case is the same mailbox.
  */
-function firstSubscription(body: unknown): CreemSubscription | null {
-  const record = body as Record<string, unknown> | null
-  if (!record) return null
-  const list = [record.items, record.data, record.subscriptions].find(Array.isArray)
-  return (list?.[0] as CreemSubscription) ?? null
+function belongsTo(
+  subscription: CreemSubscription,
+  ownerId: string,
+  email: string | null,
+  customerId: string | null,
+): boolean {
+  if (subscription.metadata?.user_id === ownerId) return true
+
+  const customer = expandedCustomer(subscription)
+  if (customerId && customer?.id === customerId) return true
+  if (!email || !customer?.email) return false
+  return customer.email.toLowerCase() === email.toLowerCase()
+}
+
+function expandedCustomer(
+  subscription: CreemSubscription,
+): { id?: string; email?: string } | null {
+  const customer = subscription.customer
+  return customer && typeof customer === 'object' ? customer : null
+}
+
+/**
+ * The user's subscription, found by walking the store.
+ *
+ * Creem has no way to ask "what does this customer have": `/v1/customers` can
+ * turn an address into a customer, but nothing accepts that customer as a
+ * filter — `/v1/subscriptions` takes only a subscription id, and the search
+ * endpoint rejects every property except paging with a 400. Since each search
+ * item arrives with `customer` expanded and our own `metadata` attached, the
+ * match is done here instead, which also removes the address lookup entirely.
+ */
+async function findSubscription(
+  apiKey: string,
+  ownerId: string,
+  email: string | null,
+  customerId: string | null,
+): Promise<CreemSubscription | null> {
+  const api = creemApi(apiKey)
+
+  for (let page = 1; page <= SEARCH_MAX_PAGES; page++) {
+    const body = (await getJson(
+      `${api}/subscriptions/search?page_number=${page}&page_size=${SEARCH_PAGE_SIZE}`,
+      apiKey,
+    )) as SearchPage | null
+
+    const items = body?.items
+    if (!Array.isArray(items) || items.length === 0) return null
+
+    const match = items.find((item) => belongsTo(item, ownerId, email, customerId))
+    if (match) return match
+
+    if (!body?.pagination?.next_page) return null
+  }
+  return null
 }
 
 /**
  * What Creem currently believes about this user's subscription.
  *
- * By id when we have one. Otherwise by customer — stored if a previous event
- * landed, else looked up from the address — which costs a second call but only
- * for the user whose first webhook never arrived.
+ * By id when we have one, which is one request and the overwhelmingly common
+ * case. The search walk below is only for the user whose first webhook never
+ * arrived, so they have no id to ask by.
  */
 async function fetchSubscription(
   apiKey: string,
   subscriptionId: string | null,
   customerId: string | null,
-  email: string | null,
+  owner: ReconcileOwner | null | undefined,
 ): Promise<CreemSubscription | null> {
-  const api = creemApi(apiKey)
-
   if (subscriptionId) {
     const body = (await getJson(
-      `${api}/subscriptions?subscription_id=${encodeURIComponent(subscriptionId)}`,
+      `${creemApi(apiKey)}/subscriptions?subscription_id=${encodeURIComponent(subscriptionId)}`,
       apiKey,
     )) as CreemSubscription | null
     return body?.id ? body : null
   }
 
-  const customer = customerId ?? (email ? await customerIdByEmail(apiKey, email) : null)
-  if (!customer) return null
-
-  return firstSubscription(
-    await getJson(
-      `${api}/subscriptions/search?customer_id=${encodeURIComponent(customer)}`,
-      apiKey,
-    ),
-  )
+  if (!owner) return null
+  return findSubscription(apiKey, owner.id, owner.email, customerId)
 }
 
 /**
@@ -160,7 +208,7 @@ async function loadTarget(
  * Ask Creem what the subscription actually is, and write it back.
  *
  * Pass `owner` to enable the repair for a user who has no `sub_id`
- * yet: their subscription is looked up by customer and adopted.
+ * yet: their subscription is found by searching the store and adopted.
  *
  * Failures are swallowed: this runs inside `waitUntil` with no one to report to,
  * and a failed repair simply leaves the row as it was for the next attempt.
@@ -190,7 +238,7 @@ export async function reconcileSubscription(
       apiKey,
       subscriptionId,
       target.sub_customer_id,
-      owner?.email ?? null,
+      owner,
     )
     if (!subscription) return
 
