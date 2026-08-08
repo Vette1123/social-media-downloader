@@ -52,9 +52,9 @@ export function rowStatusText(item: BatchItem): string {
 // than the green used for an item that actually produced a file.
 export function rowStatusColorClass(item: BatchItem): string {
   if (item.status === 'done') {
-    return categorizeResult(item.result) === 'none' ? 'text-white/45' : 'text-emerald-300'
+    return categorizeResult(item.result) === 'none' ? 'text-white/50' : 'text-emerald-300'
   }
-  if (item.status === 'failed') return isCancelled(item) ? 'text-white/40' : 'text-red-300'
+  if (item.status === 'failed') return isCancelled(item) ? 'text-white/50' : 'text-red-300'
   if (item.status === 'resolving') return 'text-cyan-300'
-  return 'text-white/40'
+  return 'text-white/50'
 }

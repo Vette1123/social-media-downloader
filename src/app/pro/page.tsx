@@ -117,7 +117,7 @@ export default function Pro() {
           </div>
         </Surface>
 
-        <p className='mt-6 text-center text-xs text-white/40'>
+        <p className='mt-6 text-center text-xs text-white/50'>
           This site trades as {siteConfig.seller}, and payments are processed by{' '}
           {siteConfig.merchantOfRecord}, who act as merchant of record &mdash; so
           your receipt and card statement show those names rather than{' '}

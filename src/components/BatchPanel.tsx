@@ -170,7 +170,7 @@ function StatusIcon({ item }: { item: BatchItem }) {
   if (item.status === 'done') {
     if (categorizeResult(item.result) === 'none') {
       return (
-        <span aria-hidden className='shrink-0 text-white/40'>
+        <span aria-hidden className='shrink-0 text-white/50'>
           –
         </span>
       )
@@ -279,7 +279,7 @@ export function BatchPanel() {
     <Surface elevation='raised' className='animate-section-in mt-4 p-4'>
       <div className='flex items-center justify-between gap-2'>
         <h2 className='text-sm font-semibold text-white/85'>Batch download</h2>
-        <span className='text-xs text-white/40'>
+        <span className='text-xs text-white/50'>
           {parsedUrls.length}/{MAX_BATCH_URLS} links
         </span>
       </div>
@@ -296,7 +296,7 @@ export function BatchPanel() {
       {/* One format for the whole batch — see the BatchFormat comment above
           for why this isn't per-item. */}
       <div className='mt-2 flex items-center gap-2 text-xs'>
-        <span className='text-white/40'>Format</span>
+        <span className='text-white/50'>Format</span>
         <div
           role='group'
           aria-label='Batch download format'
@@ -370,7 +370,7 @@ export function BatchPanel() {
         </ul>
       )}
 
-      <p className='mt-3 text-xs text-white/40'>
+      <p className='mt-3 text-xs text-white/50'>
         {format === 'video'
           ? 'Videos save individually as each one finishes. Photos collect into one ZIP — tap “Save all” once the queue is done.'
           : 'Audio tracks collect into one ZIP — tap “Save all” once the queue is done. A link with nothing downloadable (e.g. a playable-only embed) is marked as such, not as a failure.'}

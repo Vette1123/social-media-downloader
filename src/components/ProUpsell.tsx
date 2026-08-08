@@ -98,7 +98,7 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
           </Link>
         </div>
 
-        <p className='mt-4 text-xs text-white/40'>
+        <p className='mt-4 text-xs text-white/50'>
           {PRO_PRICE_ANNUAL} a year, or {PRO_PRICE_MONTHLY} a month. Cancel
           anytime — signed in on up to 5 devices at once.
         </p>

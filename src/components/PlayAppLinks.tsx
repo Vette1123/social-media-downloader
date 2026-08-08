@@ -48,7 +48,7 @@ export function PlayAppLinks() {
           <PlayAppLink app={app} />
         </Fragment>
       ))}
-      <span className='text-white/40'>— apps made by us</span>
+      <span className='text-white/50'>— apps made by us</span>
     </span>
   )
 }

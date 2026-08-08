@@ -191,7 +191,7 @@ function PinToggle({ pinned, onToggle }: { pinned: boolean; onToggle: () => void
       className={`btn-press pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur sm:hidden ${
         pinned
           ? 'border-cyan-300/40 bg-cyan-400/15 text-cyan-200'
-          : 'border-white/10 bg-black/50 text-white/45'
+          : 'border-white/10 bg-black/50 text-white/50'
       }`}
     >
       <Icon className='h-3.5 w-3.5' aria-hidden />

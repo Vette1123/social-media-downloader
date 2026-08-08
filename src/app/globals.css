@@ -179,6 +179,15 @@ summary {
    --surface-bg-hover is read by .card-lift / .card-hover below, so a hovered
    card steps up from its own resting fill instead of every tone snapping to
    the same grey.
+
+   MUTED TEXT FLOOR: text-white/50 on this fill. Measured against --panel
+   (#101014), white/40 reads 3.82:1 — under the 4.5:1 AA minimum for body text —
+   while /50 reads 5.33:1. Muted copy site-wide was /35–/45 and was raised in
+   one sweep; a new hint line should use /50, not a fresh guess. Deliberately
+   not extracted into a .text-muted class: this stylesheet is unlayered and
+   would outrank the `hover:text-white/80` utility every one of those elements
+   also carries, killing the hover. The one exemption is a disabled control,
+   which must read as unavailable (see DISABLED_BUTTON_CLASS in AccountPanel).
 --------------------------------------------------------------------------- */
 /* Registered so `transition-colors` can actually tween the border between
    states (the paste bar's idle → focus → error). An unregistered custom

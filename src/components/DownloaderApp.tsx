@@ -1364,7 +1364,7 @@ export function DownloaderApp() {
         </p>
       )}
 
-      <p className='mt-3 text-center text-xs text-white/45'>
+      <p className='mt-3 text-center text-xs text-white/50'>
         Videos, reels, shorts, MP3 audio &amp; photo carousels — paste several
         links to grab them in one go
       </p>
@@ -1375,7 +1375,7 @@ export function DownloaderApp() {
           in audio mode. */}
       <div className='mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs'>
         <div className='flex items-center gap-2'>
-          <span className='text-white/40'>Format</span>
+          <span className='text-white/50'>Format</span>
           <div
             role='group'
             aria-label='Download format'
@@ -1401,7 +1401,7 @@ export function DownloaderApp() {
 
         {format === 'video' && (
           <div className='flex items-center gap-2'>
-            <span className='text-white/40'>Quality</span>
+            <span className='text-white/50'>Quality</span>
             <div
               role='group'
               aria-label='Preferred video quality'
@@ -1446,7 +1446,7 @@ export function DownloaderApp() {
             <button
               type='button'
               onClick={handleClearHistory}
-              className='flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-white/40 transition-colors hover:text-white/80'
+              className='flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-white/50 transition-colors hover:text-white/80'
             >
               <TrashIcon className='h-3 w-3' />
               Clear
@@ -1488,7 +1488,7 @@ export function DownloaderApp() {
                     <span className='block truncate text-xs text-white/80'>
                       {h.title}
                     </span>
-                    <span className='block truncate text-[10px] text-white/40'>
+                    <span className='block truncate text-[10px] text-white/50'>
                       {h.author ||
                         (h.platform ? PLATFORM_DISPLAY[h.platform] : '') ||
                         'Saved link'}
@@ -2007,7 +2007,7 @@ export function DownloaderApp() {
                 ]
                 return (
                   <div className='flex items-center justify-center gap-2 text-xs'>
-                    <span className='text-white/40'>Get it as</span>
+                    <span className='text-white/50'>Get it as</span>
                     <div
                       role='group'
                       aria-label='Re-download as'
@@ -2130,7 +2130,7 @@ export function DownloaderApp() {
               {isIOS &&
                 !!state.downloadUrl &&
                 !state.videoMetadata?.isPhotoCarousel && (
-                  <p className='text-center text-[11px] leading-relaxed text-white/45'>
+                  <p className='text-center text-[11px] leading-relaxed text-white/50'>
                     On iPhone it saves to Files. To add it to Photos, open the
                     file, tap Share, then Save Video.
                   </p>
