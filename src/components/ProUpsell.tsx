@@ -22,11 +22,15 @@ import { useTier } from '@/lib/entitlements'
  * than parking a paragraph in a corner.
  */
 
+/**
+ * Convenience only — see the note on `features` in app/pro/page.tsx. Nothing
+ * listed here may describe Pro as reaching content a free visitor cannot.
+ */
 const BENEFITS = [
-  'Paste up to 20 links and let the queue run',
+  'Paste a list and let the queue run',
   'Priority resolving on every link',
+  'Images and audio bundled into one ZIP',
   'No sponsor card, site-wide',
-  'Reaches login-gated Instagram posts',
 ] as const
 
 export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }) {
@@ -47,7 +51,7 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
       >
         <div className='min-w-0'>
           <p className='font-semibold text-white'>
-            Downloading more than one? Pro takes 20 at a time.
+            Got a list? Pro runs it as a queue.
           </p>
           <p className='mt-1 text-sm text-white/60'>
             {PRO_PRICE_MONTHLY}/mo or {PRO_PRICE_ANNUAL}/yr, sign in with
@@ -72,11 +76,11 @@ export function ProUpsell({ variant = 'full' }: { variant?: 'full' | 'compact' }
     >
       <div className='lg:col-span-7'>
         <h2 className='text-2xl font-bold tracking-tight text-balance text-white sm:text-3xl'>
-          Twenty links at once, from {PRO_PRICE_MONTHLY} a month
+          Stop babysitting the tab, from {PRO_PRICE_MONTHLY} a month
         </h2>
         <p className='mt-3 text-sm text-white/70 md:text-base'>
-          Everything on this site stays free. Pro is for the days you have a
-          folder&apos;s worth of links and no patience.
+          Everything on this site stays free, and Pro reaches nothing extra.
+          It just does the same work without you standing over it.
         </p>
 
         <div className='mt-6 flex flex-wrap items-center gap-4'>

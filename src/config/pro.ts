@@ -1,15 +1,15 @@
 /**
  * Pro's commercial constants, in one place.
  *
- * Two variants, one entitlement. Annual is presented first everywhere: Lemon
- * Squeezy charges 5% + 50¢, so the flat fee takes 22% of a $3 charge and 7% of
- * a $24 one — twelve monthly renewals net $28.20 against $22.30 for an annual,
- * which makes annual worth 79% of the revenue while removing eleven chances to
+ * Two variants, one entitlement. Annual is presented first everywhere: Creem
+ * charges roughly 4% + 40¢, so the flat fee takes 17% of a $3 charge and 2% of
+ * a $24 one — twelve monthly renewals net $28.80 against $23.20 for an annual,
+ * which makes annual worth 81% of the revenue while removing eleven chances to
  * churn and eleven flat fees.
  */
 
-export const PRO_CHECKOUT_MONTHLY = 'TEMPLATE_LS_MONTHLY_URL'
-export const PRO_CHECKOUT_ANNUAL = 'TEMPLATE_LS_ANNUAL_URL'
+export const PRO_CHECKOUT_MONTHLY = 'TEMPLATE_CREEM_MONTHLY_URL'
+export const PRO_CHECKOUT_ANNUAL = 'TEMPLATE_CREEM_ANNUAL_URL'
 
 export const PRO_PRICE_MONTHLY = '$3'
 export const PRO_PRICE_ANNUAL = '$24'
@@ -24,15 +24,19 @@ export function isProCheckoutConfigured(url: string): boolean {
 /**
  * Attach the buyer to the checkout so the webhook can find them.
  *
- * `userId` is the account's internal id and is what the webhook matches on.
- * The email is a prefill and nothing more: the buyer can edit it at checkout,
- * and paying with PayPal substitutes that account's address — so a checkout
- * built without an id can produce a purchase that matches no row at all.
- * Callers must never pass an empty one; see `buyerOf` in AccountPanel.
+ * `userId` is the account's internal id and is the only binding the webhook
+ * trusts. It rides in Creem's `metadata[...]` bracket syntax, which a
+ * shareable payment link accepts as a query parameter and hands back on every
+ * subscription event.
+ *
+ * Creem's payment links take no email prefill, so unlike the previous
+ * provider there is nothing to pass here but the id — which was always the
+ * part that mattered. The webhook's email path is a last-resort fallback that
+ * can never seize a row already holding a subscription; see `mayApply`.
+ * Callers must never pass an empty id; see `buyerOf` in AccountPanel.
  */
-export function checkoutHref(base: string, userId: string, email: string): string {
+export function checkoutHref(base: string, userId: string): string {
   const url = new URL(base)
-  url.searchParams.set('checkout[custom][user_id]', userId)
-  url.searchParams.set('checkout[email]', email)
+  url.searchParams.set('metadata[user_id]', userId)
   return url.toString()
 }

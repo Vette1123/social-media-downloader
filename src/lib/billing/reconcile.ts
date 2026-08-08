@@ -1,11 +1,11 @@
 /**
  * Repair for subscription rows that webhooks lost.
  *
- * Lemon Squeezy retries failed deliveries, but a webhook can still be lost for
- * good — a deploy window, a bad response we returned, an endpoint misconfigured
- * for an hour. If webhooks were the only writer, one lost delivery would leave a
- * row permanently wrong: someone who cancelled keeping Pro, or worse, someone
- * who paid not getting it.
+ * Creem retries failed deliveries, but a webhook can still be lost for good —
+ * a deploy window, a bad response we returned, an endpoint misconfigured for an
+ * hour. If webhooks were the only writer, one lost delivery would leave a row
+ * permanently wrong: someone who cancelled keeping Pro, or worse, someone who
+ * paid not getting it.
  *
  * Deliberately demand-driven rather than a Cron Trigger. A scheduled sweep would
  * walk every subscriber on a timer to fix accounts whose owners are not there to
@@ -14,12 +14,13 @@
  */
 
 import type { D1Database } from '@cloudflare/workers-types'
-import { patchFromSubscription, type SubscriptionAttributes } from './webhook'
+import { creemApi, creemHeaders } from './creem'
+import { patchFromSubscription, type CreemSubscription } from './webhook'
 
 export const RECONCILE_STALE_MS = 24 * 60 * 60 * 1000
 
 /**
- * The shortest gap between two Lemon Squeezy calls made on one user's behalf.
+ * The shortest gap between two Creem calls made on one user's behalf.
  *
  * `forced` comes from `?reconcile=1`, a query parameter the client controls, so
  * without a bound a loop of `POST /api/auth/refresh?reconcile=1` is one
@@ -57,52 +58,81 @@ export interface ReconcileOwner {
 
 interface TargetRow {
   id: string
+  ls_customer_id: string | null
   ls_updated_at: number | null
   ls_past_due_since: number | null
   ls_reconciled_at: number | null
 }
 
-interface LsSubscription {
-  id?: string
-  attributes?: SubscriptionAttributes
-}
-
-const LS_API = 'https://api.lemonsqueezy.com/v1/subscriptions'
-
-/**
- * By id when we have one, otherwise by the address the account signed in with.
- * The list endpoint returns subscriptions ordered `created_at` descending, so
- * the first result is the most recent one they bought.
- */
-function subscriptionUrl(subscriptionId: string | null, email: string | null): string | null {
-  if (subscriptionId) return `${LS_API}/${encodeURIComponent(subscriptionId)}`
-  if (email) return `${LS_API}?filter[user_email]=${encodeURIComponent(email)}`
-  return null
-}
-
-function firstSubscription(
-  data: LsSubscription | LsSubscription[] | undefined,
-): LsSubscription | null {
-  if (Array.isArray(data)) return data[0] ?? null
-  return data ?? null
-}
-
-async function fetchSubscription(
-  apiKey: string,
-  subscriptionId: string | null,
-  email: string | null,
-): Promise<LsSubscription | null> {
-  const url = subscriptionUrl(subscriptionId, email)
-  if (!url) return null
-
+async function getJson(url: string, apiKey: string): Promise<unknown | null> {
   const response = await fetch(url, {
-    headers: { Accept: 'application/vnd.api+json', Authorization: `Bearer ${apiKey}` },
+    headers: creemHeaders(apiKey),
     signal: AbortSignal.timeout(10_000),
   })
   if (!response.ok) return null
+  return response.json()
+}
 
-  const body = (await response.json()) as { data?: LsSubscription | LsSubscription[] }
-  return firstSubscription(body.data)
+/**
+ * The customer id for an address, when we do not already hold one.
+ *
+ * Only reached on the lost-first-webhook path: that user has no subscription
+ * id and no customer id by definition, and the address they signed in with is
+ * the sole thread back to what they bought.
+ */
+async function customerIdByEmail(apiKey: string, email: string): Promise<string | null> {
+  const body = (await getJson(
+    `${creemApi(apiKey)}/customers?email=${encodeURIComponent(email)}`,
+    apiKey,
+  )) as { id?: string } | null
+  return body?.id ?? null
+}
+
+/**
+ * Creem returns a list envelope from the search endpoint whose key has varied,
+ * so the array is found rather than assumed. A shape we do not recognise
+ * yields nothing and the row is simply left for the next attempt — the same
+ * outcome as any other failed repair.
+ */
+function firstSubscription(body: unknown): CreemSubscription | null {
+  const record = body as Record<string, unknown> | null
+  if (!record) return null
+  const list = [record.items, record.data, record.subscriptions].find(Array.isArray)
+  return (list?.[0] as CreemSubscription) ?? null
+}
+
+/**
+ * What Creem currently believes about this user's subscription.
+ *
+ * By id when we have one. Otherwise by customer — stored if a previous event
+ * landed, else looked up from the address — which costs a second call but only
+ * for the user whose first webhook never arrived.
+ */
+async function fetchSubscription(
+  apiKey: string,
+  subscriptionId: string | null,
+  customerId: string | null,
+  email: string | null,
+): Promise<CreemSubscription | null> {
+  const api = creemApi(apiKey)
+
+  if (subscriptionId) {
+    const body = (await getJson(
+      `${api}/subscriptions?subscription_id=${encodeURIComponent(subscriptionId)}`,
+      apiKey,
+    )) as CreemSubscription | null
+    return body?.id ? body : null
+  }
+
+  const customer = customerId ?? (email ? await customerIdByEmail(apiKey, email) : null)
+  if (!customer) return null
+
+  return firstSubscription(
+    await getJson(
+      `${api}/subscriptions/search?customer_id=${encodeURIComponent(customer)}`,
+      apiKey,
+    ),
+  )
 }
 
 /**
@@ -115,7 +145,7 @@ async function loadTarget(
   subscriptionId: string | null,
   owner: ReconcileOwner | null | undefined,
 ): Promise<TargetRow | null> {
-  const columns = 'id, ls_updated_at, ls_past_due_since, ls_reconciled_at'
+  const columns = 'id, ls_customer_id, ls_updated_at, ls_past_due_since, ls_reconciled_at'
   if (owner) {
     return db.prepare(`SELECT ${columns} FROM users WHERE id = ?`).bind(owner.id).first<TargetRow>()
   }
@@ -127,10 +157,10 @@ async function loadTarget(
 }
 
 /**
- * Ask Lemon Squeezy what the subscription actually is, and write it back.
+ * Ask Creem what the subscription actually is, and write it back.
  *
  * Pass `owner` to enable the repair for a user who has no `ls_subscription_id`
- * yet: their subscription is looked up by email and adopted.
+ * yet: their subscription is looked up by customer and adopted.
  *
  * Failures are swallowed: this runs inside `waitUntil` with no one to report to,
  * and a failed repair simply leaves the row as it was for the next attempt.
@@ -141,7 +171,7 @@ export async function reconcileSubscription(
   now: number,
   owner?: ReconcileOwner | null,
 ): Promise<void> {
-  const apiKey = process.env.LEMONSQUEEZY_API_KEY?.trim()
+  const apiKey = process.env.CREEM_API_KEY?.trim()
   if (!apiKey) return
 
   try {
@@ -150,36 +180,43 @@ export async function reconcileSubscription(
     if ((target.ls_reconciled_at ?? 0) + RECONCILE_COOLDOWN_MS > now) return
 
     // Stamped before the call, not after, so a hammered `?reconcile=1` spends a
-    // cheap D1 write per request instead of a Lemon Squeezy request per request.
+    // cheap D1 write per request instead of a Creem request per request.
     await db
       .prepare('UPDATE users SET ls_reconciled_at = ? WHERE id = ?')
       .bind(now, target.id)
       .run()
 
-    const subscription = await fetchSubscription(apiKey, subscriptionId, owner?.email ?? null)
+    const subscription = await fetchSubscription(
+      apiKey,
+      subscriptionId,
+      target.ls_customer_id,
+      owner?.email ?? null,
+    )
     if (!subscription) return
 
-    const patch = patchFromSubscription(
-      subscription.id ?? subscriptionId,
-      subscription.attributes ?? {},
-      null,
-      target,
-      now,
-    )
+    // `now` as the observed time: a polled subscription carries no event
+    // timestamp, and the object's own `updated_at` is preferred inside the
+    // patch when Creem sends one.
+    const patch = patchFromSubscription(subscription, target, now, now)
     if (!patch) return
 
-    // Writes `ls_subscription_id` too, since the email fallback exists to adopt
-    // one the row does not have yet. Keyed on the primary key so the adoption
-    // and the plain refresh are the same statement.
+    // Writes `ls_subscription_id` and `ls_customer_id` too, since the email
+    // fallback exists to adopt a subscription the row does not have yet. Keyed
+    // on the primary key so the adoption and the plain refresh are the same
+    // statement. `ls_customer_id` coalesces rather than overwrites: a search
+    // result with `customer` unexpanded would otherwise blank the id that
+    // found it.
     await db
       .prepare(
         `UPDATE users SET
-           ls_subscription_id = ?, ls_status = ?, ls_variant = ?, ls_renews_at = ?,
+           ls_subscription_id = ?, ls_customer_id = COALESCE(?, ls_customer_id),
+           ls_status = ?, ls_variant = ?, ls_renews_at = ?,
            ls_ends_at = ?, ls_past_due_since = ?, ls_updated_at = ?
          WHERE id = ?`,
       )
       .bind(
         patch.ls_subscription_id,
+        patch.ls_customer_id,
         patch.ls_status,
         patch.ls_variant,
         patch.ls_renews_at,

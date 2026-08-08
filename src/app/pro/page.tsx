@@ -8,34 +8,36 @@ import { siteConfig } from '@/config/site'
 export const metadata: Metadata = {
   title: 'Pro',
   description:
-    'Priority resolve, batch downloads, no sponsor card, and Instagram login-gated posts when a session cookie is configured. $3 a month, or $24 a year.',
+    'A queue that runs a list of links unattended, bundled ZIP output, priority resolve, and no sponsor card. $3 a month, or $24 a year.',
   alternates: { canonical: '/pro' },
 }
 
+/**
+ * Pro sells convenience over the same reach every visitor already has.
+ *
+ * Every entitlement here is a property of *this* site — how work is queued,
+ * how results are packaged, how fast a resolver is tried, who answers your
+ * email. None of them widen what a link can reach, and none of them involve
+ * this site holding credentials on your behalf. That boundary is not
+ * marketing: an entitlement on the other side of it is unsellable, because no
+ * merchant of record will process payments for one.
+ */
 const features = [
   {
+    title: 'A queue that runs itself',
+    body: 'Paste a list instead of feeding links in one at a time, and let it work through them while you do something else. Free is the same queue with one link in it.',
+  },
+  {
+    title: 'Bundled as one file',
+    body: 'Images and audio from a run come back as a single ZIP rather than a folder of separate saves. Each video still saves on its own the moment it finishes.',
+  },
+  {
     title: 'Priority resolve',
-    body: 'Your links go straight to the fastest resolver instead of walking the fallback chain. Free downloads are not throttled or queued (there is no rate limiter on this site); this only changes which resolver a Pro link tries first.',
+    body: 'Your links go straight to the fastest resolver instead of walking the fallback chain. Free downloads are not throttled or queued — there is no rate limiter on this site — and this changes the order resolvers are tried, never the result you get.',
   },
   {
-    title: 'Batch, up to 20 links',
-    body: 'Paste up to 20 links at once and resolve them as a queue. Images and audio come back bundled into one ZIP; each video saves on its own as soon as it finishes.',
-  },
-  {
-    title: 'No sponsor card',
-    body: 'Removes the one sponsor card that can appear after a download finishes, site-wide. It is the only paid placement here.',
-  },
-  {
-    title: 'Login-gated Instagram posts',
-    body: 'Resolves login-gated Instagram posts when a working session cookie is configured on our end. Public Instagram content is free for everyone and always has been. This only reaches the private, login-gated posts free requests already could not, and only when that cookie is set up.',
-  },
-  {
-    title: 'Ask for features',
-    body: 'Pro subscribers can request features and get a real answer from the person who builds this, not a support queue.',
-  },
-  {
-    title: 'Talk to the developer',
-    body: 'Annual subscribers can book a call. Limited slots each month, so it stays a real conversation.',
+    title: 'A direct line to the developer',
+    body: 'Ask for a feature and get a real answer from the person who builds this, not a support queue. Annual subscribers can also book a call — limited slots each month, so it stays a real conversation.',
   },
 ] as const
 
@@ -104,7 +106,10 @@ export default function Pro() {
 
           <p className='mt-6 text-center text-sm text-white/60'>
             Everything that is free today stays free. Pro only adds, and nothing
-            you can already do gets taken away or put behind a paywall.
+            you can already do gets taken away or put behind a paywall. Pro
+            reaches exactly what a free visitor reaches — it never unlocks
+            private, restricted, or login-only content, and you are responsible
+            for having the rights to whatever you save.
           </p>
 
           <div className='mt-8'>
@@ -113,7 +118,7 @@ export default function Pro() {
         </Surface>
 
         <p className='mt-6 text-center text-xs text-white/40'>
-          Payments are processed by Lemon Squeezy, who act as merchant of
+          Payments are processed by Creem, who act as merchant of
           record. Billing renews automatically each period; cancel any time
           from your account and Pro runs to the end of the period you paid
           for. Charges are final and no refunds are offered. See the{' '}

@@ -424,7 +424,7 @@ export async function handleAccount(
 
   if (body.delete === true) {
     // Refuse while the subscription is still entitling. Deleting the row does
-    // not cancel anything at Lemon Squeezy: it would keep billing, every later
+    // not cancel anything at Creem: it would keep billing, every later
     // webhook would match zero rows, a fresh sign-in would create a row with a
     // NULL subscription that reconcile cannot repair, and the billing portal
     // would 404 — paying forever with no Pro and no way back.

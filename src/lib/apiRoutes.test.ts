@@ -2,24 +2,31 @@ import { describe, expect, it } from 'vitest'
 import { handleDownload, resolveCacheKey, resolveFailure } from './apiRoutes'
 
 describe('resolveCacheKey', () => {
-  it('produces different keys for the same inputs in different tiers', () => {
-    const anon = resolveCacheKey('anon', 'video', 'hd', 'auto', 'https://x.com/a')
-    const auth = resolveCacheKey('auth', 'video', 'hd', 'auto', 'https://x.com/a')
-    expect(anon).not.toBe(auth)
-  })
-
-  it('produces equal keys for identical inputs in the same tier', () => {
-    const a = resolveCacheKey('anon', 'video', 'hd', 'auto', 'https://x.com/a')
-    const b = resolveCacheKey('anon', 'video', 'hd', 'auto', 'https://x.com/a')
+  it('produces equal keys for identical inputs', () => {
+    const a = resolveCacheKey('video', 'hd', 'auto', 'https://x.com/a')
+    const b = resolveCacheKey('video', 'hd', 'auto', 'https://x.com/a')
     expect(a).toBe(b)
   })
 
-  it('differs when any other input differs, holding tier constant', () => {
-    const base = resolveCacheKey('anon', 'video', 'hd', 'auto', 'https://x.com/a')
-    expect(resolveCacheKey('anon', 'image', 'hd', 'auto', 'https://x.com/a')).not.toBe(base)
-    expect(resolveCacheKey('anon', 'video', 'sd', 'auto', 'https://x.com/a')).not.toBe(base)
-    expect(resolveCacheKey('anon', 'video', 'hd', 'audio', 'https://x.com/a')).not.toBe(base)
-    expect(resolveCacheKey('anon', 'video', 'hd', 'auto', 'https://x.com/b')).not.toBe(base)
+  it('differs when any input differs', () => {
+    const base = resolveCacheKey('video', 'hd', 'auto', 'https://x.com/a')
+    expect(resolveCacheKey('image', 'hd', 'auto', 'https://x.com/a')).not.toBe(base)
+    expect(resolveCacheKey('video', 'sd', 'auto', 'https://x.com/a')).not.toBe(base)
+    expect(resolveCacheKey('video', 'hd', 'audio', 'https://x.com/a')).not.toBe(base)
+    expect(resolveCacheKey('video', 'hd', 'auto', 'https://x.com/b')).not.toBe(base)
+  })
+
+  /**
+   * The key deliberately carries no tier. A resolve returns the same payload
+   * whoever asks — Pro buys resolver ordering, never reach — so a Pro request
+   * and a free one must land on one shared entry. A tier component creeping
+   * back in would mean some entitlement had started changing what a resolve
+   * can see, which is the shape no merchant of record will underwrite.
+   */
+  it('is identical regardless of who is asking', () => {
+    expect(resolveCacheKey('video', 'hd', 'auto', 'https://x.com/a')).toBe(
+      'video|hd|auto|https://x.com/a',
+    )
   })
 })
 

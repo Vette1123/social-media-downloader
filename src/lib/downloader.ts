@@ -225,21 +225,14 @@ export class Downloader {
   private readonly mode: 'auto' | 'audio'
 
   // Pro requests try the operator's own instances first. See cobaltInstances.
+  // Ordering is the whole of the entitlement: it changes which resolver is
+  // asked first, never what a resolve is allowed to reach.
   private readonly priority: boolean
 
-  // Pro requests may send the Instagram session cookie. See instagramSessionId.
-  private readonly authenticated: boolean
-
-  constructor(opts?: {
-    quality?: 'hd' | 'sd'
-    mode?: 'auto' | 'audio'
-    priority?: boolean
-    authenticated?: boolean
-  }) {
+  constructor(opts?: { quality?: 'hd' | 'sd'; mode?: 'auto' | 'audio'; priority?: boolean }) {
     this.videoQuality = opts?.quality === 'sd' ? 'sd' : 'hd'
     this.mode = opts?.mode === 'audio' ? 'audio' : 'auto'
     this.priority = opts?.priority === true
-    this.authenticated = opts?.authenticated === true
   }
 
   private readonly userAgent =
@@ -296,27 +289,21 @@ export class Downloader {
   private readonly instagramAppId = '936619743392459'
 
   // Optional Instagram session cookie (the `sessionid` value). When set via the
-  // IG_SESSIONID env var, the GraphQL extractor sends it so login-gated posts —
-  // ones Instagram only serves to authenticated users — can be resolved. Public
-  // posts work without it, and the extractor degrades gracefully when it's
-  // absent or expired. Use a burner account: Instagram may flag an account for
-  // automated access from datacenter (e.g. Vercel) IPs.
+  // IG_SESSIONID env var, the GraphQL extractor sends it. Public posts work
+  // without it, and the extractor degrades gracefully when it's absent or
+  // expired. Use a burner account: Instagram may flag an account for automated
+  // access from datacenter (e.g. Vercel) IPs.
   //
-  // Sending it is a Pro entitlement. The burner account is a scarce, flaggable
-  // resource — Instagram bans accounts for automated access from datacenter
-  // IPs — so it is spent on paying users rather than on all traffic. A free
-  // request resolves exactly as it does today: public posts succeed, and
-  // login-gated ones fail the same way they already do.
+  // A deployment-wide operator setting, never a per-user entitlement. It used
+  // to be gated on a Pro token, which made "we send our credentials on your
+  // behalf" a thing this site sold — and that is precisely the clause every
+  // merchant of record refuses to underwrite (unauthorised access to another
+  // party's data). Nothing about a buyer's plan may influence which credentials
+  // leave this Worker.
   //
-  // IG_SESSIONID_FOR_ALL is the self-hoster's escape hatch: licensing
-  // (`authenticated`) only ever succeeds against the project owner's Lemon
-  // Squeezy account, so without this a self-hosted deployment can never reach
-  // the Pro branch and IG_SESSIONID would silently do nothing forever, even
-  // though it's a documented, previously-working feature. Setting it to '1'
-  // makes the cookie apply to every request instead of Pro-only. The hosted
-  // site must leave it unset — see README.
+  // Unset on the hosted deployment, so in practice this resolves nothing extra
+  // there; it exists for self-hosters running against their own account.
   private get instagramSessionId(): string {
-    if (!this.authenticated && process.env.IG_SESSIONID_FOR_ALL !== '1') return ''
     return process.env.IG_SESSIONID?.trim() || ''
   }
 

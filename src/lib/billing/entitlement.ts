@@ -9,13 +9,12 @@
 /**
  * How long a failed payment keeps Pro alive.
  *
- * Lemon Squeezy retries four times over two weeks before flipping a
- * subscription to `unpaid`, and most of those retries succeed — an expired card
- * is the largest single cause of involuntary churn and is not a decision to
- * leave. The cap is ours rather than theirs so that a changed retry schedule, a
- * wedged subscription, or a webhook that never lands cannot mean unbounded free
- * service. In normal operation Lemon Squeezy resolves the subscription first and
- * this never fires.
+ * A card that expired is the largest single cause of involuntary churn and is
+ * not a decision to leave, so a `past_due` subscription keeps Pro while the
+ * provider retries the charge. The cap is ours rather than theirs so that a
+ * changed retry schedule, a wedged subscription, or a webhook that never lands
+ * cannot mean unbounded free service. In normal operation Creem resolves the
+ * subscription — to `active` or to `unpaid` — long before this fires.
  */
 export const PAST_DUE_GRACE_MS = 14 * 24 * 60 * 60 * 1000
 
@@ -28,20 +27,28 @@ export interface BillingRow {
 
 /**
  * A `switch` rather than chained ternaries, and an explicit `default: false`,
- * so a status Lemon Squeezy adds later fails closed instead of matching some
- * broader condition by accident.
+ * so a status Creem adds later fails closed instead of matching some broader
+ * condition by accident.
+ *
+ * Note `scheduled_cancel` versus `canceled`, which is the one place Creem's
+ * vocabulary is sharper than the provider this replaced. A single `cancelled`
+ * status used to mean "will not renew, still paid up", and the end date was
+ * what separated that from a subscription that had actually stopped. Creem
+ * says which it is: `scheduled_cancel` is still running to the end of a paid
+ * period, `canceled` has already stopped. Treating the two alike in either
+ * direction is a bug that bills nobody but silently keeps or revokes Pro.
  */
 export function isProAt(row: BillingRow | null, now: number): boolean {
   if (!row?.ls_status) return false
 
   switch (row.ls_status) {
     case 'active':
-    case 'on_trial':
+    case 'trialing':
       return true
 
-    // "Cancelled" in Lemon Squeezy means *will not renew*, not *stopped now*.
-    // The customer has already paid through the end of the period.
-    case 'cancelled':
+    // Cancelled but not yet lapsed: the customer has already paid through the
+    // end of the current period and keeps Pro until it runs out.
+    case 'scheduled_cancel':
       return row.ls_ends_at !== null && now < row.ls_ends_at
 
     // A null start means we never observed the transition, so there is no
@@ -52,6 +59,9 @@ export function isProAt(row: BillingRow | null, now: number): boolean {
         now < row.ls_past_due_since + PAST_DUE_GRACE_MS
       )
 
+    // `canceled`, `expired`, `unpaid`, `paused` — all stopped, all fail here
+    // by falling through rather than by being listed, so a new stopped-ish
+    // status Creem introduces lands on the safe side too.
     default:
       return false
   }

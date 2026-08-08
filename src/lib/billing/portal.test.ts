@@ -25,7 +25,7 @@ afterEach(() => {
 
 describe('handlePortal failures', () => {
   it('sends a browser back to the account page with a reason', async () => {
-    vi.stubEnv('LEMONSQUEEZY_API_KEY', 'test-key')
+    vi.stubEnv('CREEM_API_KEY', 'test-key')
     const response = await handlePortal(portalRequest(NAVIGATION), undefined, env)
 
     expect(response.status).toBe(302)
@@ -35,7 +35,7 @@ describe('handlePortal failures', () => {
   })
 
   it('recognises a navigation from Accept alone', async () => {
-    vi.stubEnv('LEMONSQUEEZY_API_KEY', 'test-key')
+    vi.stubEnv('CREEM_API_KEY', 'test-key')
     const response = await handlePortal(
       portalRequest({ Accept: 'text/html,application/xhtml+xml' }),
       undefined,
@@ -46,7 +46,7 @@ describe('handlePortal failures', () => {
   })
 
   it('still answers a programmatic caller with JSON', async () => {
-    vi.stubEnv('LEMONSQUEEZY_API_KEY', 'test-key')
+    vi.stubEnv('CREEM_API_KEY', 'test-key')
     const response = await handlePortal(portalRequest({ Accept: 'application/json' }), undefined, env)
 
     expect(response.status).toBe(404)
@@ -54,7 +54,7 @@ describe('handlePortal failures', () => {
   })
 
   it('redirects rather than exposing an unconfigured deployment to a visitor', async () => {
-    vi.stubEnv('LEMONSQUEEZY_API_KEY', '')
+    vi.stubEnv('CREEM_API_KEY', '')
     const response = await handlePortal(portalRequest(NAVIGATION), undefined, env)
 
     expect(response.status).toBe(302)

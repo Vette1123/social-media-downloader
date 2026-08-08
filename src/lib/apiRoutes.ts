@@ -112,8 +112,8 @@ function asDirectTunnel(url: string | undefined): string | undefined {
 }
 
 /**
- * A Pro token unlocks resolver ordering and (via `authenticated`) sending the
- * operator's Instagram session cookie — never anything that can error. An
+ * A Pro token unlocks resolver ordering and nothing else — never anything that
+ * can error, and never anything that widens what a resolve may reach. An
  * absent, malformed, or expired token degrades silently to the normal free
  * path rather than erroring.
  *
@@ -129,20 +129,25 @@ async function isPriorityRequest(request: Request): Promise<boolean> {
 }
 
 /**
- * The cache key for a resolve, pinning the one invariant the whole review
- * cared most about: a free request can never read a cache entry produced by
- * an authenticated resolve, because `tier` is baked into every key. Extracted
- * so that invariant is asserted by a test rather than resting on an inline
- * string literal — see apiRoutes.test.ts.
+ * The cache key for a resolve: everything that changes the payload, and
+ * nothing that doesn't.
+ *
+ * There is deliberately no per-tier component. A resolve's result no longer
+ * depends on who asked — Pro changes resolver *ordering* only — so every
+ * request can safely share one entry, and the edge cache applies to all
+ * traffic instead of being skipped for signed-in users. The `auth`/`anon`
+ * split this used to carry existed to keep a credentialed Instagram result out
+ * of a shared store; that entitlement is gone, and with it the reason to
+ * fragment the cache. Extracted so the format is asserted by a test rather
+ * than resting on an inline string literal — see apiRoutes.test.ts.
  */
 export function resolveCacheKey(
-  tier: 'auth' | 'anon',
   type: string,
   quality: 'hd' | 'sd',
   mode: 'auto' | 'audio',
   url: string,
 ): string {
-  return `${tier}|${type}|${quality}|${mode}|${url}`
+  return `${type}|${quality}|${mode}|${url}`
 }
 
 /**
@@ -212,9 +217,9 @@ export async function handleDownload(
 
     const platform = detectPlatform(url)
 
-    // A Pro token only changes resolver ordering and Instagram authentication —
-    // nothing is gated behind it in a way that errors, so an absent or stale
-    // token degrades silently to the normal free path.
+    // A Pro token only changes resolver ordering — nothing is gated behind it
+    // in a way that errors, so an absent or stale token degrades silently to
+    // the normal free path.
     const priority = await isPriorityRequest(request)
 
     // Serve an identical recent resolve from cache — skips a full extractor
@@ -228,25 +233,18 @@ export async function handleDownload(
     // shared across every isolate in the colo and is what makes a popular link
     // essentially free to re-resolve.
     //
-    // `auth` is part of the key because an authenticated resolve can return a
-    // login-gated post an anonymous one cannot. Ordering (priority) is NOT in
-    // the key — it does not change the payload. See Task 15.
-    const tier = priority ? 'auth' : 'anon'
-    const cacheKey = resolveCacheKey(tier, type, preferredQuality, mode, url)
+    // Neither tier is keyed on who asked, and neither is skipped for Pro:
+    // ordering (priority) does not change the payload, and nothing else about
+    // a request does either. The edge cache is a shared, externally-
+    // addressable store keyed on a URL anyone can construct from the
+    // open-source key format, which is harmless precisely because every entry
+    // in it is now something a public resolve would have returned anyway.
+    const cacheKey = resolveCacheKey(type, preferredQuality, mode, url)
     const cached = getCached(cacheKey)
     if (cached) return cachedResponse(cached, 'HIT')
 
-    // The edge cache (caches.default) is a shared, externally-addressable
-    // store keyed on a URL anyone can construct from the open-source key
-    // format — the source URL is the only variable. An anonymous entry there
-    // is harmless (guessing one buys nothing a public resolve wouldn't
-    // already give you), but an `auth` entry can hold a login-gated
-    // Instagram result, which is a paid entitlement. So authenticated
-    // resolves skip this tier entirely, both read and write; the per-isolate
-    // Map above still absorbs repeats, and Pro traffic is a small fraction of
-    // requests, so nothing meaningful is lost.
     const origin = new URL(request.url).origin
-    const edge = priority ? null : await readEdgeCache(origin, cacheKey)
+    const edge = await readEdgeCache(origin, cacheKey)
     if (edge) {
       // Promote into this isolate so a second repeat skips even the edge
       // lookup, which is I/O and therefore latency the Map does not cost.
@@ -254,12 +252,7 @@ export async function handleDownload(
       return cachedResponse(edge, 'EDGE')
     }
 
-    const downloader = new Downloader({
-      quality: preferredQuality,
-      mode,
-      priority,
-      authenticated: priority,
-    })
+    const downloader = new Downloader({ quality: preferredQuality, mode, priority })
     const videoData = await downloader.downloadVideo(url)
 
     // Accept the result if it yielded any downloadable media: a video stream, a
@@ -344,7 +337,7 @@ export async function handleDownload(
     // again for storage.
     const body = JSON.stringify(payload)
     setCached(cacheKey, body)
-    if (!priority) writeEdgeCache(origin, cacheKey, body, ctx)
+    writeEdgeCache(origin, cacheKey, body, ctx)
 
     return new Response(body, {
       headers: { 'Content-Type': 'application/json', 'X-Cache': 'MISS' },
