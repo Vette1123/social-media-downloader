@@ -34,6 +34,21 @@ const API = 'https://api.cloudflare.com/client/v4'
 // Worker secret and gets uploaded.
 const CREDENTIAL_KEYS = new Set(['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID'])
 
+/**
+ * Whether a key stays on this machine instead of being uploaded.
+ *
+ * A `_TEST` twin of a live secret exists so this repo can drive the payment
+ * provider's test store from a terminal — buy something, replay a webhook,
+ * check a status — without touching real money. The Worker must never hold
+ * one. It reads `CREEM_API_KEY`, so an uploaded `CREEM_API_KEY_TEST` would do
+ * nothing except leave a second, live-adjacent credential sitting in the
+ * deployment for no reason, and make "which store is this thing pointed at"
+ * a question with two answers.
+ */
+function isLocalOnly(key) {
+  return CREDENTIAL_KEYS.has(key) || key.endsWith('_TEST')
+}
+
 const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.socialdownloader.space'
 ).replace(/\/+$/, '')
@@ -233,7 +248,7 @@ async function stepSecrets(ctx) {
   step('Secrets')
 
   const entries = Object.entries(ctx.env).filter(
-    ([key, value]) => !CREDENTIAL_KEYS.has(key) && value !== '',
+    ([key, value]) => !isLocalOnly(key) && value !== '',
   )
   if (entries.length === 0) {
     info('No Worker secrets set in .env.cloudflare — skipping.')
