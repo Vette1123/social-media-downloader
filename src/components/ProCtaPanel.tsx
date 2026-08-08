@@ -11,36 +11,42 @@ import {
 } from '@/config/pro'
 
 /**
- * Both variants share one deployment condition — either both are live Lemon
- * Squeezy URLs or neither is, since they come from the same pending store —
- * so one flag gates the whole panel rather than two independent ones.
+ * Both variants share one deployment condition — either both are live Creem
+ * payment links or neither is, since they come from the same store — so one
+ * flag gates the copy rather than two independent ones.
  */
 const CHECKOUT_READY =
   isProCheckoutConfigured(PRO_CHECKOUT_ANNUAL) && isProCheckoutConfigured(PRO_CHECKOUT_MONTHLY)
 
-type CtaState = 'unavailable' | 'signed-out' | 'signed-in'
+type CtaState = 'signed-out' | 'signed-in'
 
-function ctaState(signedIn: boolean | undefined): CtaState {
-  if (!CHECKOUT_READY) return 'unavailable'
-  return signedIn ? 'signed-in' : 'signed-out'
-}
+/**
+ * A pending store changes what this panel *says*, never whether it does
+ * anything.
+ *
+ * It used to render a disabled "Checkout coming soon" button, which turned the
+ * one page a payment provider actually opens during review into the
+ * coming-soon shell their own checklist rejects — and it dead-ended the
+ * visitor too, since signing in is a real, working step whether or not card
+ * payments are switched on yet. Both states now start the same flow; only the
+ * lede admits where the store is.
+ */
+const PENDING_LEDE =
+  'Card payments switch on as soon as our payment provider finishes verifying the store. Create your account now and Pro is one click when they do.'
 
-const CTA_COPY: Record<CtaState, { lede: string }> = {
-  unavailable: { lede: 'The store is being set up — checkout is not live yet.' },
-  'signed-out': {
-    lede: 'One Google sign-in, no password, no card typed on this page.',
-  },
-  'signed-in': { lede: 'Pick monthly or annual, and manage it any time, from your account.' },
+const CTA_COPY: Record<CtaState, string> = {
+  'signed-out': 'One Google sign-in, no password, no card typed on this page.',
+  'signed-in': 'Pick monthly or annual, and manage it any time, from your account.',
 }
 
 /**
  * The only interactive part of /pro. Everything else on the page is static
  * marketing copy.
  *
- * Checkout requires signing in first, so this never links to Lemon Squeezy
- * directly: a signed-out visitor is sent to Google sign-in, and a signed-in
- * one is sent to /account, the one place that knows the user's email and can
- * build the checkout link for the plan they pick.
+ * Checkout requires signing in first, so this never links to Creem directly:
+ * a signed-out visitor is sent to Google sign-in, and a signed-in one is sent
+ * to /account, the one place that knows the user's id and can build the
+ * checkout link for the plan they pick.
  */
 export function ProCtaPanel() {
   const { signedIn } = useAccount()
@@ -49,22 +55,12 @@ export function ProCtaPanel() {
   // never shown the sign-in CTA first and then swapped to "Continue to your
   // account" under their cursor. Gated on `hydrated` because the prerendered
   // markup cannot know, and that gate settles before the first paint.
-  const state = ctaState(hydrated ? (signedIn ?? hasAccountHint()) : signedIn)
+  const here = hydrated ? (signedIn ?? hasAccountHint()) : signedIn
+  const state: CtaState = here ? 'signed-in' : 'signed-out'
 
   return (
     <Surface elevation='raised' className='flex flex-col items-center gap-3 p-5 text-center sm:p-6'>
-      <p className='text-sm text-white/60'>{CTA_COPY[state].lede}</p>
-
-      {state === 'unavailable' && (
-        <button
-          type='button'
-          disabled
-          title='Checkout is not set up yet'
-          className='inline-flex cursor-not-allowed rounded-xl bg-white/[0.06] px-6 py-3 text-sm font-semibold text-white/40 ring-1 ring-white/10'
-        >
-          Checkout coming soon
-        </button>
-      )}
+      <p className='text-sm text-white/60'>{CHECKOUT_READY ? CTA_COPY[state] : PENDING_LEDE}</p>
 
       {state === 'signed-out' && (
         <a

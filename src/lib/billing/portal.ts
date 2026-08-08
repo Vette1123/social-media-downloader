@@ -1,13 +1,14 @@
 /**
  * A fresh signed customer-portal URL, per click.
  *
- * Lemon Squeezy signs these and expires them after 24 hours, and their docs say
- * not to store them — a cached URL would be a dead "Manage billing" button a day
- * after the last webhook.
+ * Creem mints these per request and expires them, so nothing here is cached —
+ * a stored URL would be a dead "Manage billing" button by the time anyone
+ * pressed it.
  */
 
 import { requireDb, type WorkerEnv } from '../apiRoutes'
 import { SESSION_COOKIE, loadSession, readCookie } from '../auth/session'
+import { creemApi, creemHeaders } from './creem'
 
 /**
  * Whether a human is looking at this response.
@@ -41,6 +42,18 @@ function portalFailure(
   return new Response(null, { status: 302, headers: { Location: location.toString() } })
 }
 
+/**
+ * Creem documents the field as `customer_portal_link`, but the response is
+ * read defensively: a portal click that 502s because the key was renamed is a
+ * paying customer who cannot reach their own billing, and the fallbacks cost
+ * one property read each.
+ */
+function portalUrlOf(body: unknown): string | null {
+  const record = body as Record<string, unknown> | null
+  const candidate = record?.customer_portal_link ?? record?.url ?? record?.link
+  return typeof candidate === 'string' && candidate.length > 0 ? candidate : null
+}
+
 /** GET /api/billing/portal */
 export async function handlePortal(
   request: Request,
@@ -50,7 +63,7 @@ export async function handlePortal(
   const db = requireDb(env)
   if (db instanceof Response) return db
 
-  const apiKey = process.env.LEMONSQUEEZY_API_KEY?.trim()
+  const apiKey = process.env.CREEM_API_KEY?.trim()
   if (!apiKey) {
     return portalFailure(
       request,
@@ -65,24 +78,23 @@ export async function handlePortal(
     readCookie(request.headers.get('Cookie'), SESSION_COOKIE),
     Date.now(),
   )
-  if (!user?.ls_subscription_id) {
+  // Creem generates the portal for a *customer*, so the customer id is what
+  // this needs — not the subscription id. Both are written by the same
+  // webhook, so a user missing this one has never had a purchase land.
+  if (!user?.ls_customer_id) {
     return portalFailure(request, 'none', 'No subscription', 404)
   }
 
   try {
-    const response = await fetch(
-      `https://api.lemonsqueezy.com/v1/subscriptions/${user.ls_subscription_id}`,
-      {
-        headers: { Accept: 'application/vnd.api+json', Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(10_000),
-      },
-    )
+    const response = await fetch(`${creemApi(apiKey)}/customers/billing`, {
+      method: 'POST',
+      headers: { ...creemHeaders(apiKey), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_id: user.ls_customer_id }),
+      signal: AbortSignal.timeout(10_000),
+    })
     if (!response.ok) throw new Error('upstream')
 
-    const body = (await response.json()) as {
-      data?: { attributes?: { urls?: { customer_portal?: string } } }
-    }
-    const portal = body.data?.attributes?.urls?.customer_portal
+    const portal = portalUrlOf(await response.json())
     if (!portal) throw new Error('no portal url')
 
     return new Response(null, { status: 302, headers: { Location: portal } })

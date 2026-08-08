@@ -46,6 +46,7 @@ export interface UserRow extends BillingRow {
   created_at: number
   prefs: string | null
   ls_subscription_id: string | null
+  ls_customer_id: string | null
   ls_variant: string | null
   ls_renews_at: number | null
   ls_updated_at: number | null
@@ -111,8 +112,8 @@ export function clearCookieHeaders(): string[] {
 export const USER_COLUMNS =
   'users.id, users.google_sub, users.email, users.name, users.picture, ' +
   'users.created_at, users.prefs, ' +
-  'users.ls_subscription_id, users.ls_status, users.ls_variant, users.ls_renews_at, ' +
-  'users.ls_ends_at, users.ls_past_due_since, users.ls_updated_at'
+  'users.ls_subscription_id, users.ls_customer_id, users.ls_status, users.ls_variant, ' +
+  'users.ls_renews_at, users.ls_ends_at, users.ls_past_due_since, users.ls_updated_at'
 
 /**
  * Mint a session, evicting the oldest if the user is already at the cap.

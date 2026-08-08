@@ -184,7 +184,7 @@ describe('handleAccount — deleting an account', () => {
 
   it('still refuses a cancelled subscription that has paid time left', async () => {
     const { env } = fakeDb(
-      userRow({ ls_status: 'cancelled', ls_ends_at: Date.now() + 86_400_000 }),
+      userRow({ ls_status: 'scheduled_cancel', ls_ends_at: Date.now() + 86_400_000 }),
     )
 
     expect((await handleAccount(deleteRequest(), undefined, env)).status).toBe(409)

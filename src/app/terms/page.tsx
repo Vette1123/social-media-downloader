@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/terms' },
 }
 
-const UPDATED = '2 August 2026'
+const UPDATED = '8 August 2026'
 
 export default function Terms() {
   return (
@@ -50,10 +50,44 @@ export default function Terms() {
           </section>
 
           <section>
+            <h2 className='mb-2 text-lg font-semibold text-white'>What this site will not do</h2>
+            <p>
+              {siteConfig.name} reaches only what is already publicly
+              accessible. It does not bypass DRM, defeat a paywall, sign in on
+              your behalf, or reach private accounts, subscriber-only posts, or
+              anything else a platform serves only to a logged-in viewer. No
+              subscription tier changes this: Pro affects how work is queued
+              and how results are packaged, never what a link can reach.
+            </p>
+            <p className='mt-2'>
+              Using this site to infringe copyright, or to access material you
+              have no right to, is a breach of these terms. We may refuse
+              service or close an account for it.
+            </p>
+          </section>
+
+          <section>
+            <h2 className='mb-2 text-lg font-semibold text-white'>Rights holders</h2>
+            <p>
+              We do not host, store, or index media. Files are fetched from the
+              source platform at the moment you ask for them and are never kept
+              on our servers, so there is nothing here to take down. If you
+              believe this service is being used to infringe your rights, email{' '}
+              <a
+                className='text-cyan-300 hover:text-cyan-200'
+                href={`mailto:${siteConfig.author.email}`}
+              >
+                {siteConfig.author.email}
+              </a>{' '}
+              and we will respond.
+            </p>
+          </section>
+
+          <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Pro billing</h2>
             <p>
               Pro is a subscription, billed monthly or annually, processed by
-              Lemon Squeezy, who act as merchant of record. It renews
+              Creem, who act as merchant of record. It renews
               automatically at the end of each billing period until you
               cancel.
             </p>
@@ -66,7 +100,7 @@ export default function Terms() {
             </p>
             <p className='mt-2'>
               If a renewal payment fails, we keep Pro active for 14 days while
-              Lemon Squeezy retries the charge, so a card update usually
+              Creem retries the charge, so a card update usually
               recovers the subscription with no interruption. If payment still
               has not gone through after 14 days, Pro access ends.
             </p>
@@ -82,7 +116,7 @@ export default function Terms() {
               If you were charged after cancelling, or charged twice, that is a
               billing error rather than a refund request: email us and we will
               correct it. Nothing here affects the statutory rights you have
-              where you live, or the policies of Lemon Squeezy, who are the
+              where you live, or the policies of Creem, who are the
               merchant of record on every transaction.
             </p>
           </section>

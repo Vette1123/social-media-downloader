@@ -50,8 +50,8 @@ import { formatDate, nowMs, useHydrated, useOnPageVisible } from '@/lib/clientEn
 import { siteConfig } from '@/config/site'
 
 /**
- * Both checkout URLs come from the same pending Lemon Squeezy store, so one
- * flag gates every checkout link on this page — see ProCtaPanel.
+ * Both checkout URLs come from the same Creem store, so one flag gates every
+ * checkout link on this page — see ProCtaPanel.
  */
 const CHECKOUT_READY =
   isProCheckoutConfigured(PRO_CHECKOUT_ANNUAL) && isProCheckoutConfigured(PRO_CHECKOUT_MONTHLY)
@@ -86,12 +86,15 @@ function classifyPlan(plan: PlanState | null): PlanBucket {
     case null:
       return 'free'
     case 'active':
-    case 'on_trial':
+    case 'trialing':
       return plan?.variant === 'annual' ? 'active-annual' : 'active-monthly'
-    case 'cancelled':
+    // Cancelled but still inside the period they paid for. Distinct from
+    // `canceled`, which has already stopped — see `isProAt`.
+    case 'scheduled_cancel':
       return 'cancelled'
     case 'past_due':
       return 'past-due'
+    case 'canceled':
     case 'paused':
     case 'unpaid':
     case 'expired':
@@ -157,44 +160,58 @@ function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
 }
 
 /**
- * Who to attach a checkout to. Both fields are required: the email is what
- * Lemon Squeezy prefills, and the id is what the webhook matches on — the
- * buyer can edit that email at checkout, and PayPal substitutes its own, so an
- * id-less purchase can end up matching no row at all, unrepairably.
+ * Who to attach a checkout to.
+ *
+ * The id is the whole of it, and it is not optional: it is what the webhook
+ * matches on, and a purchase made without one can end up matching no row at
+ * all, unrepairably. Creem payment links take no email prefill, so the buyer
+ * types their own address at checkout and it is never a binding we rely on.
  */
 interface Buyer {
   userId: string
-  email: string
 }
 
-function buyerOf(userId: string | null, email: string | null): Buyer | null {
-  if (!CHECKOUT_READY || !userId || !email) return null
-  return { userId, email }
+function buyerOf(userId: string | null): Buyer | null {
+  if (!CHECKOUT_READY || !userId) return null
+  return { userId }
 }
 
 function checkoutLink(base: string, buyer: Buyer): string {
-  return checkoutHref(base, buyer.userId, buyer.email)
+  return checkoutHref(base, buyer.userId)
 }
 
 function checkoutBaseFor(variant: string | null | undefined): string {
   return variant === 'annual' ? PRO_CHECKOUT_ANNUAL : PRO_CHECKOUT_MONTHLY
 }
 
-function ComingSoonButton() {
+/**
+ * Shown only while the store's payment links are unset.
+ *
+ * Says what is actually happening rather than "coming soon": this is the last
+ * step of a real purchase flow that a signed-in visitor has already walked, so
+ * a bare disabled button reads as an abandoned product rather than a store
+ * mid-verification.
+ */
+function CheckoutPendingButton() {
   return (
-    <button
-      type='button'
-      disabled
-      title='Checkout is not set up yet'
-      className={DISABLED_BUTTON_CLASS}
-    >
-      Checkout coming soon
-    </button>
+    <div className='flex flex-col items-center gap-2 text-center'>
+      <button
+        type='button'
+        disabled
+        title='Card payments are not switched on for this deployment yet'
+        className={DISABLED_BUTTON_CLASS}
+      >
+        Card payments opening shortly
+      </button>
+      <p className='text-xs text-white/40'>
+        Your account is ready — nothing to redo once payments are live.
+      </p>
+    </div>
   )
 }
 
 function PlanPicker({ buyer }: { buyer: Buyer | null }) {
-  if (!buyer) return <ComingSoonButton />
+  if (!buyer) return <CheckoutPendingButton />
 
   return (
     <div className='grid gap-3 sm:grid-cols-2'>
@@ -250,7 +267,7 @@ function PlanAction({
       )
     case 'cancelled':
     case 'ended': {
-      if (!buyer) return <ComingSoonButton />
+      if (!buyer) return <CheckoutPendingButton />
       const label = bucket === 'cancelled' ? 'Resubscribe' : 'Subscribe again'
       const href = checkoutLink(checkoutBaseFor(plan?.variant), buyer)
       return (
@@ -367,7 +384,7 @@ function hardNavigateHome(): void {
 
 /**
  * The delete endpoint refuses (409) while a subscription is still entitling,
- * because deleting the row would leave Lemon Squeezy billing an account that no
+ * because deleting the row would leave Creem billing an account that no
  * longer exists. That refusal explains what to do, so it is shown as-is rather
  * than flattened into the generic failure.
  */
@@ -385,7 +402,7 @@ function AccountSection({
   hasSubscription,
 }: {
   identity: AvatarIdentity
-  /** Whether Lemon Squeezy has a subscription for this account at all. The
+  /** Whether Creem has a subscription for this account at all. The
    *  billing portal 404s without one, so linking it unconditionally sent
    *  free-plan visitors to an API error page. */
   hasSubscription: boolean
@@ -606,7 +623,7 @@ function SignInPrompt() {
 }
 
 /**
- * Polls `refreshAccount({ force: true })` for up to 30s after a Lemon Squeezy
+ * Polls `refreshAccount({ force: true })` for up to 30s after a Creem
  * checkout redirects back here, since the webhook that flips `pro` to true can
  * lag the redirect by a few seconds. Reads the query string once on mount
  * rather than through `useSearchParams`, which would otherwise force this
@@ -650,10 +667,10 @@ function useCheckoutPolling(pro: boolean): 'idle' | 'polling' | 'timeout' {
 }
 
 /**
- * Why the billing portal sent someone back here instead of to Lemon Squeezy.
+ * Why the billing portal sent someone back here instead of to Creem.
  *
- * `/api/billing/portal` has to be a server round trip — Lemon Squeezy signs
- * portal URLs and expires them within a day, so one is minted per click — and
+ * `/api/billing/portal` has to be a server round trip — Creem mints and
+ * expires portal URLs, so one is generated per click — and
  * it used to answer its failures as raw JSON. A visitor who clicked it with no
  * subscription landed on `{"success":false,"error":"No subscription"}` with no
  * way back. It now redirects here with a reason instead.
@@ -780,7 +797,7 @@ export function AccountPanel() {
       {signedIn === undefined && cached?.pro ? (
         <PlanPlaceholder />
       ) : (
-        <PlanSection plan={plan} buyer={buyerOf(userId, email)} />
+        <PlanSection plan={plan} buyer={buyerOf(userId)} />
       )}
       <PreferencesSection />
       <AccountSection

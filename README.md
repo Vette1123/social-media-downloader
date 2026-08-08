@@ -140,7 +140,7 @@ directly:
 | Icons            | Hand-rolled SVG (`src/components/icons.tsx`) |
 | Hosting          | Cloudflare Workers — static export + a hand-written Worker for `/api/*` |
 | Accounts         | Google OAuth (PKCE, no SDK) + Cloudflare D1 |
-| Billing          | Lemon Squeezy subscriptions + webhooks |
+| Billing          | Creem subscriptions + webhooks |
 | HTTP             | Native `fetch` (`src/lib/httpClient.ts`) |
 | HTML scraping    | Regex extractors (`src/lib/htmlExtract.ts`) |
 | ZIP bundling     | JSZip, lazily imported **in the browser** |
@@ -186,21 +186,34 @@ offered.
 | --------------------- | -------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`| Canonical site URL used for metadata, sitemap, and OG images.                    |
 | `COBALT_API_URL`      | Self-hosted [Cobalt](https://github.com/imputnet/cobalt) instance to harden the extraction fallback chain. |
-| `IG_SESSIONID`        | Instagram session cookie from a burner account. Sent only for signed-in Pro requests, to resolve login-gated posts. Public posts resolve without it. |
-| `IG_SESSIONID_FOR_ALL`| Self-hosted escape hatch: set to `1` to make `IG_SESSIONID` apply to every request instead of Pro subscribers only. Without a Google OAuth client and a Lemon Squeezy subscription of your own, a self-hosted deployment can never unlock the Pro branch, so `IG_SESSIONID` would otherwise do nothing there. Same burner-account risk applies. Must stay unset on the hosted site. |
+| `IG_SESSIONID`        | Instagram session cookie from a burner account, applied deployment-wide when set. Public posts resolve without it. Unset on the hosted site, and deliberately **not** tied to any subscription tier — see below. |
 | `NEXT_PUBLIC_CF_BEACON_TOKEN` | Enables Cloudflare Web Analytics by injecting the beacon script at build time. Build-time only, like `NEXT_PUBLIC_SITE_URL` — set it as build env, not a Worker var. If Web Analytics is already enabled at the zone level in the Cloudflare dashboard, Cloudflare injects the beacon at the edge automatically; setting this too would load it twice and double-count page views. Pick one mechanism. |
 | `PRO_TOKEN_SECRET`    | HMAC key (WebCrypto HMAC-SHA256) for signing Pro access tokens and session-cookie values. Generate 32+ random bytes yourself. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client used for sign-in. Created in Google Cloud console; both the dev and production redirect URIs must be registered on it. |
-| `LEMONSQUEEZY_API_KEY` | Fetches fresh, signed customer-portal URLs per click (they expire after 24 hours and are never stored) and backs the lazy subscription reconcile. |
-| `LEMONSQUEEZY_WEBHOOK_SECRET` | Verifies the `X-Signature` header on incoming Lemon Squeezy subscription webhooks. An unverified webhook endpoint would let anyone grant themselves Pro, so this is never optional once webhooks are registered. |
+| `CREEM_API_KEY` | Mints a fresh customer-portal URL per click (never stored) and backs the lazy subscription reconcile. A `creem_test_…` key is routed to Creem's test host automatically, so test and live mode differ by this value alone. |
+| `CREEM_WEBHOOK_SECRET` | Verifies the `creem-signature` header on incoming Creem subscription webhooks. An unverified webhook endpoint would let anyone grant themselves Pro, so this is never optional once webhooks are registered. |
 
 ### Accounts and Pro subscriptions
 
-Pro is a $3/month or $24/year subscription, sold by Lemon Squeezy. There are no
-license keys: signing in is with a Google account, entitlement is a signed,
-short-lived access token, and preferences (HD/SD, video/audio) sync across
-devices for anyone signed in — free or Pro. Signing in never changes what is
-free; it only unlocks Pro once someone subscribes.
+Pro is a $3/month or $24/year subscription, sold through Creem as merchant of
+record. There are no license keys: signing in is with a Google account,
+entitlement is a signed, short-lived access token, and preferences (HD/SD,
+video/audio) sync across devices for anyone signed in — free or Pro. Signing in
+never changes what is free; it only unlocks Pro once someone subscribes.
+
+**What Pro is allowed to be.** Every entitlement is a property of this site —
+resolver ordering, queueing, how results are packaged, who answers your email.
+None of them widens what a link can reach, and none of them makes this service
+present credentials on a user's behalf. That line is load-bearing rather than
+stylistic: a downloader that sells access to login-gated content is refused by
+every merchant of record, explicitly so in some cases (Polar's acceptable-use
+policy names third-party content downloaders outright; Paddle's catch-all
+covers anything "enabling unauthorized access to data belonging to another
+party"). `IG_SESSIONID` was once gated on a Pro token for exactly that reason
+and is now deployment-wide. Do not reintroduce a paid capability on the other
+side of that line — it is not a policy you can reword your way around, and an
+account approved on a misdescribed business is one that gets frozen with
+subscribers on it.
 
 Setting this up for a fork or self-hosted deployment, in order:
 
@@ -208,17 +221,25 @@ Setting this up for a fork or self-hosted deployment, in order:
    screen. Register **both** redirect URIs (a mismatch between dev and
    production here is the most common thing to get wrong): the `wrangler dev`
    origin's `/api/auth/callback` and the production origin's `/api/auth/callback`.
-2. **Lemon Squeezy** — set the product up as a subscription with monthly and
-   annual variants, turn off license key generation, and register the webhook
-   endpoint (`/api/billing/webhook`) with its signing secret. Subscribe it to
-   the subscription lifecycle events — `subscription_created`,
-   `subscription_updated`, `subscription_cancelled`, `subscription_resumed`,
-   `subscription_expired`, `subscription_paused`, `subscription_unpaused`.
-   Payment events (`subscription_payment_success` and its siblings) may be left
-   on but carry no useful state: they describe an *invoice*, not the
-   subscription, so the handler ignores anything whose `data.type` is not
-   `subscriptions`.
-   Set the product's redirect URL to `/account?checkout=success` so a buyer
+2. **Creem** — create **two** recurring products, one monthly and one annual,
+   and name the annual one so it contains "year" or "annual": the variant shown
+   on the account page is read from the product name (`variantOf` in
+   `src/lib/billing/webhook.ts`). Copy each product's share link into
+   `PRO_CHECKOUT_MONTHLY` / `PRO_CHECKOUT_ANNUAL` in `src/config/pro.ts` —
+   `checkoutHref` appends `metadata[user_id]`, which is the only binding
+   between a purchase and an account.
+
+   Register the webhook endpoint (`/api/billing/webhook`) and subscribe it to
+   the subscription lifecycle events: `subscription.active`,
+   `subscription.paid`, `subscription.update`, `subscription.trialing`,
+   `subscription.past_due`, `subscription.unpaid`,
+   `subscription.scheduled_cancel`, `subscription.canceled`,
+   `subscription.expired`, `subscription.paused`. `checkout.completed` may be
+   left on but carries no useful state — its `object` is a *checkout*, not a
+   subscription, so the handler ignores it rather than writing a checkout id
+   into `ls_subscription_id`.
+
+   Set the product's success URL to `/account?checkout=success` so a buyer
    lands back on their account page; the page also polls for up to 30 seconds,
    so it recovers even if the redirect is not configured.
 3. **Cloudflare** — create the D1 database, apply the migrations
@@ -229,10 +250,10 @@ Setting this up for a fork or self-hosted deployment, in order:
    `pnpm cf:setup` (reads `.env.cloudflare`) or `wrangler secret put`.
 
    Order matters for one of them: do not put live checkout URLs in
-   `src/config/pro.ts` until `LEMONSQUEEZY_WEBHOOK_SECRET` is set. The webhook
-   route fails closed with a 503 while that secret is missing, and Lemon Squeezy
-   eventually stops retrying — so a purchase made in that window is billed with
-   no subscription recorded.
+   `src/config/pro.ts` until `CREEM_WEBHOOK_SECRET` is set. The webhook route
+   fails closed with a 503 while that secret is missing, and Creem eventually
+   stops retrying — so a purchase made in that window is billed with no
+   subscription recorded.
 
 ## How to use
 
@@ -397,7 +418,7 @@ The downloader tries providers in order and falls back automatically on failure.
 
 - **TikTok videos:** Tikwm → Snaptik → SSSTik → direct scraping
 - **Twitter/X videos:** vxTwitter → public Cobalt instances
-- **Instagram posts/reels:** embed page (`shortcode_media`) → public Cobalt instances → web GraphQL (login-gated posts/stories need `IG_SESSIONID`, sent only for licensed/Pro requests)
+- **Instagram posts/reels:** embed page (`shortcode_media`) → public Cobalt instances → web GraphQL (stories need `IG_SESSIONID`, a deployment-wide operator setting that is unset on the hosted site)
 - **YouTube videos/Shorts:** public Cobalt instances → public Piped instances → `youtube-dl-exec` (metadata enriched via YouTube oEmbed)
 - **Facebook videos/reels:** video plugin page (`/plugins/video.php`) → direct page scrape (`browser_native_*_url`) → public Cobalt instances
 - **Vimeo:** dedicated extractor

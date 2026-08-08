@@ -1,5 +1,5 @@
 /**
- * Lemon Squeezy webhooks: the fast path for subscription state.
+ * Creem webhooks: the fast path for subscription state.
  *
  * Treated as an optimisation rather than the source of truth — a delivery can
  * be lost for good, so src/lib/billing/reconcile.ts repairs whatever this
@@ -12,8 +12,8 @@
  *
  * - an oversized body, which is why the read is bounded rather than
  *   `request.text()`;
- * - a buyer-chosen `user_email`, which is why email is a last-resort binding
- *   that may never take over a row that already holds a subscription.
+ * - a buyer-chosen email, which is why email is a last-resort binding that may
+ *   never take over a row that already holds a subscription.
  */
 
 import type { D1Database } from '@cloudflare/workers-types'
@@ -35,9 +35,9 @@ function hexToBytes(hex: string): Uint8Array<ArrayBuffer> | null {
 }
 
 /**
- * HMAC-SHA256 over the raw body, compared with `crypto.subtle.verify`, which is
- * constant-time. Never skipped in any environment: an unverified webhook
- * endpoint lets anyone grant themselves Pro.
+ * HMAC-SHA256 over the raw body, hex-encoded, compared with
+ * `crypto.subtle.verify`, which is constant-time. Never skipped in any
+ * environment: an unverified webhook endpoint lets anyone grant themselves Pro.
  */
 export async function verifyWebhookSignature(
   raw: string,
@@ -58,9 +58,12 @@ export async function verifyWebhookSignature(
   return crypto.subtle.verify('HMAC', key, bytes, encoder.encode(raw))
 }
 
+/** The header Creem carries the hex HMAC in. */
+export const SIGNATURE_HEADER = 'creem-signature'
+
 /**
- * Comfortably above a real Lemon Squeezy subscription payload (a few KB) and
- * far below anything that costs a measurable slice of the 10 ms CPU budget.
+ * Comfortably above a real Creem subscription payload (a few KB) and far below
+ * anything that costs a measurable slice of the 10 ms CPU budget.
  */
 export const MAX_WEBHOOK_BYTES = 64 * 1024
 
@@ -68,7 +71,7 @@ export const MAX_WEBHOOK_BYTES = 64 * 1024
  * The body, or null if it exceeds `limit`.
  *
  * Read as a bounded stream rather than `request.text()`. The signature is not
- * known good at this point — `X-Signature: 00` is valid hex and survives
+ * known good at this point — `creem-signature: 00` is valid hex and survives
  * `hexToBytes` — so an unauthenticated caller must not be able to make us
  * decode, or HMAC, an arbitrarily large body. `Content-Length` is only an
  * early-out; the stream cut-off is what actually bounds the work, since a
@@ -95,10 +98,35 @@ async function readBounded(request: Request, limit: number): Promise<string | nu
   return decoder.decode(buffer.subarray(0, size))
 }
 
+/**
+ * Creem expands `product` and `customer` on webhook payloads but may send a
+ * bare id string elsewhere, so every read of them goes through a narrowing
+ * helper rather than assuming the expanded shape.
+ */
+type Expandable<T> = T | string | null
+
+export interface CreemSubscription {
+  id?: string
+  object?: string
+  status?: string
+  product?: Expandable<{ id?: string; name?: string }>
+  customer?: Expandable<{ id?: string; email?: string }>
+  metadata?: { user_id?: string } | null
+  current_period_end_date?: string | null
+  next_transaction_date?: string | null
+  canceled_at?: string | null
+  updated_at?: string | null
+}
+
+function expanded<T extends object>(value: Expandable<T> | undefined): T | null {
+  return value && typeof value === 'object' ? value : null
+}
+
 export interface SubscriptionPatch {
   userId: string | null
   email: string | null
   ls_subscription_id: string
+  ls_customer_id: string | null
   ls_status: string
   ls_variant: string
   ls_renews_at: number | null
@@ -107,27 +135,24 @@ export interface SubscriptionPatch {
   ls_updated_at: number
 }
 
-export interface SubscriptionAttributes {
-  status?: string
-  variant_name?: string
-  renews_at?: string | null
-  ends_at?: string | null
-  user_email?: string | null
-  updated_at?: string
-}
-
 interface CurrentRow {
   ls_updated_at: number | null
   ls_past_due_since: number | null
 }
 
-function parseDate(value: string | null | undefined): number | null {
-  if (!value) return null
+/**
+ * Creem sends ISO strings on the subscription object and an epoch-millis
+ * number as the event's own `created_at`, and both feed the replay guard, so
+ * this accepts either rather than making each caller remember which it holds.
+ */
+function parseTime(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
   const parsed = Date.parse(value)
   return Number.isNaN(parsed) ? null : parsed
 }
 
-/** Anything not obviously annual is monthly — the two variants are ours. */
+/** Anything not obviously annual is monthly — the two products are ours. */
 function variantOf(name: string | undefined): string {
   return /year|annual/i.test(name ?? '') ? 'annual' : 'monthly'
 }
@@ -146,33 +171,46 @@ function pastDueSince(status: string, current: CurrentRow | null, now: number): 
 }
 
 /**
- * The pure event → row patch. Returns null for an event that is stale (Lemon
- * Squeezy retries on any non-2xx, so handlers must be idempotent) or unusable.
+ * The pure subscription → row patch. Returns null for an event that is stale
+ * (Creem retries on any non-2xx, so handlers must be idempotent) or unusable.
+ *
+ * `observedAt` is the event's own timestamp, used only when the subscription
+ * object carries no `updated_at` of its own — without some monotonic stamp the
+ * replay guard has nothing to compare and every redelivery would reapply.
  *
  * `current` is the *target user's* row, not "the row holding this subscription
  * id" — see `resolveTarget` for why the difference matters.
  */
 export function patchFromSubscription(
-  subscriptionId: string | null,
-  attributes: SubscriptionAttributes,
-  customData: { user_id?: string } | null,
+  subscription: CreemSubscription,
   current: CurrentRow | null,
   now: number,
+  observedAt?: string | number | null,
 ): SubscriptionPatch | null {
-  if (!subscriptionId || !attributes.status) return null
+  const subscriptionId = subscription.id
+  const status = subscription.status
+  if (!subscriptionId || !status) return null
 
-  const updatedAt = parseDate(attributes.updated_at) ?? now
+  const updatedAt = parseTime(subscription.updated_at) ?? parseTime(observedAt) ?? now
   if (current?.ls_updated_at != null && updatedAt <= current.ls_updated_at) return null
 
+  const customer = expanded(subscription.customer)
+  const product = expanded(subscription.product)
+  const endsAt = parseTime(subscription.current_period_end_date)
+
   return {
-    userId: customData?.user_id ?? null,
-    email: attributes.user_email ?? null,
+    userId: subscription.metadata?.user_id ?? null,
+    email: customer?.email ?? null,
     ls_subscription_id: subscriptionId,
-    ls_status: attributes.status,
-    ls_variant: variantOf(attributes.variant_name),
-    ls_renews_at: parseDate(attributes.renews_at),
-    ls_ends_at: parseDate(attributes.ends_at),
-    ls_past_due_since: pastDueSince(attributes.status, current, now),
+    ls_customer_id: customer?.id ?? null,
+    ls_status: status,
+    ls_variant: variantOf(product?.name),
+    // Creem only sends a next charge date while one is actually scheduled, so
+    // a subscription set to lapse falls back to the date it lapses on. Both
+    // answer the same question for the account page: when does this change?
+    ls_renews_at: parseTime(subscription.next_transaction_date) ?? endsAt,
+    ls_ends_at: endsAt,
+    ls_past_due_since: pastDueSince(status, current, now),
     ls_updated_at: updatedAt,
   }
 }
@@ -220,8 +258,8 @@ function pickByEmail(rows: TargetRow[], subscriptionId: string): TargetRow | nul
  * subscription nobody holds finds no row, skips the guard entirely, and applies
  * unconditionally.
  *
- * `user_id` rides in checkout custom data and should always be present; email
- * is the fallback for the case that should not happen.
+ * `user_id` rides in the checkout link's `metadata[user_id]` and should always
+ * be present; email is the fallback for the case that should not happen.
  */
 async function resolveTarget(
   db: D1Database,
@@ -252,13 +290,13 @@ async function resolveTarget(
  * The row already holding this exact subscription, or holding none, is always
  * fair game. Beyond that:
  *
- * - **Matched by email.** Never. The checkout URL is public and takes
- *   `?checkout[email]=`, so anyone can buy a $3 subscription in a victim's
- *   name; letting that seize a row would orphan the victim's real subscription
- *   and point their "Manage billing" button at the attacker's portal.
+ * - **Matched by email.** Never. The checkout URL is public, so anyone can buy
+ *   a $3 subscription under a victim's address; letting that seize a row would
+ *   orphan the victim's real subscription and point their "Manage billing"
+ *   button at the attacker's portal.
  * - **Matched by our own `user_id`.** Only if what they hold is already dead.
  *   Someone who cancels monthly A and buys annual B still gets A's
- *   `subscription_expired` weeks later, with a newer `updated_at` than B — that
+ *   `subscription.expired` weeks later, with a newer timestamp than B — that
  *   event must not take Pro away from the annual subscriber it keeps billing.
  */
 export function mayApply(
@@ -284,11 +322,29 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 /**
- * Lemon Squeezy retries any non-2xx, so every "we are not acting on this" exit
- * has to be a 200 — there is nothing to retry into.
+ * Creem retries any non-2xx, so every "we are not acting on this" exit has to
+ * be a 200 — there is nothing to retry into.
  */
 function ok(): Response {
   return new Response('ok', { status: 200 })
+}
+
+/**
+ * Whether this event is about a subscription.
+ *
+ * The object's own `object` field is the authoritative discriminator, not
+ * `eventType`. `checkout.completed` fires seconds before `subscription.active`
+ * and carries a *checkout* whose `id` is a checkout id; applied, it would
+ * write that id into `ls_subscription_id`, leaving a customer who just paid
+ * without Pro and a reconcile that 404s on that id forever.
+ *
+ * The eventType arm is only reached when the object does not say what it is,
+ * which is not the case that bug came from — an unstated type is a payload
+ * shape we do not recognise, not a mislabelled one.
+ */
+function isSubscriptionEvent(objectType: string | undefined, eventType: string | undefined) {
+  if (objectType) return objectType === 'subscription'
+  return eventType?.startsWith('subscription.') === true
 }
 
 /** POST /api/billing/webhook */
@@ -300,7 +356,7 @@ export async function handleWebhook(
   const db = requireDb(env)
   if (db instanceof Response) return db
 
-  const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET?.trim()
+  const secret = process.env.CREEM_WEBHOOK_SECRET?.trim()
   if (!secret) return new Response('not configured', { status: 503 })
 
   // Bounded read first, then the HMAC, then the parse. Nothing above the
@@ -309,12 +365,13 @@ export async function handleWebhook(
   const raw = await readBounded(request, MAX_WEBHOOK_BYTES)
   if (raw === null) return new Response('too large', { status: 413 })
 
-  const valid = await verifyWebhookSignature(raw, request.headers.get('X-Signature'), secret)
+  const valid = await verifyWebhookSignature(raw, request.headers.get(SIGNATURE_HEADER), secret)
   if (!valid) return new Response('bad signature', { status: 401 })
 
   let payload: {
-    meta?: { event_name?: string; custom_data?: { user_id?: string } }
-    data?: { type?: string; id?: string; attributes?: SubscriptionAttributes }
+    eventType?: string
+    created_at?: number | string
+    object?: CreemSubscription
   }
   try {
     payload = JSON.parse(raw)
@@ -322,32 +379,24 @@ export async function handleWebhook(
     return new Response('bad body', { status: 400 })
   }
 
-  // `data.type` is the authoritative discriminator, not `meta.event_name`.
-  // `subscription_payment_success` arrives seconds after `subscription_created`
-  // carrying `subscription-invoices`, whose `data.id` is the *invoice* id and
-  // whose status is `paid`. Applied, it writes an invoice id into
-  // `ls_subscription_id` and a status `isProAt` reads as not-Pro, so a customer
-  // who just paid loses Pro and reconcile then 404s on that id forever.
-  if (payload.data?.type !== 'subscriptions') return ok()
+  const subscription = payload.object
+  if (!subscription || !isSubscriptionEvent(subscription.object, payload.eventType)) return ok()
 
-  const subscriptionId = payload.data.id ?? null
+  const subscriptionId = subscription.id
   if (!subscriptionId) return ok()
-
-  const attributes = payload.data.attributes ?? {}
-  const customData = payload.meta?.custom_data ?? null
 
   const target = await resolveTarget(
     db,
     subscriptionId,
-    customData?.user_id ?? null,
-    attributes.user_email ?? null,
+    subscription.metadata?.user_id ?? null,
+    expanded(subscription.customer)?.email ?? null,
   )
   if (!target) return ok()
 
   const now = Date.now()
   if (!mayApply(target.row, subscriptionId, target.by, now)) return ok()
 
-  const patch = patchFromSubscription(subscriptionId, attributes, customData, target.row, now)
+  const patch = patchFromSubscription(subscription, target.row, now, payload.created_at)
   if (!patch) return ok()
 
   try {
@@ -356,12 +405,13 @@ export async function handleWebhook(
     await db
       .prepare(
         `UPDATE users SET
-           ls_subscription_id = ?, ls_status = ?, ls_variant = ?,
+           ls_subscription_id = ?, ls_customer_id = ?, ls_status = ?, ls_variant = ?,
            ls_renews_at = ?, ls_ends_at = ?, ls_past_due_since = ?, ls_updated_at = ?
          WHERE id = ?`,
       )
       .bind(
         patch.ls_subscription_id,
+        patch.ls_customer_id,
         patch.ls_status,
         patch.ls_variant,
         patch.ls_renews_at,
