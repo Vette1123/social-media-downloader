@@ -151,7 +151,7 @@ export function PromoSlot({
           >
             {offer.cta}
           </Surface>
-          <span className='text-[11px] text-white/35'>Sponsored</span>
+          <span className='text-[11px] text-white/50'>Sponsored</span>
         </div>
       )}
     </Surface>
