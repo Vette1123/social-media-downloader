@@ -17,6 +17,7 @@ import type { D1Database } from '@cloudflare/workers-types'
 import { creemApi, creemHeaders } from './creem'
 import {
   applySubscriptionPatch,
+  type SubscriptionPatch,
   isLiveStatus,
   patchFromSubscription,
   type CreemSubscription,
@@ -37,6 +38,15 @@ export const RECONCILE_STALE_MS = 24 * 60 * 60 * 1000
 export const RECONCILE_COOLDOWN_MS = 60 * 1000
 
 /**
+ * How long after opening a checkout a user is still worth searching for.
+ *
+ * Long enough to cover a payment that needed a second attempt, a card the bank
+ * held overnight, or a webhook outage nobody noticed until the morning. Short
+ * enough that someone who browsed the price and left stops costing anything.
+ */
+export const CHECKOUT_LOOKBACK_MS = 3 * 24 * 60 * 60 * 1000
+
+/**
  * `forced` no longer requires a stored subscription id.
  *
  * Only a webhook ever writes that id, so the user whose very first webhook was
@@ -44,15 +54,27 @@ export const RECONCILE_COOLDOWN_MS = 60 * 1000
  * and nothing happened". `reconcileSubscription` finds theirs by searching
  * for them. The outbound call is bounded by `RECONCILE_COOLDOWN_MS`, not by
  * this predicate.
+ *
+ * That used to be reachable only by *forcing* it, which in practice meant the
+ * `?checkout=success` return page. A buyer who closed the tab while Creem was
+ * still charging the card never came back through it, so a lost first webhook
+ * left them paying and on the free plan with nothing to recover them. The
+ * checkout stamp is what makes that person findable without asking every free
+ * account, every refresh, whether they secretly bought something.
  */
 export function needsReconcile(
-  row: { sub_id: string | null; sub_updated_at: number | null },
+  row: { sub_id: string | null; sub_updated_at: number | null; sub_checkout_at?: number | null },
   now: number,
   forced: boolean,
 ): boolean {
   if (forced) return true
-  if (!row.sub_id) return false
+  if (!row.sub_id) return recentCheckout(row.sub_checkout_at, now)
   return (row.sub_updated_at ?? 0) + RECONCILE_STALE_MS <= now
+}
+
+function recentCheckout(checkoutAt: number | null | undefined, now: number): boolean {
+  if (checkoutAt == null) return false
+  return now - checkoutAt <= CHECKOUT_LOOKBACK_MS
 }
 
 /** The signed-in user, when the caller has one. Lets the search below match. */
@@ -63,7 +85,9 @@ export interface ReconcileOwner {
 
 interface TargetRow {
   id: string
+  sub_id: string | null
   sub_customer_id: string | null
+  sub_status: string | null
   sub_variant: string | null
   sub_updated_at: number | null
   sub_past_due_since: number | null
@@ -223,7 +247,8 @@ async function loadTarget(
   owner: ReconcileOwner | null | undefined,
 ): Promise<TargetRow | null> {
   const columns =
-    'id, sub_customer_id, sub_variant, sub_updated_at, sub_past_due_since, sub_reconciled_at'
+    'id, sub_id, sub_customer_id, sub_status, sub_variant, sub_updated_at, ' +
+    'sub_past_due_since, sub_reconciled_at'
   if (owner) {
     return db.prepare(`SELECT ${columns} FROM users WHERE id = ?`).bind(owner.id).first<TargetRow>()
   }
@@ -232,6 +257,36 @@ async function loadTarget(
     .prepare(`SELECT ${columns} FROM users WHERE sub_id = ?`)
     .bind(subscriptionId)
     .first<TargetRow>()
+}
+
+/**
+ * Say out loud that this repair had to happen.
+ *
+ * A repair means Creem knew something we did not, which for a subscription
+ * change means its webhook never landed. That is the failure this project has
+ * been worst at seeing: deliveries were being challenged at the CDN edge for
+ * weeks, and because a challenged request never reaches the Worker, `wrangler
+ * tail` showed silence rather than errors. Nothing in the system said a word.
+ *
+ * It matters more than the retry schedule suggests. Creem retries a failed
+ * delivery four times — 30s, 1m, 5m, 1h — and then stops, so any outage longer
+ * than about an hour drops those events permanently. Reconcile is not a
+ * belt-and-braces nicety behind webhooks; past that hour it is the only thing
+ * keeping subscriptions correct, and it should be loud when it earns its keep.
+ *
+ * Deliberately a log line and not a table: `observability` is on for this
+ * Worker, so this is greppable in Workers Logs with no schema, no migration and
+ * no write on the healthy path. A steady trickle of these is the alarm.
+ */
+function reportRepair(before: TargetRow, after: SubscriptionPatch): void {
+  const changed =
+    before.sub_status !== after.sub_status || (before.sub_id ?? null) !== after.sub_id
+  if (!changed) return
+  console.warn(
+    `[billing] reconcile repaired a row a webhook should have written: ` +
+      `user=${before.id} ${before.sub_id ?? 'none'}/${before.sub_status ?? 'none'} ` +
+      `-> ${after.sub_id}/${after.sub_status}`,
+  )
 }
 
 /**
@@ -282,6 +337,7 @@ export async function reconcileSubscription(
     // to adopt a subscription the row does not have yet — so the adoption and the
     // plain refresh are the same statement, the one the webhook also writes.
     await applySubscriptionPatch(db, target.id, patch)
+    reportRepair(target, patch)
   } catch {
     // Nothing to do — the next refresh tries again.
   }

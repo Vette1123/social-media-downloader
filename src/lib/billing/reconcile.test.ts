@@ -5,6 +5,7 @@ import {
   RECONCILE_STALE_MS,
   needsReconcile,
   reconcileSubscription,
+  CHECKOUT_LOOKBACK_MS,
 } from './reconcile'
 
 const NOW = 1_800_000_000_000
@@ -31,6 +32,27 @@ describe('needsReconcile', () => {
   it('is true when forced, even on a fresh row', () => {
     const row = { sub_id: 'sub_1', sub_updated_at: NOW }
     expect(needsReconcile(row, NOW, true)).toBe(true)
+  })
+
+  /**
+   * The lost-first-webhook buyer, unforced. Before the checkout stamp existed
+   * this returned false forever: no sub_id meant "nothing to repair", so
+   * someone who paid and closed the tab stayed on the free plan permanently.
+   */
+  it('is true for a user who opened a checkout and has no subscription yet', () => {
+    const row = { sub_id: null, sub_updated_at: null, sub_checkout_at: NOW - 60_000 }
+    expect(needsReconcile(row, NOW, false)).toBe(true)
+  })
+
+  it('stops searching once the checkout attempt is old enough to be abandoned', () => {
+    const row = { sub_id: null, sub_updated_at: null, sub_checkout_at: NOW - CHECKOUT_LOOKBACK_MS - 1 }
+    expect(needsReconcile(row, NOW, false)).toBe(false)
+  })
+
+  it('does not search a free user who never opened a checkout', () => {
+    expect(needsReconcile({ sub_id: null, sub_updated_at: null, sub_checkout_at: null }, NOW, false)).toBe(
+      false,
+    )
   })
 
   it('is true when forced with no subscription id — that is the case it exists for', () => {
@@ -118,6 +140,54 @@ function stubFetch(routes: { search?: unknown | unknown[]; byId?: unknown }) {
 
 const writeOf = (statements: { sql: string; bindings: unknown[] }[]) =>
   statements.find((s) => s.sql.includes('sub_status = ?'))
+
+/**
+ * A repair means a webhook did not arrive. Creem gives up retrying after about
+ * an hour, so past that point this is the only thing keeping the row right —
+ * and the outage that started all of this was invisible precisely because
+ * nothing said so. The warning is the alarm, so it is tested like one.
+ */
+describe('repair reporting', () => {
+  const previous = process.env.CREEM_API_KEY
+
+  beforeEach(() => {
+    process.env.CREEM_API_KEY = 'test-api-key'
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    process.env.CREEM_API_KEY = previous
+  })
+
+  it('warns when it had to change a status a webhook should have written', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { db } = fakeDb({ ...PENDING_ROW, sub_id: 'sub_new', sub_status: 'past_due' })
+    stubFetch({ byId: SUBSCRIPTION })
+
+    await reconcileSubscription(db, 'sub_new', Date.parse('2026-08-03T00:00:00.000Z'), {
+      id: 'u1',
+      email: 'paid@example.com',
+    })
+
+    expect(warn).toHaveBeenCalledOnce()
+    expect(String(warn.mock.calls[0][0])).toContain('past_due')
+    expect(String(warn.mock.calls[0][0])).toContain('active')
+  })
+
+  it('stays quiet when the row already agreed with Creem', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { db } = fakeDb({ ...PENDING_ROW, sub_id: 'sub_new', sub_status: 'active' })
+    stubFetch({ byId: SUBSCRIPTION })
+
+    await reconcileSubscription(db, 'sub_new', Date.parse('2026-08-03T00:00:00.000Z'), {
+      id: 'u1',
+      email: 'paid@example.com',
+    })
+
+    expect(warn).not.toHaveBeenCalled()
+  })
+})
 
 describe('reconcileSubscription', () => {
   const previous = process.env.CREEM_API_KEY
