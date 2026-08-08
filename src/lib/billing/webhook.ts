@@ -301,9 +301,11 @@ async function resolveTarget(
  * Statuses that mean Creem is charging for this subscription right now.
  *
  * Used below as "this event is about the subscription the customer is actually
- * on", which is the only thing that should be allowed to displace another.
+ * on", which is the only thing that should be allowed to displace another, and
+ * by the reconcile repair to decide whether a stored subscription is still the
+ * answer or whether it should go looking for a newer one.
  */
-function isLiveStatus(status: string | undefined): boolean {
+export function isLiveStatus(status: string | undefined): boolean {
   return status === 'active' || status === 'trialing'
 }
 
