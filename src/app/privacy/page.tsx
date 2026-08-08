@@ -81,9 +81,10 @@ export default function Privacy() {
           <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Payments</h2>
             <p>
-              Pro subscriptions are billed and processed by Creem, who
-              act as merchant of record. We never see your card details — only
-              your subscription&rsquo;s status, so the site knows to keep Pro on.
+              Pro subscriptions are billed and processed by{' '}
+              {siteConfig.merchantOfRecord}, who act as merchant of record for{' '}
+              {siteConfig.seller}. We never see your card details — only your
+              subscription&rsquo;s status, so the site knows to keep Pro on.
             </p>
           </section>
 

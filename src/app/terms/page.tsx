@@ -101,10 +101,26 @@ export default function Terms() {
           <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Pro billing</h2>
             <p>
-              Pro is a subscription, billed monthly or annually, processed by
-              Creem, who act as merchant of record. It renews
-              automatically at the end of each billing period until you
+              {siteConfig.name} trades as{' '}
+              <strong className='text-white/90'>{siteConfig.seller}</strong>. Pro
+              is a subscription, billed monthly or annually, processed by{' '}
+              {siteConfig.merchantOfRecord}, who act as merchant of record. It
+              renews automatically at the end of each billing period until you
               cancel.
+            </p>
+            <p className='mt-2'>
+              Your receipt and your card statement will therefore show{' '}
+              {siteConfig.seller} or {siteConfig.merchantOfRecord}, not{' '}
+              {siteConfig.shortName}. A charge you do not recognise is almost
+              always this &mdash; email{' '}
+              <a
+                className='text-cyan-300 hover:text-cyan-200'
+                href={`mailto:${siteConfig.supportEmail}`}
+              >
+                {siteConfig.supportEmail}
+              </a>{' '}
+              before disputing it with your bank and we will sort it out faster
+              than a chargeback can.
             </p>
             <p className='mt-2'>
               Cancel any time from your account&rsquo;s billing portal.
@@ -115,7 +131,7 @@ export default function Terms() {
             </p>
             <p className='mt-2'>
               If a renewal payment fails, we keep Pro active for 14 days while
-              Creem retries the charge, so a card update usually
+              {siteConfig.merchantOfRecord} retries the charge, so a card update usually
               recovers the subscription with no interruption. If payment still
               has not gone through after 14 days, Pro access ends.
             </p>
@@ -131,8 +147,8 @@ export default function Terms() {
               If you were charged after cancelling, or charged twice, that is a
               billing error rather than a refund request: email us and we will
               correct it. Nothing here affects the statutory rights you have
-              where you live, or the policies of Creem, who are the
-              merchant of record on every transaction.
+              where you live, or the policies of {siteConfig.merchantOfRecord},
+              who are the merchant of record on every transaction.
             </p>
           </section>
 

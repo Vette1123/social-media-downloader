@@ -118,10 +118,13 @@ export default function Pro() {
         </Surface>
 
         <p className='mt-6 text-center text-xs text-white/40'>
-          Payments are processed by Creem, who act as merchant of
-          record. Billing renews automatically each period; cancel any time
-          from your account and Pro runs to the end of the period you paid
-          for. Charges are final and no refunds are offered. See the{' '}
+          This site trades as {siteConfig.seller}, and payments are processed by{' '}
+          {siteConfig.merchantOfRecord}, who act as merchant of record &mdash; so
+          your receipt and card statement show those names rather than{' '}
+          {siteConfig.shortName}. Billing renews automatically each period;
+          cancel any time from your account and Pro runs to the end of the
+          period you paid for. Charges are final and no refunds are offered. See
+          the{' '}
           <Link href='/terms' className='text-cyan-300 hover:text-cyan-200'>
             Terms
           </Link>

@@ -32,6 +32,23 @@ export const siteConfig = {
    * address ends up on scraper lists. Routed by Cloudflare Email Routing.
    */
   supportEmail: 'support@socialdownloader.space',
+  /**
+   * The trading name the storefront sells under, which is *not* the site name.
+   *
+   * A card statement showing a name the buyer does not recognise is the single
+   * most common cause of a chargeback, and a chargeback costs the fee plus the
+   * refund whether or not it is upheld. The merchant of record prints this on
+   * the checkout, the receipt and the statement line, so anywhere the site
+   * talks about paying has to print it too.
+   */
+  seller: 'Gado Labs',
+  /**
+   * Who is legally selling. Named rather than inlined because it already
+   * changed once, mid-launch, and it appears in the Pro fine print and five
+   * places in /terms — a find-and-replace across prose is exactly how one
+   * stale mention survives on the page that matters legally.
+   */
+  merchantOfRecord: 'Creem',
   author: {
     name: 'Mohamed Gado',
     url: 'https://www.mohamedgado.com',
