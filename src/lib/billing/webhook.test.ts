@@ -69,13 +69,13 @@ describe('patchFromSubscription', () => {
     const patch = patchFromSubscription(subscription, null, NOW)
     expect(patch).toMatchObject({
       userId: 'u1',
-      ls_subscription_id: 'sub_1',
-      ls_customer_id: 'cust_1',
-      ls_status: 'active',
-      ls_variant: 'monthly',
-      ls_past_due_since: null,
+      sub_id: 'sub_1',
+      sub_customer_id: 'cust_1',
+      sub_status: 'active',
+      sub_variant: 'monthly',
+      sub_past_due_since: null,
     })
-    expect(patch?.ls_renews_at).toBe(Date.parse('2026-09-02T00:00:00.000Z'))
+    expect(patch?.sub_renews_at).toBe(Date.parse('2026-09-02T00:00:00.000Z'))
   })
 
   it('recognises the annual variant from the product name', () => {
@@ -84,7 +84,7 @@ describe('patchFromSubscription', () => {
       null,
       NOW,
     )
-    expect(patch?.ls_variant).toBe('annual')
+    expect(patch?.sub_variant).toBe('annual')
   })
 
   /**
@@ -98,31 +98,31 @@ describe('patchFromSubscription', () => {
       null,
       NOW,
     )
-    expect(patch).toMatchObject({ ls_customer_id: null, email: null, ls_variant: 'monthly' })
+    expect(patch).toMatchObject({ sub_customer_id: null, email: null, sub_variant: 'monthly' })
   })
 
   it('stamps past_due_since the first time past_due is seen', () => {
     const patch = patchFromSubscription({ ...subscription, status: 'past_due' }, null, NOW)
-    expect(patch?.ls_past_due_since).toBe(NOW)
+    expect(patch?.sub_past_due_since).toBe(NOW)
   })
 
   it('preserves an existing past_due_since so the grace is not extended', () => {
     const earlier = NOW - 5 * 24 * 60 * 60 * 1000
     const patch = patchFromSubscription(
       { ...subscription, status: 'past_due' },
-      { ls_updated_at: null, ls_past_due_since: earlier },
+      { sub_updated_at: null, sub_past_due_since: earlier },
       NOW,
     )
-    expect(patch?.ls_past_due_since).toBe(earlier)
+    expect(patch?.sub_past_due_since).toBe(earlier)
   })
 
   it('clears past_due_since once the payment recovers', () => {
     const patch = patchFromSubscription(
       subscription,
-      { ls_updated_at: null, ls_past_due_since: NOW - 1000 },
+      { sub_updated_at: null, sub_past_due_since: NOW - 1000 },
       NOW,
     )
-    expect(patch?.ls_past_due_since).toBeNull()
+    expect(patch?.sub_past_due_since).toBeNull()
   })
 
   it('records the paid-through date on a scheduled cancellation', () => {
@@ -137,19 +137,19 @@ describe('patchFromSubscription', () => {
       null,
       NOW,
     )
-    expect(patch?.ls_ends_at).toBe(Date.parse(endsAt))
+    expect(patch?.sub_ends_at).toBe(Date.parse(endsAt))
     // No further charge is scheduled, so the date the account page shows is
     // the date it lapses.
-    expect(patch?.ls_renews_at).toBe(Date.parse(endsAt))
+    expect(patch?.sub_renews_at).toBe(Date.parse(endsAt))
   })
 
   it('drops a replayed event older than what we already stored', () => {
-    const current = { ls_updated_at: Date.parse('2026-08-03T00:00:00Z'), ls_past_due_since: null }
+    const current = { sub_updated_at: Date.parse('2026-08-03T00:00:00Z'), sub_past_due_since: null }
     expect(patchFromSubscription(subscription, current, NOW)).toBeNull()
   })
 
   it('applies an event newer than what we stored', () => {
-    const current = { ls_updated_at: Date.parse('2026-08-01T00:00:00Z'), ls_past_due_since: null }
+    const current = { sub_updated_at: Date.parse('2026-08-01T00:00:00Z'), sub_past_due_since: null }
     expect(patchFromSubscription(subscription, current, NOW)).not.toBeNull()
   })
 
@@ -160,10 +160,10 @@ describe('patchFromSubscription', () => {
    */
   it('falls back to the event timestamp when the subscription has no updated_at', () => {
     const observed = Date.parse('2026-08-04T00:00:00Z')
-    const current = { ls_updated_at: Date.parse('2026-08-03T00:00:00Z'), ls_past_due_since: null }
+    const current = { sub_updated_at: Date.parse('2026-08-03T00:00:00Z'), sub_past_due_since: null }
     const stale = { ...subscription, updated_at: null }
 
-    expect(patchFromSubscription(stale, current, NOW, observed)?.ls_updated_at).toBe(observed)
+    expect(patchFromSubscription(stale, current, NOW, observed)?.sub_updated_at).toBe(observed)
     expect(patchFromSubscription(stale, current, NOW, observed - 2 * 86_400_000)).toBeNull()
   })
 
@@ -178,14 +178,14 @@ describe('patchFromSubscription', () => {
 
 describe('mayApply', () => {
   const live = {
-    ls_subscription_id: 'sub_B',
-    ls_status: 'active',
-    ls_ends_at: null,
-    ls_past_due_since: null,
+    sub_id: 'sub_B',
+    sub_status: 'active',
+    sub_ends_at: null,
+    sub_past_due_since: null,
   }
 
   it('allows a row that holds no subscription yet', () => {
-    expect(mayApply({ ...live, ls_subscription_id: null }, 'sub_A', 'email', NOW)).toBe(true)
+    expect(mayApply({ ...live, sub_id: null }, 'sub_A', 'email', NOW)).toBe(true)
   })
 
   it('allows an event for the subscription the row already holds', () => {
@@ -193,7 +193,7 @@ describe('mayApply', () => {
   })
 
   it('never lets a buyer-supplied email rebind a row that holds a subscription', () => {
-    expect(mayApply({ ...live, ls_status: 'expired' }, 'sub_A', 'email', NOW)).toBe(false)
+    expect(mayApply({ ...live, sub_status: 'expired' }, 'sub_A', 'email', NOW)).toBe(false)
   })
 
   it('refuses a trusted event for a superseded subscription while the held one is live', () => {
@@ -201,7 +201,7 @@ describe('mayApply', () => {
   })
 
   it('allows a trusted switch once the held subscription is dead', () => {
-    expect(mayApply({ ...live, ls_status: 'expired' }, 'sub_A', 'user_id', NOW)).toBe(true)
+    expect(mayApply({ ...live, sub_status: 'expired' }, 'sub_A', 'user_id', NOW)).toBe(true)
   })
 })
 
@@ -292,7 +292,7 @@ describe('handleWebhook', () => {
         metadata: { user_id: 'u1' },
       },
     })
-    const { db, statements } = fakeDb([{ id: 'u1', ls_subscription_id: 'sub_A' }])
+    const { db, statements } = fakeDb([{ id: 'u1', sub_id: 'sub_A' }])
 
     const response = await handleWebhook(await post(body), undefined, { DB: db })
 
@@ -308,11 +308,11 @@ describe('handleWebhook', () => {
     const { db, statements } = fakeDb([
       {
         id: 'u1',
-        ls_subscription_id: 'sub_B',
-        ls_status: 'active',
-        ls_ends_at: null,
-        ls_past_due_since: null,
-        ls_updated_at: Date.parse('2026-08-05T00:00:00Z'),
+        sub_id: 'sub_B',
+        sub_status: 'active',
+        sub_ends_at: null,
+        sub_past_due_since: null,
+        sub_updated_at: Date.parse('2026-08-05T00:00:00Z'),
       },
     ])
     const body = subscriptionEvent('sub_A', {
@@ -330,11 +330,11 @@ describe('handleWebhook', () => {
     const { db, statements } = fakeDb([
       {
         id: 'u1',
-        ls_subscription_id: 'sub_A',
-        ls_status: 'expired',
-        ls_ends_at: null,
-        ls_past_due_since: null,
-        ls_updated_at: Date.parse('2026-08-01T00:00:00Z'),
+        sub_id: 'sub_A',
+        sub_status: 'expired',
+        sub_ends_at: null,
+        sub_past_due_since: null,
+        sub_updated_at: Date.parse('2026-08-01T00:00:00Z'),
       },
     ])
 
@@ -359,11 +359,11 @@ describe('handleWebhook', () => {
     const { db, statements } = fakeDb([
       {
         id: 'victim',
-        ls_subscription_id: 'sub_victim',
-        ls_status: 'expired',
-        ls_ends_at: null,
-        ls_past_due_since: null,
-        ls_updated_at: null,
+        sub_id: 'sub_victim',
+        sub_status: 'expired',
+        sub_ends_at: null,
+        sub_past_due_since: null,
+        sub_updated_at: null,
       },
     ])
     const body = subscriptionEvent('sub_attacker', {}, null)
@@ -377,11 +377,11 @@ describe('handleWebhook', () => {
   it('binds by email only when that email identifies exactly one account', async () => {
     const row = {
       id: 'victim',
-      ls_subscription_id: null,
-      ls_status: null,
-      ls_ends_at: null,
-      ls_past_due_since: null,
-      ls_updated_at: null,
+      sub_id: null,
+      sub_status: null,
+      sub_ends_at: null,
+      sub_past_due_since: null,
+      sub_updated_at: null,
     }
     const { db, statements } = fakeDb([row, { ...row, id: 'victim-2' }])
 
@@ -411,16 +411,16 @@ describe('handleWebhook', () => {
     const rows = [
       {
         id: 'u1',
-        ls_subscription_id: null,
-        ls_status: null,
-        ls_ends_at: null,
-        ls_past_due_since: null,
-        ls_updated_at: null,
+        sub_id: null,
+        sub_status: null,
+        sub_ends_at: null,
+        sub_past_due_since: null,
+        sub_updated_at: null,
       },
     ]
     const { db } = fakeDb(
       rows,
-      new Error('D1_ERROR: UNIQUE constraint failed: users.ls_subscription_id'),
+      new Error('D1_ERROR: UNIQUE constraint failed: users.sub_id'),
     )
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -437,11 +437,11 @@ describe('handleWebhook', () => {
     const rows = [
       {
         id: 'u1',
-        ls_subscription_id: null,
-        ls_status: null,
-        ls_ends_at: null,
-        ls_past_due_since: null,
-        ls_updated_at: null,
+        sub_id: null,
+        sub_status: null,
+        sub_ends_at: null,
+        sub_past_due_since: null,
+        sub_updated_at: null,
       },
     ]
     const { db } = fakeDb(rows, new Error('D1_ERROR: network'))

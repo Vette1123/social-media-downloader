@@ -55,13 +55,13 @@ function userRow(overrides: Partial<UserRow> = {}): UserRow {
     email: 'buyer@example.com',
     created_at: 0,
     prefs: null,
-    ls_subscription_id: null,
-    ls_status: null,
-    ls_variant: null,
-    ls_renews_at: null,
-    ls_ends_at: null,
-    ls_past_due_since: null,
-    ls_updated_at: null,
+    sub_id: null,
+    sub_status: null,
+    sub_variant: null,
+    sub_renews_at: null,
+    sub_ends_at: null,
+    sub_past_due_since: null,
+    sub_updated_at: null,
     ...overrides,
   } as UserRow
 }
@@ -171,7 +171,7 @@ describe('handleAuthCallback — a duplicate delivery of a callback that worked'
 
 describe('handleAccount — deleting an account', () => {
   it('refuses while a subscription is still entitling, so it cannot be stranded', async () => {
-    const { env, statements } = fakeDb(userRow({ ls_status: 'active', ls_subscription_id: '42' }))
+    const { env, statements } = fakeDb(userRow({ sub_status: 'active', sub_id: '42' }))
 
     const response = await handleAccount(deleteRequest(), undefined, env)
     const body = (await response.json()) as { success: boolean; error?: string }
@@ -184,14 +184,14 @@ describe('handleAccount — deleting an account', () => {
 
   it('still refuses a cancelled subscription that has paid time left', async () => {
     const { env } = fakeDb(
-      userRow({ ls_status: 'scheduled_cancel', ls_ends_at: Date.now() + 86_400_000 }),
+      userRow({ sub_status: 'scheduled_cancel', sub_ends_at: Date.now() + 86_400_000 }),
     )
 
     expect((await handleAccount(deleteRequest(), undefined, env)).status).toBe(409)
   })
 
   it('deletes once nothing is entitling', async () => {
-    const { env, statements } = fakeDb(userRow({ ls_status: 'expired' }))
+    const { env, statements } = fakeDb(userRow({ sub_status: 'expired' }))
 
     const response = await handleAccount(deleteRequest(), undefined, env)
 

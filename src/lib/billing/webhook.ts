@@ -125,19 +125,19 @@ function expanded<T extends object>(value: Expandable<T> | undefined): T | null 
 export interface SubscriptionPatch {
   userId: string | null
   email: string | null
-  ls_subscription_id: string
-  ls_customer_id: string | null
-  ls_status: string
-  ls_variant: string
-  ls_renews_at: number | null
-  ls_ends_at: number | null
-  ls_past_due_since: number | null
-  ls_updated_at: number
+  sub_id: string
+  sub_customer_id: string | null
+  sub_status: string
+  sub_variant: string
+  sub_renews_at: number | null
+  sub_ends_at: number | null
+  sub_past_due_since: number | null
+  sub_updated_at: number
 }
 
 interface CurrentRow {
-  ls_updated_at: number | null
-  ls_past_due_since: number | null
+  sub_updated_at: number | null
+  sub_past_due_since: number | null
 }
 
 /**
@@ -167,7 +167,7 @@ function variantOf(name: string | undefined): string {
  */
 function pastDueSince(status: string, current: CurrentRow | null, now: number): number | null {
   if (status !== 'past_due') return null
-  return current?.ls_past_due_since ?? now
+  return current?.sub_past_due_since ?? now
 }
 
 /**
@@ -192,7 +192,7 @@ export function patchFromSubscription(
   if (!subscriptionId || !status) return null
 
   const updatedAt = parseTime(subscription.updated_at) ?? parseTime(observedAt) ?? now
-  if (current?.ls_updated_at != null && updatedAt <= current.ls_updated_at) return null
+  if (current?.sub_updated_at != null && updatedAt <= current.sub_updated_at) return null
 
   const customer = expanded(subscription.customer)
   const product = expanded(subscription.product)
@@ -201,32 +201,32 @@ export function patchFromSubscription(
   return {
     userId: subscription.metadata?.user_id ?? null,
     email: customer?.email ?? null,
-    ls_subscription_id: subscriptionId,
-    ls_customer_id: customer?.id ?? null,
-    ls_status: status,
-    ls_variant: variantOf(product?.name),
+    sub_id: subscriptionId,
+    sub_customer_id: customer?.id ?? null,
+    sub_status: status,
+    sub_variant: variantOf(product?.name),
     // Creem only sends a next charge date while one is actually scheduled, so
     // a subscription set to lapse falls back to the date it lapses on. Both
     // answer the same question for the account page: when does this change?
-    ls_renews_at: parseTime(subscription.next_transaction_date) ?? endsAt,
-    ls_ends_at: endsAt,
-    ls_past_due_since: pastDueSince(status, current, now),
-    ls_updated_at: updatedAt,
+    sub_renews_at: parseTime(subscription.next_transaction_date) ?? endsAt,
+    sub_ends_at: endsAt,
+    sub_past_due_since: pastDueSince(status, current, now),
+    sub_updated_at: updatedAt,
   }
 }
 
 /** The `users` columns the webhook needs before it is allowed to write. */
 interface TargetRow extends BillingRow {
   id: string
-  ls_subscription_id: string | null
-  ls_updated_at: number | null
+  sub_id: string | null
+  sub_updated_at: number | null
 }
 
 // `id` is the primary key and `email` is indexed by migration 0002 — D1 bills
 // rows scanned, so both lookups touch one row (or the handful sharing an
 // address) rather than the table.
 const TARGET_COLUMNS =
-  'id, ls_subscription_id, ls_status, ls_ends_at, ls_past_due_since, ls_updated_at'
+  'id, sub_id, sub_status, sub_ends_at, sub_past_due_since, sub_updated_at'
 
 /** Which identifier found the row. Email is buyer-supplied; `user_id` is ours. */
 export type MatchedBy = 'user_id' | 'email'
@@ -240,10 +240,10 @@ interface Target {
  * `email` is NOT unique — deleting and recreating a Google account leaves two
  * rows with the same address — so an ambiguous match is refused rather than
  * guessed. Picking "the first one" would both bill the wrong user and, because
- * `ls_subscription_id` is UNIQUE, risk a constraint failure on the write.
+ * `sub_id` is UNIQUE, risk a constraint failure on the write.
  */
 function pickByEmail(rows: TargetRow[], subscriptionId: string): TargetRow | null {
-  const exact = rows.find((row) => row.ls_subscription_id === subscriptionId)
+  const exact = rows.find((row) => row.sub_id === subscriptionId)
   if (exact) return exact
   if (rows.length === 1) return rows[0]
   return null
@@ -300,19 +300,19 @@ async function resolveTarget(
  *   event must not take Pro away from the annual subscriber it keeps billing.
  */
 export function mayApply(
-  row: BillingRow & { ls_subscription_id: string | null },
+  row: BillingRow & { sub_id: string | null },
   subscriptionId: string,
   by: MatchedBy,
   now: number,
 ): boolean {
-  const stored = row.ls_subscription_id
+  const stored = row.sub_id
   if (!stored || stored === subscriptionId) return true
   if (by === 'email') return false
   return !isProAt(row, now)
 }
 
 /**
- * `ls_subscription_id` is UNIQUE, so a write can fail for a reason no retry
+ * `sub_id` is UNIQUE, so a write can fail for a reason no retry
  * will ever clear. Everything else — a timeout, a wedged connection — is worth
  * another delivery.
  */
@@ -335,7 +335,7 @@ function ok(): Response {
  * The object's own `object` field is the authoritative discriminator, not
  * `eventType`. `checkout.completed` fires seconds before `subscription.active`
  * and carries a *checkout* whose `id` is a checkout id; applied, it would
- * write that id into `ls_subscription_id`, leaving a customer who just paid
+ * write that id into `sub_id`, leaving a customer who just paid
  * without Pro and a reconcile that 404s on that id forever.
  *
  * The eventType arm is only reached when the object does not say what it is,
@@ -405,19 +405,19 @@ export async function handleWebhook(
     await db
       .prepare(
         `UPDATE users SET
-           ls_subscription_id = ?, ls_customer_id = ?, ls_status = ?, ls_variant = ?,
-           ls_renews_at = ?, ls_ends_at = ?, ls_past_due_since = ?, ls_updated_at = ?
+           sub_id = ?, sub_customer_id = ?, sub_status = ?, sub_variant = ?,
+           sub_renews_at = ?, sub_ends_at = ?, sub_past_due_since = ?, sub_updated_at = ?
          WHERE id = ?`,
       )
       .bind(
-        patch.ls_subscription_id,
-        patch.ls_customer_id,
-        patch.ls_status,
-        patch.ls_variant,
-        patch.ls_renews_at,
-        patch.ls_ends_at,
-        patch.ls_past_due_since,
-        patch.ls_updated_at,
+        patch.sub_id,
+        patch.sub_customer_id,
+        patch.sub_status,
+        patch.sub_variant,
+        patch.sub_renews_at,
+        patch.sub_ends_at,
+        patch.sub_past_due_since,
+        patch.sub_updated_at,
         target.row.id,
       )
       .run()

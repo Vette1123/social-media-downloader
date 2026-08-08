@@ -337,9 +337,9 @@ export async function handleRefresh(
   const { needsReconcile, reconcileSubscription } = await import('../billing/reconcile')
   if (needsReconcile(user, now, forced)) {
     // The user row goes with it: a forced reconcile for someone whose webhook
-    // was lost has no `ls_subscription_id` to look up, and finds the
+    // was lost has no `sub_id` to look up, and finds the
     // subscription by the address they signed in with instead.
-    const work = reconcileSubscription(db, user.ls_subscription_id, now, user)
+    const work = reconcileSubscription(db, user.sub_id, now, user)
     if (ctx) ctx.waitUntil(work)
     else await work
   }
@@ -362,11 +362,11 @@ export async function handleRefresh(
     name: user.name,
     picture: user.picture,
     plan: {
-      status: user.ls_status,
-      variant: user.ls_variant,
-      renewsAt: user.ls_renews_at,
-      endsAt: user.ls_ends_at,
-      pastDueSince: user.ls_past_due_since,
+      status: user.sub_status,
+      variant: user.sub_variant,
+      renewsAt: user.sub_renews_at,
+      endsAt: user.sub_ends_at,
+      pastDueSince: user.sub_past_due_since,
     },
     prefs: user.prefs,
   })

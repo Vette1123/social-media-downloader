@@ -11,33 +11,33 @@ const NOW = 1_800_000_000_000
 
 describe('needsReconcile', () => {
   it('is false for a user who never subscribed', () => {
-    expect(needsReconcile({ ls_subscription_id: null, ls_updated_at: null }, NOW, false)).toBe(false)
+    expect(needsReconcile({ sub_id: null, sub_updated_at: null }, NOW, false)).toBe(false)
   })
 
   it('is false for a freshly updated row', () => {
-    const row = { ls_subscription_id: 'sub_1', ls_updated_at: NOW - 1000 }
+    const row = { sub_id: 'sub_1', sub_updated_at: NOW - 1000 }
     expect(needsReconcile(row, NOW, false)).toBe(false)
   })
 
   it('is true once the row is stale', () => {
-    const row = { ls_subscription_id: 'sub_1', ls_updated_at: NOW - RECONCILE_STALE_MS - 1 }
+    const row = { sub_id: 'sub_1', sub_updated_at: NOW - RECONCILE_STALE_MS - 1 }
     expect(needsReconcile(row, NOW, false)).toBe(true)
   })
 
   it('is true for a subscription that has never been stamped', () => {
-    expect(needsReconcile({ ls_subscription_id: 'sub_1', ls_updated_at: null }, NOW, false)).toBe(true)
+    expect(needsReconcile({ sub_id: 'sub_1', sub_updated_at: null }, NOW, false)).toBe(true)
   })
 
   it('is true when forced, even on a fresh row', () => {
-    const row = { ls_subscription_id: 'sub_1', ls_updated_at: NOW }
+    const row = { sub_id: 'sub_1', sub_updated_at: NOW }
     expect(needsReconcile(row, NOW, true)).toBe(true)
   })
 
   it('is true when forced with no subscription id — that is the case it exists for', () => {
-    // Only a webhook writes ls_subscription_id, so the user whose first webhook
+    // Only a webhook writes sub_id, so the user whose first webhook
     // was lost is exactly the user with none. `reconcileSubscription` finds
     // theirs by customer; the outbound call is bounded by the cooldown, not here.
-    expect(needsReconcile({ ls_subscription_id: null, ls_updated_at: null }, NOW, true)).toBe(true)
+    expect(needsReconcile({ sub_id: null, sub_updated_at: null }, NOW, true)).toBe(true)
   })
 })
 
@@ -76,10 +76,10 @@ const SUBSCRIPTION = {
 
 const PENDING_ROW = {
   id: 'u1',
-  ls_customer_id: null,
-  ls_updated_at: null,
-  ls_past_due_since: null,
-  ls_reconciled_at: null,
+  sub_customer_id: null,
+  sub_updated_at: null,
+  sub_past_due_since: null,
+  sub_reconciled_at: null,
 }
 
 /**
@@ -101,7 +101,7 @@ function stubFetch(routes: { customer?: unknown; search?: unknown; byId?: unknow
 }
 
 const writeOf = (statements: { sql: string; bindings: unknown[] }[]) =>
-  statements.find((s) => s.sql.includes('ls_status = ?'))
+  statements.find((s) => s.sql.includes('sub_status = ?'))
 
 describe('reconcileSubscription', () => {
   const previous = process.env.CREEM_API_KEY
@@ -143,7 +143,7 @@ describe('reconcileSubscription', () => {
 
   it('skips the email lookup when the row already knows its customer', async () => {
     const fetchMock = stubFetch({ search: { items: [SUBSCRIPTION] } })
-    const { db } = fakeDb({ ...PENDING_ROW, ls_customer_id: 'cust_known' })
+    const { db } = fakeDb({ ...PENDING_ROW, sub_customer_id: 'cust_known' })
 
     await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'paid@example.com' })
 
@@ -159,7 +159,7 @@ describe('reconcileSubscription', () => {
 
     await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'paid@example.com' })
 
-    const stamp = statements.find((s) => s.sql.includes('ls_reconciled_at = ?'))
+    const stamp = statements.find((s) => s.sql.includes('sub_reconciled_at = ?'))
     expect(stamp?.bindings).toEqual([NOW, 'u1'])
   })
 
@@ -167,7 +167,7 @@ describe('reconcileSubscription', () => {
     // ?reconcile=1 is a client-controlled flag: the checkout poll alone sends
     // fifteen of these in thirty seconds.
     const fetchMock = stubFetch({ customer: { id: 'cust_1' }, search: { items: [SUBSCRIPTION] } })
-    const { db } = fakeDb({ ...PENDING_ROW, ls_reconciled_at: NOW - RECONCILE_COOLDOWN_MS + 1 })
+    const { db } = fakeDb({ ...PENDING_ROW, sub_reconciled_at: NOW - RECONCILE_COOLDOWN_MS + 1 })
 
     await reconcileSubscription(db, null, NOW, { id: 'u1', email: 'paid@example.com' })
 
@@ -185,7 +185,7 @@ describe('reconcileSubscription', () => {
       'https://api.creem.io/v1/subscriptions?subscription_id=sub_new',
     )
     const lookup = statements[0]
-    expect(lookup?.sql).toContain('WHERE ls_subscription_id = ?')
+    expect(lookup?.sql).toContain('WHERE sub_id = ?')
     expect(writeOf(statements)?.bindings[2]).toBe('active')
   })
 
