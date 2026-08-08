@@ -36,6 +36,33 @@ import { API_ROUTES } from '../src/lib/apiRoutes'
  * swallowed by that same rule, and is the only reason this Worker is reachable.
  */
 
+/**
+ * The one path the workers.dev hostname is allowed to serve.
+ *
+ * Cloudflare's Bot Fight Mode is a *zone* feature, so it challenges Creem's
+ * webhook POSTs to the custom domain — they arrive from an AWS address with an
+ * `axios` user agent, which is exactly what it is built to stop, and it offers
+ * no per-path exception on the free plan. Every delivery came back as a
+ * `managed_challenge` and never reached this Worker, which is why webhooks had
+ * to be treated as unreliable and reconcile did all the real work.
+ *
+ * The workers.dev hostname is not in that zone, so it is not challenged. Creem
+ * points at it instead. That is the whole reason it is load-bearing.
+ *
+ * But an origin that skips the zone's bot protection must not also be a second
+ * front door to everything else: `/api/download` would be reachable with no
+ * protection at all, and the entire static site would be served from a second
+ * hostname as duplicate content. So this host serves the one endpoint that
+ * verifies an HMAC over its own body before it trusts a single byte, and sends
+ * everything else to the canonical origin.
+ */
+const WEBHOOK_PATH = '/api/billing/webhook'
+const CANONICAL_ORIGIN = 'https://www.socialdownloader.space'
+
+function isWorkersDev(hostname) {
+  return hostname.endsWith('.workers.dev')
+}
+
 /** HEAD is served by the GET handler, as it is for any ordinary route. */
 function methodMatches(requestMethod, routeMethod) {
   if (requestMethod === routeMethod) return true
@@ -64,6 +91,13 @@ const worker = {
    */
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
+
+    // Checked before routing, so nothing else on this hostname is ever
+    // dispatched — see WEBHOOK_PATH. 301 rather than 404 so a crawler that has
+    // already found the workers.dev copy is told where the real page lives.
+    if (isWorkersDev(url.hostname) && url.pathname !== WEBHOOK_PATH) {
+      return Response.redirect(`${CANONICAL_ORIGIN}${url.pathname}${url.search}`, 301)
+    }
 
     const route = API_ROUTES[url.pathname]
     if (route) {
