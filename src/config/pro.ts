@@ -8,8 +8,11 @@
  * churn and eleven flat fees.
  */
 
-export const PRO_CHECKOUT_MONTHLY = 'TEMPLATE_CREEM_MONTHLY_URL'
-export const PRO_CHECKOUT_ANNUAL = 'TEMPLATE_CREEM_ANNUAL_URL'
+// Creem product share links. The product name carries the plan — "Annual"
+// is what `variantOf` in billing/webhook.ts matches on — so renaming a
+// product in the dashboard silently relabels the plan on the account page.
+export const PRO_CHECKOUT_MONTHLY = 'https://creem.io/product/prod_YlRkuWMTOagrCSiGSzdwU'
+export const PRO_CHECKOUT_ANNUAL = 'https://creem.io/product/prod_5UH0C3CxN8uL0HTlRCTuhG'
 
 export const PRO_PRICE_MONTHLY = '$3'
 export const PRO_PRICE_ANNUAL = '$24'
