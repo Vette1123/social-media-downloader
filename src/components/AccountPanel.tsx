@@ -22,6 +22,7 @@ import { ChevronDownIcon } from '@/components/icons'
 import {
   type PlanState,
   cachedProfile,
+  cancelPlan,
   hasAccountHint,
   markSignedOut,
   refreshAccount,
@@ -45,7 +46,7 @@ import {
   checkoutHref,
   isProCheckoutConfigured,
 } from '@/config/pro'
-import { PAST_DUE_GRACE_MS } from '@/lib/billing/entitlement'
+import { PAST_DUE_GRACE_MS, paidThrough } from '@/lib/billing/entitlement'
 import { formatDate, nowMs, useHydrated, useOnPageVisible } from '@/lib/clientEnv'
 import { siteConfig } from '@/config/site'
 
@@ -66,6 +67,18 @@ const DISABLED_BUTTON_CLASS =
 const SECONDARY_BUTTON_CLASS =
   'inline-flex rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:border-white/30 hover:text-white'
 const TOGGLE_GROUP_CLASS = 'inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
+/**
+ * The lowest-emphasis button on the page, for actions that must be findable
+ * without being invited: cancelling, and nothing else so far.
+ *
+ * Deliberately not `.btn-danger`. Red is for the irreversible — closing an
+ * account — and cancelling is neither irreversible nor immediate: Pro runs to
+ * the end of the period and resubscribing is one click. Painting it as a hazard
+ * would misdescribe it and put a red button on the card of every paying
+ * customer.
+ */
+const QUIET_BUTTON_CLASS =
+  'inline-flex rounded-xl px-3 py-2 text-sm font-medium text-white/45 outline-none transition-colors hover:text-white/80 focus-visible:ring-2 focus-visible:ring-cyan-400/60 disabled:cursor-not-allowed disabled:opacity-60'
 
 function toggleButtonClass(active: boolean): string {
   return `rounded-full px-3 py-1 text-xs font-medium transition-colors ${
@@ -80,21 +93,28 @@ type PlanBucket = 'free' | 'active-monthly' | 'active-annual' | 'cancelled' | 'p
  * not chained ternaries — an unrecognised status falls back to `free` rather
  * than matching some broader condition by accident, the same fail-closed
  * shape as `isProAt`.
+ *
+ * `now` is taken as an argument rather than read inside, so that the same clock
+ * decides "is this still Pro" here and in `isProAt` on the server. The two
+ * cancelled statuses both land in `cancelled` while the paid period is running
+ * and `ended` once it is not — `paidThrough` is imported rather than rewritten
+ * so this screen cannot start disagreeing with entitlement about the same date.
  */
-function classifyPlan(plan: PlanState | null): PlanBucket {
+function classifyPlan(plan: PlanState | null, now: number): PlanBucket {
   switch (plan?.status ?? null) {
     case null:
       return 'free'
     case 'active':
     case 'trialing':
       return plan?.variant === 'annual' ? 'active-annual' : 'active-monthly'
-    // Cancelled but still inside the period they paid for. Distinct from
-    // `canceled`, which has already stopped — see `isProAt`.
+    // `scheduled_cancel` is Creem's API saying "stops at period end";
+    // `canceled` is its portal saying "stopped", which for a subscriber with
+    // months left on an annual plan is not what we sold them.
     case 'scheduled_cancel':
-      return 'cancelled'
+    case 'canceled':
+      return paidThrough(plan?.endsAt ?? null, now) ? 'cancelled' : 'ended'
     case 'past_due':
       return 'past-due'
-    case 'canceled':
     case 'paused':
     case 'unpaid':
     case 'expired':
@@ -142,6 +162,10 @@ function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
         lede: `Pro until ${
           plan?.endsAt ? formatDate(plan.endsAt) : 'the end of the period'
         }. Won't renew after that.`,
+        // Said because it is the question someone has straight after
+        // cancelling, and because the honest answer is reassuring: they are
+        // cancelled, they keep what they paid for, and no further money moves.
+        note: 'You keep Pro until then, and nothing further will be charged.',
       }
     case 'past-due': {
       const endsAt =
@@ -155,7 +179,10 @@ function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
       }
     }
     case 'ended':
-      return { lede: 'Your subscription ended.' }
+      return {
+        lede: "Your subscription has ended, so you're back on the free plan.",
+        note: 'Nothing further will be charged.',
+      }
   }
 }
 
@@ -240,6 +267,71 @@ function PlanPicker({ buyer }: { buyer: Buyer | null }) {
   )
 }
 
+/**
+ * Cancelling, with the confirmation step and the two states it can fail into.
+ *
+ * The confirmation is the same `ConfirmDialog` that guards closing an account,
+ * because a second vocabulary for "are you sure" on one screen is how a UI
+ * starts to feel assembled rather than designed. Its `neutral` tone is the
+ * accurate one: nothing is destroyed here and nothing stops today.
+ *
+ * The dialog body states the date rather than a policy sentence. "Pro until 8
+ * August 2027" is a fact someone can check against what they paid; "you retain
+ * access for the remainder of your billing period" is a sentence people skip.
+ */
+function CancelPlanButton({ plan }: { plan: PlanState | null }) {
+  const [confirming, setConfirming] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function cancel(): Promise<void> {
+    setConfirming(false)
+    setSubmitting(true)
+    setError(null)
+    const ok = await cancelPlan()
+    // On success the forced refresh has already landed and this whole branch of
+    // the card is replaced by the cancelled state, so there is no success
+    // message to show and nothing to reset. Only the failure path stays here.
+    if (!ok) {
+      setError('That did not go through. Please try again in a minute.')
+      setSubmitting(false)
+    }
+  }
+
+  const until = plan?.endsAt ? formatDate(plan.endsAt) : null
+
+  return (
+    <>
+      <button
+        type='button'
+        onClick={() => setConfirming(true)}
+        disabled={submitting}
+        className={QUIET_BUTTON_CLASS}
+      >
+        {submitting ? 'Cancelling…' : 'Cancel plan'}
+      </button>
+      {error && (
+        <p role='alert' className='mt-2 basis-full text-xs text-red-300'>
+          {error}
+        </p>
+      )}
+      <ConfirmDialog
+        open={confirming}
+        tone='neutral'
+        title='Cancel your plan?'
+        body={
+          until
+            ? `Your next charge is stopped. You keep Pro until ${until}, and nothing further will be charged. You can resubscribe at any time.`
+            : 'Your next charge is stopped. You keep Pro to the end of the period you have already paid for, and nothing further will be charged.'
+        }
+        confirmLabel='Cancel my plan'
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => void cancel()}
+      />
+    </>
+  )
+}
+
 function PlanAction({
   bucket,
   plan,
@@ -252,18 +344,31 @@ function PlanAction({
   switch (bucket) {
     case 'free':
       return <PlanPicker buyer={buyer} />
+    // "Manage billing" is the card and the invoices; cancelling is ours, because
+    // Creem's portal cancels immediately and would cost an annual subscriber the
+    // months they paid for — see src/lib/billing/cancel.ts.
     case 'active-monthly':
     case 'active-annual':
       return (
-        <a href='/api/billing/portal' className={SECONDARY_BUTTON_CLASS}>
-          Manage billing
-        </a>
+        <div className='flex flex-wrap items-center gap-2'>
+          <a href='/api/billing/portal' className={SECONDARY_BUTTON_CLASS}>
+            Manage billing
+          </a>
+          <CancelPlanButton plan={plan} />
+        </div>
       )
+    // The one state with a genuinely urgent action, so this is the one place the
+    // accent is spent on the plan card: Pro is running out for a reason the
+    // customer can fix in about a minute, and burying that in a bordered button
+    // next to an equally-weighted Cancel would be the wrong emphasis.
     case 'past-due':
       return (
-        <a href='/api/billing/portal' className={SECONDARY_BUTTON_CLASS}>
-          Update payment method
-        </a>
+        <div className='flex flex-wrap items-center gap-2'>
+          <a href='/api/billing/portal' className={ACTION_BUTTON_CLASS}>
+            Update payment method
+          </a>
+          <CancelPlanButton plan={plan} />
+        </div>
       )
     case 'cancelled':
     case 'ended': {
@@ -285,7 +390,12 @@ function isRenewing(bucket: PlanBucket): boolean {
 }
 
 function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | null }) {
-  const bucket = classifyPlan(plan)
+  // Read at render rather than held in state: nothing on this card counts down,
+  // and the only boundary it decides — has the paid period run out — is months
+  // away for anyone looking at it. A ticking clock here would be a re-render per
+  // second to move nothing. Server-side `plan` is always null, so this cannot
+  // produce a hydration mismatch: both passes classify as `free`.
+  const bucket = classifyPlan(plan, nowMs())
   const copy = planCopy(bucket, plan)
 
   return (
@@ -494,12 +604,13 @@ function AccountSection({
         <div className='mt-3'>
           <p className='text-xs text-white/50'>
             {hasSubscription ? (
+              // Points at the plan card rather than the billing portal: cancelling
+              // is done there now, and sending someone to Creem's portal to do it
+              // is exactly the path that would cost them their remaining months.
               <>
-                Deleting your account does not cancel your subscription.{' '}
-                <a href='/api/billing/portal' className='text-cyan-300 hover:text-cyan-200'>
-                  Cancel it in the billing portal
-                </a>{' '}
-                first.
+                Deleting your account does not cancel your subscription. Use{' '}
+                <span className='text-white/70'>Cancel plan</span> above first, or it
+                will keep renewing after the account is gone.
               </>
             ) : (
               'Deleting your account removes your email address, your preferences, and every signed-in session. It cannot be undone.'
@@ -534,7 +645,7 @@ function AccountSection({
         title='Delete your account?'
         body={
           hasSubscription
-            ? 'This does not cancel your subscription. It will keep renewing after the account is gone, so cancel it in the billing portal first. Your email address, preferences and sessions are removed, and this cannot be undone.'
+            ? 'This does not cancel your subscription. It will keep renewing after the account is gone, so use "Cancel plan" on your plan card first. Your email address, preferences and sessions are removed, and this cannot be undone.'
             : 'Your email address, preferences and every signed-in session are removed. This cannot be undone.'
         }
         confirmLabel='Delete my account'

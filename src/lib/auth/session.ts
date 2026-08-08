@@ -87,6 +87,17 @@ export function readCookie(header: string | null, name: string): string | null {
   return null
 }
 
+/**
+ * The raw session cookie on a request, or null.
+ *
+ * Every authenticated handler needs exactly this, and spelling it out at each
+ * one meant the cookie name appeared in four places — a rename would have had to
+ * find all of them, and missing one signs that route's users out silently.
+ */
+export function sessionCookieOf(request: Request): string | null {
+  return readCookie(request.headers.get('Cookie'), SESSION_COOKIE)
+}
+
 export function sessionCookieHeaders(value: string, maxAgeSeconds: number): string[] {
   const shared = `Path=/; Max-Age=${maxAgeSeconds}; Secure; SameSite=Lax`
   return [

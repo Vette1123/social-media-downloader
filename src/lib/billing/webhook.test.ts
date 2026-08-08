@@ -203,6 +203,33 @@ describe('mayApply', () => {
   it('allows a trusted switch once the held subscription is dead', () => {
     expect(mayApply({ ...live, sub_status: 'expired' }, 'sub_A', 'user_id', NOW)).toBe(true)
   })
+
+  /**
+   * Resubscribing. The row holds a cancelled annual that still runs to next
+   * August, which now keeps them Pro — so the old "only if what they hold is
+   * dead" rule would refuse every event for whatever they buy next, and the
+   * purchase would silently never land.
+   */
+  it('lets a subscription Creem is billing supersede one that is merely paid-through', () => {
+    const cancelledButPaid = {
+      sub_id: 'sub_OLD',
+      sub_status: 'canceled',
+      sub_ends_at: NOW + 365 * 24 * 60 * 60 * 1000,
+      sub_past_due_since: null,
+    }
+    expect(mayApply(cancelledButPaid, 'sub_NEW', 'user_id', NOW, 'active')).toBe(true)
+    expect(mayApply(cancelledButPaid, 'sub_NEW', 'user_id', NOW, 'trialing')).toBe(true)
+  })
+
+  it('still refuses a stopped event for a superseded subscription while the held one is live', () => {
+    expect(mayApply(live, 'sub_A', 'user_id', NOW, 'expired')).toBe(false)
+    expect(mayApply(live, 'sub_A', 'user_id', NOW, 'canceled')).toBe(false)
+  })
+
+  /** Live-supersedes must never become a way round the email rule. */
+  it('does not let a live status rebind a row matched only by email', () => {
+    expect(mayApply(live, 'sub_A', 'email', NOW, 'active')).toBe(false)
+  })
 })
 
 /**

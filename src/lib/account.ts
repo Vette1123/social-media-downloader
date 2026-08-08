@@ -266,6 +266,29 @@ export async function refreshAccount(opts: { force?: boolean } = {}): Promise<vo
   return inFlight
 }
 
+/**
+ * Cancel the subscription at the end of the period already paid for.
+ *
+ * Deliberately not a link to Creem's portal: that portal's Cancel takes effect
+ * immediately and would cost an annual subscriber the months they have been
+ * charged for. See src/lib/billing/cancel.ts.
+ *
+ * The forced refresh afterwards is what repaints the plan card — the server has
+ * already written the row, so this reads the truth back rather than guessing at
+ * the new state here and risking a card that disagrees with the next reload.
+ */
+export async function cancelPlan(): Promise<boolean> {
+  try {
+    const response = await fetch('/api/billing/cancel', { method: 'POST' })
+    const data = await response.json().catch(() => null)
+    if (!response.ok || data?.success !== true) return false
+    await refreshAccount({ force: true })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function signOut(all = false): Promise<void> {
   try {
     await fetch(`/api/auth/logout${all ? '?all=1' : ''}`, { method: 'POST' })

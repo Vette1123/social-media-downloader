@@ -26,16 +26,20 @@ export interface BillingRow {
 }
 
 /**
+ * Whether a period the customer has already paid for is still running.
+ *
+ * Shared with the account page's plan classifier, so "is still Pro" and "still
+ * reads as Pro on screen" cannot drift apart — they are one comparison in one
+ * place rather than the same `<` written twice.
+ */
+export function paidThrough(endsAt: number | null, now: number): boolean {
+  return endsAt !== null && now < endsAt
+}
+
+/**
  * A `switch` rather than chained ternaries, and an explicit `default: false`,
  * so a status Creem adds later fails closed instead of matching some broader
  * condition by accident.
- *
- * Note `scheduled_cancel` versus `canceled`. They are two different states, not
- * two names for one: `scheduled_cancel` is a subscription that will not renew
- * but is still running to the end of a period the customer paid for, while
- * `canceled` has already stopped. Treating them alike in either direction bills
- * nobody and silently keeps or revokes Pro, so each is matched explicitly and
- * only the first consults `sub_ends_at`.
  */
 export function isProAt(row: BillingRow | null, now: number): boolean {
   if (!row?.sub_status) return false
@@ -45,10 +49,28 @@ export function isProAt(row: BillingRow | null, now: number): boolean {
     case 'trialing':
       return true
 
-    // Cancelled but not yet lapsed: the customer has already paid through the
-    // end of the current period and keeps Pro until it runs out.
+    // The two ways Creem says "cancelled", both of which keep Pro to the end of
+    // the period that has been paid for.
+    //
+    // `scheduled_cancel` is what its API writes in `scheduled` mode: stops
+    // renewing, keeps running. `canceled` is what its *customer portal* writes
+    // the instant someone clicks Cancel there — immediately, with
+    // `current_period_end_date` still eleven months out on an annual plan. Creem
+    // considers that status final; we do not, because the money is not.
+    //
+    // Reading them alike is deliberate and is the whole guarantee: someone
+    // charged for twelve months gets twelve months, whichever Cancel button they
+    // found. It cannot outlive the period either, since Creem moves a lapsed
+    // subscription to `expired`, and a past `sub_ends_at` fails the comparison
+    // anyway.
+    //
+    // ponytail: a refund does not move the status, so a refunded annual would
+    // keep Pro to period end. `refund.created` is deliberately unsubscribed and
+    // the stated policy is that charges are final — subscribe to it and clear
+    // `sub_ends_at` if refunds ever stop being an exception.
     case 'scheduled_cancel':
-      return row.sub_ends_at !== null && now < row.sub_ends_at
+    case 'canceled':
+      return paidThrough(row.sub_ends_at, now)
 
     // A null start means we never observed the transition, so there is no
     // window to measure. Fail closed rather than grant an unbounded grace.
@@ -58,9 +80,9 @@ export function isProAt(row: BillingRow | null, now: number): boolean {
         now < row.sub_past_due_since + PAST_DUE_GRACE_MS
       )
 
-    // `canceled`, `expired`, `unpaid`, `paused` — all stopped, all fail here
-    // by falling through rather than by being listed, so a new stopped-ish
-    // status Creem introduces lands on the safe side too.
+    // `expired`, `unpaid`, `paused` — all stopped with nothing left paid for,
+    // all failing here by falling through rather than by being listed, so a new
+    // stopped-ish status Creem introduces lands on the safe side too.
     default:
       return false
   }
