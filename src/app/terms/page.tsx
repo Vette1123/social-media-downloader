@@ -75,9 +75,9 @@ export default function Terms() {
               believe this service is being used to infringe your rights, email{' '}
               <a
                 className='text-cyan-300 hover:text-cyan-200'
-                href={`mailto:${siteConfig.author.email}`}
+                href={`mailto:${siteConfig.supportEmail}`}
               >
-                {siteConfig.author.email}
+                {siteConfig.supportEmail}
               </a>{' '}
               and we will respond.
             </p>

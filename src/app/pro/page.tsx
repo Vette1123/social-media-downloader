@@ -125,7 +125,14 @@ export default function Pro() {
           <Link href='/terms' className='text-cyan-300 hover:text-cyan-200'>
             Terms
           </Link>
-          . Questions:{' '}
+          . Questions, billing problems or cancellations:{' '}
+          <a
+            className='text-cyan-300 hover:text-cyan-200'
+            href={`mailto:${siteConfig.supportEmail}`}
+          >
+            {siteConfig.supportEmail}
+          </a>
+          , answered by{' '}
           <a className='text-cyan-300 hover:text-cyan-200' href={siteConfig.author.url}>
             {siteConfig.author.name}
           </a>
