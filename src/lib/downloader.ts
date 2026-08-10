@@ -212,6 +212,42 @@ let igTokenCache: {
   expires: number
 } | null = null
 
+/**
+ * The companion cookies a real Instagram session carries, and the env var each
+ * is read from. See `Downloader.instagramCookie`.
+ *
+ * Roughly the order a browser sends them. `sessionid` is deliberately absent:
+ * it comes from `IG_SESSIONID`, it is the one cookie that must exist for any of
+ * this to run, and the getter appends it itself rather than letting it be
+ * omitted by the same "blank means skip" rule as the rest.
+ *
+ * All of these are read out of devtools > Application > Cookies on the browser
+ * that logged in. They are per-session and per-device, so they must come from
+ * the *same* browser profile as the `sessionid` — mixing a `mid` from one
+ * device with a `sessionid` from another is a worse signal than sending
+ * neither.
+ */
+const IG_COOKIE_ORDER: readonly { name: string; env: string }[] = [
+  // Meta's device cookie, set across facebook.com and instagram.com.
+  { name: 'datr', env: 'IG_DATR' },
+  // Instagram's own device id.
+  { name: 'ig_did', env: 'IG_DID' },
+  // Machine id. Stable per browser profile, and one of the oldest signals Meta
+  // uses to tie requests together.
+  { name: 'mid', env: 'IG_MID' },
+  // Anti-CSRF token. Also sent as the X-CSRFToken header, and the two must
+  // match — see instagramCsrf.
+  { name: 'csrftoken', env: 'IG_CSRFTOKEN' },
+  // The logged-in account's numeric id. Always present alongside a real
+  // sessionid, which is exactly why sending sessionid without it stands out.
+  { name: 'ds_user_id', env: 'IG_DS_USER_ID' },
+  // Regional routing hint, tying the session to the region it was created in.
+  { name: 'rur', env: 'IG_RUR' },
+  // Viewport size, e.g. 1920x1080. Pure telemetry and worthless on its own; it
+  // is here because a browser sends it and this list exists to look like one.
+  { name: 'wd', env: 'IG_WD' },
+]
+
 export class Downloader {
   // Preferred video quality for the extractors that expose a quality knob
   // (Cobalt's videoQuality, tikwm's hd flag). 'hd' = best available (default);
@@ -324,6 +360,59 @@ export class Downloader {
   private get instagramSessionId(): string {
     if (!this.credentialed) return ''
     return process.env.IG_SESSIONID?.trim() || ''
+  }
+
+  /**
+   * The whole Cookie header to send Instagram, assembled from one env var per
+   * cookie.
+   *
+   * Instagram's web client never sends `sessionid` on its own, so a lone one
+   * arriving from a datacenter IP is an anomaly before anything else about the
+   * request is examined. Sending the set a browser actually sends is the
+   * cheapest thing that extends how long a session survives. It does not make
+   * one permanent — the ASN is still wrong, and no header fixes that.
+   *
+   * One variable per cookie rather than a single pasted header, because the
+   * values are read out of devtools' Application > Cookies table, which is a
+   * name/value grid with no header string to copy. `IG_COOKIE_ORDER` below is
+   * the only list; adding a cookie Meta introduces later is one entry.
+   *
+   * Everything is optional except `sessionid`, which is what decides whether a
+   * session is configured at all — an absent companion is simply omitted rather
+   * than sent empty, since `mid=` with no value is a worse signal than no `mid`.
+   */
+  private get instagramCookie(): string {
+    const sessionId = this.instagramSessionId
+    if (!sessionId) return ''
+    const pairs = IG_COOKIE_ORDER.map(({ name, env }) => {
+      const value = process.env[env]?.trim()
+      return value ? `${name}=${value}` : ''
+    }).filter(Boolean)
+    return [...pairs, `sessionid=${sessionId}`].join('; ')
+  }
+
+  /**
+   * The cookie header for a request, with a freshly harvested `csrftoken`
+   * folded in only when one was not configured.
+   *
+   * A configured `csrftoken` wins: it was minted by the same browser session as
+   * the `sessionid` beside it, whereas the harvested one comes from our own
+   * homepage GET. Sending both would put two `csrftoken` pairs in one header,
+   * which is malformed and reads as automation on its own.
+   */
+  private instagramCookieWith(csrf: string): string {
+    const base = this.instagramCookie
+    if (!base) return ''
+    if (!csrf || process.env.IG_CSRFTOKEN?.trim()) return base
+    return `${base}; csrftoken=${csrf}`
+  }
+
+  /**
+   * The CSRF token to put in `X-CSRFToken`, which must equal the one in the
+   * cookie or Instagram rejects the POST. Same precedence as the cookie above.
+   */
+  private instagramCsrf(harvested: string): string {
+    return process.env.IG_CSRFTOKEN?.trim() || harvested
   }
 
   // Main entry point: auto-detects platform and routes accordingly
@@ -936,12 +1025,7 @@ export class Downloader {
     }
 
     const { csrf } = await this.getInstagramTokens()
-    const cookie = [
-      `sessionid=${this.instagramSessionId}`,
-      csrf ? `csrftoken=${csrf}` : '',
-    ]
-      .filter(Boolean)
-      .join('; ')
+    const cookie = this.instagramCookieWith(csrf)
     const headers: Record<string, string> = {
       'User-Agent': this.userAgent,
       'X-IG-App-ID': this.instagramAppId,
@@ -1961,9 +2045,10 @@ export class Downloader {
           Accept:
             'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
-          ...(this.instagramSessionId
-            ? { Cookie: `sessionid=${this.instagramSessionId}` }
-            : {}),
+          // The full set here too, not just the session. This GET is the first
+          // request of every credentialed resolve, so a bare `sessionid` on it
+          // would be the anomaly the rest of the header work exists to avoid.
+          ...(this.instagramCookie ? { Cookie: this.instagramCookie } : {}),
         },
         timeout: 12000,
         validateStatus: () => true,
@@ -2033,10 +2118,7 @@ export class Downloader {
     form.append('variables', JSON.stringify(variables))
     form.append('doc_id', '8845758582119845')
 
-    const cookieParts: string[] = []
-    if (this.instagramSessionId)
-      cookieParts.push(`sessionid=${this.instagramSessionId}`)
-    if (csrf) cookieParts.push(`csrftoken=${csrf}`)
+    const cookie = this.instagramCookieWith(csrf)
 
     const response = await http.post(
       'https://www.instagram.com/graphql/query/',
@@ -2047,12 +2129,12 @@ export class Downloader {
           'Content-Type': 'application/x-www-form-urlencoded',
           'X-IG-App-ID': this.instagramAppId,
           'X-FB-LSD': lsd,
-          'X-CSRFToken': csrf,
+          'X-CSRFToken': this.instagramCsrf(csrf),
           'X-ASBD-ID': '129477',
           Accept: '*/*',
           Origin: 'https://www.instagram.com',
           Referer: `https://www.instagram.com/p/${shortcode}/`,
-          ...(cookieParts.length ? { Cookie: cookieParts.join('; ') } : {}),
+          ...(cookie ? { Cookie: cookie } : {}),
         },
         timeout: 20000,
       },
