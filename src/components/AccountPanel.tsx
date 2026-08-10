@@ -564,12 +564,20 @@ function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | n
       </div>
       {/* Said here rather than only in the Terms, because this is the screen
           someone is on when they decide to cancel, and the two things they
-          want to know at that moment are whether access stops immediately
-          (it does not) and whether money comes back (it does not). */}
+          want to know at that moment are whether access stops immediately (it
+          does not) and whether money comes back (within 14 days of the charge,
+          it does). Keep this sentence in step with the Terms. */}
       {isRenewing(bucket) && (
         <p className='mt-3 text-xs text-white/50'>
-          Cancelling stops the next charge. Pro runs to the end of the period
-          you have paid for, and charges are final.
+          Cancelling stops the next charge and Pro runs to the end of the
+          period you have paid for. Charged in the last 14 days?{' '}
+          <a
+            className='underline underline-offset-2 hover:text-white/70'
+            href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Refund request')}`}
+          >
+            Email us
+          </a>{' '}
+          for a full refund.
         </p>
       )}
     </Surface>

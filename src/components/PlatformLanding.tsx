@@ -5,10 +5,8 @@ import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { LazyFAQ } from '@/components/LazyFAQ'
 import {
   FacebookIcon,
-  GitHubIcon,
   InstagramIcon,
   PinterestIcon,
-  PortfolioIcon,
   RedditIcon,
   SnapchatIcon,
   ThreadsIcon,
@@ -21,8 +19,7 @@ import {
 import { ProUpsell } from '@/components/ProUpsell'
 import { PromoSlot } from '@/components/PromoSlot'
 import { DevAppLinks } from '@/components/DevAppLinks'
-import { PlayAppLinks } from '@/components/PlayAppLinks'
-import { siteConfig } from '@/config/site'
+import { SiteFooter } from '@/components/SiteFooter'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
 import { platforms } from '@/lib/platforms'
 import type { SupportedPlatform } from '@/lib/validator'
@@ -381,65 +378,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
         </section>
         </main>
 
-        {/* Footer */}
-        <footer className='mt-16 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-8 text-sm text-white/60 sm:mt-24 sm:flex-row sm:gap-5'>
-          <span>
-            Built by{' '}
-            <a
-              href={siteConfig.author.url}
-              target='_blank'
-              rel='noopener noreferrer'
-              className='font-medium text-cyan-300 underline underline-offset-2 transition-colors hover:text-cyan-200'
-            >
-              {siteConfig.author.name}
-            </a>
-          </span>
-          <span aria-hidden className='hidden text-white/20 sm:inline'>
-            ·
-          </span>
-          <a
-            href={siteConfig.author.url}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='inline-flex items-center gap-1.5 text-white/70 transition-colors hover:text-white'
-          >
-            <PortfolioIcon className='h-4 w-4' />
-            Portfolio
-          </a>
-          <a
-            href={siteConfig.links.github}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='inline-flex items-center gap-1.5 text-white/70 transition-colors hover:text-white'
-          >
-            <GitHubIcon className='h-4 w-4' />
-            GitHub
-          </a>
-          <span aria-hidden className='hidden sm:inline text-white/20'>
-            •
-          </span>
-          <Link href='/privacy' className='transition-colors hover:text-white/80'>
-            Privacy
-          </Link>
-          <Link href='/terms' className='transition-colors hover:text-white/80'>
-            Terms
-          </Link>
-          <Link href='/pro' className='transition-colors hover:text-white/80'>
-            Pro
-          </Link>
-          <a
-            href='https://buymeacoffee.com/vetteotp'
-            target='_blank'
-            rel='noopener noreferrer'
-            className='transition-colors hover:text-white/80'
-          >
-            Sponsor
-          </a>
-          <span aria-hidden className='hidden sm:inline text-white/20'>
-            •
-          </span>
-          <PlayAppLinks />
-        </footer>
+        <SiteFooter />
       </div>
     </div>
   )

@@ -233,7 +233,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
               <div style={{ display: 'flex', gap: 14 }}>
                 {[
                   { label: 'No login', accent: '#5eead4' },
-                  { label: 'No watermark', accent: '#7dd3fc' },
+                  { label: 'No install', accent: '#7dd3fc' },
                   { label: 'HD', accent: '#67e8f9' },
                   { label: 'No limits', accent: '#a5f3fc' },
                 ].map((chip) => (

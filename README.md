@@ -1,8 +1,8 @@
 # Social Media Downloader
 
-> Download TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch & Vimeo videos without watermarks — HD video, reels, Shorts, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits. Installs as an app.
+> Download public TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch & Vimeo posts in their original quality — HD video, reels, Shorts, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits. Installs as an app.
 
-![Social Media Downloader — download HD video, reels, Shorts, MP3 audio and photos from TikTok, X, Instagram, Facebook, YouTube and more without watermarks](docs/social-preview.png)
+![Social Media Downloader — download HD video, reels, Shorts, MP3 audio and photos from public posts on TikTok, X, Instagram, Facebook, YouTube and more](docs/social-preview.png)
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
@@ -14,11 +14,11 @@
 
 ### 🚀 [Try it live →](https://www.socialdownloader.space)
 
-A free, watermark-free downloader for **TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo**. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack — no login, no install required, runs in your browser.
+A free downloader for public posts on **TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo**. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack — no login, no install required, runs in your browser. It reaches only what a logged-out visitor can already see: no private accounts, no paywalled or subscriber-only posts, no DRM.
 
 It's also an **installable app (PWA)**: add it to your home screen and share links straight from the TikTok, Instagram, or YouTube app — no browser, no copy-paste.
 
-A free, open-source alternative to SnapTik, SSSTik, SaveTT, SnapInsta, Y2mate, and GetFvid — with **no popups, no redirects, no tracking, and a multi-source fallback chain** so downloads keep working when any single provider goes down.
+Open source, with **no popups, no redirects, no tracking, and a multi-source fallback chain** so downloads keep working when any single provider goes down.
 
 ⭐ **If this tool is useful to you, please [star the repo](https://github.com/Vette1123/social-media-downloader/stargazers)** — it helps others find it.
 
@@ -27,7 +27,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 ## Why use it
 
 - **11 platforms, one paste box.** TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo — auto-detected from the URL.
-- **No watermark, HD by default.** Clean video with a one-tap fallback to SD, plus MP3 audio extraction on every platform that carries sound.
+- **Original quality, HD by default.** The source file rather than a re-encode, with a one-tap fallback to SD, plus MP3 audio extraction on every platform that carries sound.
 - **No login, no API key, no daily limit.** Nothing to sign up for and nothing installed unless you want the app.
 - **Private by design.** No accounts, no tracking of what you download. Your Recent list lives only in your own browser.
 - **Resilient.** A per-platform fallback chain quietly retries other sources, so a single provider outage doesn't break your download.
@@ -39,7 +39,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 
 **TikTok**
 
-- HD video downloads without the watermark
+- HD video downloads at the source quality
 - Extract the soundtrack as MP3 (re-served with `audio/mpeg`)
 - Photo carousels (slideshows): preview every image, save individually or as a ZIP, keep the original background music
 - Render a TikTok slideshow into a real MP4 video (ffmpeg) when the platform only ships images

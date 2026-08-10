@@ -214,7 +214,7 @@ export default async function OpenGraphImage() {
                 display: 'flex',
               }}
             >
-              Download without watermarks
+              Download in original quality
             </div>
             <div
               style={{
@@ -240,7 +240,7 @@ export default async function OpenGraphImage() {
               <div style={{ display: 'flex', gap: 14 }}>
                 {[
                   { label: 'No login', accent: '#5eead4' },
-                  { label: 'No watermark', accent: '#7dd3fc' },
+                  { label: 'No install', accent: '#7dd3fc' },
                   { label: 'HD · 4K', accent: '#67e8f9' },
                   { label: 'No limits', accent: '#a5f3fc' },
                 ].map((chip) => (

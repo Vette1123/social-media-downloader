@@ -49,15 +49,14 @@ export const platforms: Platform[] = [
     slug: 'tiktok-downloader',
     name: 'TikTok',
     brandLabel: 'TikTok video downloader',
-    metaTitle:
-      'TikTok Video Downloader — HD, No Watermark, MP3 & Slideshow',
+    metaTitle: 'TikTok Video Downloader — HD MP4, MP3 & Slideshow',
     metaDescription:
-      'Download TikTok videos in HD without a watermark, extract the soundtrack as MP3, or save every image from a photo carousel — free, no login, no app install.',
-    h1: 'TikTok Video Downloader — HD, No Watermark',
+      'Download public TikTok videos in HD, extract the soundtrack as MP3, or save every image from a photo carousel — free, no login, no app install.',
+    h1: 'TikTok Video Downloader — HD, MP3 & Slideshow',
     tagline:
       'Save TikTok videos in 1080p, extract MP3 audio, and download photo carousels with their original music.',
     intro:
-      'Paste any tiktok.com or vm.tiktok.com link to download the video without a watermark, pull the soundtrack as an MP3, or save every image from a TikTok photo carousel — individually or as a single ZIP. Everything happens in your browser, no app to install and no sign-up.',
+      'Paste any public tiktok.com or vm.tiktok.com link to download the video in its original quality, pull the soundtrack as an MP3, or save every image from a TikTok photo carousel — individually or as a single ZIP. Everything happens in your browser, no app to install and no sign-up.',
     accent: {
       chip: 'bg-[#010101] text-white',
       grad: 'from-pink-500 via-fuchsia-500 to-rose-500',
@@ -72,8 +71,8 @@ export const platforms: Platform[] = [
     ],
     cards: [
       {
-        title: '🎬 HD video, no watermark',
-        body: 'Get TikTok clips in original 1080p quality, stripped of the corner watermark — perfect for re-editing, archiving, or sharing off-platform.',
+        title: '🎬 HD video, original quality',
+        body: 'Get public TikTok clips at their source 1080p quality — the real MP4, not a screen recording, so it stays sharp when you archive or re-watch it.',
       },
       {
         title: '🎵 MP3 from any TikTok',
@@ -90,8 +89,8 @@ export const platforms: Platform[] = [
         a: 'Yes — completely free, with no sign-up and no daily download limit.',
       },
       {
-        q: 'Do downloaded TikTok videos have a watermark?',
-        a: 'No. Videos are saved in HD quality, free of the TikTok watermark.',
+        q: 'What quality are downloaded TikTok videos?',
+        a: 'The source file TikTok serves for a public post — up to 1080p HD, not a re-encode or a screen recording.',
       },
       {
         q: 'Can I download a TikTok photo carousel (slideshow)?',
@@ -107,7 +106,7 @@ export const platforms: Platform[] = [
       },
     ],
     featureList: [
-      'Download TikTok videos in HD without the watermark',
+      'Download public TikTok videos at their original HD quality',
       'Extract MP3 audio from any TikTok video or slideshow',
       'Save TikTok photo carousels — individually or as a ZIP',
       'Preview the video and audio before downloading',
@@ -210,7 +209,7 @@ export const platforms: Platform[] = [
     cards: [
       {
         title: '🎬 Reels in HD',
-        body: 'Save Instagram reels in their full source resolution — vertical, square, or landscape — with no platform watermark stitched on.',
+        body: 'Save public Instagram reels in their full source resolution — vertical, square, or landscape — as the original MP4, not a re-encode.',
       },
       {
         title: '🖼️ Single photos',
@@ -414,7 +413,7 @@ export const platforms: Platform[] = [
     cards: [
       {
         title: '🎬 Video pins in HD',
-        body: 'Pinterest idea-pin videos are saved at their source quality as a clean MP4 — no screen-recording, no watermark stitched on.',
+        body: 'Pinterest idea-pin videos are saved at their source quality as a clean MP4 — no screen-recording, no re-encode.',
       },
       {
         title: '🖼️ Full-resolution images',
@@ -550,7 +549,7 @@ export const platforms: Platform[] = [
     cards: [
       {
         title: '🎬 Videos in HD',
-        body: 'Threads video posts are saved at their source resolution as a clean MP4 — no re-encode, no watermark.',
+        body: 'Threads video posts are saved at their source resolution as a clean MP4 — no re-encode, no quality loss.',
       },
       {
         title: '🖼️ Photos at full size',

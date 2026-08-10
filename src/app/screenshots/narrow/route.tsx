@@ -24,7 +24,7 @@ export const contentType = 'image/png'
 const SIZE = { width: 720, height: 1280 }
 
 const CAPABILITIES = [
-  { label: 'HD video', sub: 'MP4 with the watermark stripped' },
+  { label: 'HD video', sub: 'The full-quality source MP4' },
   { label: 'MP3 audio', sub: 'Pull the soundtrack from any link' },
   { label: 'Photo galleries', sub: 'Carousels at full resolution' },
   { label: 'Batch ZIP', sub: 'Every slideshow image in one file' },
@@ -138,7 +138,7 @@ export function GET() {
                 color: 'rgba(203, 240, 253, 0.72)',
               }}
             >
-              TikTok, X, Instagram, Facebook, YouTube and more — no watermark,
+              TikTok, X, Instagram, Facebook, YouTube and more — public posts,
               no account.
             </div>
           </div>

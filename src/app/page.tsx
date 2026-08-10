@@ -8,10 +8,8 @@ import { ProUpsell } from '@/components/ProUpsell'
 import { PromoSlot } from '@/components/PromoSlot'
 import {
   FacebookIcon,
-  GitHubIcon,
   InstagramIcon,
   PinterestIcon,
-  PortfolioIcon,
   RedditIcon,
   SnapchatIcon,
   ThreadsIcon,
@@ -22,7 +20,7 @@ import {
   YouTubeIcon,
 } from '@/components/icons'
 import { DevAppLinks } from '@/components/DevAppLinks'
-import { PlayAppLinks } from '@/components/PlayAppLinks'
+import { SiteFooter } from '@/components/SiteFooter'
 import { homepageFaqs } from '@/lib/homepageFaqs'
 import { platforms } from '@/lib/platforms'
 import { homepageStructuredData } from '@/lib/structuredData'
@@ -93,7 +91,7 @@ const whatYouCanDo = [
   {
     Icon: IconVideo,
     label: 'HD video',
-    sub: 'Full-quality MP4 with the watermark stripped, seeking works.',
+    sub: 'The full-quality source MP4, not a screen recording — seeking works.',
   },
   {
     Icon: IconAudio,
@@ -245,12 +243,12 @@ export default function Home() {
               </div>
 
               <h1 className='mb-3 text-3xl font-extrabold tracking-tight text-white text-balance sm:text-4xl md:text-5xl'>
-                Download any video,{' '}
-                <span className='text-grad'>watermark-free</span>
+                Download any public video,{' '}
+                <span className='text-grad'>in original quality</span>
               </h1>
               <p className='mx-auto mb-3 max-w-xl text-sm text-white/70 md:text-base'>
-                Save videos without watermarks, extract MP3 audio, or grab full
-                image galleries from TikTok, X, Instagram, Facebook, YouTube,
+                Save the video, extract MP3 audio, or grab full image galleries
+                from public posts on TikTok, X, Instagram, Facebook, YouTube,
                 Pinterest, Reddit, Threads, Snapchat, Twitch &amp; Vimeo.
               </p>
               {/* The first mention of Pro anywhere above the fold. Self-hides
@@ -412,14 +410,16 @@ export default function Home() {
                 Downloader
               </h2>
               <p className='mb-4 max-w-[60ch] text-sm leading-relaxed text-white/80 md:text-base'>
-                Save any TikTok, Twitter/X, Instagram, Facebook, or YouTube post
-                in a couple of clicks. Paste the link, preview the content, and
-                download the full-quality video, the original MP3 soundtrack, or
-                every image from a photo carousel.
+                Save any public TikTok, Twitter/X, Instagram, Facebook, or
+                YouTube post in a couple of clicks. Paste the link, preview the
+                content, and download the full-quality video, the original MP3
+                soundtrack, or every image from a photo carousel.
               </p>
               <p className='mb-8 max-w-[60ch] text-sm leading-relaxed text-white/80 md:text-base'>
-                Everything happens in your browser — no app, no sign-up, no
-                watermark, and no limit on how much you save.
+                Everything happens in your browser — no app, no sign-up, and no
+                limit on how much you save. Only publicly visible posts are
+                reachable, and you are responsible for having the rights to
+                whatever you download.
               </p>
 
               <Eyebrow>Supported link formats</Eyebrow>
@@ -451,65 +451,7 @@ export default function Home() {
           </section>
           </main>
 
-          {/* Footer */}
-          <footer className='mt-16 flex flex-col items-center justify-center gap-3 border-t border-white/[0.08] pt-8 text-sm text-white/60 sm:mt-24 sm:flex-row sm:gap-5'>
-            <span>
-              Built by{' '}
-              <a
-                href='https://www.mohamedgado.com'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='font-medium text-cyan-300 underline underline-offset-2 transition-colors hover:text-cyan-200'
-              >
-                Mohamed Gado
-              </a>
-            </span>
-            <span aria-hidden className='hidden text-white/20 sm:inline'>
-              ·
-            </span>
-            <a
-              href='https://www.mohamedgado.com'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='inline-flex items-center gap-1.5 text-white/70 transition-colors hover:text-white'
-            >
-              <PortfolioIcon className='h-4 w-4' />
-              Portfolio
-            </a>
-            <a
-              href='https://github.com/Vette1123/social-media-downloader'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='inline-flex items-center gap-1.5 text-white/70 transition-colors hover:text-white'
-            >
-              <GitHubIcon className='h-4 w-4' />
-              GitHub
-            </a>
-            <span aria-hidden className='hidden text-white/20 sm:inline'>
-              ·
-            </span>
-            <Link href='/privacy' className='transition-colors hover:text-white/80'>
-              Privacy
-            </Link>
-            <Link href='/terms' className='transition-colors hover:text-white/80'>
-              Terms
-            </Link>
-            <Link href='/pro' className='transition-colors hover:text-white/80'>
-              Pro
-            </Link>
-            <a
-              href='https://buymeacoffee.com/vetteotp'
-              target='_blank'
-              rel='noopener noreferrer'
-              className='transition-colors hover:text-white/80'
-            >
-              Sponsor
-            </a>
-            <span aria-hidden className='hidden text-white/20 sm:inline'>
-              ·
-            </span>
-            <PlayAppLinks />
-          </footer>
+          <SiteFooter />
         </div>
       </div>
     </>

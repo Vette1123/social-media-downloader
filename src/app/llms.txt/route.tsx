@@ -19,7 +19,7 @@ import { platforms } from '@/lib/platforms'
 export const dynamic = 'force-static'
 
 const CAPABILITIES = [
-  'Video download — MP4, watermark removed where the source applies one.',
+  'Video download — the source MP4 for a public post, at its original quality.',
   'Audio extraction — MP3 pulled from the same link, no separate tool.',
   'Image and carousel download — every photo in a post at full resolution.',
   'Batch ZIP — all images from one slideshow as a single archive.',

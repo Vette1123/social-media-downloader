@@ -64,10 +64,15 @@ export function isProAt(row: BillingRow | null, now: number): boolean {
     // subscription to `expired`, and a past `sub_ends_at` fails the comparison
     // anyway.
     //
-    // ponytail: a refund does not move the status, so a refunded annual would
-    // keep Pro to period end. `refund.created` is deliberately unsubscribed and
-    // the stated policy is that charges are final — subscribe to it and clear
-    // `sub_ends_at` if refunds ever stop being an exception.
+    // ponytail: a refund does not move the status, so a refunded annual keeps
+    // Pro to period end unless someone intervenes. Since /terms started
+    // offering a 14-day refund (2026-08-10, for the Creem account review) that
+    // is a real hole, deliberately left to a manual step rather than code:
+    // refunds arrive by email, one at a time, and revoking is one statement —
+    //   UPDATE users SET sub_ends_at = <now>, sub_updated_at = <now> WHERE id = ?
+    // run against the remote D1 right after issuing the refund in Creem.
+    // Upgrade path if refunds ever stop being rare: subscribe to
+    // `refund.created` (currently unsubscribed) and clear `sub_ends_at` there.
     case 'scheduled_cancel':
     case 'canceled':
       return paidThrough(row.sub_ends_at, now)
