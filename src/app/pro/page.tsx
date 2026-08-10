@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PlanChooser } from '@/components/PlanChooser'
+import { SiteFooter } from '@/components/SiteFooter'
 import { Surface } from '@/components/Surface'
 import { siteConfig } from '@/config/site'
 
@@ -125,6 +126,8 @@ export default function Pro() {
         <Link href='/' className='mt-10 inline-block text-sm text-cyan-300 hover:text-cyan-200'>
           Back to the downloader
         </Link>
+
+        <SiteFooter />
       </div>
     </div>
   )

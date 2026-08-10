@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { AccountPanel } from '@/components/AccountPanel'
+import { SiteFooter } from '@/components/SiteFooter'
 
 export const metadata: Metadata = {
   title: 'Account',
@@ -31,6 +32,8 @@ export default function Account() {
         <Link href='/' className='mt-10 inline-block text-sm text-cyan-300 hover:text-cyan-200'>
           Back to the downloader
         </Link>
+
+        <SiteFooter />
       </div>
     </div>
   )
