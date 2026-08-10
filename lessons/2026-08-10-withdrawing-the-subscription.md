@@ -82,6 +82,23 @@ so a fork that finds a willing processor has a working half to build on.
   price strings found `Get Pro, $3/mo` still present — from a build twelve hours
   old. The Cloudflare artifact comes from `pnpm cf:build`, which is what the
   deploy runs. A stale `out/` looks exactly like a real failure.
+- **The Instagram cookie was assembled in three places, two of them wrong.**
+  Adding the companion cookies meant finding every site that built a `Cookie`
+  header: the GraphQL POST built one array, the story extractor built a
+  different one, and `getInstagramTokens` sent a bare `sessionid`. That last one
+  is the *first* request of every credentialed resolve, so the most exposed
+  request was the least disguised. Three near-identical assemblies is the shape
+  the DRY rule exists for, and the bug was invisible until all three were read
+  together.
+- **A "CPU is huge" report turned out to be no regression at all, and guessing
+  would have sent me refactoring the hot path.** The Workers GraphQL analytics
+  API settled it in one query: p50 was 6.0 ms on the day in question against
+  4.0–10.3 ms across the preceding ten days, and the two hours after the deploy
+  were 1.7 ms and 8.4 ms — the best of the day. The genuinely huge numbers were
+  137 ms p50 on 29 July and 82 ms on 30 July, which fell to 9.5 ms on 31 July
+  and never came back. A 30-day dashboard view still has those spikes in frame,
+  which is almost certainly what was being read. Query the numbers before
+  touching anything.
 
 ## What worked
 
@@ -126,3 +143,15 @@ so a fork that finds a willing processor has a working half to build on.
   not write it, and a twelve-hour-old export reads as a live failure.
 - Deleting a shared constant is a better find-and-replace than grepping prose:
   the compiler lists every page that made the claim.
+- Before believing a "performance got worse" report, query
+  `workersInvocationsAdaptive` for `cpuTimeP50`/`cpuTimeP99` by hour and by day.
+  A dashboard window wide enough to include an old spike reads as a current one.
+  Scripts for both are worth rewriting from
+  `lessons/2026-08-10-withdrawing-the-subscription.md` if they are needed again.
+- Sending a platform cookie means sending the *set* a browser sends. A lone
+  `sessionid` from a datacenter IP is an anomaly on its own, and companion
+  cookies must come from the same browser profile — mixing devices is a worse
+  signal than sending neither. Omit a blank var rather than sending `mid=`.
+- No header work makes a scraped session permanent. The ASN dominates, and the
+  only real fix is a residential proxy. Budget for rotation, and keep the
+  failure soft: the extractor already degrades to the anonymous path.
