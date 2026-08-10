@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Surface } from '@/components/Surface'
 import {
   MAX_BATCH_URLS,
@@ -207,6 +207,18 @@ export function BatchPanel() {
   const prevStatusRef = useRef<Map<string, BatchItemStatus>>(new Map())
   const abortRef = useRef<AbortController | null>(null)
 
+  // Auto-height fallback. `field-sizing: content` on the textarea does this
+  // natively in Chromium/WebKit with zero JS; this only fires on engines that
+  // lack it, and setting an inline height there is safe precisely because
+  // field-sizing is unsupported (an inline height would otherwise beat it).
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el || CSS.supports('field-sizing', 'content')) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [rawInput])
+
   const parsedUrls = useMemo(() => parseBatchInput(rawInput), [rawInput])
 
   const zipCandidateCount = useMemo(
@@ -284,14 +296,24 @@ export function BatchPanel() {
         </span>
       </div>
 
-      <textarea
-        value={rawInput}
-        onChange={(e) => setRawInput(e.target.value)}
-        placeholder={`Paste up to ${MAX_BATCH_URLS} links — one per line, or separated by spaces/commas`}
-        rows={3}
-        disabled={isRunning}
-        className='mt-2 w-full resize-y rounded-xl border border-white/[0.1] bg-white/[0.03] p-3 text-sm text-white placeholder-white/40 outline-none focus:border-cyan-400/60 disabled:opacity-60'
-      />
+      {/* The well is a Surface, not a hand-rolled border+fill, so the focus ring
+          is the same `--surface-line` tween the paste bar uses. Growth is
+          `field-sizing: content` (the effect above only covers engines without
+          it), so the box is exactly as tall as the pasted list up to max-h. */}
+      <Surface
+        radius='xl'
+        className='mt-2 transition-colors duration-200 focus-within:[--surface-line:rgba(34,211,238,0.55)] focus-within:shadow-[0_0_18px_-6px_rgba(34,211,238,0.35)]'
+      >
+        <textarea
+          ref={textareaRef}
+          value={rawInput}
+          onChange={(e) => setRawInput(e.target.value)}
+          placeholder={`Paste up to ${MAX_BATCH_URLS} links, one per line or separated by spaces/commas`}
+          aria-label='Batch links'
+          disabled={isRunning}
+          className='field-sizing-content block max-h-64 min-h-24 w-full resize-none overflow-y-auto rounded-xl bg-transparent p-3 text-sm leading-relaxed text-white caret-cyan-300 outline-none selection:bg-cyan-400/25 placeholder:text-white/40 disabled:opacity-60'
+        />
+      </Surface>
 
       {/* One format for the whole batch — see the BatchFormat comment above
           for why this isn't per-item. */}

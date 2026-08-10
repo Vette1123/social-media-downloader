@@ -51,6 +51,8 @@ export const siteConfig = {
     twitter: 'https://twitter.com/Sadge1996',
     github: 'https://github.com/Vette1123/social-media-downloader',
     portfolio: 'https://www.mohamedgado.com',
+    /** Our other site: the streaming/discovery app. Sister link, both ways. */
+    reely: 'https://www.reely.space',
     /**
      * The one way to put money into this project, and deliberately a donation
      * rather than a product.
