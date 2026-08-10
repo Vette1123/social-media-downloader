@@ -83,6 +83,16 @@ that is linked from the site footer.
   `•`). Adding the support address to both would have been the third copy of the
   divergence. Extracted to `SiteFooter` first, then added it once.
 
+- **`public/ads.txt` authorised an ad network the site does not run.** One line
+  granting Google AdSense the right to sell inventory on the domain, while
+  `PromoSlot` is a scaffold gated on `NEXT_PUBLIC_ADS_ENABLED`, which is set
+  nowhere — not in `.env.cloudflare`, not in CI. A payments reviewer reading it
+  learns the site monetises through an ad network it has no integration with.
+  Deleted, along with its assertion in `cf-smoke.mjs`.
+- **Dead Lemon Squeezy keys were still on disk** in `.env.local` and `.dev.vars`,
+  months after the vendor rejected the application and every line of their code
+  was ripped out. Nothing read them; they were pure liability. Removed.
+
 ## What worked
 
 - Auditing against the provider's own published checklist, item by item, instead
@@ -95,6 +105,17 @@ that is linked from the site footer.
 - Verifying against the built export (`out/*.html`) rather than the source: it
   is what a reviewer loads, and it caught the two files (`public/manifest.json`,
   the README behind the footer's GitHub link) that source edits had not reached.
+- Checking the support address end to end through the Cloudflare API instead of
+  assuming MX records meant delivery: the routing rule for
+  `support@socialdownloader.space` is enabled, forwards to a destination
+  verified 2026-08-08, and the catch-all drop is off. Rules can exist and be
+  disabled, and destinations can be unverified — an MX lookup shows neither.
+- Refusing to write the `refund.created` handler. Creem lists the event but does
+  not document its payload down to the subscription id, and the handler would
+  have needed to tell a partial refund from a full one. A documented one-command
+  revoke, for something that arrives by email at a rate of roughly zero per
+  month, beats speculative code that silently revokes eleven months of an annual
+  because a goodwill refund looked like a full one.
 
 ## Rules
 
