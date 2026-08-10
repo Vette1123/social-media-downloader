@@ -32,15 +32,6 @@ export interface VideoData {
   embedUrl?: string
 }
 
-export interface ProcessedVideo {
-  id: string
-  url: string
-  size?: number
-  format: string
-  quality?: string
-  watermarkRemoved: boolean
-}
-
 export interface AudioData {
   id: string
   url: string
@@ -50,13 +41,4 @@ export interface AudioData {
   duration: number
   title: string
   author: string
-}
-
-export interface DownloadResponse {
-  success: boolean
-  message: string
-  downloadUrl?: string
-  audioUrl?: string
-  video?: ProcessedVideo
-  audio?: AudioData
 }

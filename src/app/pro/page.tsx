@@ -103,8 +103,8 @@ export default function Pro() {
           your receipt and card statement show those names rather than{' '}
           {siteConfig.shortName}. Billing renews automatically each period;
           cancel any time from your account and Pro runs to the end of the
-          period you paid for. Charges are final and no refunds are offered. See
-          the{' '}
+          period you paid for. Not for you? Email us within 14 days of any
+          charge for a full refund. See the{' '}
           <Link href='/terms' className='text-cyan-300 hover:text-cyan-200'>
             Terms
           </Link>

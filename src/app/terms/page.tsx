@@ -136,19 +136,35 @@ export default function Terms() {
               has not gone through after 14 days, Pro access ends.
             </p>
             <p className='mt-2'>
-              Charges are final. We do not offer refunds, whole or partial, on
-              any billing period, including one you cancel part-way through.
-              Cancelling is what stops you being charged again, and you keep
-              Pro for the remainder of the period you paid for. Everything Pro
-              adds is described on the Pro page, and everything the site does
-              for free stays free, so you can judge it before paying anything.
+              <strong className='text-white/90'>
+                Refunds: 14 days, no questions asked.
+              </strong>{' '}
+              Email us within 14 days of any charge &mdash; the first one or a
+              renewal &mdash; and we refund it in full and end the
+              subscription. After 14 days a period that has already been billed
+              is not refundable; cancelling is what stops the next charge, and
+              Pro stays active for the rest of the period you paid for.
+            </p>
+            <p className='mt-2'>
+              To request one, email{' '}
+              <a
+                className='text-cyan-300 hover:text-cyan-200'
+                href={`mailto:${siteConfig.supportEmail}`}
+              >
+                {siteConfig.supportEmail}
+              </a>{' '}
+              from the address on your receipt. Refunds are issued by{' '}
+              {siteConfig.merchantOfRecord} to the original payment method and
+              usually appear within 5&ndash;10 business days.
             </p>
             <p className='mt-2'>
               If you were charged after cancelling, or charged twice, that is a
               billing error rather than a refund request: email us and we will
-              correct it. Nothing here affects the statutory rights you have
-              where you live, or the policies of {siteConfig.merchantOfRecord},
-              who are the merchant of record on every transaction.
+              correct it at any time, not only inside the 14 days. Nothing here
+              affects the statutory rights you have where you live &mdash;
+              including the EU/UK right of withdrawal &mdash; or the policies of{' '}
+              {siteConfig.merchantOfRecord}, who are the merchant of record on
+              every transaction.
             </p>
           </section>
 

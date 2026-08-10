@@ -10,14 +10,23 @@ const siteUrl = (
 export const siteConfig = {
   name: 'Social Media Downloader',
   shortName: 'Social Downloader',
+  /**
+   * How the site describes itself everywhere — title, meta, OG, JSON-LD.
+   *
+   * Deliberately framed around *original quality* rather than the removal of
+   * anything. A downloader that advertises stripping a platform's mark reads
+   * as a circumvention tool to a payment reviewer, and the merchant of record
+   * reads these strings during account review. The behaviour is unchanged:
+   * we save the source file a platform serves for a public post. Say that.
+   */
   tagline:
-    'Download TikTok, X, Instagram, Facebook & YouTube videos without watermarks',
+    'Download TikTok, X, Instagram, Facebook & YouTube videos in original quality',
   description:
-    'Free, watermark-free downloader for TikTok, X, Instagram, Facebook & YouTube — save HD videos, Reels & Shorts, extract MP3 audio, or grab photo carousels.',
+    'Free downloader for public TikTok, X, Instagram, Facebook & YouTube posts — save HD videos, Reels & Shorts, extract MP3 audio, or grab photo carousels.',
   url: siteUrl,
   ogImage: `${siteUrl}/opengraph-image`,
   ogImageAlt:
-    'Social Media Downloader — paste a TikTok, X, Instagram, Facebook, or YouTube link to save HD video, MP3 audio, or images without a watermark.',
+    'Social Media Downloader — paste a TikTok, X, Instagram, Facebook, or YouTube link to save the HD video, MP3 audio, or images from a public post.',
   locale: 'en_US',
   foundingYear: 2024,
   /**
@@ -61,12 +70,18 @@ export const siteConfig = {
     portfolio: 'https://www.mohamedgado.com',
   },
   twitterTag: '@Sadge1996',
+  /**
+   * Meta keywords. Google has ignored this tag since 2009, so it carries no
+   * ranking weight — but it is machine-readable text on the page a payment
+   * reviewer reads. Nothing here may describe removing a platform's mark, and
+   * nothing here may trade on another downloader's brand name.
+   */
   keywords: [
     // Primary intent
     'TikTok downloader',
     'TikTok video downloader',
-    'TikTok downloader no watermark',
-    'download TikTok without watermark',
+    'TikTok HD video downloader',
+    'download public TikTok videos',
     'TikTok video saver',
     'save TikTok videos',
     'TikTok HD downloader',
@@ -121,22 +136,15 @@ export const siteConfig = {
     'Facebook HD video downloader',
     'save Facebook videos',
     'Facebook downloader no login',
-    // Generic / brand-alternative
+    // Generic
     'social media downloader',
     'free video downloader',
     'HD video downloader',
     'online video downloader',
-    'no watermark video downloader',
-    'watermark remover',
-    'snaptik alternative',
-    'ssstik alternative',
-    'tikmate alternative',
-    'ttdownloader alternative',
-    'y2mate alternative',
-    'savefrom alternative',
-    'getfvid alternative',
-    'fdown alternative',
-    'snapinsta alternative',
+    'social video saver',
+    'MP4 downloader online',
+    'MP3 audio extractor',
+    'photo carousel downloader',
     'tiktok downloader online',
     'tiktok downloader free no login',
     // Device / platform

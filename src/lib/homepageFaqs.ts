@@ -16,8 +16,8 @@ export const homepageFaqs: HomepageFaq[] = [
     a: 'Yes. The tool is completely free, requires no sign-up or account, and has no daily download limit.',
   },
   {
-    q: 'Do downloaded TikTok videos have a watermark?',
-    a: 'No. Videos are saved in original HD quality (up to 1080p) without the TikTok watermark.',
+    q: 'What quality are downloaded TikTok videos?',
+    a: 'The source file as TikTok serves it for a public post — up to 1080p HD, not a re-encode or a screen recording.',
   },
   {
     q: 'Can I download a TikTok photo carousel (slideshow)?',

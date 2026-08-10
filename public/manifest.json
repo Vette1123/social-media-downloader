@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Social Media Downloader",
   "short_name": "Social Downloader",
-  "description": "Download TikTok, X, Instagram, Facebook, and YouTube videos without watermarks. Extract MP3 audio and save photo carousels — free, no sign-up, in your browser.",
+  "description": "Download public TikTok, X, Instagram, Facebook, and YouTube videos in their original quality. Extract MP3 audio and save photo carousels — free, no sign-up, in your browser.",
   "lang": "en",
   "dir": "ltr",
   "categories": [
@@ -56,7 +56,7 @@
     {
       "name": "TikTok downloader",
       "short_name": "TikTok",
-      "description": "Paste a TikTok URL to save the video without a watermark.",
+      "description": "Paste a public TikTok URL to save the video in HD.",
       "url": "/tiktok-downloader",
       "icons": [
         {
