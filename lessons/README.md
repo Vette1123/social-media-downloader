@@ -31,3 +31,4 @@ the index for exactly that.
 | Date | Lesson | The one thing |
 | --- | --- | --- |
 | 2026-08-10 | [Creem payout-account rejection](2026-08-10-creem-payout-rejection.md) | A reviewer reads the marketing, not the code — "no watermark" describes a circumvention tool even when the code only fetches public files. |
+| 2026-08-10 | [Withdrawing the subscription](2026-08-10-withdrawing-the-subscription.md) | When the question is "who gets this feature", change the input to the decision, never the decision points — and a capability that must never be sold needs its own name, not a flag inside one that is. |

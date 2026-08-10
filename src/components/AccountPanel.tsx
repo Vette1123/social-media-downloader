@@ -14,12 +14,11 @@
  *  - `signedIn === true` renders the three sections below.
  */
 
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { Surface } from '@/components/Surface'
 import { Avatar, type AvatarIdentity } from '@/components/Avatar'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { PlanChooser } from '@/components/PlanChooser'
-import { CheckIcon, ChevronDownIcon } from '@/components/icons'
+import { CheckIcon, ChevronDownIcon, CoffeeIcon } from '@/components/icons'
 import {
   type PlanState,
   cachedProfile,
@@ -39,38 +38,13 @@ import {
   setQuality,
   usePrefs,
 } from '@/lib/prefs'
-import {
-  PRO_BENEFITS,
-  PRO_CHECKOUT_ANNUAL,
-  PRO_CHECKOUT_MONTHLY,
-  PRO_PRICE_ANNUAL,
-  PRO_PRICE_MONTHLY,
-  type ProVariant,
-  isProCheckoutConfigured,
-} from '@/config/pro'
+import { PRO_BENEFITS } from '@/config/pro'
 import { PAST_DUE_GRACE_MS, paidThrough } from '@/lib/billing/entitlement'
 import { formatDate, nowMs, useHydrated, useOnPageVisible } from '@/lib/clientEnv'
 import { siteConfig } from '@/config/site'
 
-/**
- * Both checkout URLs come from the same Creem store, so one flag gates every
- * checkout link on this page — see ProCtaPanel.
- */
-const CHECKOUT_READY =
-  isProCheckoutConfigured(PRO_CHECKOUT_ANNUAL) && isProCheckoutConfigured(PRO_CHECKOUT_MONTHLY)
-
-const CHECKOUT_POLL_INTERVAL_MS = 2_000
-const CHECKOUT_POLL_TIMEOUT_MS = 30_000
-
 const ACTION_BUTTON_CLASS =
   'btn-grad inline-flex rounded-xl px-5 py-2.5 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 active:scale-95'
-/**
- * Stays below the 4.5:1 floor the rest of the muted text now clears, because
- * looking unavailable is the whole job: WCAG 1.4.3 exempts inactive controls,
- * and a disabled button legible as a live one is the worse bug.
- */
-const DISABLED_BUTTON_CLASS =
-  'inline-flex cursor-not-allowed rounded-xl bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white/40 ring-1 ring-white/10'
 const SECONDARY_BUTTON_CLASS =
   'inline-flex rounded-xl border border-white/15 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:border-white/30 hover:text-white'
 const TOGGLE_GROUP_CLASS = 'inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
@@ -93,7 +67,15 @@ function toggleButtonClass(active: boolean): string {
   }`
 }
 
-type PlanBucket = 'free' | 'active-monthly' | 'active-annual' | 'cancelled' | 'past-due' | 'ended'
+type PlanBucket =
+  | 'free'
+  /** The extras are on, granted by hand. No subscription, nothing billing. */
+  | 'granted'
+  | 'active-monthly'
+  | 'active-annual'
+  | 'cancelled'
+  | 'past-due'
+  | 'ended'
 
 /**
  * One bucket per row of the brief's plan table. A `switch` on `plan.status`,
@@ -106,11 +88,22 @@ type PlanBucket = 'free' | 'active-monthly' | 'active-annual' | 'cancelled' | 'p
  * cancelled statuses both land in `cancelled` while the paid period is running
  * and `ended` once it is not — `paidThrough` is imported rather than rewritten
  * so this screen cannot start disagreeing with entitlement about the same date.
+ *
+ * `entitled` is the server's own answer (`isEntitled`), and it is only ever
+ * consulted where there is no subscription status to read: a hand grant is not
+ * a plan, so it must not be able to relabel one. With payments withdrawn this
+ * is the only path that reaches `granted`, and every subscription arm below is
+ * dormant — kept because they are what must keep working if a processor is ever
+ * found, not because any row currently uses them.
  */
-export function classifyPlan(plan: PlanState | null, now: number): PlanBucket {
+export function classifyPlan(
+  plan: PlanState | null,
+  now: number,
+  entitled = false,
+): PlanBucket {
   switch (plan?.status ?? null) {
     case null:
-      return 'free'
+      return entitled ? 'granted' : 'free'
     case 'active':
     case 'trialing':
       return plan?.variant === 'annual' ? 'active-annual' : 'active-monthly'
@@ -196,11 +189,25 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
         title: 'Free',
         facts: [],
       }
+    case 'granted':
+      return {
+        lede: 'The extras are switched on for this account. Thank you.',
+        // Said plainly because the honest description is also the reassuring
+        // one: this is a gift, not a plan, so there is no date to watch, no
+        // renewal to catch, and nothing that can fail to charge.
+        note: 'Nothing is billing and there is nothing to cancel.',
+        chip: { label: 'Supporter', tone: 'live' },
+        title: 'Supporter',
+        facts: [],
+      }
+    // Both dormant: no row has a subscription and none can be created. The
+    // price is read off the plan rather than a constant now — the constants
+    // went with the store, and hardcoding "$3" here would be this screen
+    // asserting a number nothing else in the codebase agrees with.
     case 'active-monthly':
       return {
         chip: { label: 'Active', tone: 'live' },
         title: 'Pro, monthly',
-        price: `${PRO_PRICE_MONTHLY} / month`,
         facts: [
           { label: 'Next charge', value: dateOr(plan?.renewsAt, 'Soon') },
           { label: 'Renews', value: 'Every month, until cancelled' },
@@ -210,23 +217,10 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
       return {
         chip: { label: 'Active', tone: 'live' },
         title: 'Pro, annual',
-        price: `${PRO_PRICE_ANNUAL} / year`,
         facts: [
           { label: 'Next charge', value: dateOr(plan?.renewsAt, 'Soon') },
           { label: 'Renews', value: 'Every year, until cancelled' },
         ],
-        note: (
-          <>
-            Annual includes a call with the developer.{' '}
-            <a
-              href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Book a call — Pro annual')}`}
-              className='text-cyan-300 hover:text-cyan-200'
-            >
-              Book one
-            </a>
-            .
-          </>
-        ),
       }
     case 'cancelled':
       return {
@@ -267,74 +261,36 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
 }
 
 /**
- * Who to attach a checkout to.
+ * The one thing this page can offer someone with no extras.
  *
- * The id is the whole of it, and it is not optional: it is what the webhook
- * matches on, and a purchase made without one can end up matching no row at
- * all, unrepairably. Creem payment links take no email prefill, so the buyer
- * types their own address at checkout and it is never a binding we rely on.
- */
-interface Buyer {
-  userId: string
-}
-
-function buyerOf(userId: string | null): Buyer | null {
-  if (!CHECKOUT_READY || !userId) return null
-  return { userId }
-}
-
-/**
- * Checkout goes through our own Worker, never straight to Creem.
+ * There is no checkout to send them to any more — a plan picker, a Creem
+ * redirect and a "payments opening shortly" button all lived here and are gone
+ * with the store. What replaced them is a link to the support page and an
+ * honest description of the fulfilment, which is a human reading an email.
  *
- * The route picks the store from the API key the Worker actually holds, so a
- * test deployment cannot charge a real card, and it records the attempt so a
- * buyer whose first webhook is lost can still be found. Neither is knowable
- * here — this bundle is static, and the key is a secret it never sees.
+ * Saying "by hand" out loud is deliberate. Someone who donates and then watches
+ * an account page not change is owed the reason before they email to ask.
  */
-function checkoutLink(variant: ProVariant): string {
-  return `/api/billing/checkout?variant=${variant}`
-}
-
-function checkoutVariantFor(variant: string | null | undefined): ProVariant {
-  return variant === 'annual' ? 'annual' : 'monthly'
-}
-
-/**
- * Shown only while the store's payment links are unset.
- *
- * Says what is actually happening rather than "coming soon": this is the last
- * step of a real purchase flow that a signed-in visitor has already walked, so
- * a bare disabled button reads as an abandoned product rather than a store
- * mid-verification.
- */
-function CheckoutPendingButton() {
+function SupportLink() {
   return (
-    <div className='flex flex-col items-center gap-2 text-center'>
-      <button
-        type='button'
-        disabled
-        title='Card payments are not switched on for this deployment yet'
-        className={DISABLED_BUTTON_CLASS}
-      >
-        Card payments opening shortly
-      </button>
+    <div className='flex flex-col gap-2'>
+      <a href='/pro' className={`${ACTION_BUTTON_CLASS} w-fit items-center gap-2`}>
+        <CoffeeIcon className='h-4 w-4' />
+        Support this project
+      </a>
       <p className='text-xs text-white/50'>
-        Your account is ready — nothing to redo once payments are live.
+        Nothing is for sale and nothing renews. Supporters get the extras
+        switched on by hand — donate, then email{' '}
+        <a
+          className='underline underline-offset-2 hover:text-white/70'
+          href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Supporter — switch on the extras')}`}
+        >
+          {siteConfig.supportEmail}
+        </a>{' '}
+        and give it a day.
       </p>
     </div>
   )
-}
-
-/**
- * The same pick-then-buy control /pro uses, so there is one place a plan is
- * chosen and one place that knows how a choice becomes a checkout. This screen
- * used to carry its own pair of price cards with a button on each — a second
- * shape for one decision, which is how the two drifted apart in the first
- * place.
- */
-function PlanPicker({ buyer }: { buyer: Buyer | null }) {
-  if (!buyer) return <CheckoutPendingButton />
-  return <PlanChooser />
 }
 
 /**
@@ -403,18 +359,15 @@ function CancelPlanButton({ plan }: { plan: PlanState | null }) {
   )
 }
 
-function PlanAction({
-  bucket,
-  plan,
-  buyer,
-}: {
-  bucket: PlanBucket
-  plan: PlanState | null
-  buyer: Buyer | null
-}) {
+function PlanAction({ bucket, plan }: { bucket: PlanBucket; plan: PlanState | null }) {
   switch (bucket) {
     case 'free':
-      return <PlanPicker buyer={buyer} />
+      return <SupportLink />
+    // Nothing to do. No card to update, no date to watch, no button that could
+    // charge anything — a supporter's card is deliberately the quietest on the
+    // page, because the correct state of a gift is "already done".
+    case 'granted':
+      return null
     // "Manage billing" is the card and the invoices; cancelling is ours, because
     // Creem's portal cancels immediately and would cost an annual subscriber the
     // months they paid for — see src/lib/billing/cancel.ts.
@@ -441,28 +394,20 @@ function PlanAction({
           <CancelPlanButton plan={plan} />
         </div>
       )
+    // No resubscribe button on either: there is nothing to buy. The portal
+    // stays, because a cancelled subscriber is still a paying one until the
+    // period ends and both they and an ended one may need a past invoice —
+    // those outlive the subscription and this is the only screen that can
+    // reach them.
     case 'cancelled':
-    case 'ended': {
-      if (!buyer) return <CheckoutPendingButton />
-      const label = bucket === 'cancelled' ? 'Resubscribe' : 'Subscribe again'
-      const href = checkoutLink(checkoutVariantFor(plan?.variant))
+    case 'ended':
       return (
         <div className='flex flex-wrap items-center gap-2'>
-          <a href={href} className={ACTION_BUTTON_CLASS}>
-            {label}
-          </a>
-          {/* A cancelled subscriber is still a paying one until the period ends:
-              they have a card on file and a receipt they may need. Dropping the
-              portal the moment they cancelled left the one screen that could
-              produce an invoice with no way to reach it. `ended` keeps it too —
-              Creem still holds the customer, and past invoices outlive the
-              subscription. */}
           <a href='/api/billing/portal' className={SECONDARY_BUTTON_CLASS}>
             Manage billing
           </a>
         </div>
       )
-    }
   }
 }
 
@@ -514,10 +459,10 @@ function PlanFacts({ facts }: { facts: PlanFact[] }) {
 }
 
 /**
- * The free plan's card has to do a job the others don't: it is the one screen
- * where someone has arrived, is signed in, and has not bought anything. So it
- * carries the offer itself — the same four lines sold everywhere else, from
- * `PRO_BENEFITS`, so a change to what Pro claims cannot land here and nowhere
+ * The free card has to do a job the others don't: it is the one screen where
+ * someone has arrived, is signed in, and has none of the extras. So it carries
+ * the list itself — the same four lines shown everywhere else, from
+ * `PRO_BENEFITS`, so a change to what they are cannot land here and nowhere
  * else.
  */
 function FreePlanPitch() {
@@ -533,13 +478,13 @@ function FreePlanPitch() {
   )
 }
 
-function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | null }) {
+function PlanSection({ plan, entitled }: { plan: PlanState | null; entitled: boolean }) {
   // Read at render rather than held in state: nothing on this card counts down,
   // and the only boundary it decides — has the paid period run out — is months
   // away for anyone looking at it. A ticking clock here would be a re-render per
-  // second to move nothing. Server-side `plan` is always null, so this cannot
-  // produce a hydration mismatch: both passes classify as `free`.
-  const bucket = classifyPlan(plan, nowMs())
+  // second to move nothing. Server-side `plan` is null and `entitled` is false,
+  // so this cannot produce a hydration mismatch: both passes classify as `free`.
+  const bucket = classifyPlan(plan, nowMs(), entitled)
   const copy = planCopy(bucket, plan)
 
   return (
@@ -557,10 +502,17 @@ function PlanSection({ plan, buyer }: { plan: PlanState | null; buyer: Buyer | n
       {copy.lede && <p className='mt-3 text-sm text-white/70'>{copy.lede}</p>}
       {copy.note && <p className='mt-2 text-xs text-white/50'>{copy.note}</p>}
 
-      {bucket === 'free' ? <FreePlanPitch /> : <PlanFacts facts={copy.facts} />}
+      {/* The list is the pitch on `free` and the receipt on `granted` — the
+          same four lines either way, which is the point: what a supporter got
+          is exactly what a non-supporter was shown. */}
+      {bucket === 'free' || bucket === 'granted' ? (
+        <FreePlanPitch />
+      ) : (
+        <PlanFacts facts={copy.facts} />
+      )}
 
-      <div className='mt-5'>
-        <PlanAction bucket={bucket} plan={plan} buyer={buyer} />
+      <div className='mt-5 empty:mt-0'>
+        <PlanAction bucket={bucket} plan={plan} />
       </div>
       {/* Said here rather than only in the Terms, because this is the screen
           someone is on when they decide to cancel, and the two things they
@@ -897,55 +849,6 @@ function SignInPrompt() {
   )
 }
 
-/**
- * Polls `refreshAccount({ force: true })` for up to 30s after a Creem
- * checkout redirects back here, since the webhook that flips `pro` to true can
- * lag the redirect by a few seconds. Reads the query string once on mount
- * rather than through `useSearchParams`, which would otherwise force this
- * static-export page into a Suspense boundary for a one-time check.
- */
-function useCheckoutPolling(pro: boolean): 'idle' | 'polling' | 'timeout' {
-  const [phase, setPhase] = useState<'idle' | 'polling' | 'timeout'>('idle')
-  const proRef = useRef(pro)
-
-  useEffect(() => {
-    proRef.current = pro
-  }, [pro])
-
-  useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('checkout') !== 'success') return
-    if (proRef.current) return
-
-    setPhase('polling')
-    const startedAt = nowMs()
-
-    const tick = (): void => {
-      if (proRef.current) {
-        setPhase('idle')
-        clearInterval(interval)
-        return
-      }
-      if (nowMs() - startedAt >= CHECKOUT_POLL_TIMEOUT_MS) {
-        setPhase('timeout')
-        clearInterval(interval)
-        return
-      }
-      void refreshAccount({ force: true })
-    }
-
-    tick()
-    const interval = setInterval(tick, CHECKOUT_POLL_INTERVAL_MS)
-    return () => clearInterval(interval)
-  }, [])
-
-  // Pro wins over the phase, rather than waiting for the next tick to notice.
-  // `tick` is what clears the interval, so the phase it holds lags the state
-  // change by up to one interval, and the whole point of this notice is to be
-  // gone the instant there is a plan to show. It also covers the case where
-  // the repair lands after the 30s timeout: someone looking at their own live
-  // subscription must not be told it is still being set up.
-  return pro ? 'idle' : phase
-}
 
 /**
  * Why the billing portal sent someone back here instead of to Creem.
@@ -1002,9 +905,10 @@ function Notice({ children }: { children: string }) {
 }
 
 export function AccountPanel() {
-  const { signedIn, failed, userId, pro, email, name, picture, plan } = useAccount()
+  // `userId` is no longer destructured here: it existed to bind a buyer to a
+  // checkout, and there is no checkout.
+  const { signedIn, failed, pro, email, name, picture, plan } = useAccount()
   const hydrated = useHydrated()
-  const checkoutPhase = useCheckoutPolling(pro)
   const notice = useNotice()
   // Read once. Safe as a lazy initialiser despite touching localStorage: it
   // catches and returns null on the server, and nothing renders from it until
@@ -1064,21 +968,19 @@ export function AccountPanel() {
 
   return (
     <div className='space-y-6'>
-      {checkoutPhase !== 'idle' && (
-        <Notice>
-          {checkoutPhase === 'polling'
-            ? 'Setting up your subscription…'
-            : 'Your payment went through. This can take a minute — refresh, or email us if it persists.'}
-        </Notice>
-      )}
       {notice && <Notice>{notice}</Notice>}
       {/* The plan is the one card the browser cannot answer on its own. It
-          waits only for someone the cache remembers as paying; for everyone
-          else `plan: null` IS their plan, so the real card renders at once. */}
+          waits only for someone the cache remembers as entitled; for everyone
+          else `plan: null` IS their plan, so the real card renders at once.
+
+          There is no post-checkout poll here any more. It existed because a
+          Creem webhook could lag the redirect back by a few seconds; a grant
+          set by hand lands whenever it lands, and the visitor was told to
+          expect a day rather than thirty seconds. */}
       {signedIn === undefined && cached?.pro ? (
         <PlanPlaceholder />
       ) : (
-        <PlanSection plan={plan} buyer={buyerOf(userId)} />
+        <PlanSection plan={plan} entitled={pro} />
       )}
       <PreferencesSection />
       <AccountSection

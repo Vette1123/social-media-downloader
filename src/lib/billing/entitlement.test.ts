@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { isProAt, PAST_DUE_GRACE_MS, type BillingRow } from './entitlement'
+import {
+  hasGrant,
+  isEntitled,
+  isProAt,
+  PAST_DUE_GRACE_MS,
+  type BillingRow,
+} from './entitlement'
 
 const NOW = 1_800_000_000_000
 const DAY = 24 * 60 * 60 * 1000
@@ -89,5 +95,84 @@ describe('isProAt', () => {
 
   it('is false for a status Creem has not documented yet', () => {
     expect(isProAt(row({ sub_status: 'something_new' }), NOW)).toBe(false)
+  })
+})
+
+/**
+ * Grants are the whole entitlement system now, and one of the two is a
+ * credential switch. Both halves of that matter here: `pro` must be easy to
+ * hand out, and `ig` must be impossible to arrive at by accident.
+ */
+describe('hasGrant', () => {
+  it('is false for a row with no grants column set', () => {
+    expect(hasGrant(row(), 'pro')).toBe(false)
+    expect(hasGrant(null, 'pro')).toBe(false)
+    expect(hasGrant(row({ grants: '' }), 'pro')).toBe(false)
+  })
+
+  it('finds a single grant', () => {
+    expect(hasGrant(row({ grants: 'pro' }), 'pro')).toBe(true)
+  })
+
+  it('finds a grant anywhere in the list, with or without spaces', () => {
+    expect(hasGrant(row({ grants: 'ig,pro' }), 'pro')).toBe(true)
+    expect(hasGrant(row({ grants: 'pro, ig' }), 'ig')).toBe(true)
+    expect(hasGrant(row({ grants: ' pro , ig ' }), 'ig')).toBe(true)
+  })
+
+  it('does not confuse one grant for another', () => {
+    expect(hasGrant(row({ grants: 'pro' }), 'ig')).toBe(false)
+    expect(hasGrant(row({ grants: 'ig' }), 'pro')).toBe(false)
+  })
+
+  /**
+   * The bug a substring check would have shipped. `'igloo'.includes('ig')` is
+   * true, and the grant this protects attaches our own Instagram session to a
+   * request — so a future grant name that merely contains these letters must
+   * not switch it on.
+   */
+  it('matches whole names only, never a substring', () => {
+    expect(hasGrant(row({ grants: 'igloo' }), 'ig')).toBe(false)
+    expect(hasGrant(row({ grants: 'prospect' }), 'pro')).toBe(false)
+    expect(hasGrant(row({ grants: 'no-pro' }), 'pro')).toBe(false)
+  })
+})
+
+describe('isEntitled', () => {
+  it('is true from a grant with no subscription at all', () => {
+    expect(isEntitled(row({ sub_status: null, grants: 'pro' }), NOW)).toBe(true)
+  })
+
+  it('is true from a subscription with no grant', () => {
+    expect(isEntitled(row({ sub_status: 'active' }), NOW)).toBe(true)
+  })
+
+  it('is false with neither', () => {
+    expect(isEntitled(row({ sub_status: null }), NOW)).toBe(false)
+    expect(isEntitled(null, NOW)).toBe(false)
+  })
+
+  /**
+   * The separation that makes the credential grant safe. `ig` is not a feature
+   * entitlement and must never imply one, so that "give this account the
+   * extras" and "attach our Instagram session" can never be the same act.
+   */
+  it('is not granted by the credential flag', () => {
+    expect(isEntitled(row({ sub_status: null, grants: 'ig' }), NOW)).toBe(false)
+  })
+
+  /**
+   * And the converse, which is the one that would cost real money: a supporter
+   * gets Pro's features and must not get the session with them.
+   */
+  it('does not hand the credential flag to a supporter', () => {
+    const supporter = row({ sub_status: null, grants: 'pro' })
+    expect(isEntitled(supporter, NOW)).toBe(true)
+    expect(hasGrant(supporter, 'ig')).toBe(false)
+  })
+
+  it('leaves a lapsed subscription lapsed unless a grant says otherwise', () => {
+    expect(isEntitled(row({ sub_status: 'expired' }), NOW)).toBe(false)
+    expect(isEntitled(row({ sub_status: 'expired', grants: 'pro' }), NOW)).toBe(true)
   })
 })

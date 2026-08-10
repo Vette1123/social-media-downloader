@@ -29,7 +29,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 - **11 platforms, one paste box.** TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo — auto-detected from the URL.
 - **Original quality, HD by default.** The source file rather than a re-encode, with a one-tap fallback to SD, plus MP3 audio extraction on every platform that carries sound.
 - **No login, no API key, no daily limit.** Nothing to sign up for and nothing installed unless you want the app.
-- **Private by design.** No account needed to download and no log of what you download — a Google sign-in exists for Pro subscribers only. Your Recent list lives in your own browser.
+- **Private by design.** No account needed to download and no log of what you download — a Google sign-in exists so preferences can sync and so supporters' extras can be attached to an account. Your Recent list lives in your own browser.
 - **Resilient.** A per-platform fallback chain quietly retries other sources, so a single provider outage doesn't break your download.
 - **Installable PWA.** Home-screen icon, app shortcuts, and native share-in from other apps.
 
@@ -120,9 +120,14 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 
 The site is free and stays free. It is paid for by a single sponsor card shown
 after a download — no popups, no redirects, no interstitials, and no tracking of
-what you download. You can remove that card for good with a
-[Pro subscription](https://www.socialdownloader.space/pro), or support the work
-directly:
+what you download.
+
+Nothing here is for sale. A subscription existed briefly and was withdrawn: two
+merchants of record refused to underwrite a third-party downloader, the second
+after every fixable item on their published review checklist had been fixed, so
+the rejection was about the product category and not the paperwork. Supporting
+the project is a donation, and supporters get the extras switched on by hand —
+see [the support page](https://www.socialdownloader.space/pro).
 
 <a href="https://buymeacoffee.com/vetteotp">
   <img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=vetteotp&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="48" />
@@ -140,7 +145,7 @@ directly:
 | Icons            | Hand-rolled SVG (`src/components/icons.tsx`) |
 | Hosting          | Cloudflare Workers — static export + a hand-written Worker for `/api/*` |
 | Accounts         | Google OAuth (PKCE, no SDK) + Cloudflare D1 |
-| Billing          | Creem subscriptions + webhooks |
+| Entitlements     | Hand-set grants in D1 + signed short-lived tokens |
 | HTTP             | Native `fetch` (`src/lib/httpClient.ts`) |
 | HTML scraping    | Regex extractors (`src/lib/htmlExtract.ts`) |
 | ZIP bundling     | JSZip, lazily imported **in the browser** |
@@ -186,34 +191,61 @@ offered.
 | --------------------- | -------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`| Canonical site URL used for metadata, sitemap, and OG images.                    |
 | `COBALT_API_URL`      | Self-hosted [Cobalt](https://github.com/imputnet/cobalt) instance to harden the extraction fallback chain. |
-| `IG_SESSIONID`        | Instagram session cookie from a burner account, applied deployment-wide when set. Public posts resolve without it. Unset on the hosted site, and deliberately **not** tied to any subscription tier — see below. |
+| `IG_SESSIONID`        | Instagram session cookie from a burner account. Public posts resolve without it. Setting it is **not** sufficient on its own: a request also needs the `ig` grant on its user row, so an unlisted visitor never carries the cookie. Never sold, never bundled with the supporter grant — see below. |
 | `NEXT_PUBLIC_CF_BEACON_TOKEN` | Enables Cloudflare Web Analytics by injecting the beacon script at build time. Build-time only, like `NEXT_PUBLIC_SITE_URL` — set it as build env, not a Worker var. If Web Analytics is already enabled at the zone level in the Cloudflare dashboard, Cloudflare injects the beacon at the edge automatically; setting this too would load it twice and double-count page views. Pick one mechanism. |
 | `PRO_TOKEN_SECRET`    | HMAC key (WebCrypto HMAC-SHA256) for signing Pro access tokens and session-cookie values. Generate 32+ random bytes yourself. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client used for sign-in. Created in Google Cloud console; both the dev and production redirect URIs must be registered on it. |
-| `CREEM_API_KEY` | Mints a fresh customer-portal URL per click (never stored) and backs the lazy subscription reconcile. A `creem_test_…` key is routed to Creem's test host automatically, so test and live mode differ by this value alone. |
-| `CREEM_WEBHOOK_SECRET` | Verifies the `creem-signature` header on incoming Creem subscription webhooks. An unverified webhook endpoint would let anyone grant themselves Pro, so this is never optional once webhooks are registered. |
+| `CREEM_API_KEY` | Dormant. Mints a customer-portal URL per click for any subscription that predates the withdrawal, and backs the lazy reconcile. Nothing creates subscriptions any more. |
+| `CREEM_WEBHOOK_SECRET` | Dormant, and still never optional while the endpoint is registered: an unverified webhook endpoint would let anyone grant themselves the extras. |
 
-### Accounts and Pro subscriptions
+### Accounts and grants
 
-Pro is a $3/month or $24/year subscription, sold through Creem as merchant of
-record. Signing in is with a Google account, entitlement is a signed,
-short-lived access token, and preferences (HD/SD,
-video/audio) sync across devices for anyone signed in — free or Pro. Signing in
-never changes what is free; it only unlocks Pro once someone subscribes.
+Nothing is sold. A $3/month subscription existed for two days in August 2026 and
+was withdrawn — see *Supporting the project* above. The features it covered are
+still here and are now granted by hand.
 
-**What Pro is allowed to be.** Every entitlement is a property of this site —
-resolver ordering, queueing, how results are packaged, who answers your email.
-None of them widens what a link can reach, and none of them makes this service
-present credentials on a user's behalf. That line is load-bearing rather than
-stylistic: a downloader that sells access to login-gated content is refused by
-every merchant of record, explicitly so in some cases (Polar's acceptable-use
-policy names third-party content downloaders outright; Paddle's catch-all
-covers anything "enabling unauthorized access to data belonging to another
-party"). `IG_SESSIONID` was once gated on a Pro token for exactly that reason
-and is now deployment-wide. Do not reintroduce a paid capability on the other
-side of that line — it is not a policy you can reword your way around, and an
-account approved on a misdescribed business is one that gets frozen with
-subscribers on it.
+Signing in is with a Google account, entitlement is a signed short-lived access
+token, and preferences (HD/SD, video/audio) sync across devices for anyone
+signed in. Signing in never changes what is free.
+
+**Grants.** The `users.grants` column holds a comma-separated set, set and
+cleared with one command:
+
+```bash
+pnpm exec wrangler d1 execute social-media-downloader --remote \
+  --command "UPDATE users SET grants = 'pro' WHERE email = 'someone@example.com'"
+```
+
+It takes effect within one access-token TTL (15 minutes), with no deploy. Two
+names are defined, and keeping them separate is the point:
+
+| Grant | What it does |
+| ----- | ------------ |
+| `pro` | The batch queue, ZIP bundling, priority resolve, no sponsor card. What a supporter gets. |
+| `ig`  | Attaches `IG_SESSIONID` to that account's Instagram resolves. Operator only. |
+
+**What a grant is allowed to be.** `pro` is every entitlement that is a property
+of *this site* — resolver ordering, queueing, how results are packaged. None of
+them widens what a link can reach, and none makes this service present
+credentials on a user's behalf. That line is load-bearing rather than stylistic:
+a downloader that sells access to login-gated content is refused by every
+merchant of record, explicitly so in some cases (Polar's acceptable-use policy
+names third-party content downloaders outright; Paddle's catch-all covers
+anything "enabling unauthorized access to data belonging to another party").
+
+`ig` is on the other side of that line, which is exactly why it is a separate
+grant rather than a flag inside `pro`. It is never offered, never bundled, and
+`isEntitled` deliberately does not read it — a supporter is `pro` and is not
+`ig`, and there is a test pinning both directions. Before this existed,
+`IG_SESSIONID` alone was the whole gate, so setting it attached the cookie to
+*every* visitor's Instagram resolve; a named grant is strictly less exposure
+than that. Do not turn it into something anyone can obtain by paying — that is
+not a policy you can reword your way around.
+
+A credentialed resolve also bypasses both cache tiers in both directions. The
+edge cache is shared and externally addressable, so a login-gated payload
+written into it would be served to anonymous visitors; see the note in
+`src/lib/apiRoutes.ts`.
 
 Setting this up for a fork or self-hosted deployment, in order:
 
@@ -221,27 +253,13 @@ Setting this up for a fork or self-hosted deployment, in order:
    screen. Register **both** redirect URIs (a mismatch between dev and
    production here is the most common thing to get wrong): the `wrangler dev`
    origin's `/api/auth/callback` and the production origin's `/api/auth/callback`.
-2. **Creem** — create **two** recurring products, one monthly and one annual,
-   and name the annual one so it contains "year" or "annual": the variant shown
-   on the account page is read from the product name (`variantOf` in
-   `src/lib/billing/webhook.ts`). Copy each product's share link into
-   `PRO_CHECKOUT_MONTHLY` / `PRO_CHECKOUT_ANNUAL` in `src/config/pro.ts` —
-   `checkoutHref` appends `metadata[user_id]`, which is the only binding
-   between a purchase and an account.
-
-   Register the webhook endpoint (`/api/billing/webhook`) and subscribe it to
-   the subscription lifecycle events: `subscription.active`,
-   `subscription.paid`, `subscription.update`, `subscription.trialing`,
-   `subscription.past_due`, `subscription.unpaid`,
-   `subscription.scheduled_cancel`, `subscription.canceled`,
-   `subscription.expired`, `subscription.paused`. `checkout.completed` may be
-   left on but carries no useful state — its `object` is a *checkout*, not a
-   subscription, so the handler ignores it rather than writing a checkout id
-   into `sub_id`.
-
-   Set the product's success URL to `/account?checkout=success` so a buyer
-   lands back on their account page; the page also polls for up to 30 seconds,
-   so it recovers even if the redirect is not configured.
+2. **No payment provider.** There is nothing to configure here — a fork that
+   wants the extras grants them with the `wrangler d1 execute` command above.
+   The Creem webhook, portal and reconcile code is still in
+   `src/lib/billing/` and still tested, so a fork that finds a processor
+   willing to underwrite this category has a working half to build on. Read
+   `lessons/2026-08-10-creem-payout-rejection.md` first: two refused, and the
+   second refusal came after every fixable checklist item had been fixed.
 3. **Cloudflare** — create the D1 database, apply the migrations
    (`wrangler d1 migrations apply <name> --remote` — use this rather than
    executing the SQL files directly, or the `d1_migrations` bookkeeping table

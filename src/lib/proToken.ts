@@ -22,6 +22,16 @@ export interface TokenPayload {
    * change in entitlement takes up to one TTL to be felt.
    */
   p: boolean
+  /**
+   * Whether this request may carry the operator's own Instagram session.
+   *
+   * Optional, and absent on every token that does not have it — an older token
+   * minted before this claim existed reads as `undefined`, which is not `true`,
+   * which is the safe answer. Never inferred from `p`: the two are set from
+   * different grants on purpose, because one is something a supporter gets and
+   * the other is something nobody is offered.
+   */
+  c?: boolean
 }
 
 /**
@@ -122,6 +132,9 @@ export async function verifyToken(
     ) {
       return null
     }
+    // Absent is fine (older tokens, and every token without the grant); present
+    // and not a boolean is a malformed token, not a truthy claim.
+    if (payload.c !== undefined && typeof payload.c !== 'boolean') return null
     if (payload.exp <= now) return null
     // Bounds the blast radius of a mis-issued token (arithmetic slip,
     // seconds/milliseconds mixup, compromised admin path): no token is

@@ -139,6 +139,7 @@ describe('planCopy', () => {
 describe('the plan card at a glance', () => {
   const BUCKETS = [
     'free',
+    'granted',
     'active-monthly',
     'active-annual',
     'cancelled',
@@ -159,9 +160,31 @@ describe('the plan card at a glance', () => {
     expect(warned).toEqual(['past-due'])
   })
 
-  it('prices only the states that are actually charging', () => {
+  /**
+   * Nothing is sold, so no state may print a price.
+   *
+   * This used to assert the opposite — that the two live subscription states
+   * were the priced ones — and it is inverted rather than deleted because the
+   * failure it guards against changed direction rather than going away. The
+   * price constants left with the store, so any price appearing on this card
+   * again would be a number hardcoded here that nothing else in the codebase
+   * agrees with, on a card describing a subscription nobody can buy.
+   */
+  it('never prices anything, because nothing is charging', () => {
     const priced = BUCKETS.filter((b) => planCopy(b, plan()).price !== undefined)
-    expect(priced).toEqual(['active-monthly', 'active-annual'])
+    expect(priced).toEqual([])
+  })
+
+  /**
+   * A supporter's card is the one state reached by a hand-set grant rather than
+   * by a subscription, and the whole promise of it is that no money is moving.
+   * Any charge- or renewal-shaped row appearing here would contradict that.
+   */
+  it('shows a supporter nothing that looks like billing', () => {
+    const copy = planCopy('granted', plan())
+    expect(copy.price).toBeUndefined()
+    expect(copy.facts).toEqual([])
+    expect(copy.chip.tone).not.toBe('warn')
   })
 
   it('never shows a next charge to someone who has cancelled', () => {

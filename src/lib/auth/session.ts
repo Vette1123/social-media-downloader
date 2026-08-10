@@ -53,6 +53,8 @@ export interface UserRow extends BillingRow {
   sub_updated_at: number | null
   /** When this user last opened a checkout. See migrations/0006. */
   sub_checkout_at: number | null
+  /** Hand-set capabilities, comma separated. See migrations/0007. */
+  grants: string | null
 }
 
 /**
@@ -131,7 +133,11 @@ export const USER_COLUMNS =
   // Read on every refresh so `needsReconcile` can spot a buyer whose first
   // webhook was lost — they have no sub_id, so this stamp is the only trace
   // that a purchase was ever attempted.
-  'users.sub_checkout_at'
+  'users.sub_checkout_at, ' +
+  // Hand-set capabilities. Read on every refresh because the access token is
+  // minted from it, so clearing a grant in D1 takes effect within one token TTL
+  // with no other step.
+  'users.grants'
 
 /**
  * Mint a session, evicting the oldest if the user is already at the cap.

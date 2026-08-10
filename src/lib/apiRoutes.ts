@@ -23,7 +23,7 @@ import { readEdgeCache, writeEdgeCache, type WaitUntilContext } from './edgeCach
 import { slugify } from './filename'
 import { nativeMediaAvailable, nativeMediaUnavailable } from './nativeMedia'
 import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
-import { verifyToken } from './proToken'
+import { type TokenPayload, verifyToken } from './proToken'
 import { handleWebhook } from './billing/webhook'
 import { handlePortal } from './billing/portal'
 import { handleCheckout } from './billing/checkout'
@@ -114,20 +114,17 @@ function asDirectTunnel(url: string | undefined): string | undefined {
 }
 
 /**
- * A Pro token unlocks resolver ordering and nothing else — never anything that
- * can error, and never anything that widens what a resolve may reach. An
- * absent, malformed, or expired token degrades silently to the normal free
- * path rather than erroring.
+ * The verified token, or null for an absent, malformed or expired one.
  *
- * A signed-in free user carries a valid token with `p: false`, which is not a
- * priority request. The flag is checked, not merely the signature.
+ * Every consumer reads a specific claim off it and checks that claim, never
+ * merely that a signature verified: a signed-in account with no grants carries
+ * a perfectly valid token that entitles nothing.
  */
-async function isPriorityRequest(request: Request): Promise<boolean> {
+async function readProToken(request: Request): Promise<TokenPayload | null> {
   const token = request.headers.get('X-Pro-Token')
   const secret = process.env.PRO_TOKEN_SECRET?.trim()
-  if (!token || !secret) return false
-  const payload = await verifyToken(token, secret, Date.now())
-  return payload?.p === true
+  if (!token || !secret) return null
+  return verifyToken(token, secret, Date.now())
 }
 
 /**
@@ -219,10 +216,18 @@ export async function handleDownload(
 
     const platform = detectPlatform(url)
 
-    // A Pro token only changes resolver ordering — nothing is gated behind it
-    // in a way that errors, so an absent or stale token degrades silently to
-    // the normal free path.
-    const priority = await isPriorityRequest(request)
+    // An absent or stale token degrades silently to the normal anonymous path;
+    // nothing here is gated in a way that errors.
+    const claims = await readProToken(request)
+    const priority = claims?.p === true
+    /**
+     * Whether this resolve may carry the operator's own Instagram session.
+     *
+     * Set only by the `ig` grant, which is written into a `users` row by hand
+     * and is never offered for sale, bundled with Pro, or derivable from one.
+     * `=== true` rather than a truthy check: an absent claim must read as false.
+     */
+    const credentialed = claims?.c === true
 
     // Serve an identical recent resolve from cache — skips a full extractor
     // round-trip for repeats (double-tap, HD/SD/MP3 re-pick, Recent re-tap, or
@@ -241,20 +246,38 @@ export async function handleDownload(
     // addressable store keyed on a URL anyone can construct from the
     // open-source key format, which is harmless precisely because every entry
     // in it is now something a public resolve would have returned anyway.
+    //
+    // A credentialed resolve is the one exception, and it bypasses both tiers
+    // in both directions rather than taking a key of its own. Reading is unsafe
+    // because a public entry would answer a request that was meant to use the
+    // session; writing is far worse, because a login-gated result would land in
+    // a store any anonymous visitor can address and be served to them. Adding a
+    // component to `resolveCacheKey` would have fixed the collision and left
+    // that shared store holding credentialed payloads — the same mistake the
+    // old `auth`/`anon` split made. Bypassing costs one uncached resolve for
+    // the handful of rows that carry the grant.
     const cacheKey = resolveCacheKey(type, preferredQuality, mode, url)
-    const cached = getCached(cacheKey)
-    if (cached) return cachedResponse(cached, 'HIT')
-
     const origin = new URL(request.url).origin
-    const edge = await readEdgeCache(origin, cacheKey)
-    if (edge) {
-      // Promote into this isolate so a second repeat skips even the edge
-      // lookup, which is I/O and therefore latency the Map does not cost.
-      setCached(cacheKey, edge)
-      return cachedResponse(edge, 'EDGE')
+
+    if (!credentialed) {
+      const cached = getCached(cacheKey)
+      if (cached) return cachedResponse(cached, 'HIT')
+
+      const edge = await readEdgeCache(origin, cacheKey)
+      if (edge) {
+        // Promote into this isolate so a second repeat skips even the edge
+        // lookup, which is I/O and therefore latency the Map does not cost.
+        setCached(cacheKey, edge)
+        return cachedResponse(edge, 'EDGE')
+      }
     }
 
-    const downloader = new Downloader({ quality: preferredQuality, mode, priority })
+    const downloader = new Downloader({
+      quality: preferredQuality,
+      mode,
+      priority,
+      credentialed,
+    })
     const videoData = await downloader.downloadVideo(url)
 
     // Accept the result if it yielded any downloadable media: a video stream, a
@@ -338,8 +361,12 @@ export async function handleDownload(
     // rather than handing the object to Response.json() and stringifying it
     // again for storage.
     const body = JSON.stringify(payload)
-    setCached(cacheKey, body)
-    writeEdgeCache(origin, cacheKey, body, ctx)
+    // Never store a credentialed result. See the bypass above: both stores are
+    // shared, and one of them is externally addressable.
+    if (!credentialed) {
+      setCached(cacheKey, body)
+      writeEdgeCache(origin, cacheKey, body, ctx)
+    }
 
     return new Response(body, {
       headers: { 'Content-Type': 'application/json', 'X-Cache': 'MISS' },

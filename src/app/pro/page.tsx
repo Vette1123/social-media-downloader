@@ -1,61 +1,52 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { PlanChooser } from '@/components/PlanChooser'
 import { SiteFooter } from '@/components/SiteFooter'
 import { Surface } from '@/components/Surface'
+import { CheckIcon, CoffeeIcon } from '@/components/icons'
+import { PRO_BENEFITS } from '@/config/pro'
 import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
-  title: 'Pro',
+  title: 'Support this project',
   description:
-    'A queue that runs a list of links unattended, bundled ZIP output, priority resolve, and no sponsor card. $3 a month, or $24 a year.',
+    'This downloader is free and stays free. If it saved you time, you can buy me a coffee — supporters get the batch queue, ZIP bundling, priority resolve and an ad-free site.',
   alternates: { canonical: '/pro' },
 }
 
 /**
- * Pro sells convenience over the same reach every visitor already has.
+ * The page that used to sell a subscription.
  *
- * Every entitlement here is a property of *this* site — how work is queued,
- * how results are packaged, how fast a resolver is tried, who answers your
- * email. None of them widen what a link can reach, and none of them involve
- * this site holding credentials on your behalf. That boundary is not
- * marketing: an entitlement on the other side of it is unsellable, because no
- * merchant of record will process payments for one.
+ * It is a donation page now. Two merchants of record refused to process
+ * payments for a third-party downloader, the second after every fixable item on
+ * their review checklist had been fixed, so there is nothing to buy here and
+ * nothing that renews.
+ *
+ * The extras are still real, and they are still the same four: properties of
+ * this site, none of which widen what a link can reach. They are switched on by
+ * hand, which is slow and entirely deliberate — a manual grant needs no
+ * merchant of record, no entitlement to enforce, and no refund policy, because
+ * a tip is not a sale.
+ *
+ * What this page must never do is imply the tip buys reach. That claim is what
+ * every acceptable-use policy in this space prohibits, and it is what closed
+ * the store.
  */
-const features = [
-  {
-    title: 'A queue that runs itself',
-    body: 'Paste a list instead of feeding links in one at a time, and let it work through them while you do something else. Free is the same queue with one link in it.',
-  },
-  {
-    title: 'Bundled as one file',
-    body: 'Images and audio from a run come back as a single ZIP rather than a folder of separate saves. Each video still saves on its own the moment it finishes.',
-  },
-  {
-    title: 'Priority resolve',
-    body: 'Your links go straight to the fastest resolver instead of walking the fallback chain. Free downloads are not throttled or queued — there is no rate limiter on this site — and this changes the order resolvers are tried, never the result you get.',
-  },
-  {
-    title: 'A direct line to the developer',
-    body: 'Ask for a feature and get a real answer from the person who builds this, not a support queue. Annual subscribers can also book a call — limited slots each month, so it stays a real conversation.',
-  },
-] as const
-
-export default function Pro() {
+export default function Support() {
   return (
     <div className='app-bg relative min-h-[100dvh] overflow-clip'>
       <div className='relative z-10 mx-auto max-w-3xl px-4 py-10 sm:py-16'>
         <div className='text-center'>
-          <span className='btn-grad inline-flex rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase'>
-            Pro
+          <span className='btn-grad inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase'>
+            <CoffeeIcon className='h-3.5 w-3.5' />
+            Support
           </span>
           <h1 className='mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl'>
-            One account. <span className='text-grad'>Every device.</span>
+            Free forever. <span className='text-grad'>Not free to run.</span>
           </h1>
           <p className='mx-auto mt-3 max-w-xl text-sm text-white/70 md:text-base'>
-            $3 a month, or $24 a year. Sign in with Google — no password to
-            remember, and the downloader stays exactly as free as it is today
-            either way.
+            Every download on this site is free, with no account and no limits,
+            and that is not changing. If it has saved you some time, a coffee
+            covers a bit of what it costs to keep the resolvers up.
           </p>
         </div>
 
@@ -64,52 +55,62 @@ export default function Pro() {
           radius='3xl'
           className='animate-card-enter mt-8 p-5 shadow-2xl sm:p-8'
         >
-          {/* Pick and buy in one place. A signed-out visitor's choice survives
-              the trip through Google — see PlanChooser. */}
-          <PlanChooser />
+          <a
+            href={siteConfig.links.sponsor}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='btn-grad btn-press flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold sm:text-base'
+          >
+            <CoffeeIcon className='h-4 w-4' />
+            Buy me a coffee
+          </a>
 
           <p className='mt-4 text-center text-sm text-white/60'>
-            Signed in on up to 5 devices at once, so it covers a few of your
-            own devices and browsers.
+            One-off, any amount, no account here needed. Nothing renews and
+            there is nothing to cancel.
           </p>
 
-          <ul className='mt-8 grid gap-3 sm:grid-cols-2'>
-            {features.map((f) => (
-              <Surface
-                key={f.title}
-                as='li'
-                elevation='raised'
-                interaction='lift'
-                className='p-4'
+          <div className='mt-8 border-t border-white/10 pt-6'>
+            <h2 className='text-lg font-semibold text-white'>
+              Supporters get the extras
+            </h2>
+            <p className='mt-1 text-sm text-white/60'>
+              Sign in with Google, then email{' '}
+              <a
+                className='text-cyan-300 hover:text-cyan-200'
+                href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Supporter — switch on the extras')}`}
               >
-                <p className='font-semibold text-white'>{f.title}</p>
-                <p className='mt-1 text-sm leading-relaxed text-white/60'>{f.body}</p>
-              </Surface>
-            ))}
-          </ul>
+                {siteConfig.supportEmail}
+              </a>{' '}
+              from the address on your receipt and I&rsquo;ll switch them on for
+              your account. It is done by hand, so give it a day.
+            </p>
 
-          <p className='mt-6 text-center text-sm text-white/60'>
-            Everything that is free today stays free. Pro only adds, and nothing
-            you can already do gets taken away or put behind a paywall. Pro
-            reaches exactly what a free visitor reaches — it never unlocks
-            private, restricted, or login-only content, and you are responsible
-            for having the rights to whatever you save.
+            <ul className='mt-5 grid gap-3 sm:grid-cols-2'>
+              {PRO_BENEFITS.map((benefit) => (
+                <li key={benefit} className='flex items-start gap-3'>
+                  <CheckIcon className='mt-0.5 h-4 w-4 shrink-0 text-cyan-300' aria-hidden />
+                  <span className='text-sm text-white/75'>{benefit}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className='mt-6 text-sm text-white/60'>
+            All four are about doing the same work without standing over it — a
+            queue instead of one link at a time, one ZIP instead of twelve
+            files. None of them reach anything a visitor without them cannot
+            already download, and none of them involve this site signing in
+            anywhere on your behalf. Everything free today stays free whether
+            anyone supports this or not.
           </p>
-
         </Surface>
 
         <p className='mt-6 text-center text-xs text-white/50'>
-          This site trades as {siteConfig.seller}, and payments are processed by{' '}
-          {siteConfig.merchantOfRecord}, who act as merchant of record &mdash; so
-          your receipt and card statement show those names rather than{' '}
-          {siteConfig.shortName}. Billing renews automatically each period;
-          cancel any time from your account and Pro runs to the end of the
-          period you paid for. Not for you? Email us within 14 days of any
-          charge for a full refund. See the{' '}
-          <Link href='/terms' className='text-cyan-300 hover:text-cyan-200'>
-            Terms
-          </Link>
-          . Questions, billing problems or cancellations:{' '}
+          Supporting this is a tip, not a purchase: no subscription, no invoice
+          from us, and no refund policy, because nothing is being sold. Payments
+          are handled entirely by Buy Me a Coffee under their own terms.
+          Questions:{' '}
           <a
             className='text-cyan-300 hover:text-cyan-200'
             href={`mailto:${siteConfig.supportEmail}`}

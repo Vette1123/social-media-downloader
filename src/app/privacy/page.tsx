@@ -82,10 +82,11 @@ export default function Privacy() {
           <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Payments</h2>
             <p>
-              Pro subscriptions are billed and processed by{' '}
-              {siteConfig.merchantOfRecord}, who act as merchant of record for{' '}
-              {siteConfig.seller}. We never see your card details — only your
-              subscription&rsquo;s status, so the site knows to keep Pro on.
+              Nothing is sold on this site, so we take no payments and hold no
+              billing data. If you support the project, that happens entirely on
+              Buy Me a Coffee under their privacy policy &mdash; we never see
+              your card details, and the only thing that reaches us is whatever
+              you put in the email asking for the extras to be switched on.
             </p>
           </section>
 
