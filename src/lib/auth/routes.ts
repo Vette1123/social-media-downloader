@@ -11,7 +11,7 @@ import type { D1Database } from '@cloudflare/workers-types'
 import { requireDb, type WorkerEnv } from '../apiRoutes'
 import type { WaitUntilContext } from '../edgeCache'
 import { ACCESS_TOKEN_TTL_MS, signToken } from '../proToken'
-import { isProAt } from '../billing/entitlement'
+import { hasGrant, isEntitled, isProAt } from '../billing/entitlement'
 import {
   OAUTH_STATE_COOKIE,
   OAUTH_VERIFIER_COOKIE,
@@ -344,9 +344,16 @@ export async function handleRefresh(
     else await work
   }
 
-  const pro = isProAt(user, now)
+  // `isEntitled`, not `isProAt`: features come from a subscription or from a
+  // hand grant, and with payments withdrawn the grant is the only live source.
+  const pro = isEntitled(user, now)
   const exp = now + ACCESS_TOKEN_TTL_MS
-  const token = await signToken({ u: user.id, exp, p: pro }, secret)
+  // Minted only when the grant is on the row, and never derived from `pro` —
+  // see the `c` claim in proToken.ts. A supporter is Pro and is not this.
+  const token = await signToken(
+    { u: user.id, exp, p: pro, ...(hasGrant(user, 'ig') ? { c: true } : {}) },
+    secret,
+  )
 
   return Response.json({
     success: true,

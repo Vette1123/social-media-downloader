@@ -16,7 +16,7 @@ import {
   VimeoIcon,
   YouTubeIcon,
 } from '@/components/icons'
-import { ProUpsell } from '@/components/ProUpsell'
+import { SupportPanel } from '@/components/SupportPanel'
 import { PromoSlot } from '@/components/PromoSlot'
 import { DevAppLinks } from '@/components/DevAppLinks'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -332,7 +332,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             already browsing; here it is a single line that names the one thing
             worth paying for and gets out of the way. */}
         <section className='mt-16 sm:mt-24'>
-          <ProUpsell variant='compact' />
+          <SupportPanel variant='compact' />
         </section>
 
         <section className='mt-16 sm:mt-24'>

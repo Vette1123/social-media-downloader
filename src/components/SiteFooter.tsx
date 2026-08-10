@@ -54,41 +54,32 @@ export function SiteFooter() {
         <Link href='/terms' className='transition-colors hover:text-white/80'>
           Terms
         </Link>
+        {/* One link, not the two that used to sit here ("Pro" and a second
+            straight at Buy Me a Coffee). /pro is the donation page now, so
+            pointing at both was the same destination twice under two names. */}
         <Link href='/pro' className='transition-colors hover:text-white/80'>
-          Pro
-        </Link>
-        <a
-          href={`mailto:${siteConfig.supportEmail}`}
-          className='transition-colors hover:text-white/80'
-        >
           Support
-        </a>
-        <a
-          href='https://buymeacoffee.com/vetteotp'
-          target='_blank'
-          rel='noopener noreferrer'
-          className='transition-colors hover:text-white/80'
-        >
-          Sponsor
-        </a>
+        </Link>
         <Divider />
         <PlayAppLinks />
       </div>
 
-      {/* Both lines are review surface, not decoration: the address has to be
-          readable as text (not only behind a "Support" link), and the
-          disclaimer has to sit on the page carrying the platform logos, not
-          only in /terms. */}
+      {/* Both lines stay: the address has to be readable as text (not only
+          behind a link), and the disclaimer has to sit on the page carrying the
+          platform logos, not only in /terms. The merchant-of-record sentence
+          that used to follow the address is gone with the subscription — there
+          is no seller and no processor now, and naming one that no longer
+          handles our payments is exactly the kind of stale claim a reviewer
+          reads as false information. */}
       <p className='mx-auto mt-6 max-w-2xl text-center text-xs leading-relaxed text-white/45'>
-        Questions, billing or takedown notices:{' '}
+        Questions or takedown notices:{' '}
         <a
           href={`mailto:${siteConfig.supportEmail}`}
           className='text-white/60 underline underline-offset-2 transition-colors hover:text-white/80'
         >
           {siteConfig.supportEmail}
         </a>
-        . Pro is sold by {siteConfig.seller}; payments are processed by{' '}
-        {siteConfig.merchantOfRecord} as merchant of record.
+        .
       </p>
       <p className='mx-auto mt-2 max-w-2xl text-center text-xs leading-relaxed text-white/45'>
         Public posts only. {siteConfig.name} is an independent tool, not

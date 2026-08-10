@@ -23,6 +23,30 @@ export interface BillingRow {
   sub_status: string | null
   sub_ends_at: number | null
   sub_past_due_since: number | null
+  /** Hand-set capabilities. See migration 0007 and `hasGrant`. */
+  grants?: string | null
+}
+
+/**
+ * A capability granted by hand rather than bought.
+ *
+ * `pro` is what a supporter gets; `ig` attaches the operator's own Instagram
+ * session to that account's resolves and is deliberately not something anyone
+ * can obtain by paying — see the migration for why that distinction is load
+ * bearing rather than bookkeeping.
+ */
+export type Grant = 'pro' | 'ig'
+
+/**
+ * Exact membership in a comma-separated set, not a substring test.
+ *
+ * `includes('pro')` on the raw string would match a future grant merely
+ * containing those letters, which is the classic way a capability check starts
+ * saying yes to things nobody granted.
+ */
+export function hasGrant(row: { grants?: string | null } | null, grant: Grant): boolean {
+  if (!row?.grants) return false
+  return row.grants.split(',').some((name) => name.trim() === grant)
 }
 
 /**
@@ -101,4 +125,22 @@ export function isProAt(row: BillingRow | null, now: number): boolean {
     default:
       return false
   }
+}
+
+/**
+ * Whether this account gets Pro's features right now, from any source.
+ *
+ * Deliberately separate from `isProAt` rather than folded into it. `isProAt`
+ * answers "what does this *subscription* entitle", and `mayApply` in webhook.ts
+ * depends on exactly that reading to decide whether an incoming event may
+ * supersede a stored subscription. A hand grant is not a subscription and must
+ * not be able to block a webhook, so it lives out here where only the callers
+ * that ask about features can see it.
+ *
+ * With payments withdrawn this is, in practice, the grant alone — no row has a
+ * subscription. The subscription arm stays because it costs one call and is the
+ * half that must keep working if a processor is ever found.
+ */
+export function isEntitled(row: BillingRow | null, now: number): boolean {
+  return hasGrant(row, 'pro') || isProAt(row, now)
 }

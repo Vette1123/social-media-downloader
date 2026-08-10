@@ -376,14 +376,18 @@ export const ChevronDownIcon = ({ className = 'w-4 h-4', ...props }: IconProps) 
 )
 
 /**
- * Pro's mark. A bolt, because what Pro sells is the same work happening faster
- * and unattended — a crown or a star would be status, which is not what is
- * being sold, and a lock would say Pro reaches something free does not, which
- * is the one claim this product may never make.
+ * The mark for supporting the project. A coffee cup rather than a heart: it
+ * names the actual gesture, matches the platform the link goes to, and asks for
+ * a small one-off thing — a heart reads as a like, and a star reads as status.
+ *
+ * Lucide's `coffee`, unchanged.
  */
-export const BoltIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
-  <svg className={className} viewBox='0 0 24 24' fill='currentColor' aria-hidden {...props}>
-    <path d='M13.5 2 4 13.2a.9.9 0 0 0 .7 1.5h4.6l-1.3 7.1a.6.6 0 0 0 1.05.5L20 11.1a.9.9 0 0 0-.7-1.5h-4.6l1.3-7.1A.6.6 0 0 0 15 2z' />
+export const CoffeeIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
+  <svg className={className} {...strokeIcon} {...props}>
+    <path d='M10 2v2' />
+    <path d='M14 2v2' />
+    <path d='M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1' />
+    <path d='M6 2v2' />
   </svg>
 )
 

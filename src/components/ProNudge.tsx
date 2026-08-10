@@ -2,24 +2,24 @@
 
 import Link from 'next/link'
 import { Surface } from '@/components/Surface'
-import { PRO_PRICE_MONTHLY } from '@/config/pro'
 import { useTier } from '@/lib/entitlements'
 import { dismissNudge, useProSignals } from '@/lib/proSignals'
 
 /**
- * The one shape every in-product Pro pitch takes.
+ * The one shape every in-product ask takes.
  *
  * There are two places worth making the case — the moment someone pastes more
- * links than the free flow handles at once, and the moment a download finishes
+ * links than the one-at-a-time flow handles, and the moment a download finishes
  * — and they were always going to be the same component. Two hand-rolled
  * banners would have drifted in wording, spacing and dismissal behaviour within
- * a week, and the wording is the part with a compliance constraint on it.
+ * a week, and the wording is the part with a constraint on it.
  *
- * **Nothing here may claim Pro reaches more than free does.** Pro changes how
- * much standing-over-it the same work needs: a queue instead of one at a time,
- * a ZIP instead of twelve files, the priority resolver first, no sponsor card.
- * A nudge that says "unlock" or implies otherwise is the clause that gets the
- * store shut down, not merely bad copy.
+ * **Nothing here may claim the extras reach more than the plain site does.**
+ * They change how much standing-over-it the same work needs: a queue instead of
+ * one at a time, a ZIP instead of twelve files, the priority resolver first, no
+ * sponsor card. A nudge that says "unlock" or implies otherwise is the clause
+ * that got the store closed — and it stays banned now that there is no store,
+ * because it would be equally untrue.
  */
 
 export interface ProNudgeProps {
@@ -48,7 +48,8 @@ export function ProNudge({
   const { dismissed } = useProSignals()
 
   // Self-hiding, so no call site needs a conditional — the same contract
-  // BatchPanel already has. A paying customer must never be sold to.
+  // BatchPanel already has. Someone who already supports this must never be
+  // asked again.
   if (tier === 'pro') return null
   if (dismissible && dismissed.includes(id)) return null
 
@@ -104,14 +105,13 @@ export function ProNudge({
 /**
  * One line in the hero card, above the paste bar.
  *
- * The home page used to mention Pro for the first time in a marketing band far
- * below the fold — after the point most visitors have pasted a link, saved a
- * video and left. This is the fix, and it is deliberately a line of text rather
- * than a card: the hero's job is the paste bar, and a second panel above it
- * would be selling to somebody who has not been helped yet.
+ * Deliberately a line of text rather than a card: the hero's job is the paste
+ * bar, and a second panel above it would be asking somebody who has not been
+ * helped yet.
  *
- * It leads with what stays free, because that is both true and the reason the
- * rest of the sentence is believable.
+ * It leads with what is free, because that is both true and the reason the rest
+ * of the sentence is believable — and because "free, no account, no limits" is
+ * the entire pitch for the site itself, not a lead-in to a price.
  */
 export function ProHeroLine() {
   const tier = useTier()
@@ -124,7 +124,7 @@ export function ProHeroLine() {
         href='/pro'
         className='font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
       >
-        Pro runs a whole list as a queue, {PRO_PRICE_MONTHLY} a month →
+        Support the project →
       </Link>
     </p>
   )

@@ -229,10 +229,21 @@ export class Downloader {
   // asked first, never what a resolve is allowed to reach.
   private readonly priority: boolean
 
-  constructor(opts?: { quality?: 'hd' | 'sd'; mode?: 'auto' | 'audio'; priority?: boolean }) {
+  // Whether this instance may attach IG_SESSIONID. See instagramSessionId.
+  private readonly credentialed: boolean
+
+  constructor(opts?: {
+    quality?: 'hd' | 'sd'
+    mode?: 'auto' | 'audio'
+    priority?: boolean
+    credentialed?: boolean
+  }) {
     this.videoQuality = opts?.quality === 'sd' ? 'sd' : 'hd'
     this.mode = opts?.mode === 'audio' ? 'audio' : 'auto'
     this.priority = opts?.priority === true
+    // Defaults to false, so every construction site that does not think about
+    // this — the CLI, tests, any future caller — resolves anonymously.
+    this.credentialed = opts?.credentialed === true
   }
 
   private readonly userAgent =
@@ -288,22 +299,30 @@ export class Downloader {
   // This is the same id Instagram's own web client sends and is not a secret.
   private readonly instagramAppId = '936619743392459'
 
-  // Optional Instagram session cookie (the `sessionid` value). When set via the
-  // IG_SESSIONID env var, the GraphQL extractor sends it. Public posts work
-  // without it, and the extractor degrades gracefully when it's absent or
+  // Optional Instagram session cookie (the `sessionid` value). Public posts
+  // work without it, and the extractor degrades gracefully when it's absent or
   // expired. Use a burner account: Instagram may flag an account for automated
   // access from datacenter (e.g. Vercel) IPs.
   //
-  // A deployment-wide operator setting, never a per-user entitlement. It used
-  // to be gated on a Pro token, which made "we send our credentials on your
-  // behalf" a thing this site sold — and that is precisely the clause every
-  // merchant of record refuses to underwrite (unauthorised access to another
-  // party's data). Nothing about a buyer's plan may influence which credentials
-  // leave this Worker.
+  // Two conditions, both required. IG_SESSIONID must be set on the deployment,
+  // *and* this instance must have been constructed credentialed — which happens
+  // only for a request whose token carries the `c` claim, which is minted only
+  // from an `ig` grant written into a `users` row by hand.
   //
-  // Unset on the hosted deployment, so in practice this resolves nothing extra
-  // there; it exists for self-hosters running against their own account.
+  // The second condition is the one that was missing. The env var alone used to
+  // be the whole gate, which meant setting it attached the operator's cookie to
+  // every visitor's Instagram resolve — "we send our credentials on your
+  // behalf", for the entire internet. Narrowing it to a listed account is
+  // strictly less exposure than the env var by itself.
+  //
+  // What must never happen: this becoming something anyone can obtain by
+  // paying. Unauthorised access to another party's data is the acceptable-use
+  // clause every merchant of record refuses to underwrite, and selling it is
+  // what ended the store. `ig` is deliberately a separate grant from `pro` so
+  // that no supporter, and no future entitlement, can reach it — see
+  // migrations/0007 and `hasGrant`.
   private get instagramSessionId(): string {
+    if (!this.credentialed) return ''
     return process.env.IG_SESSIONID?.trim() || ''
   }
 

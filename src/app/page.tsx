@@ -4,7 +4,7 @@ import { Surface } from '@/components/Surface'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { LazyFAQ } from '@/components/LazyFAQ'
 import { ProHeroLine } from '@/components/ProNudge'
-import { ProUpsell } from '@/components/ProUpsell'
+import { SupportPanel } from '@/components/SupportPanel'
 import { PromoSlot } from '@/components/PromoSlot'
 import {
   FacebookIcon,
@@ -379,10 +379,10 @@ export default function Home() {
           </section>
 
           {/* ---------------------------------------------------------------
-              PRO — the only place it is sold outside /pro itself
+              SUPPORT — the ask, and the only one on the page
           ---------------------------------------------------------------- */}
           <section className='mt-16 sm:mt-24'>
-            <ProUpsell />
+            <SupportPanel />
           </section>
 
           {/* The same below-the-fold slot the platform pages carry. No platform

@@ -1,0 +1,31 @@
+-- Capabilities granted to an account by hand, independent of any subscription.
+--
+-- A comma-separated set of grant names, or NULL for none. One column rather
+-- than a boolean per capability because these are set and cleared with a
+-- one-line `wrangler d1 execute` and there will never be enough of them to
+-- justify a join table:
+--
+--   pnpm exec wrangler d1 execute social-media-downloader --remote \
+--     --command "UPDATE users SET grants = 'pro' WHERE email = 'someone@example.com'"
+--
+-- Clearing one is the same statement with `grants = NULL`.
+--
+-- The two names in use, and the reason they are separate:
+--
+--   pro  Everything the withdrawn subscription used to include — the batch
+--        queue, ZIP bundling, priority resolve, no sponsor card. Every one of
+--        them is a property of this site, and none widen what a link can reach.
+--        This is what a supporter gets.
+--
+--   ig   The operator's own Instagram session (IG_SESSIONID) is attached to
+--        this account's Instagram resolves. NOT a supporter grant and never
+--        offered as one: sending our credentials on a visitor's behalf is the
+--        acceptable-use clause every merchant of record refuses to underwrite,
+--        and selling it is what closed the store. It exists because IG_SESSIONID
+--        was previously deployment-wide — set it and *every* visitor's resolve
+--        carried the cookie — and narrowing that to one flagged account is
+--        strictly less credential exposure than the env var alone.
+--
+-- Never appears in a WHERE, so it needs no index (see 0001_accounts.sql).
+
+ALTER TABLE users ADD COLUMN grants TEXT;

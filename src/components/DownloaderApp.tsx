@@ -1379,21 +1379,21 @@ export function DownloaderApp() {
 
       {/* The strongest moment to make the case, and it costs nothing to be
           wrong: someone holding one link never sees it. A pasted list already
-          works on free — it resolves one at a time into Recent and leaves every
-          download to be tapped by hand — so this is describing the tedium the
-          visitor is one click away from, not gating the feature. */}
+          works without the extras — it resolves one at a time into Recent and
+          leaves every download to be tapped by hand — so this describes the
+          tedium the visitor is one page away from, not a gated feature. */}
       {pastedLinks > 1 && (
         <ProNudge
           id='paste-multi'
           tone='attached'
-          action='Run them as a queue'
+          action='See how'
           lede={
             <>
               <strong className='font-semibold text-white'>
                 {pastedLinks} links.
               </strong>{' '}
-              Free saves them to Recent to download one at a time. Pro runs the
-              list as a queue.
+              These save to Recent to download one at a time. Supporters get a
+              queue that runs the whole list.
             </>
           }
         />
@@ -1595,11 +1595,12 @@ export function DownloaderApp() {
           <ProNudge
             id='post-download'
             tone='attached'
-            action='See what Pro does'
+            action='Buy me a coffee'
             lede={
               <>
-                Doing this a few times a day? Pro queues a whole list, resolves
-                first, and drops the sponsor card.
+                Saved you some time? This site is free to use and not free to
+                run — supporters also get a queue, ZIP bundles and no sponsor
+                card.
               </>
             }
           />

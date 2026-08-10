@@ -26,7 +26,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef, useState } from 'react'
 import { Avatar } from '@/components/Avatar'
-import { BoltIcon, PinIcon, PinOffIcon } from '@/components/icons'
+import { CoffeeIcon, PinIcon, PinOffIcon } from '@/components/icons'
 import {
   type CachedProfile,
   cachedProfile,
@@ -128,18 +128,18 @@ export function AccountControl() {
 }
 
 /**
- * Pro's only permanent presence outside the marketing sections.
+ * The one permanent pointer at the support page.
  *
  * Two states, and the second one is the whole idea. At rest it is a quiet
- * outlined pill reading "Pro" — permanently there, so there is always one
- * findable answer to "is there a paid thing here", and small enough not to
- * compete with the account control beside it. Once the visitor has resolved
+ * outlined pill reading "Support" — permanently there, so there is always one
+ * findable answer to "how do I chip in", and small enough not to compete with
+ * the account control beside it. Once the visitor has resolved
  * `HABIT_THRESHOLD` links in a day it earns a sentence, because at that point
- * it is describing something they have just done by hand rather than
- * advertising at a stranger.
+ * it is asking someone the site has demonstrably just helped rather than
+ * begging at a stranger.
  *
- * It never appears for a subscriber. The count is local and never leaves the
- * device (see proSignals).
+ * It never appears for someone who already has the extras. The count is local
+ * and never leaves the device (see proSignals).
  *
  * The expanded copy is hidden below `sm`, where this control shares a fixed
  * slot with the pin toggle and the account pill and there is genuinely no room
@@ -163,7 +163,7 @@ function ProPill({
   const pro = live.signedIn ? live.pro : cached?.pro
   if (pro) return null
   // A link to the page you are reading is furniture, and on /pro it would sit
-  // directly above the plan picker it points at.
+  // directly above the donate button it points at.
   if (pathname === '/pro') return null
 
   const earned = today >= HABIT_THRESHOLD
@@ -173,14 +173,14 @@ function ProPill({
     // accent ring is the shared language for one (see globals.css).
     <Link
       href='/pro'
-      title='What Pro does'
+      title='Support this project'
       className='icon-lift pointer-events-auto flex items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-400/10 py-1.5 pr-3 pl-2.5 text-xs font-semibold whitespace-nowrap text-cyan-200 backdrop-blur'
     >
-      <BoltIcon className='h-3.5 w-3.5' />
-      <span>Pro</span>
+      <CoffeeIcon className='h-3.5 w-3.5' />
+      <span>Support</span>
       {earned && (
         <span className='hidden font-medium text-cyan-100/80 sm:inline'>
-          · {today} today, queue them instead
+          · {today} today, buy me a coffee?
         </span>
       )}
     </Link>

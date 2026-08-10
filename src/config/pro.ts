@@ -1,65 +1,33 @@
 /**
- * Pro's commercial constants, in one place.
+ * What Pro is, now that it is not for sale.
  *
- * Two variants, one entitlement. Annual is presented first everywhere: Creem
- * charges roughly 4% + 40¢, so the flat fee takes 17% of a $3 charge and 2% of
- * a $24 one — twelve monthly renewals net $28.80 against $23.20 for an annual,
- * which makes annual worth 81% of the revenue while removing eleven chances to
- * churn and eleven flat fees.
+ * Two merchants of record refused this product category — Lemon Squeezy
+ * silently, Creem twice, the second time after every fixable item on their
+ * published review checklist had been fixed. The rejections were about the
+ * category, not the copy, so the response is to stop selling rather than to
+ * reword the same offer a third time.
+ *
+ * The features stayed. They are granted by hand now: a row in `users` carries
+ * `grants = 'pro'`, set with one `wrangler d1 execute` after someone supports
+ * the project. No checkout, no subscription, no merchant of record, nothing to
+ * cancel and nothing to refund — a donation with a thank-you attached is not a
+ * sale, and that is the whole point.
+ *
+ * The checkout links, the plan variants and the price constants that used to
+ * live here are gone rather than commented out; git has them if a processor is
+ * ever found. What survives is the description of the offer, because that is
+ * still shown on the support page.
  */
 
-// Creem product share links. The product name carries the plan — "Annual"
-// is what `variantOf` in billing/webhook.ts matches on — so renaming a
-// product, from the dashboard or over the API, silently relabels the plan on
-// the account page. Any future name for the yearly product must keep the word
-// "annual" or "year" in it.
-export const PRO_CHECKOUT_MONTHLY = 'https://creem.io/product/prod_YlRkuWMTOagrCSiGSzdwU'
-export const PRO_CHECKOUT_ANNUAL = 'https://creem.io/product/prod_5UH0C3CxN8uL0HTlRCTuhG'
-
-export type ProVariant = 'monthly' | 'annual'
-
 /**
- * The same two products in Creem's test store.
+ * What supporters get, in the order it matters.
  *
- * These exist so the *key decides the store*. Baking the live links into the
- * static bundle while the Worker ran a test key meant a real visitor clicking
- * "Get annual" was charged for real, their webhook failed its signature check
- * against the test secret, and the repair path — holding a test key — could not
- * see their live subscription to fix it. They paid and got nothing recoverable.
- * Nobody can hit that now: the link is built per click from whichever key the
- * Worker actually holds, so test secrets can only ever produce test checkouts.
- */
-const PRO_CHECKOUT_TEST: Record<ProVariant, string> = {
-  monthly: 'https://creem.io/test/product/prod_6Naj4QA8zIEXVIpmHh9R3B',
-  annual: 'https://creem.io/test/product/prod_4JdUh8fUcY5OpmUwFeOkd4',
-}
-
-const PRO_CHECKOUT_LIVE: Record<ProVariant, string> = {
-  monthly: PRO_CHECKOUT_MONTHLY,
-  annual: PRO_CHECKOUT_ANNUAL,
-}
-
-export function isProVariant(value: string | null): value is ProVariant {
-  return value === 'monthly' || value === 'annual'
-}
-
-/** The product link for this variant in the store the given key belongs to. */
-export function proCheckoutBase(testMode: boolean, variant: ProVariant): string {
-  return (testMode ? PRO_CHECKOUT_TEST : PRO_CHECKOUT_LIVE)[variant]
-}
-
-export const PRO_PRICE_MONTHLY = '$3'
-export const PRO_PRICE_ANNUAL = '$24'
-
-/**
- * What Pro does, in the order it matters, for anywhere a list is the right
- * shape. The long-form version with a paragraph each lives on /pro; this is the
- * same offer compressed to one line per item.
- *
- * Every line describes *less standing over it*, never more reach. Pro unlocks
- * no content a free visitor cannot already download, and a line here that
- * implied otherwise would be the merchant-of-record clause that got the
- * previous store closed — not merely overstated copy.
+ * Every line describes *less standing over it*, never more reach. Nothing here
+ * unlocks content a visitor cannot already download, and a line that implied
+ * otherwise would be the acceptable-use clause that ended the store — not
+ * merely overstated copy. That constraint outlived the store: it is why the
+ * `ig` grant is deliberately not on this list and is not something anyone can
+ * obtain by supporting the project.
  */
 export const PRO_BENEFITS = [
   'Paste a list and let the queue run',
@@ -67,30 +35,3 @@ export const PRO_BENEFITS = [
   'Images and audio bundled into one ZIP',
   'No sponsor card, site-wide',
 ] as const
-
-/** One label for one intent, used at every entry point. */
-export const PRO_CTA_LABEL = `Get Pro, ${PRO_PRICE_MONTHLY}/mo`
-
-export function isProCheckoutConfigured(url: string): boolean {
-  return url.startsWith('https://')
-}
-
-/**
- * Attach the buyer to the checkout so the webhook can find them.
- *
- * `userId` is the account's internal id and is the only binding the webhook
- * trusts. It rides in Creem's `metadata[...]` bracket syntax, which a
- * shareable payment link accepts as a query parameter and hands back on every
- * subscription event.
- *
- * Creem's payment links take no email prefill, so unlike the previous
- * provider there is nothing to pass here but the id — which was always the
- * part that mattered. The webhook's email path is a last-resort fallback that
- * can never seize a row already holding a subscription; see `mayApply`.
- * Callers must never pass an empty id; see `buyerOf` in AccountPanel.
- */
-export function checkoutHref(base: string, userId: string): string {
-  const url = new URL(base)
-  url.searchParams.set('metadata[user_id]', userId)
-  return url.toString()
-}

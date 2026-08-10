@@ -5,7 +5,7 @@ import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: `The terms for using ${siteConfig.name}: as-is service, your responsibility for content rights, and Pro subscription billing.`,
+  description: `The terms for using ${siteConfig.name}: as-is service, your responsibility for content rights, and what supporting the project does and does not buy.`,
   alternates: { canonical: '/terms' },
 }
 
@@ -56,9 +56,10 @@ export default function Terms() {
               {siteConfig.name} reaches only what is already publicly
               accessible. It does not bypass DRM, defeat a paywall, sign in on
               your behalf, or reach private accounts, subscriber-only posts, or
-              anything else a platform serves only to a logged-in viewer. No
-              subscription tier changes this: Pro affects how work is queued
-              and how results are packaged, never what a link can reach.
+              anything else a platform serves only to a logged-in viewer.
+              Supporting the project does not change this: what supporters get
+              affects how work is queued and how results are packaged, never
+              what a link can reach.
             </p>
             <p className='mt-2'>
               Using this site to infringe copyright, or to access material you
@@ -100,72 +101,39 @@ export default function Terms() {
           </section>
 
           <section>
-            <h2 className='mb-2 text-lg font-semibold text-white'>Pro billing</h2>
+            <h2 className='mb-2 text-lg font-semibold text-white'>
+              Supporting this project
+            </h2>
             <p>
-              {siteConfig.name} trades as{' '}
-              <strong className='text-white/90'>{siteConfig.seller}</strong>. Pro
-              is a subscription, billed monthly or annually, processed by{' '}
-              {siteConfig.merchantOfRecord}, who act as merchant of record. It
-              renews automatically at the end of each billing period until you
-              cancel.
+              Nothing on {siteConfig.name} is for sale. There is no
+              subscription, no plan, and no charge of any kind &mdash; if you
+              are ever billed by something claiming to be this site, it is not
+              us, and we would like to hear about it.
             </p>
             <p className='mt-2'>
-              Your receipt and your card statement will therefore show{' '}
-              {siteConfig.seller} or {siteConfig.merchantOfRecord}, not{' '}
-              {siteConfig.shortName}. A charge you do not recognise is almost
-              always this &mdash; email{' '}
+              You can support the project voluntarily through Buy Me a Coffee.
+              That is a donation, handled entirely by them under their own
+              terms: it is one-off, it does not renew, and there is nothing here
+              to cancel. As a thank-you we switch some conveniences on for your
+              account &mdash; a batch queue, ZIP bundling, priority resolve, and
+              no sponsor card &mdash; by hand, after you email us.
+            </p>
+            <p className='mt-2'>
+              Those conveniences are a gift and not a purchased entitlement. We
+              may change or withdraw them at any time, and because no sale takes
+              place there is nothing to refund. None of them change what a link
+              can reach; see above.
+            </p>
+            <p className='mt-2'>
+              If you want a donation reversed, that is between you and Buy Me a
+              Coffee, though emailing{' '}
               <a
                 className='text-cyan-300 hover:text-cyan-200'
                 href={`mailto:${siteConfig.supportEmail}`}
               >
                 {siteConfig.supportEmail}
               </a>{' '}
-              before disputing it with your bank and we will sort it out faster
-              than a chargeback can.
-            </p>
-            <p className='mt-2'>
-              Cancel any time from your account&rsquo;s billing portal.
-              Cancelling stops the next renewal and nothing else: Pro stays
-              active for the rest of the period you have already paid for, and
-              reverts to free when that period ends. There is no partial
-              period and nothing is cut off early.
-            </p>
-            <p className='mt-2'>
-              If a renewal payment fails, we keep Pro active for 14 days while
-              {siteConfig.merchantOfRecord} retries the charge, so a card update usually
-              recovers the subscription with no interruption. If payment still
-              has not gone through after 14 days, Pro access ends.
-            </p>
-            <p className='mt-2'>
-              <strong className='text-white/90'>
-                Refunds: 14 days, no questions asked.
-              </strong>{' '}
-              Email us within 14 days of any charge &mdash; the first one or a
-              renewal &mdash; and we refund it in full and end the
-              subscription. After 14 days a period that has already been billed
-              is not refundable; cancelling is what stops the next charge, and
-              Pro stays active for the rest of the period you paid for.
-            </p>
-            <p className='mt-2'>
-              To request one, email{' '}
-              <a
-                className='text-cyan-300 hover:text-cyan-200'
-                href={`mailto:${siteConfig.supportEmail}`}
-              >
-                {siteConfig.supportEmail}
-              </a>{' '}
-              from the address on your receipt. Refunds are issued by{' '}
-              {siteConfig.merchantOfRecord} to the original payment method and
-              usually appear within 5&ndash;10 business days.
-            </p>
-            <p className='mt-2'>
-              If you were charged after cancelling, or charged twice, that is a
-              billing error rather than a refund request: email us and we will
-              correct it at any time, not only inside the 14 days. Nothing here
-              affects the statutory rights you have where you live &mdash;
-              including the EU/UK right of withdrawal &mdash; or the policies of{' '}
-              {siteConfig.merchantOfRecord}, who are the merchant of record on
-              every transaction.
+              first is usually faster.
             </p>
           </section>
 
@@ -180,8 +148,7 @@ export default function Terms() {
           <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Contact</h2>
             <p>
-              Support, billing and refund requests, and takedown notices all go
-              to{' '}
+              Support requests and takedown notices both go to{' '}
               <a
                 className='text-cyan-300 hover:text-cyan-200'
                 href={`mailto:${siteConfig.supportEmail}`}
@@ -195,7 +162,7 @@ export default function Terms() {
               >
                 {siteConfig.author.name}
               </a>
-              , who trades as {siteConfig.seller}.
+              .
             </p>
           </section>
         </div>
