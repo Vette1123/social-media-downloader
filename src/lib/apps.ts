@@ -3,20 +3,39 @@
 
 export type PlayApp = {
   name: string
+  /** One line under the name in the footer menu. Same copy the apps ship with. */
+  tagline: string
   androidPackage: string
   playStoreUrl: string
 }
 
-const playApp = (name: string, androidPackage: string): PlayApp => ({
+const playApp = (
+  name: string,
+  tagline: string,
+  androidPackage: string,
+): PlayApp => ({
   name,
+  tagline,
   androidPackage,
   playStoreUrl: `https://play.google.com/store/apps/details?id=${androidPackage}`,
 })
 
 export const PLAY_APPS: readonly PlayApp[] = [
-  playApp('Rafiq', 'com.mohamedgado.rafiq'),
-  playApp('Masareef', 'com.mohamedgado.masareef'),
-  playApp('Nafis', 'com.mohamedgado.nafis'),
+  playApp(
+    'Rafiq',
+    'A private Islamic companion: prayer, Qur’an, adhkar, qibla',
+    'com.mohamedgado.rafiq',
+  ),
+  playApp(
+    'Masareef',
+    'An offline-first, multi-currency spending tracker',
+    'com.mohamedgado.masareef',
+  ),
+  playApp(
+    'Nafis',
+    'A local-price tracker for gold, currencies and more',
+    'com.mohamedgado.nafis',
+  ),
 ]
 
 /**
