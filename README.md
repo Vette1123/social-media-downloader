@@ -29,7 +29,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 - **11 platforms, one paste box.** TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo — auto-detected from the URL.
 - **Original quality, HD by default.** The source file rather than a re-encode, with a one-tap fallback to SD, plus MP3 audio extraction on every platform that carries sound.
 - **No login, no API key, no daily limit.** Nothing to sign up for and nothing installed unless you want the app.
-- **Private by design.** No accounts, no tracking of what you download. Your Recent list lives only in your own browser.
+- **Private by design.** No account needed to download and no log of what you download — a Google sign-in exists for Pro subscribers only. Your Recent list lives in your own browser.
 - **Resilient.** A per-platform fallback chain quietly retries other sources, so a single provider outage doesn't break your download.
 - **Installable PWA.** Home-screen icon, app shortcuts, and native share-in from other apps.
 

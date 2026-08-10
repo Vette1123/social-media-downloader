@@ -58,6 +58,26 @@ that is linked from the site footer.
   `UPDATE users SET sub_ends_at = <now>` documented in `entitlement.ts` rather
   than a webhook path, because refunds arrive by email one at a time; noted
   here so the tradeoff is not rediscovered as a bug.
+- **"Every page" meant four pages, and the review pages were not among them.**
+  The footer fix landed on the home page and the eleven platform landing pages,
+  which is where the shared footer already lived — and missed `/pro`, `/terms`,
+  `/privacy` and `/account`, i.e. the page a payment reviewer opens first and the
+  three that exist for compliance. The built export said `email=1` on all of them
+  and that reading was wrong: the match was the JSON-LD `mailto:` in the global
+  structured data, not visible text. Grep the *rendered* markup for the anchor,
+  not the address.
+- **Both Contact sections pointed at a portfolio site.** `/terms` and `/privacy`
+  each ended with "Questions: Mohamed Gado" linking to mohamedgado.com — so the
+  two pages a rights holder or a reviewer lands on for contact details were the
+  two that did not give a contact address, while `/terms` printed the right one
+  twice further up.
+- **The policy dates were stale by the time the policies changed.** `/terms` said
+  8 August while describing a refund policy written on the 10th. Cheap to miss,
+  and it reads as either carelessness or a backdated policy.
+- **The README still said "No accounts, no tracking".** Untrue since Google
+  sign-in shipped for Pro, and the README is one click from the site footer.
+  Checklist item 2 is "no false information", and it does not only mean invented
+  testimonials — it also means a claim that was true last month.
 - **Two footers had already drifted.** The home page's was hardcoded and the
   platform pages' read from `siteConfig`; the separators even differed (`·` vs
   `•`). Adding the support address to both would have been the third copy of the
@@ -85,7 +105,10 @@ that is linked from the site footer.
   especially not one with a piracy reputation. It costs nothing to drop and
   positions the business next to them for anyone reviewing it.
 - A support address must render on every page, as text, from `siteConfig`, and
-  must match what is filed with the payment provider.
+  must match what is filed with the payment provider. "Every page" includes
+  `/pro`, `/terms`, `/privacy` and `/account` — check the rendered anchor, since
+  the JSON-LD `mailto:` makes a naive grep pass everywhere.
+- Touching a policy means stamping its date in the same edit.
 - Never sell a subscription with a blanket no-refund clause. 14 days is the
   floor consumer law assumes anyway.
 - After a copy change of this kind, grep the built `out/` directory, not just

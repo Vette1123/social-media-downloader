@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { SiteFooter } from '@/components/SiteFooter'
 import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/terms' },
 }
 
-const UPDATED = '8 August 2026'
+const UPDATED = '10 August 2026'
 
 export default function Terms() {
   return (
@@ -179,7 +180,22 @@ export default function Terms() {
           <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Contact</h2>
             <p>
-              Questions: <a className='text-cyan-300 hover:text-cyan-200' href={siteConfig.author.url}>{siteConfig.author.name}</a>.
+              Support, billing and refund requests, and takedown notices all go
+              to{' '}
+              <a
+                className='text-cyan-300 hover:text-cyan-200'
+                href={`mailto:${siteConfig.supportEmail}`}
+              >
+                {siteConfig.supportEmail}
+              </a>
+              , read by{' '}
+              <a
+                className='text-cyan-300 hover:text-cyan-200'
+                href={siteConfig.author.url}
+              >
+                {siteConfig.author.name}
+              </a>
+              , who trades as {siteConfig.seller}.
             </p>
           </section>
         </div>
@@ -187,6 +203,8 @@ export default function Terms() {
         <Link href='/' className='mt-10 inline-block text-sm text-cyan-300 hover:text-cyan-200'>
           ← Back to the downloader
         </Link>
+
+        <SiteFooter />
       </div>
     </div>
   )
