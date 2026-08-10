@@ -237,7 +237,6 @@ function buildChecks() {
     // Google's crawler fetches this path literally for the search-result icon,
     // ignoring both the SVG and the ?v= the <link> carries.
     staticFile('/favicon.ico', 'icon', 500),
-    staticFile('/ads.txt', 'text/plain'),
     staticFile('/f62bfbe4672c27f2ad3204b176eaab35.txt', 'text/plain'),
 
     {

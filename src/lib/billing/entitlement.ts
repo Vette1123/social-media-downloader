@@ -67,12 +67,22 @@ export function isProAt(row: BillingRow | null, now: number): boolean {
     // ponytail: a refund does not move the status, so a refunded annual keeps
     // Pro to period end unless someone intervenes. Since /terms started
     // offering a 14-day refund (2026-08-10, for the Creem account review) that
-    // is a real hole, deliberately left to a manual step rather than code:
-    // refunds arrive by email, one at a time, and revoking is one statement —
-    //   UPDATE users SET sub_ends_at = <now>, sub_updated_at = <now> WHERE id = ?
-    // run against the remote D1 right after issuing the refund in Creem.
-    // Upgrade path if refunds ever stop being rare: subscribe to
-    // `refund.created` (currently unsubscribed) and clear `sub_ends_at` there.
+    // is a real hole, deliberately left to a manual step rather than code.
+    // Refunds arrive by email, one at a time, and revoking is one command run
+    // straight after issuing the refund in Creem. `sub_updated_at` is bumped
+    // with it so a late webhook redelivery cannot undo the revoke:
+    //
+    //   pnpm exec wrangler d1 execute social-media-downloader --remote \
+    //     --command "UPDATE users SET sub_ends_at = strftime('%s','now')*1000,
+    //       sub_updated_at = strftime('%s','now')*1000 WHERE email = 'buyer@example.com'"
+    //
+    // Not automated on purpose: Creem documents `refund.created` as an event
+    // but not its payload down to the subscription id, and a handler written
+    // against a guessed shape would also have to tell a partial refund from a
+    // full one — refunding one month of an annual as goodwill must not take the
+    // other eleven away. Subscribe to `refund.created` and clear `sub_ends_at`
+    // there once that payload is confirmed against a real refund, if refunds
+    // ever stop being rare enough to handle by hand.
     case 'scheduled_cancel':
     case 'canceled':
       return paidThrough(row.sub_ends_at, now)
