@@ -179,16 +179,33 @@ const BROWSER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 /**
+ * What a browser sends when it navigates to a page, rather than the two
+ * headers a fetch sends by default.
+ *
+ * Hosts that wall automated traffic check this set, and it costs nothing to
+ * send. It is not a disguise — the address and the TLS handshake still say what
+ * we are, and a host that fingerprints those is not fooled by headers.
+ */
+const BROWSER_PAGE_HEADERS: Record<string, string> = {
+  'User-Agent': BROWSER_AGENT,
+  Accept:
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1',
+}
+
+/**
  * Read a recipe's page from wherever it will answer: the host itself first,
  * a relay only if that fails. See the call site in `tryPageScrape`.
  */
 async function fetchPageDirectThenRelay(target: string): Promise<string | null> {
   try {
     const response = await fetch(target, {
-      headers: {
-        'User-Agent': BROWSER_AGENT,
-        Accept: 'text/html,application/xhtml+xml',
-      },
+      headers: BROWSER_PAGE_HEADERS,
       redirect: 'follow',
       signal: AbortSignal.timeout(10_000),
     })
@@ -884,10 +901,7 @@ export class Downloader {
    */
   private async tryPageScrape(url: string): Promise<VideoData | null> {
     const response = await fetch(url, {
-      headers: {
-        'User-Agent': this.userAgent,
-        Accept: 'text/html,application/xhtml+xml',
-      },
+      headers: BROWSER_PAGE_HEADERS,
       redirect: 'follow',
       signal: AbortSignal.timeout(10000),
     })
