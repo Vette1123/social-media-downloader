@@ -436,11 +436,20 @@ The downloader tries providers in order and falls back automatically on failure.
 
 - **TikTok videos:** Tikwm → Snaptik → SSSTik → direct scraping
 - **Twitter/X videos:** vxTwitter → public Cobalt instances
-- **Instagram posts/reels:** embed page (`shortcode_media`) → public Cobalt instances → web GraphQL (stories need `IG_SESSIONID`, a deployment-wide operator setting that is unset on the hosted site)
+- **Instagram posts/reels:** embed page (`shortcode_media`) → private media API (`/api/v1/media/<id>/info/`, session only) → web GraphQL → public Cobalt instances. Anything Instagram will not serve anonymously — including stories — needs `IG_SESSIONID` *and* the `ig` grant on the requesting account. The GraphQL `doc_id` has been answering "execution error" since 2026-08, so the media API is currently the only path a session buys anything on.
 - **YouTube videos/Shorts:** public Cobalt instances → public Piped instances → `youtube-dl-exec` (metadata enriched via YouTube oEmbed)
 - **Facebook videos/reels:** video plugin page (`/plugins/video.php`) → direct page scrape (`browser_native_*_url`) → public Cobalt instances
-- **Vimeo:** dedicated extractor
-- **Pinterest / Reddit / Threads / Snapchat / Twitch:** best-effort via public Cobalt instances
+- **Vimeo:** player config (`/config`) progressive renditions → embed-only when Vimeo ships no progressive rendition for that video (playable, not downloadable — the DASH/HLS manifests it ships instead need ffmpeg)
+- **Reddit:** the embed view's `packaged-media-json` (pre-muxed MP4s; the raw `v.redd.it` renditions are video and audio in separate files) → Cobalt
+- **Threads:** the post's `/embed` view, requested as a link crawler (a browser user agent gets the empty app shell) → Cobalt
+- **Twitch clips:** the public GraphQL clip query, signed with the access token from the same response → Cobalt. VODs are HLS and are not supported.
+- **Pinterest:** the widget API (`/v3/pidgets/pins/info/`) — video renditions, or the image as a one-image gallery → Cobalt
+- **Snapchat and anything else:** best-effort via public Cobalt instances, then the generic page scrape
+
+Each platform above tries its own endpoint *before* Cobalt because the one open
+public instance now answers `api.fetch.fail`/`api.fetch.critical` for most of
+them — its address is blocked by the origins. Cobalt stays in the chain: when it
+does answer, it tunnels the media, which streams from any IP.
 
 > Cobalt does the heavy lifting on serverless hosts (where `yt-dlp` isn't available). Set `COBALT_API_URL` to point the fallback chain at your own [Cobalt](https://github.com/imputnet/cobalt) instance for more reliable, higher-throughput extraction.
 
