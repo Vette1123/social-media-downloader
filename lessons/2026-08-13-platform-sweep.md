@@ -48,6 +48,14 @@ Each of those platforms now reads its own embed surface before Cobalt:
   old.reddit answered curl with 200 and node's `fetch` with 403, same URL, same
   user agent. Twenty minutes went into "reddit blocks us" that was really "reddit
   blocks this client". The embed host answers both.
+- **The walled host's block was mis-diagnosed as an address block, by this file's
+  own predecessor.** Running the Worker locally (`wrangler dev`) settled it: from
+  one machine, one IP, one set of headers, node's fetch gets the real 8 KB embed
+  page and workerd gets the same 369-byte stub production gets. The wall keys on
+  the client, not the address — so no header set fixes it, and neither would a
+  different datacenter. Sending a full browser header set from the Worker was
+  tried and changed nothing. That host stays unresolvable from Cloudflare until
+  something else fetches the page; the code says so in the error.
 - Assumed the public Cobalt instance list could be refreshed from the community
   directory. Both directory hosts are dead (DNS failure), so there is no list to
   refresh — the fix had to be per-platform code, not configuration.
@@ -81,3 +89,6 @@ Each of those platforms now reads its own embed surface before Cobalt:
 - Reach for a per-platform endpoint before adding another dependency on a shared
   public resolver: the resolver's address is a single point of failure that no
   header can fix.
+- Verify extractor work in `wrangler dev`, not only in vitest. It is the only
+  local place the real runtime's fetch is used, and at least one origin treats it
+  differently from node's.
