@@ -1,5 +1,6 @@
 import { http } from './httpClient'
 import {
+  decodeEntities,
   firstTagAttr,
   hasTag,
   metaContent,
@@ -169,6 +170,174 @@ async function discoverResolverBase(): Promise<string | null> {
   }
 }
 
+/**
+ * The user agent every extractor sends unless a host demands otherwise. At
+ * module scope because the helpers below the class need it too — the class
+ * reads this same constant.
+ */
+const BROWSER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+/**
+ * Read a recipe's page from wherever it will answer: the host itself first,
+ * a relay only if that fails. See the call site in `tryPageScrape`.
+ */
+async function fetchPageDirectThenRelay(target: string): Promise<string | null> {
+  try {
+    const response = await fetch(target, {
+      headers: {
+        'User-Agent': BROWSER_AGENT,
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (response.ok) {
+      const html = await readCappedText(response)
+      // A stub is not the page; fall through to the relay rather than feeding
+      // the recipe markup that cannot contain what it is looking for.
+      if (html && !looksLikeBotWall(html)) return html
+    }
+  } catch {
+    // Network failure is the same news as a wall here: try the relay.
+  }
+  return fetchThroughRelay(target)
+}
+
+/**
+ * Sent to hosts that serve their real markup only to a link crawler.
+ *
+ * Threads (and Meta's surfaces generally) answer a browser user agent with the
+ * client-rendered app shell, which contains no media at all. The crawler view
+ * is the same page the site publishes for link previews.
+ */
+const LINK_CRAWLER_AGENT =
+  'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
+
+/** Vimeo's config ships several thumbnail sizes under unpredictable keys. */
+function vimeoThumb(thumbs: Record<string, string> | undefined): string {
+  const t = thumbs ?? {}
+  return t.base || t['1280'] || t['960'] || t['640'] || ''
+}
+
+/**
+ * The `packaged-media-json` attribute of a reddit embed, parsed. Shortest
+ * rendition first, so a caller picks by taking an end of the list.
+ *
+ * Read by locating the attribute rather than by scanning the page: it sits
+ * past 300 KB of markup, and the value is one HTML-escaped JSON string with no
+ * bare quote inside it, so the next `"` is reliably its end.
+ */
+function redditPackagedJson(html: string): {
+  duration?: number
+  permutations?: Array<{
+    source?: { url?: string; dimensions?: { height?: number } }
+  }>
+} | null {
+  const marker = 'packaged-media-json="'
+  const start = html.indexOf(marker)
+  if (start === -1) return null
+  const end = html.indexOf('"', start + marker.length)
+  if (end === -1) return null
+  try {
+    const parsed = JSON.parse(
+      decodeEntities(html.slice(start + marker.length, end)),
+    )
+    return parsed?.playbackMp4s ?? null
+  } catch {
+    return null
+  }
+}
+
+function redditPackagedMp4s(html: string): Array<{ url: string; height: number }> {
+  const permutations = redditPackagedJson(html)?.permutations ?? []
+  return permutations
+    .map((p) => ({
+      url: decodeEntities(p?.source?.url ?? ''),
+      height: p?.source?.dimensions?.height ?? 0,
+    }))
+    .filter((r) => r.url)
+    .sort((a, b) => a.height - b.height)
+}
+
+function redditPackagedDuration(html: string): number {
+  return redditPackagedJson(html)?.duration ?? 0
+}
+
+/**
+ * The slug of a Twitch *clip*, from either shape Twitch hands out. Everything
+ * else on the domain — VODs, channels, collections — returns null: their media
+ * is an HLS manifest, which is not a file this deployment can produce.
+ */
+export function parseTwitchClipSlug(url: string): string | null {
+  const patterns = [
+    /clips\.twitch\.tv\/([\w-]+)/,
+    /twitch\.tv\/(?:[\w-]+\/)?clip\/([\w-]+)/,
+  ]
+  for (const pattern of patterns) {
+    const slug = pattern.exec(url)?.[1]
+    if (slug) return slug
+  }
+  return null
+}
+
+/**
+ * A pin as the widget API describes it. Only the fields read here are typed;
+ * `video_list` is a map of rendition name to file, not an array.
+ */
+interface PinterestRendition {
+  url?: string
+  width?: number
+  height?: number
+}
+interface PinterestPin {
+  grid_title?: string
+  description?: string
+  pinner?: { username?: string }
+  images?: Record<string, PinterestRendition>
+  videos?: { video_list?: Record<string, PinterestRendition> }
+  story_pin_data?: {
+    pages?: Array<{
+      blocks?: Array<{ video?: { video_list?: Record<string, PinterestRendition> } }>
+    }>
+  }
+}
+
+/** Tallest rendition that is a file rather than a manifest. */
+function tallestFile(
+  list: Record<string, PinterestRendition> | undefined,
+): string | null {
+  const files = Object.values(list ?? {}).filter(
+    (r): r is PinterestRendition & { url: string } =>
+      Boolean(r?.url) && !/\.(m3u8|mpd)(\?|$)/i.test(r.url as string),
+  )
+  if (files.length === 0) return null
+  return files.sort((a, b) => (a.height ?? 0) - (b.height ?? 0)).pop()!.url
+}
+
+/**
+ * A video pin keeps its renditions in `videos`; an idea pin keeps one per page
+ * block instead, which is why both are read before giving up.
+ */
+function bestPinterestVideo(pin: PinterestPin): string | null {
+  const direct = tallestFile(pin.videos?.video_list)
+  if (direct) return direct
+  for (const page of pin.story_pin_data?.pages ?? []) {
+    for (const block of page.blocks ?? []) {
+      const fromBlock = tallestFile(block.video?.video_list)
+      if (fromBlock) return fromBlock
+    }
+  }
+  return null
+}
+
+/** `orig` when the pin has one, else the largest sized rendition. */
+function bestPinterestImage(pin: PinterestPin): string | null {
+  const images = pin.images ?? {}
+  if (images.orig?.url) return images.orig.url
+  return tallestFile(images)
+}
+
 // Loose shapes for Instagram's GraphQL / embed `shortcode_media` payload.
 // Only the fields we actually read are typed; everything else is ignored.
 interface IgMediaNode {
@@ -187,13 +356,86 @@ interface IgShortcodeMedia extends IgMediaNode {
   video_duration?: number
 }
 
-// Minimal shapes for the private reels_media API used by the story extractor.
-interface IgStoryItem {
-  pk?: string | number
-  id?: string
+/**
+ * Minimal shape of one item from Instagram's private media APIs — the same
+ * object comes back from `/api/v1/media/<id>/info/` (posts and reels) and from
+ * `/api/v1/feed/reels_media/` (stories), which is why one interface covers
+ * both. Only the fields we read are typed.
+ */
+interface IgMediaInfoItem {
+  user?: { username?: string }
+  caption?: { text?: string }
   video_versions?: Array<{ url?: string }>
   image_versions2?: { candidates?: Array<{ url?: string }> }
   video_duration?: number
+  carousel_media?: IgMediaInfoItem[]
+}
+
+// A story item is a media item that also carries its position in the reel.
+interface IgStoryItem extends IgMediaInfoItem {
+  pk?: string | number
+  id?: string
+}
+
+/**
+ * A shortcode is base64 (URL alphabet) over the media's numeric id, which is
+ * what the private media API is keyed on — so this conversion is pure
+ * arithmetic and needs no lookup request.
+ */
+const IG_SHORTCODE_ALPHABET =
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+
+/**
+ * BigInt rather than Number: a media id is ~19 digits and overflows a double
+ * well before the last character. Written as `BigInt(64)` rather than the `64n`
+ * literal because tsconfig targets ES2017 for the phones this site is built
+ * for; the values themselves only ever exist server-side.
+ */
+export function instagramMediaId(shortcode: string): string | null {
+  if (!shortcode) return null
+  const base = BigInt(64)
+  let id = BigInt(0)
+  for (const char of shortcode) {
+    const value = IG_SHORTCODE_ALPHABET.indexOf(char)
+    if (value === -1) return null
+    id = id * base + BigInt(value)
+  }
+  return id.toString()
+}
+
+/**
+ * One media-API item as a `shortcode_media` node.
+ *
+ * The two APIs describe the same media in different vocabularies: the private
+ * one lists renditions (`video_versions`, `image_versions2.candidates`, largest
+ * first), the GraphQL one names a single URL per field. Translating rather than
+ * writing a second parser is what keeps carousels, captions and the
+ * poster-is-not-a-photo rule in `parseInstagramMedia` alone.
+ */
+function igInfoNode(item: IgMediaInfoItem): IgMediaNode {
+  const video = item.video_versions?.[0]?.url
+  return {
+    is_video: Boolean(video),
+    video_url: video,
+    display_url: item.image_versions2?.candidates?.[0]?.url,
+  }
+}
+
+function igInfoToShortcodeMedia(item: IgMediaInfoItem): IgShortcodeMedia {
+  const children = item.carousel_media
+  return {
+    ...igInfoNode(item),
+    owner: { username: item.user?.username },
+    edge_media_to_caption: { edges: [{ node: { text: item.caption?.text } }] },
+    video_duration: item.video_duration,
+    ...(children && children.length > 0
+      ? {
+          edge_sidecar_to_children: {
+            edges: children.map((child) => ({ node: igInfoNode(child) })),
+          },
+        }
+      : {}),
+  }
 }
 interface IgReel {
   user?: { username?: string }
@@ -282,8 +524,7 @@ export class Downloader {
     this.credentialed = opts?.credentialed === true
   }
 
-  private readonly userAgent =
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  private readonly userAgent = BROWSER_AGENT
 
   // Browser-renderable video codecs (bvc2 / ByteDance proprietary codec is NOT in this list)
   private readonly supportedVideoCodecs = [
@@ -568,11 +809,31 @@ export class Downloader {
     url: string,
     platform: SupportedPlatform,
   ): Promise<VideoData> {
+    /**
+     * The platform's own endpoint, tried before Cobalt.
+     *
+     * These used to be Cobalt's job, and it is the reason this list exists at
+     * all — but the one open public instance now answers `api.fetch.fail` or
+     * `api.fetch.critical` for most of them (its address is blocked by the
+     * origins), and with no self-hosted instance configured that left these
+     * platforms with no working path. Each of these reads the surface the
+     * platform serves to an embedder, which is open in a way the app shell is
+     * not. Cobalt stays behind them: when it does answer it tunnels the media,
+     * which is still the better result.
+     */
+    const ownEndpoint: Partial<
+      Record<SupportedPlatform, () => Promise<VideoData | null>>
+    > = {
+      vimeo: () => this.tryVimeo(url),
+      twitch: () => this.tryTwitchClip(url),
+      threads: () => this.tryThreadsEmbed(url),
+      pinterest: () => this.tryPinterestPin(url),
+      reddit: () => this.tryRedditEmbed(url),
+    }
+
     const methods: Array<() => Promise<VideoData | null>> = []
-    // Vimeo has a clean, login-free config endpoint that returns direct mp4
-    // renditions — more reliable than the public Cobalt instance (which doesn't
-    // resolve Vimeo), so try it first.
-    if (platform === 'vimeo') methods.push(() => this.tryVimeo(url))
+    const own = ownEndpoint[platform]
+    if (own) methods.push(own)
     methods.push(() => this.tryCobaltInstances(url))
     // Last resort, and the only extractor that runs with nothing configured.
     // Cobalt's public instance serves a fixed platform list, so before this a
@@ -585,7 +846,14 @@ export class Downloader {
     for (const method of methods) {
       try {
         const result = await method()
-        if (result && (result.downloadUrl || (result.images?.length ?? 0) > 0)) {
+        // `embedUrl` counts: a video that can only be played (Vimeo without
+        // progressive renditions) is still a better answer than an error.
+        if (
+          result &&
+          (result.downloadUrl ||
+            result.embedUrl ||
+            (result.images?.length ?? 0) > 0)
+        ) {
           return result
         }
       } catch (e) {
@@ -650,24 +918,47 @@ export class Downloader {
     // resolve against.
     let media = extractMediaFromHtml(html, finalUrl)
 
+    // A page can advertise a URL that does not serve — one host publishes a
+    // 2160p download link for every clip and answers it with an HTML error
+    // page. Verified here rather than trusted, so the fallbacks below get their
+    // turn instead of the visitor getting a dead player.
+    if (
+      media &&
+      !media.isStream &&
+      !(await this.verifyStreamReachable(media.mediaUrl, { rejectHtml: true }))
+    ) {
+      media = null
+    }
+
     // Distinguish "this page has no video we can read" from "this site did not
     // show us the page at all", which are the same failure to the code above
     // and completely different news to the user.
-    if (!media && looksLikeBotWall(html)) {
-      // Blocked: the site did not show us the page. Two ways round it, and the
-      // recipe goes first because it is the one that works on the hosts that
-      // wall hardest — those tend to wall the watch page everywhere while
-      // leaving an embed open, and an embed is enough to build the link.
-      media = await resolveByRule(url, fetchThroughRelay)
+    const walled = looksLikeBotWall(html)
+    if (!media) {
+      // The recipe first: it is host-specific (a no-op for any host without
+      // one), it probes a ladder of renditions rather than trusting a link, and
+      // it is the path that works on the hosts that wall hardest — those tend
+      // to wall the watch page while leaving an embed open, and an embed is
+      // enough to build the link.
+      //
+      // Its page is fetched DIRECTLY first, and only relayed if that comes up
+      // empty. Handing it the relay alone was the bug: a walled host walls its
+      // watch page, not its embed, so the direct fetch is the one that works —
+      // while every free relay now refuses to fetch on behalf of a Worker at
+      // all, which made the whole recipe path dead code.
+      media = await resolveByRule(url, fetchPageDirectThenRelay)
 
       // Otherwise read the watch page itself from an address the site will
-      // answer, and extract from that exactly as if we had fetched it.
-      if (!media) {
+      // answer, and extract from that exactly as if we had fetched it. Only
+      // worth a request when the page we did get was a wall.
+      if (!media && walled) {
         const relayed = await fetchThroughRelay(url)
         if (relayed) media = extractMediaFromHtml(relayed, url)
       }
 
-      if (!media) throw new OriginBlockedError(new URL(url).hostname.replace(/^www\./, ''))
+      if (!media && walled) {
+        throw new OriginBlockedError(new URL(url).hostname.replace(/^www\./, ''))
+      }
     }
 
     if (!media || media.isStream) return null
@@ -716,10 +1007,30 @@ export class Downloader {
       }
     }
 
+    const v0 = data.video ?? {}
     const progressive = (data.request?.files?.progressive ?? []).filter(
       (f): f is { url: string; height?: number } => Boolean(f?.url),
     )
-    if (progressive.length === 0) return null
+
+    // Vimeo has been retiring progressive renditions: many videos now ship only
+    // DASH and HLS, which are manifests, and turning one into a file needs
+    // ffmpeg. Rather than fail — or, as this used to do by falling through to
+    // the page scraper, hand back the player page itself as if it were a video
+    // — offer the embed. Playable, honestly not downloadable.
+    if (progressive.length === 0) {
+      return {
+        id,
+        title: v0.title || 'Vimeo Video',
+        url,
+        thumbnail: vimeoThumb(v0.thumbs),
+        duration: Math.round(v0.duration || 0),
+        author: v0.owner?.name || 'Vimeo',
+        description: '',
+        downloadUrl: '',
+        embedUrl: `https://player.vimeo.com/video/${id}`,
+        isPhotoCarousel: false,
+      }
+    }
 
     const sorted = [...progressive].sort(
       (a, b) => (a.height ?? 0) - (b.height ?? 0),
@@ -727,20 +1038,236 @@ export class Downloader {
     const chosen =
       this.videoQuality === 'sd' ? sorted[0] : sorted[sorted.length - 1]
 
-    const v = data.video ?? {}
-    const thumbs = v.thumbs ?? {}
-    const thumbnail =
-      thumbs.base || thumbs['1280'] || thumbs['640'] || thumbs['960'] || ''
-
     return {
       id,
-      title: v.title || 'Vimeo Video',
+      title: v0.title || 'Vimeo Video',
       url,
-      thumbnail,
-      duration: Math.round(v.duration || 0),
-      author: v.owner?.name || 'Vimeo',
+      thumbnail: vimeoThumb(v0.thumbs),
+      duration: Math.round(v0.duration || 0),
+      author: v0.owner?.name || 'Vimeo',
       description: '',
       downloadUrl: chosen.url,
+      isPhotoCarousel: false,
+    }
+  }
+
+  /**
+   * Twitch clips, via the same public GraphQL endpoint the Twitch web player
+   * uses. A clip's renditions are plain MP4s on CloudFront, so unlike a VOD
+   * (HLS, which needs ffmpeg to save) a clip is downloadable as-is.
+   *
+   * The `sourceURL` alone answers 401 — it has to carry the signature and token
+   * from the same response, which is why the access token is asked for in the
+   * one query rather than assumed unnecessary.
+   *
+   * VOD and channel links return null: their media is a manifest, and this
+   * deployment cannot mux one into a file.
+   */
+  private async tryTwitchClip(url: string): Promise<VideoData | null> {
+    const slug = parseTwitchClipSlug(url)
+    if (!slug) return null
+
+    const response = await http.post(
+      'https://gql.twitch.tv/gql',
+      {
+        query: `{ clip(slug: "${slug}") { title durationSeconds thumbnailURL broadcaster { displayName } videoQualities { quality sourceURL } playbackAccessToken(params: {platform:"web", playerBackend:"mediaplayer", playerType:"site"}) { signature value } } }`,
+      },
+      {
+        // The web client's own id. Public, shipped in Twitch's own JS bundle,
+        // and required on every unauthenticated GQL call.
+        headers: { 'Client-ID': 'kimne78kx3ncx6brgo4mv6wki5h1ko' },
+        timeout: 15000,
+        validateStatus: () => true,
+      },
+    )
+    if (response.status !== 200) return null
+
+    const clip = response.data?.data?.clip as
+      | {
+          title?: string
+          durationSeconds?: number
+          thumbnailURL?: string
+          broadcaster?: { displayName?: string }
+          videoQualities?: Array<{ quality?: string; sourceURL?: string }>
+          playbackAccessToken?: { signature?: string; value?: string }
+        }
+      | undefined
+
+    const renditions = (clip?.videoQualities ?? [])
+      .filter((q): q is { quality: string; sourceURL: string } =>
+        Boolean(q?.sourceURL),
+      )
+      .sort((a, b) => parseInt(a.quality, 10) - parseInt(b.quality, 10))
+    if (renditions.length === 0) return null
+
+    const chosen =
+      this.videoQuality === 'sd'
+        ? renditions[0]
+        : renditions[renditions.length - 1]
+    const token = clip?.playbackAccessToken
+    if (!token?.signature || !token?.value) return null
+
+    return {
+      id: slug,
+      title: clip?.title || 'Twitch clip',
+      url,
+      thumbnail: clip?.thumbnailURL || '',
+      duration: Math.round(clip?.durationSeconds || 0),
+      author: clip?.broadcaster?.displayName || 'Twitch',
+      description: '',
+      downloadUrl: `${chosen.sourceURL}?sig=${token.signature}&token=${encodeURIComponent(token.value)}`,
+      isPhotoCarousel: false,
+    }
+  }
+
+  /**
+   * Reddit, via the embed view of a post.
+   *
+   * Reddit's own pages and its JSON API both refuse us, and the raw
+   * `v.redd.it` renditions are DASH: video and audio in separate files, which
+   * needs muxing this deployment cannot do. The embed carries the answer to
+   * both problems — a `packaged-media-json` attribute listing pre-muxed MP4s at
+   * several heights, signed and served to anyone.
+   *
+   * The attribute sits ~310 KB into the page, past the generic scraper's scan
+   * window, which is why this reads it deliberately rather than leaving reddit
+   * to `tryPageScrape`.
+   */
+  private async tryRedditEmbed(url: string): Promise<VideoData | null> {
+    // Share links (/s/…), redd.it and v.redd.it all redirect to the canonical
+    // permalink, which is the only shape the embed host answers.
+    const isPermalink = /reddit\.com\/(?:r|user|u)\/[\w.-]+\/comments\//.test(url)
+    const permalink = isPermalink ? url : await this.resolveRedirect(url)
+    const path = /reddit\.com\/((?:r|user|u)\/[\w.-]+\/comments\/[\w]+)/.exec(
+      permalink,
+    )?.[1]
+    if (!path) return null
+
+    const response = await http.get(`https://embed.reddit.com/${path}/`, {
+      headers: {
+        'User-Agent': this.userAgent,
+        Accept: 'text/html,application/xhtml+xml',
+        // The embed is meant to be framed by a third party, and answers as one.
+        Referer: 'https://www.reddit.com/',
+      },
+      timeout: 20000,
+      validateStatus: () => true,
+    })
+    if (response.status !== 200) return null
+
+    const html = typeof response.data === 'string' ? response.data : ''
+    const mp4s = redditPackagedMp4s(html)
+    if (mp4s.length === 0) return null
+
+    const chosen = this.videoQuality === 'sd' ? mp4s[0] : mp4s[mp4s.length - 1]
+    const slug = /comments\/[\w]+\/([\w_]+)/.exec(permalink)?.[1] ?? ''
+    const subreddit = /\/r\/([\w.-]+)/.exec(permalink)?.[1] ?? 'reddit'
+
+    return {
+      id: /comments\/([\w]+)/.exec(permalink)?.[1] ?? path,
+      // The embed page's own <title> is the site's name on every post, so the
+      // permalink slug — which is the title, lowercased and hyphenated — is the
+      // better source.
+      title: slug ? slug.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()) : 'Reddit video',
+      url,
+      thumbnail: decodeEntities(
+        /https:\/\/(?:preview|external-preview)\.redd\.it\/[^"'\s\\]+/.exec(html)?.[0] ?? '',
+      ),
+      duration: Math.round(redditPackagedDuration(html)),
+      author: `r/${subreddit}`,
+      description: '',
+      downloadUrl: chosen.url,
+      isPhotoCarousel: false,
+    }
+  }
+
+  /**
+   * Threads, via the `/embed` view of a post.
+   *
+   * The post URL itself answers with the app shell — a quarter-megabyte of
+   * JavaScript and no media, which is why every scrape of it came up empty. The
+   * embed view is server-rendered markup with a real `<video>` in it, and it is
+   * only served to a client that identifies as a link crawler; a browser user
+   * agent gets the shell here too.
+   *
+   * Extraction itself is `extractMediaFromHtml`, the same scorer the generic
+   * page scrape uses — this method only knows which URL to ask for and how to
+   * ask.
+   */
+  private async tryThreadsEmbed(url: string): Promise<VideoData | null> {
+    const embedUrl = `${url.split(/[?#]/)[0].replace(/\/$/, '')}/embed`
+    const response = await http.get(embedUrl, {
+      headers: {
+        'User-Agent': LINK_CRAWLER_AGENT,
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      timeout: 15000,
+      validateStatus: () => true,
+    })
+    if (response.status !== 200) return null
+
+    const html = typeof response.data === 'string' ? response.data : ''
+    const media = extractMediaFromHtml(html, embedUrl)
+    if (!media || media.isStream) return null
+
+    const author = /threads\.(?:net|com)\/@([\w.]+)/.exec(url)?.[1] ?? 'threads'
+    return {
+      id: /post\/([\w-]+)/.exec(url)?.[1] || media.mediaUrl.slice(-32),
+      title: media.title === 'Threads' ? `Threads post by @${author}` : media.title,
+      url,
+      thumbnail: media.thumbnail,
+      duration: 0,
+      author,
+      description: '',
+      downloadUrl: media.mediaUrl,
+      isPhotoCarousel: false,
+    }
+  }
+
+  /**
+   * Pinterest, via the widget API its own embed script calls.
+   *
+   * Pin pages are a megabyte of client-rendered markup with the media nowhere
+   * in it; this endpoint answers with the pin as JSON — video renditions when
+   * it is a video pin, image sizes when it is not. Both are useful: an image
+   * pin becomes a one-image gallery rather than a failure.
+   */
+  private async tryPinterestPin(url: string): Promise<VideoData | null> {
+    const id = /\/pin\/(\d+)/.exec(url)?.[1]
+    if (!id) return null
+
+    const response = await http.get(
+      `https://widgets.pinterest.com/v3/pidgets/pins/info/?pin_ids=${id}`,
+      {
+        headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
+        timeout: 15000,
+        validateStatus: () => true,
+      },
+    )
+    if (response.status !== 200) return null
+
+    // The endpoint has answered with both shapes over its life; neither is
+    // documented, so read both rather than betting on one.
+    const pin = (response.data?.data?.[0] ?? response.data?.data?.pins?.[0]) as
+      | PinterestPin
+      | undefined
+    if (!pin) return null
+
+    const video = bestPinterestVideo(pin)
+    const image = bestPinterestImage(pin)
+    if (!video && !image) return null
+
+    const title = pin.grid_title || pin.description?.trim() || 'Pinterest pin'
+    return {
+      id,
+      title: title.slice(0, 100),
+      url,
+      thumbnail: image || '',
+      duration: 0,
+      author: pin.pinner?.username || 'Pinterest',
+      description: pin.description?.trim() || '',
+      downloadUrl: video || '',
+      images: !video && image ? [{ id: `${id}_0`, url: image, thumbnail: image }] : undefined,
       isPhotoCarousel: false,
     }
   }
@@ -926,11 +1453,14 @@ export class Downloader {
     //   1. Embed page — fast, login-free, no authenticated hit; resolves the
     //      majority of public posts (and now bails rather than misrendering a
     //      video as a photo when its JSON doesn't parse).
-    //   2. GraphQL — the workhorse fallback: token-authenticated, returns a
-    //      definitive video_url, and (with IG_SESSIONID set) the ONLY path that
-    //      resolves login-gated posts. Tried after the embed so the burner
+    //   2. The private media API — the only path that still resolves anything
+    //      Instagram will not serve anonymously, and the only one the session
+    //      buys anything on. No-ops (returns null, sends nothing) for an
+    //      uncredentialed resolve, and tried after the embed so the burner
     //      account is only used when actually needed.
-    //   3. Cobalt — the datacenter-reachable fallback. Instagram's own signed
+    //   3. GraphQL — kept as a fallback, but currently answers every doc_id
+    //      request with "execution error" (see tryInstagramMediaInfo).
+    //   4. Cobalt — the datacenter-reachable fallback. Instagram's own signed
     //      video CDN URLs (from embed/GraphQL) are frequently refused with an
     //      HTTP 500/403 when re-fetched from a datacenter IP (e.g. Vercel), even
     //      though extraction succeeded — so the /api/video proxy can't stream
@@ -941,6 +1471,10 @@ export class Downloader {
       () =>
         shortcode
           ? this.tryInstagramEmbed(shortcode, url)
+          : Promise.resolve(null),
+      () =>
+        shortcode
+          ? this.tryInstagramMediaInfo(shortcode, url)
           : Promise.resolve(null),
       () =>
         shortcode
@@ -1160,8 +1694,16 @@ export class Downloader {
    * stream is live without buffering the whole file. (Cobalt tunnels ignore the
    * Range header and would otherwise stream the entire video into memory here,
    * and then again when the client fetches it for real.)
+   *
+   * `rejectHtml` additionally refuses a response that is a web page. Bytes are
+   * the right test for a tunnel (which declares no useful type), but a URL
+   * scraped off a page can be answered with an error page, and an error page
+   * has bytes too.
    */
-  private async verifyStreamReachable(url: string): Promise<boolean> {
+  private async verifyStreamReachable(
+    url: string,
+    opts?: { rejectHtml?: boolean },
+  ): Promise<boolean> {
     // Native fetch rather than axios: axios's `responseType: 'stream'` hands
     // back a Node Readable, which its fetch adapter cannot produce and which
     // does not exist on workerd. A web ReadableStream works identically on both
@@ -1183,8 +1725,15 @@ export class Downloader {
       })
 
       const statusOk = response.status === 200 || response.status === 206
+      const isPage = (response.headers.get('content-type') ?? '').includes(
+        'text/html',
+      )
       // An explicit Content-Length: 0 is the empty-tunnel signature — reject early.
-      if (!statusOk || response.headers.get('content-length') === '0') {
+      if (
+        !statusOk ||
+        response.headers.get('content-length') === '0' ||
+        (opts?.rejectHtml && isPage)
+      ) {
         await response.body?.cancel()
         return false
       }
@@ -2082,6 +2631,62 @@ export class Downloader {
       expires: now + 5 * 60 * 1000,
     }
     return { csrf, lsd }
+  }
+
+  /**
+   * The credentialed Instagram extractor: the private media API the logged-in
+   * web client itself calls, keyed on the numeric media id the shortcode
+   * encodes (`instagramMediaId`, no lookup request needed).
+   *
+   * This exists because the GraphQL extractor below stopped resolving posts —
+   * Instagram now answers its `doc_id` with `{"errors":[{"message":"execution
+   * error"}],"data":null}` whether or not a session is attached, which left a
+   * credentialed resolve with nothing the anonymous path did not already have.
+   * That is what made the session look broken: it was valid, and every path
+   * that could have used it was dead.
+   *
+   * Session-only by design, and not merely as a policy: without cookies the
+   * same endpoint answers 200 with a ~600 KB login wall carrying no media, so
+   * for an anonymous resolve this is a large download that cannot succeed.
+   * Returning null up front keeps it off the free path entirely.
+   */
+  private async tryInstagramMediaInfo(
+    shortcode: string,
+    originalUrl: string,
+  ): Promise<VideoData | null> {
+    if (!this.instagramSessionId) return null
+    const mediaId = instagramMediaId(shortcode)
+    if (!mediaId) return null
+
+    const { csrf } = await this.getInstagramTokens()
+    const response = await http.get(
+      `https://www.instagram.com/api/v1/media/${mediaId}/info/`,
+      {
+        headers: {
+          'User-Agent': this.userAgent,
+          'X-IG-App-ID': this.instagramAppId,
+          Accept: '*/*',
+          Referer: `https://www.instagram.com/p/${shortcode}/`,
+          Cookie: this.instagramCookieWith(csrf),
+        },
+        timeout: 20000,
+        validateStatus: () => true,
+      },
+    )
+
+    // A rejected session answers with HTML (or JSON with no items), which the
+    // optional chaining turns into a null result and a fall-through to the next
+    // method — the graceful degradation the credential gate promises.
+    const item: IgMediaInfoItem | undefined = response.data?.items?.[0]
+    if (!item) return null
+
+    const parsed = this.parseInstagramMedia(
+      igInfoToShortcodeMedia(item),
+      shortcode,
+      originalUrl,
+    )
+    if (!parsed.downloadUrl && (parsed.images?.length ?? 0) === 0) return null
+    return parsed
   }
 
   /**

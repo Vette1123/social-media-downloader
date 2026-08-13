@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from 'vitest'
-import { Downloader } from './downloader'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Downloader, instagramMediaId } from './downloader'
 
 /**
  * The one line that decides whether our own Instagram session leaves this
@@ -218,5 +218,97 @@ describe('the CSRF token precedence', () => {
   it('sends no cookie at all without the credential, harvested token or not', () => {
     process.env.IG_SESSIONID = COOKIE
     expect(withCsrf(new Downloader(), 'harvested')).toBe('')
+  })
+})
+
+/**
+ * The private media API is keyed on the numeric media id, and the shortcode is
+ * base64 (URL alphabet) over exactly that number — so the conversion replaces a
+ * lookup request rather than merely formatting one.
+ */
+describe('the Instagram media id', () => {
+  it('decodes a shortcode to its numeric id', () => {
+    expect(instagramMediaId('Db9Qn-lgG3X')).toBe('3962396363160841687')
+  })
+
+  it('handles both extra alphabet characters', () => {
+    // '-' is 62 and '_' is 63; a plain base64 decoder gets these two wrong.
+    expect(instagramMediaId('-')).toBe('62')
+    expect(instagramMediaId('_')).toBe('63')
+  })
+
+  it('rejects anything the alphabet does not cover', () => {
+    expect(instagramMediaId('has/slash')).toBeNull()
+    expect(instagramMediaId('')).toBeNull()
+  })
+})
+
+/**
+ * The extractor that actually uses the session. It must make no request at all
+ * without one: uncredentialed, the endpoint answers with a ~600 KB login wall
+ * carrying no media, which is a large download that can never succeed.
+ */
+describe('the credentialed Instagram extractor', () => {
+  const url = 'https://www.instagram.com/reel/Db9Qn-lgG3X/'
+
+  function mediaInfo(downloader: Downloader) {
+    return (
+      downloader as unknown as {
+        tryInstagramMediaInfo(shortcode: string, url: string): Promise<unknown>
+      }
+    ).tryInstagramMediaInfo('Db9Qn-lgG3X', url)
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('does not reach Instagram without the credential', async () => {
+    process.env.IG_SESSIONID = COOKIE
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+
+    await expect(mediaInfo(new Downloader())).resolves.toBeNull()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('maps a credentialed reel response onto the shared shape', async () => {
+    process.env.IG_SESSIONID = COOKIE
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json({
+          items: [
+            {
+              user: { username: 'someone' },
+              caption: { text: 'a caption' },
+              video_duration: 3.25,
+              video_versions: [{ url: 'https://cdn.example/clip.mp4' }],
+              image_versions2: { candidates: [{ url: 'https://cdn.example/poster.jpg' }] },
+            },
+          ],
+        }),
+      ),
+    )
+
+    expect(await mediaInfo(new Downloader({ credentialed: true }))).toMatchObject({
+      title: 'a caption',
+      author: 'someone',
+      duration: 3,
+      downloadUrl: 'https://cdn.example/clip.mp4',
+      thumbnail: 'https://cdn.example/poster.jpg',
+      url,
+    })
+  })
+
+  /** A rejected or expired session answers with no items; that must degrade. */
+  it('returns null rather than throwing when the session is refused', async () => {
+    process.env.IG_SESSIONID = COOKIE
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('<html>login</html>', { status: 200 })),
+    )
+
+    await expect(mediaInfo(new Downloader({ credentialed: true }))).resolves.toBeNull()
   })
 })
