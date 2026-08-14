@@ -56,15 +56,27 @@ const platformPatterns: Record<
     // Short watch links
     /^(https?:\/\/)?(www\.)?fb\.watch\/[\w-]+/,
     // /watch/?v=… and ?v=… variants
-    /^(https?:\/\/)?(www\.|web\.|m\.)?facebook\.com\/watch\/?\?[^ ]*v=\d+/,
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/watch\/?\?[^ ]*v=\d+/,
     // /<page>/videos/<id> and /<page>/videos/<slug>/<id>
-    /^(https?:\/\/)?(www\.|web\.|m\.)?facebook\.com\/[\w.-]+\/videos\/(?:[\w.-]+\/)?\d+/,
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/[\w.-]+\/videos\/(?:[\w.-]+\/)?\d+/,
     // Reels
-    /^(https?:\/\/)?(www\.|web\.|m\.)?facebook\.com\/reel\/\d+/,
-    // Share links (resolved to canonical before extraction): /share/v/…, /share/r/…
-    /^(https?:\/\/)?(www\.|web\.|m\.)?facebook\.com\/share\/[vr]\/[\w-]+/,
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/reel\/\d+/,
+    // Share links, resolved to canonical before extraction. Every letter
+    // Facebook's share sheet uses is accepted — /v/ and /r/ are video and reel,
+    // /p/ is a post, which is frequently a post *of* a video.
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/share\/[a-z]\/[\w-]+/,
+    // A post on a profile or page, which carries its video inline
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/[\w.-]+\/posts\/[\w-]+/,
+    // The same post inside a group
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/groups\/[\w.-]+\/(?:posts|permalink|videos)\/[\w-]+/,
+    // Photos, which resolve to the image rather than to a video
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/photo(?:\.php)?\/?\?[^ ]*fbid=\d+/,
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/[\w.-]+\/photos\/[\w.-]+\/\d+/,
+    // Stories. Accepted so the extractor can say what is actually wrong with
+    // them — Facebook serves these only to a logged-in session.
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/stories\/\d+/,
     // Story / permalink video and bare ?v= on the root domain
-    /^(https?:\/\/)?(www\.|web\.|m\.)?facebook\.com\/(?:[\w.-]+\/)?(?:video\.php|story\.php|permalink\.php)\?[^ ]*v?=?\d+/,
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/(?:[\w.-]+\/)?(?:video\.php|story\.php|permalink\.php)\?[^ ]*v?=?\d+/,
   ],
   // The platforms below are resolved through the generic Cobalt/yt-dlp path
   // (see Downloader.downloadGeneric) — no bespoke extractor, so the patterns

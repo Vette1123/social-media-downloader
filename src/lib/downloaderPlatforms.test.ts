@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Downloader, firstResult, parseTwitchClipSlug } from './downloader'
+import { detectPlatform } from './validator'
 
 /**
  * The platforms that have no bespoke extractor upstream of them and used to be
@@ -21,6 +22,11 @@ type PrivateDownloader = {
   tryVimeo(url: string): Promise<VideoDataLike | null>
   resolveRedirect(url: string): Promise<string>
   parseFacebookHtml(html: string, url: string): VideoDataLike | null
+  downloadFacebook(url: string): Promise<VideoDataLike>
+  tryFacebookPhoto(
+    resolvedUrl: string,
+    originalUrl: string,
+  ): Promise<VideoDataLike | null>
 }
 interface VideoDataLike {
   title: string
@@ -347,6 +353,72 @@ describe('the Facebook short-link resolver', () => {
     expect((init.headers as Record<string, string>)['User-Agent']).toContain(
       'Chrome',
     )
+  })
+})
+
+/**
+ * The link shapes Facebook actually puts on a clipboard, all of which were
+ * answered with "unsupported platform" because the patterns only listed
+ * /videos/, /reel/ and /watch.
+ */
+describe('the Facebook link shapes', () => {
+  it.each([
+    'https://www.facebook.com/share/p/1AbCdEfGh2/',
+    'https://www.facebook.com/someone/posts/pfbid0abc123',
+    'https://www.facebook.com/groups/123456/posts/7891011/',
+    'https://www.facebook.com/photo/?fbid=1234567890&set=a.1',
+    'https://www.facebook.com/someone/photos/a.100/12345678/',
+    'https://www.facebook.com/stories/1234567890123456/',
+    'https://mbasic.facebook.com/reel/1536569814605331',
+    'https://m.facebook.com/watch/?v=10153231379946729',
+  ])('recognises %s', (url) => {
+    expect(detectPlatform(url)).toBe('facebook')
+  })
+
+  it('says why a story cannot be downloaded rather than failing generically', async () => {
+    const spy = stubFetch('')
+    await expect(
+      priv(new Downloader()).downloadFacebook(
+        'https://www.facebook.com/stories/1234567890123456/',
+      ),
+    ).rejects.toThrow(/logged-in account/)
+    // The point of naming it: nothing is even attempted.
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('answers a photo link with the photo', async () => {
+    stubFetch(
+      '<html><head><meta property="og:image" content="https://scontent.example/photo.jpg">' +
+        '<meta property="og:title" content="A photo"></head><body></body></html>',
+    )
+    const result = await priv(new Downloader()).tryFacebookPhoto(
+      'https://www.facebook.com/photo/?fbid=123',
+      'https://www.facebook.com/photo/?fbid=123',
+    )
+    expect(result?.images).toEqual([
+      {
+        id: expect.any(String),
+        url: 'https://scontent.example/photo.jpg',
+        thumbnail: 'https://scontent.example/photo.jpg',
+      },
+    ])
+  })
+
+  /**
+   * Every Facebook page publishes an og:image, the poster frame included — so
+   * the photo path has to refuse anything that is not named as a photo, or a
+   * private video resolves "successfully" as its own thumbnail.
+   */
+  it('refuses to answer a video link with its poster', async () => {
+    const spy = stubFetch(
+      '<html><head><meta property="og:image" content="https://scontent.example/poster.jpg"></head></html>',
+    )
+    const result = await priv(new Downloader()).tryFacebookPhoto(
+      'https://www.facebook.com/reel/1536569814605331/',
+      'https://www.facebook.com/reel/1536569814605331/',
+    )
+    expect(result).toBeNull()
+    expect(spy).not.toHaveBeenCalled()
   })
 })
 

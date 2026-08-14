@@ -276,6 +276,20 @@ export function isFacebookShortLink(url: string): boolean {
 }
 
 /**
+ * A story link. Facebook redirects these to `login.php` for every client,
+ * crawler included — there is no open surface to read, so the extractor says so
+ * instead of trying four paths that cannot work.
+ */
+export function isFacebookStory(url: string): boolean {
+  return /facebook\.com\/stories\//i.test(url)
+}
+
+/** A link that names a photo rather than a video. See `tryFacebookPhoto`. */
+export function isFacebookPhotoLink(url: string): boolean {
+  return /facebook\.com\/(?:photo(?:\.php)?\/?\?|[\w.-]+\/photos\/)/i.test(url)
+}
+
+/**
  * Facebook serves video thumbnails out of one CDN path segment, `/t15.`, which
  * is what separates a poster from the two other images on the same page: a
  * layout spacer on `static.xx.fbcdn.net` and the author's 40x40 avatar under
@@ -1458,8 +1472,19 @@ export class Downloader {
    *   3. Cobalt instances as the community fallback.
    *
    * fb.watch and /share/ links are resolved to their canonical URL first.
+   *
+   * A photo link takes a fourth path of its own — see `tryFacebookPhoto` — and
+   * a story takes none at all: Facebook serves those only to a logged-in
+   * session, so the honest answer is the reason rather than four failed
+   * attempts and a generic error.
    */
   private async downloadFacebook(url: string): Promise<VideoData> {
+    if (isFacebookStory(url)) {
+      throw new Error(
+        'This is a Facebook story — Facebook serves these only to a logged-in account, so they cannot be downloaded here. Public videos, reels and watch links work.',
+      )
+    }
+
     let resolvedUrl = url
     if (
       url.includes('fb.watch') ||
@@ -1477,16 +1502,24 @@ export class Downloader {
         ? [() => this.tryFacebookScrape(resolvedUrl, url)]
         : []),
       () => this.tryCobaltInstances(resolvedUrl),
+      // Last, and only for a link that names a photo: every page here publishes
+      // an `og:image`, so running this any earlier — or on any other link —
+      // would answer a private *video* with its poster frame and call that a
+      // success.
+      () => this.tryFacebookPhoto(resolvedUrl, url),
     ]
 
     for (const method of methods) {
       try {
         const result = await method()
-        if (result && result.downloadUrl) {
+        if (result?.downloadUrl) {
+          // A video answer is a video answer: whatever gallery an extractor
+          // guessed at alongside it is dropped, as it always has been.
           result.isPhotoCarousel = false
           result.images = undefined
           return result
         }
+        if (result?.images?.length) return result
       } catch (e) {
         console.warn('Facebook method failed, trying next...', e)
       }
@@ -1495,6 +1528,44 @@ export class Downloader {
     throw new Error(
       'Could not download this Facebook video. The post may be private, age-restricted, or unavailable.',
     )
+  }
+
+  /**
+   * A Facebook photo, from the `og:image` its page publishes to link crawlers.
+   *
+   * Only ever tried for a link that names a photo (`/photo/?fbid=`,
+   * `/<page>/photos/…`); see the call site. The crawler view is used because
+   * the same page answers a browser with a client-rendered shell.
+   */
+  private async tryFacebookPhoto(
+    resolvedUrl: string,
+    originalUrl: string,
+  ): Promise<VideoData | null> {
+    if (!isFacebookPhotoLink(originalUrl) && !isFacebookPhotoLink(resolvedUrl)) {
+      return null
+    }
+    const response = await http.get(resolvedUrl, {
+      headers: { 'User-Agent': LINK_CRAWLER_AGENT, Accept: 'text/html' },
+      timeout: 15000,
+      validateStatus: () => true,
+    })
+    const html = typeof response.data === 'string' ? response.data : ''
+    const image = metaContent(html, 'og:image')
+    if (!image) return null
+
+    const id = parseVideoId(originalUrl) || Date.now().toString()
+    return {
+      id,
+      title: (metaContent(html, 'og:title') || 'Facebook Photo').slice(0, 100),
+      url: originalUrl,
+      thumbnail: image,
+      duration: 0,
+      author: 'Facebook',
+      description: metaContent(html, 'og:description') || '',
+      downloadUrl: '',
+      isPhotoCarousel: true,
+      images: [{ id: `${id}_0`, url: image, thumbnail: image }],
+    }
   }
 
   /**
@@ -1750,7 +1821,11 @@ export class Downloader {
           ...(referer ? { Referer: referer } : {}),
         },
         responseType: 'arraybuffer',
-        timeout: 12000,
+        // Short on purpose: this probe sits between the visitor and their
+        // result, and its own failure path is "assume the codec is fine". A
+        // slow CDN is therefore worth abandoning rather than waiting out —
+        // measured, the probe answers in 0.2–1.4s when it answers at all.
+        timeout: 2500,
         maxRedirects: 5,
       })
       const bytes = Buffer.from(response.data as ArrayBuffer)
