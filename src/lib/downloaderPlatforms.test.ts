@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Downloader, parseTwitchClipSlug } from './downloader'
+import { Downloader, firstResult, parseTwitchClipSlug } from './downloader'
 
 /**
  * The platforms that have no bespoke extractor upstream of them and used to be
@@ -19,6 +19,8 @@ type PrivateDownloader = {
   tryPinterestPin(url: string): Promise<VideoDataLike | null>
   tryThreadsEmbed(url: string): Promise<VideoDataLike | null>
   tryVimeo(url: string): Promise<VideoDataLike | null>
+  resolveRedirect(url: string): Promise<string>
+  parseFacebookHtml(html: string, url: string): VideoDataLike | null
 }
 interface VideoDataLike {
   title: string
@@ -249,6 +251,102 @@ describe('the Threads embed extractor', () => {
     expect(headers['User-Agent']).toContain('facebookexternalhit')
     expect(result?.downloadUrl).toBe('https://cdn.example/clip.mp4')
     expect(result?.title).toBe('Threads post by @someone')
+  })
+})
+
+/**
+ * The TikTok chain races tikwm against Cobalt rather than waiting on tikwm
+ * first, which is only safe if a loser's null or throw cannot end the race.
+ */
+describe('racing two extractors', () => {
+  const after = <T,>(ms: number, value: T) => () =>
+    new Promise<T>((resolve) => setTimeout(() => resolve(value), ms))
+
+  it('answers with the faster one', async () => {
+    expect(
+      await firstResult([after(40, 'slow'), after(1, 'fast')]),
+    ).toBe('fast')
+  })
+
+  it('waits for a winner when the other answers null or throws', async () => {
+    expect(
+      await firstResult([
+        after(1, null),
+        async () => {
+          throw new Error('upstream down')
+        },
+        after(20, 'winner'),
+      ]),
+    ).toBe('winner')
+  })
+
+  it('is null only when every one of them fails', async () => {
+    expect(
+      await firstResult([
+        after(1, null),
+        async () => {
+          throw new Error('upstream down')
+        },
+      ]),
+    ).toBeNull()
+  })
+})
+
+/**
+ * Facebook's own share sheet produces `fb.watch/<code>` and
+ * `facebook.com/share/<v|r>/<code>`, and both answer a browser user agent with
+ * 400 — so the canonical URL every Facebook extractor needs was never reached.
+ */
+describe('the Facebook short-link resolver', () => {
+  it.each([
+    'https://www.facebook.com/share/r/14p4MjFM5jX/',
+    'https://fb.watch/aBcDeF/',
+  ])('asks for %s as a crawler, with HEAD', async (url) => {
+    const spy = stubFetch('')
+    await priv(new Downloader()).resolveRedirect(url)
+    const init = spy.mock.calls[0][1] as RequestInit
+    expect(init.method).toBe('HEAD')
+    expect((init.headers as Record<string, string>)['User-Agent']).toContain(
+      'facebookexternalhit',
+    )
+  })
+
+  /**
+   * The plugin embed is the only Facebook surface that answers without a login,
+   * and it ships neither og tags nor a real title — so the card's poster and
+   * name have to come out of its markup, past two images that are not the
+   * poster.
+   */
+  it('takes the poster and no title from a plugin embed', () => {
+    const plugin =
+      '<html><head><title>Facebook</title></head><body>' +
+      '<img class="img" src="https://static.xx.fbcdn.net/rsrc.php/v4/yN/spacer.gif">' +
+      '<img class="img" src="https://scontent.example.fna.fbcdn.net/v/t15.5256-10/poster.jpg?a=1&amp;b=2">' +
+      '<img class="img" src="https://scontent.example.fna.fbcdn.net/v/t39.30808-1/avatar.jpg">' +
+      '<script>{"hd_src":"https://video.example.fna.fbcdn.net/clip.mp4"}</script>' +
+      '</body></html>'
+    const result = priv(new Downloader()).parseFacebookHtml(
+      plugin,
+      'https://www.facebook.com/reel/1536569814605331/',
+    )
+    expect(result?.downloadUrl).toBe('https://video.example.fna.fbcdn.net/clip.mp4')
+    expect(result?.thumbnail).toBe(
+      'https://scontent.example.fna.fbcdn.net/v/t15.5256-10/poster.jpg?a=1&b=2',
+    )
+    // "Facebook" is the plugin page's own title, not the video's.
+    expect(result?.title).toBe('Facebook Video')
+  })
+
+  it('leaves every other link on the browser path', async () => {
+    const spy = stubFetch('')
+    await priv(new Downloader()).resolveRedirect(
+      'https://www.instagram.com/share/BAbCdEfGh12/',
+    )
+    const init = spy.mock.calls[0][1] as RequestInit
+    expect(init.method).toBe('GET')
+    expect((init.headers as Record<string, string>)['User-Agent']).toContain(
+      'Chrome',
+    )
   })
 })
 

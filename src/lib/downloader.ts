@@ -222,6 +222,37 @@ async function fetchPageDirectThenRelay(target: string): Promise<string | null> 
 }
 
 /**
+ * The first method to answer with a result, rather than the first in order.
+ *
+ * For candidates that are independent upstreams of comparable quality and are
+ * both slow: trying them in turn makes every caller pay the first one's latency
+ * even when the second would have answered sooner. A method that resolves null
+ * or throws simply does not win the race; null comes back only when every one
+ * of them has failed.
+ *
+ * The cost is one extra upstream call per resolve, which is why this is not the
+ * default shape — it is worth it only where the alternative is a visitor
+ * waiting on two sequential extractors.
+ */
+export async function firstResult<T>(
+  methods: Array<() => Promise<T | null>>,
+): Promise<T | null> {
+  try {
+    return await Promise.any(
+      methods.map(async (method) => {
+        const result = await method()
+        // Promise.any counts only rejections as losses, so "answered null" has
+        // to become one.
+        if (!result) throw new Error('no result')
+        return result
+      }),
+    )
+  } catch {
+    return null
+  }
+}
+
+/**
  * Sent to hosts that serve their real markup only to a link crawler.
  *
  * Threads (and Meta's surfaces generally) answer a browser user agent with the
@@ -230,6 +261,43 @@ async function fetchPageDirectThenRelay(target: string): Promise<string | null> 
  */
 const LINK_CRAWLER_AGENT =
   'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
+
+/**
+ * The two link shapes Facebook's own share sheet produces — `fb.watch/<code>`
+ * and `facebook.com/share/<v|r>/<code>`. Both answer a browser user agent with
+ * 400 and only redirect for a crawler; see `resolveRedirect`, the only caller.
+ *
+ * Facebook only: Instagram's share links answer a browser normally (checked the
+ * same day), so they keep the plain path rather than take a behaviour change
+ * nothing asked for.
+ */
+export function isFacebookShortLink(url: string): boolean {
+  return /facebook\.com\/share\/|fb\.watch\//i.test(url)
+}
+
+/**
+ * Facebook serves video thumbnails out of one CDN path segment, `/t15.`, which
+ * is what separates a poster from the two other images on the same page: a
+ * layout spacer on `static.xx.fbcdn.net` and the author's 40x40 avatar under
+ * `/t39.`. Matching the segment rather than taking the first image is the
+ * difference between a poster and a spacer gif.
+ */
+const FB_POSTER_URL = /https:\/\/[^"'\\\s]+\/t15\.[^"'\\\s]+/
+
+/**
+ * The poster for a Facebook video, from either page shape.
+ *
+ * A watch page publishes `og:image`. The plugin embed publishes no meta tags at
+ * all and paints the poster as an ordinary `<img>` instead — the same file the
+ * canonical page names in `og:image`, checked against a live reel — so reading
+ * it out of the markup is what keeps a reel's card from rendering an empty
+ * poster box. A page with neither yields '', which the card already handles.
+ */
+function facebookPoster(html: string): string {
+  const og = metaContent(html, 'og:image')
+  if (og) return og
+  return decodeEntities(FB_POSTER_URL.exec(html)?.[0] ?? '')
+}
 
 /** Vimeo's config ships several thumbnail sizes under unpredictable keys. */
 function vimeoThumb(thumbs: Record<string, string> | undefined): string {
@@ -1776,25 +1844,38 @@ export class Downloader {
       throw new Error('Could not extract video ID from URL')
     }
 
-    // Order by reliability across BOTH local and serverless (Vercel) hosts.
-    //   1. tikwm — richest result (carousels, music, a non-IP-bound URL) when
-    //      reachable, but it now sits behind Cloudflare and 403s from most IPs.
-    //   2. Cobalt — the reliable everywhere path: it *tunnels* the media through
-    //      its own server, so the URL it returns isn't bound to TikTok's signed
-    //      CDN session and plays from any IP (the raw playAddr that snaptik/
-    //      direct-scrape hand back 403s when re-fetched from a different host —
-    //      which is exactly why TikTok broke on Vercel).
-    //   3. yt-dlp — fast + reliable locally (residential IP), but unavailable on
-    //      Vercel, so it sits after Cobalt and returns null there.
-    //   4-6. The remaining public scrapers as last resorts (snaptik ships
-    //      obfuscated JS, ssstik needs a rotating token).
+    // tikwm and Cobalt are raced, not tried in turn.
+    //   - tikwm gives the richest result (carousels, music, a non-IP-bound URL)
+    //     when reachable, but it now queues every request: measured 2026-08-14,
+    //     13.2s wall for one post against 2.1s of its own `processed_time`.
+    //   - Cobalt *tunnels* the media through its own server, so the URL it
+    //     returns isn't bound to TikTok's signed CDN session and plays from any
+    //     IP (the raw playAddr that snaptik/direct-scrape hand back 403s when
+    //     re-fetched from a different host — which is why TikTok broke on
+    //     Vercel). Measured 8.3s for the same post.
     //
-    // 4-6 are skipped where page scraping cannot work — see
-    // htmlScrapingAvailable(). They are the expensive half of this list and, on
-    // a datacenter IP, the half that always misses.
-    const methods = [
+    // In sequence that was ~16s of cold resolve, because the visitor paid
+    // tikwm's queue in full before Cobalt was even asked. Raced, the answer
+    // arrives with the faster of the two, and tikwm still wins whenever it is
+    // the faster — which is the only condition under which its richer payload
+    // was worth waiting for.
+    const raced = await firstResult([
       () => this.tryTikwmMethod(url),
       () => this.tryTikTokCobalt(url),
+    ])
+    if (raced) return raced
+
+    // Everything below is a fallback for when both of those miss, and stays
+    // sequential: each is either free (yt-dlp, absent on workerd) or expensive
+    // and unlikely (the public scrapers).
+    //   - yt-dlp — fast + reliable locally (residential IP), unavailable on
+    //     Vercel/workerd, where it returns null.
+    //   - the remaining public scrapers as last resorts (snaptik ships
+    //     obfuscated JS, ssstik needs a rotating token). Skipped where page
+    //     scraping cannot work — see htmlScrapingAvailable() — because they are
+    //     the expensive half of this list and, on a datacenter IP, the half
+    //     that always misses.
+    const methods = [
       () => this.tryYtDlpTikTok(url),
       ...(htmlScrapingAvailable()
         ? [
@@ -2377,14 +2458,32 @@ export class Downloader {
     return this.resolveRedirect(url)
   }
 
-  // Generic redirect follower — resolves short/share links (fb.watch,
-  // facebook.com/share/…, instagram share links) to their canonical URL.
+  /**
+   * Generic redirect follower — resolves short/share links (fb.watch,
+   * facebook.com/share/…, instagram share links) to their canonical URL.
+   *
+   * A Meta share link is asked for as a link crawler, and with HEAD. Measured
+   * 2026-08-14 against a live reel share link — the shape the mobile app's
+   * "Copy link" produces, so most of what visitors paste:
+   *
+   *   browser user agent  -> 400, and the link stays a /share/ URL, which the
+   *                          video plugin answers with an error page
+   *   crawler user agent  -> 302 to https://www.facebook.com/reel/<id>, which
+   *                          the plugin answers with hd_src + sd_src
+   *
+   * HEAD because only the final URL is wanted and the share page is half a
+   * megabyte of markup that nothing here reads.
+   */
   private async resolveRedirect(url: string): Promise<string> {
+    const share = isFacebookShortLink(url)
     try {
-      const response = await http.get(url, {
+      const send = share ? http.head : http.get
+      const response = await send(url, {
         maxRedirects: 5,
         validateStatus: () => true,
-        headers: { 'User-Agent': this.userAgent },
+        headers: {
+          'User-Agent': share ? LINK_CRAWLER_AGENT : this.userAgent,
+        },
         timeout: 12000,
       })
       return response.request?.res?.responseUrl || url
@@ -2544,8 +2643,13 @@ export class Downloader {
 
     if (!downloadUrl) return null
 
-    const ogTitle = metaContent(html, 'og:title') || pageTitle(html) || ''
-    const ogImage = metaContent(html, 'og:image') || ''
+    // The plugin page carries no og tags at all and titles itself "Facebook",
+    // which is worse than the generic name — so a bare host name is discarded
+    // rather than shown as the video's title.
+    const pageName = pageTitle(html) || ''
+    const ogTitle =
+      metaContent(html, 'og:title') ||
+      (/^facebook$/i.test(pageName.trim()) ? '' : pageName)
     const ogDescription = metaContent(html, 'og:description') || ''
 
     const title =
@@ -2558,7 +2662,7 @@ export class Downloader {
       id: parseVideoId(originalUrl) || Date.now().toString(),
       title,
       url: originalUrl,
-      thumbnail: ogImage,
+      thumbnail: facebookPoster(html),
       duration: 0,
       author: 'Facebook',
       description: ogDescription,
