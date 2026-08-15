@@ -253,6 +253,27 @@ export async function handleAuthCallback(
     return authFailure(request, 'email', 'Google did not return a verified email address.')
   }
 
+  // Google's `sub` identifies a person *within one Google Cloud project*, not
+  // globally: point the deployment at a different OAuth client and every
+  // returning visitor arrives with an unfamiliar `sub`, so the INSERT below
+  // would open a second row and leave the first one — its grants, its billing
+  // columns, its preferences — stranded behind an identifier nobody will ever
+  // present again. `users.email` is only indexed, not unique, so nothing would
+  // have complained.
+  //
+  // Re-keying the existing row by address is safe precisely here, and only
+  // here: the address was checked as verified four lines up, which is the same
+  // proof of ownership the billing reconcile leans on. `google_sub` is UNIQUE,
+  // so if a duplicate pair of rows already exists this updates the first and
+  // the second stays where it was — no worse than before.
+  //
+  // Costs one indexed UPDATE per sign-in that matches nothing once the move is
+  // done. Cheap enough to leave in place rather than remember to remove.
+  await db
+    .prepare('UPDATE users SET google_sub = ? WHERE email = ? AND google_sub != ?')
+    .bind(claims.sub, claims.email, claims.sub)
+    .run()
+
   // ON CONFLICT keeps the email, name and avatar current for someone who
   // changed them at Google, without disturbing their billing columns. COALESCE
   // on the two profile fields so a token that omits them (an older account, a

@@ -5,15 +5,19 @@
  *   node scripts/cf-setup.mjs check     verify the token, resolve the account,
  *                                       report zone + Worker status
  *   node scripts/cf-setup.mjs deploy    build the Worker bundle and upload it
- *   node scripts/cf-setup.mjs secrets   push Worker secrets from .env.cloudflare
+ *   node scripts/cf-setup.mjs secrets   push Worker secrets from .env. Takes
+ *                                       key names to push only those — see
+ *                                       stepSecrets for why that matters
  *   node scripts/cf-setup.mjs zone      add the domain to Cloudflare, print the
  *                                       nameservers to set at the registrar
  *   node scripts/cf-setup.mjs domain    attach apex + www to the Worker
  *   node scripts/cf-setup.mjs all       every step above, in order, skipping
  *                                       whatever is already done
  *
- * Credentials come from `.env.cloudflare` (gitignored — see
- * .env.cloudflare.sample). Nothing here reads or writes wrangler.jsonc, which
+ * Credentials come from `.env` (gitignored — see .env.sample). That is the
+ * single env file for this repo: Next reads it for `next dev` and `next build`,
+ * wrangler reads it for `wrangler dev`, and this script uploads the parts of it
+ * the deployed Worker needs. Nothing here reads or writes wrangler.jsonc, which
  * is committed and must stay free of secrets.
  *
  * The REST API is used directly rather than `wrangler secret put` etc. because
@@ -27,11 +31,11 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const ENV_FILE = path.join(ROOT, '.env.cloudflare')
+const ENV_FILE = path.join(ROOT, '.env')
 const API = 'https://api.cloudflare.com/client/v4'
 
-// Keys that authenticate the tooling. Everything else in .env.cloudflare is a
-// Worker secret and gets uploaded.
+// Keys that authenticate the tooling. Most of what is left in .env is a Worker
+// secret and gets uploaded; see isLocalOnly for the rest.
 const CREDENTIAL_KEYS = new Set(['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID'])
 
 /**
@@ -44,9 +48,14 @@ const CREDENTIAL_KEYS = new Set(['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID'
  * nothing except leave a second, live-adjacent credential sitting in the
  * deployment for no reason, and make "which store is this thing pointed at"
  * a question with two answers.
+ *
+ * `NEXT_PUBLIC_*` is the other kind of not-a-secret. Next inlines those at
+ * build time, so the value that matters was already frozen into the bundle
+ * before this script runs; uploading one puts a public string in the secret
+ * store where it can only mislead the next person reading the dashboard.
  */
 function isLocalOnly(key) {
-  return CREDENTIAL_KEYS.has(key) || key.endsWith('_TEST')
+  return CREDENTIAL_KEYS.has(key) || key.endsWith('_TEST') || key.startsWith('NEXT_PUBLIC_')
 }
 
 const SITE_URL = (
@@ -154,16 +163,16 @@ async function resolveContext() {
   if (!env) {
     throw new SetupError(
       `Missing ${path.relative(ROOT, ENV_FILE)}.\n` +
-        '  Copy .env.cloudflare.sample to .env.cloudflare and paste your API token into it.',
+        '  Copy .env.sample to .env and paste your API token into it.',
     )
   }
 
   const token = env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN
   if (!token) {
     throw new SetupError(
-      'CLOUDFLARE_API_TOKEN is empty in .env.cloudflare.\n' +
+      'CLOUDFLARE_API_TOKEN is empty in .env.\n' +
         '  Create one at https://dash.cloudflare.com/profile/api-tokens\n' +
-        '  (see .env.cloudflare.sample for the exact permissions needed).',
+        '  (see .env.sample for the exact permissions needed).',
     )
   }
 
@@ -183,13 +192,13 @@ async function resolveContext() {
     if (accounts.length > 1) {
       const names = accounts.map((a) => `${a.name} (${a.id})`).join('\n    ')
       throw new SetupError(
-        `Token can see ${accounts.length} accounts. Set CLOUDFLARE_ACCOUNT_ID in .env.cloudflare to one of:\n    ${names}`,
+        `Token can see ${accounts.length} accounts. Set CLOUDFLARE_ACCOUNT_ID in .env to one of:\n    ${names}`,
       )
     }
     accountId = accounts[0].id
     ok(`Account: ${accounts[0].name} (${accountId})`)
   } else {
-    ok(`Account: ${accountId} (from .env.cloudflare)`)
+    ok(`Account: ${accountId} (from .env)`)
   }
 
   return { env, token, accountId, script: workerName() }
@@ -244,14 +253,45 @@ async function stepDeploy(ctx) {
   ok('Worker deployed')
 }
 
-async function stepSecrets(ctx) {
+/**
+ * Upload secrets from `.env`, or only the ones named on the command line:
+ *
+ *   node scripts/cf-setup.mjs secrets GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET
+ *
+ * The filter is not a convenience. Since the env files were collapsed into one
+ * `.env`, a bare `secrets` pushes everything in it — including
+ * `PRO_TOKEN_SECRET`, whose deployed value was set by hand and is not the one
+ * on this machine. Uploading that rotates the key every session cookie and
+ * access token is signed with, so every signed-in user is logged out by a
+ * command that was meant to add an unrelated credential. Naming the keys is how
+ * you add one secret without touching the others.
+ *
+ * `wrangler secret put` is the other single-key route, but it prompts on a TTY
+ * and its stdin handling differs across shells; this goes through the same REST
+ * call as every other step here, which behaves the same everywhere.
+ */
+async function stepSecrets(ctx, only = []) {
   step('Secrets')
 
+  const wanted = new Set(only)
+  const missing = only.filter((key) => !(key in ctx.env))
+  if (missing.length > 0) {
+    throw new SetupError(`Not in .env: ${missing.join(', ')}`)
+  }
+
   const entries = Object.entries(ctx.env).filter(
-    ([key, value]) => !isLocalOnly(key) && value !== '',
+    ([key, value]) =>
+      !isLocalOnly(key) && value !== '' && (wanted.size === 0 || wanted.has(key)),
   )
+
+  if (wanted.size > 0) {
+    info(`Only: ${only.join(', ')} — nothing else in .env is touched.`)
+  } else {
+    warn('Pushing every secret in .env. Name keys after `secrets` to push just those.')
+  }
+
   if (entries.length === 0) {
-    info('No Worker secrets set in .env.cloudflare — skipping.')
+    info('No Worker secrets set in .env — skipping.')
     info('The site runs without them; cobalt falls back to the public instance.')
     return
   }
@@ -453,7 +493,7 @@ async function main() {
     return
   }
   if (command === 'secrets') {
-    await stepSecrets(ctx)
+    await stepSecrets(ctx, process.argv.slice(3))
     return
   }
   if (command === 'zone') {

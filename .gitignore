@@ -17,7 +17,8 @@
 /.next/
 /out/
 
-# cloudflare (local wrangler state + secrets + generated types)
+# cloudflare (local wrangler state + generated types). Secrets live in .env;
+# a .dev.vars file would make wrangler ignore .env, so this repo has none.
 /.wrangler/
 /.worker-size-check/
 .dev.vars
@@ -36,10 +37,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files. One real file, `.env`, ignored; one sample, committed.
 .env*
 !.env.sample
-!.env.cloudflare.sample
 
 # vercel
 .vercel
