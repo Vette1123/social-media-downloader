@@ -197,6 +197,7 @@ offered.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client used for sign-in. Created in Google Cloud console; both the dev and production redirect URIs must be registered on it. |
 | `CREEM_API_KEY` | Dormant. Mints a customer-portal URL per click for any subscription that predates the withdrawal, and backs the lazy reconcile. Nothing creates subscriptions any more. |
 | `CREEM_WEBHOOK_SECRET` | Dormant, and still never optional while the endpoint is registered: an unverified webhook endpoint would let anyone grant themselves the extras. |
+| `BMC_WEBHOOK_SECRET` | Signing secret for the Buy Me a Coffee webhook, one per endpoint, from its dashboard. Without it `/api/billing/bmc` answers 503 and grants nothing. Setup and payload notes: `docs/buymeacoffee-setup.md`. |
 
 ### Accounts and grants
 
@@ -216,8 +217,21 @@ pnpm exec wrangler d1 execute social-media-downloader --remote \
   --command "UPDATE users SET grants = 'pro' WHERE email = 'someone@example.com'"
 ```
 
-It takes effect within one access-token TTL (15 minutes), with no deploy. Two
-names are defined, and keeping them separate is the point:
+It takes effect within one access-token TTL (15 minutes), with no deploy. Note
+that this command *assigns* the column rather than adding to it, so running it
+on an account that also holds `ig` silently drops that. The Buy Me a Coffee
+webhook (`/api/billing/bmc`) adds and removes single names instead and is the
+normal path now — `docs/buymeacoffee-setup.md`. It records support against an
+email address in `supporters` whether or not an account exists yet, and the
+grant is applied when that address signs in. One Buy Me a Coffee account serves
+several projects, so support is tied to a project by the name of the thing
+bought: this site recognises the `Downloader — Supporter` membership and the
+`Downloader — Lifetime` extra (`src/config/support.ts`) and ignores everything
+else sold on the account. A plain one-off coffee carries no name to match and
+grants nothing automatically; it is handled by hand as an expiring window rather
+than as a `pro` grant, which has no expiry.
+
+Two names are defined, and keeping them separate is the point:
 
 | Grant | What it does |
 | ----- | ------------ |

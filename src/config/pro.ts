@@ -7,11 +7,13 @@
  * category, not the copy, so the response is to stop selling rather than to
  * reword the same offer a third time.
  *
- * The features stayed. They are granted by hand now: a row in `users` carries
- * `grants = 'pro'`, set with one `wrangler d1 execute` after someone supports
- * the project. No checkout, no subscription, no merchant of record, nothing to
- * cancel and nothing to refund — a donation with a thank-you attached is not a
- * sale, and that is the whole point.
+ * The features stayed. They are granted off a donation now: a row in `users`
+ * carries `grants = 'pro'`, written by the Buy Me a Coffee webhook when someone
+ * takes this project's membership or its one-time extra, and by hand for a
+ * plain coffee (`docs/buymeacoffee-setup.md`). No checkout here, no merchant of
+ * record, nothing for us to refund — the provider owns the payment, the
+ * membership and the cancel button. A donation with a thank-you attached is not
+ * a sale, and that is the whole point.
  *
  * The checkout links, the plan variants and the price constants that used to
  * live here are gone rather than commented out; git has them if a processor is
