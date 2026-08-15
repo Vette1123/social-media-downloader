@@ -188,6 +188,12 @@ themselves optional: without the accounts/billing variables below, the site
 still works as a fully anonymous, free downloader; sign-in simply is not
 offered.
 
+They all live in one gitignored `.env`, copied from `.env.sample`. Next reads it
+for `next dev` and `next build`, wrangler reads it for `wrangler dev`, and
+`pnpm cf:setup secrets` uploads the deploy-relevant half to the Worker — so a
+value is set once rather than kept in step across three files. Do not add a
+`.dev.vars`: wrangler prefers that file and then ignores `.env` entirely.
+
 | Variable              | Purpose                                                                          |
 | --------------------- | -------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`| Canonical site URL used for metadata, sitemap, and OG images.                    |
@@ -195,7 +201,7 @@ offered.
 | `IG_SESSIONID`        | Instagram session cookie from a burner account. Public posts resolve without it. Setting it is **not** sufficient on its own: a request also needs the `ig` grant on its user row, so an unlisted visitor never carries the cookie. Never sold, never bundled with the supporter grant — see below. |
 | `NEXT_PUBLIC_CF_BEACON_TOKEN` | Enables Cloudflare Web Analytics by injecting the beacon script at build time. Build-time only, like `NEXT_PUBLIC_SITE_URL` — set it as build env, not a Worker var. If Web Analytics is already enabled at the zone level in the Cloudflare dashboard, Cloudflare injects the beacon at the edge automatically; setting this too would load it twice and double-count page views. Pick one mechanism. |
 | `PRO_TOKEN_SECRET`    | HMAC key (WebCrypto HMAC-SHA256) for signing Pro access tokens and session-cookie values. Generate 32+ random bytes yourself. |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client used for sign-in. Created in Google Cloud console; both the dev and production redirect URIs must be registered on it. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client used for sign-in. Created in Google Cloud console; both the dev and production redirect URIs must be registered on it. Replacing the client with one from a *different* Google Cloud project changes every existing user's `sub`, since a `sub` identifies a person within a project rather than globally — `handleAuthCallback` re-keys the row by verified email so accounts survive the move, and the consent screen on the new project must be published (a project left in Testing admits only its listed test users). |
 | `CREEM_API_KEY` | Dormant. Mints a customer-portal URL per click for any subscription that predates the withdrawal, and backs the lazy reconcile. Nothing creates subscriptions any more. |
 | `CREEM_WEBHOOK_SECRET` | Dormant, and still never optional while the endpoint is registered: an unverified webhook endpoint would let anyone grant themselves the extras. |
 | `BMC_WEBHOOK_SECRET` | Signing secret for the Buy Me a Coffee webhook, one per endpoint, from its dashboard. Without it `/api/billing/bmc` answers 503 and grants nothing. Setup and payload notes: `docs/buymeacoffee-setup.md`. |
@@ -280,7 +286,7 @@ Setting this up for a fork or self-hosted deployment, in order:
    executing the SQL files directly, or the `d1_migrations` bookkeeping table
    will disagree with the schema and later migrations will fail), add the `DB`
    binding in `wrangler.jsonc`, then set the five secrets above with
-   `pnpm cf:setup` (reads `.env.cloudflare`) or `wrangler secret put`.
+   `pnpm cf:setup` (reads `.env`) or `wrangler secret put`.
 
    Order matters for one of them: do not put live checkout URLs in
    `src/config/pro.ts` until `CREEM_WEBHOOK_SECRET` is set. The webhook route

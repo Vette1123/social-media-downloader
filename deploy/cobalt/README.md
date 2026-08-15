@@ -71,7 +71,7 @@ COBALT_API_URL = https://<your-service>.onrender.com/    # or your .fly.dev URL
 ```
 
 The app uses the public instance first and this one as the fallback. Locally you
-can put the same line in `.env.local`.
+can put the same line in `.env`, which is the repo's single env file.
 
 ## Notes
 

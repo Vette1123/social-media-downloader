@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { WorkerEnv } from '../apiRoutes'
 import { handleAccount, handleAuthCallback, packAuthState, unpackAuthState } from './routes'
 import type { UserRow } from './session'
@@ -33,11 +33,17 @@ describe('the OAuth state cookie', () => {
 /** Enough of D1 for loadSession plus one write. */
 function fakeDb(user: UserRow | null) {
   const statements: string[] = []
+  const calls: { sql: string; args: unknown[] }[] = []
   const db = {
     prepare(sql: string) {
       statements.push(sql)
+      const call: { sql: string; args: unknown[] } = { sql, args: [] }
+      calls.push(call)
       const stmt = {
-        bind: () => stmt,
+        bind: (...args: unknown[]) => {
+          call.args = args
+          return stmt
+        },
         first: async () => user,
         all: async () => ({ results: [] }),
         run: async () => ({}),
@@ -45,7 +51,7 @@ function fakeDb(user: UserRow | null) {
       return stmt
     },
   }
-  return { env: { DB: db } as unknown as WorkerEnv, statements }
+  return { env: { DB: db } as unknown as WorkerEnv, statements, calls }
 }
 
 function userRow(overrides: Partial<UserRow> = {}): UserRow {
@@ -197,5 +203,65 @@ describe('handleAccount — deleting an account', () => {
 
     expect(response.status).toBe(200)
     expect(statements.some((sql) => sql.startsWith('DELETE FROM users'))).toBe(true)
+  })
+})
+
+/**
+ * Moving the deployment to a different Google Cloud project changes every
+ * `sub`, because a `sub` names a person within one project rather than
+ * globally. Without the re-key below, the first sign-in after the move opens a
+ * second row and strands the original — grants, billing columns and all —
+ * behind an identifier that will never be presented again.
+ *
+ * The mock stands in for the round trip to Google; the failure paths in the
+ * describes above return before the exchange, so it never reaches them.
+ */
+vi.mock('./google', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./google')>()),
+  exchangeAuthorizationCode: async () => 'stand-in-id-token',
+  decodeIdToken: () => ({
+    sub: 'sub-from-the-new-project',
+    email: 'buyer@example.com',
+    email_verified: true,
+  }),
+}))
+
+describe('handleAuthCallback — a sign-in after the OAuth client moved projects', () => {
+  function signIn(): Request {
+    const state = 'state-token'
+    return new Request(
+      `https://www.socialdownloader.space/api/auth/callback?code=x&state=${state}`,
+      {
+        headers: {
+          Cookie: `smd_oauth_state=${packAuthState(state, '/account')}; smd_oauth_verifier=v`,
+          'Sec-Fetch-Mode': 'navigate',
+        },
+      },
+    )
+  }
+
+  it('re-keys the existing row by verified email instead of orphaning it', async () => {
+    const { env, calls } = fakeDb(userRow({ google_sub: 'sub-from-the-old-project' }))
+
+    await handleAuthCallback(signIn(), undefined, env)
+
+    const rekey = calls.find((call) => call.sql.startsWith('UPDATE users SET google_sub'))
+    expect(rekey).toBeDefined()
+    expect(rekey?.args).toEqual([
+      'sub-from-the-new-project',
+      'buyer@example.com',
+      'sub-from-the-new-project',
+    ])
+  })
+
+  it('re-keys before the INSERT, or the INSERT would have created the orphan first', async () => {
+    const { env, statements } = fakeDb(userRow({ google_sub: 'sub-from-the-old-project' }))
+
+    await handleAuthCallback(signIn(), undefined, env)
+
+    const rekey = statements.findIndex((sql) => sql.startsWith('UPDATE users SET google_sub'))
+    const insert = statements.findIndex((sql) => sql.startsWith('INSERT INTO users'))
+    expect(rekey).toBeGreaterThanOrEqual(0)
+    expect(rekey).toBeLessThan(insert)
   })
 })
