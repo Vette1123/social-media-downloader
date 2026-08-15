@@ -49,12 +49,17 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 - Native video and GIF extraction from any `twitter.com` or `x.com` status URL
 - Resolves `t.co` short links
 
-**Instagram**
+**Instagram** — ⚠️ **currently broken for logged-out visitors.** Since 2026-08
+Instagram serves posts only to authenticated accounts: the embed page returns
+its "link may be broken" shell, the web GraphQL `doc_id` is retired, `?__a=1`
+404s, and the public Cobalt instance can't fetch either. Everything below works
+only for a request carrying `IG_SESSIONID` *and* the `ig` grant. See
+[the lesson](lessons/2026-08-15-instagram-logged-out-wall.md).
 
 - Download reels and feed videos in their original quality
 - Save single-photo posts and multi-image carousels — individually or as a ZIP
 - Extract the audio track from a reel as MP3
-- Works with `instagram.com/p/…`, `/reel/…`, `/tv/…` and share links — no login required
+- Works with `instagram.com/p/…`, `/reel/…`, `/tv/…` and share links
 
 **YouTube**
 
@@ -191,7 +196,7 @@ offered.
 | --------------------- | -------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_SITE_URL`| Canonical site URL used for metadata, sitemap, and OG images.                    |
 | `COBALT_API_URL`      | Self-hosted [Cobalt](https://github.com/imputnet/cobalt) instance to harden the extraction fallback chain. |
-| `IG_SESSIONID`        | Instagram session cookie from a burner account. Public posts resolve without it. Setting it is **not** sufficient on its own: a request also needs the `ig` grant on its user row, so an unlisted visitor never carries the cookie. Never sold, never bundled with the supporter grant — see below. |
+| `IG_SESSIONID`        | Instagram session cookie from a burner account. Since 2026-08 nothing on Instagram resolves without it. Setting it is **not** sufficient on its own: a request also needs the `ig` grant on its user row, so an unlisted visitor never carries the cookie. Never sold, never bundled with the supporter grant — see below. |
 | `NEXT_PUBLIC_CF_BEACON_TOKEN` | Enables Cloudflare Web Analytics by injecting the beacon script at build time. Build-time only, like `NEXT_PUBLIC_SITE_URL` — set it as build env, not a Worker var. If Web Analytics is already enabled at the zone level in the Cloudflare dashboard, Cloudflare injects the beacon at the edge automatically; setting this too would load it twice and double-count page views. Pick one mechanism. |
 | `PRO_TOKEN_SECRET`    | HMAC key (WebCrypto HMAC-SHA256) for signing Pro access tokens and session-cookie values. Generate 32+ random bytes yourself. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client used for sign-in. Created in Google Cloud console; both the dev and production redirect URIs must be registered on it. |
@@ -450,7 +455,7 @@ The downloader tries providers in order and falls back automatically on failure.
 
 - **TikTok videos:** Tikwm → Snaptik → SSSTik → direct scraping
 - **Twitter/X videos:** vxTwitter → public Cobalt instances
-- **Instagram posts/reels:** embed page (`shortcode_media`) → private media API (`/api/v1/media/<id>/info/`, session only) → web GraphQL → public Cobalt instances. Anything Instagram will not serve anonymously — including stories — needs `IG_SESSIONID` *and* the `ig` grant on the requesting account. The GraphQL `doc_id` has been answering "execution error" since 2026-08, so the media API is currently the only path a session buys anything on.
+- **Instagram posts/reels:** embed page (`shortcode_media`) → private media API (`/api/v1/media/<id>/info/`, session only) → public Cobalt instances. Since 2026-08 the media API is the *only* one of the three that resolves anything, and it needs `IG_SESSIONID` *and* the `ig` grant on the requesting account — so an anonymous Instagram request is expected to fail. The web GraphQL extractor was removed on 2026-08-15: Instagram retired the persisted query and refuses the `doc_id` itself, identically for a logged-out and a logged-in caller.
 - **YouTube videos/Shorts:** public Cobalt instances → public Piped instances → `youtube-dl-exec` (metadata enriched via YouTube oEmbed)
 - **Facebook videos/reels:** video plugin page (`/plugins/video.php`) → direct page scrape (`browser_native_*_url`) → public Cobalt instances
 - **Vimeo:** player config (`/config`) progressive renditions → embed-only when Vimeo ships no progressive rendition for that video (playable, not downloadable — the DASH/HLS manifests it ships instead need ffmpeg)
