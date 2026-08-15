@@ -211,7 +211,10 @@ async function resolveContext() {
     accountId = accounts[0].id
     ok(`Account: ${accounts[0].name} (${accountId})`)
   } else {
-    ok(`Account: ${accountId} (from .env)`)
+    // Named honestly: in CI there is no .env and both values arrive as
+    // repository secrets, where "(from .env)" reads as a file that does not
+    // exist and sends the next person looking for it.
+    ok(`Account: ${accountId} (from ${env.CLOUDFLARE_ACCOUNT_ID ? '.env' : 'the environment'})`)
   }
 
   return { env, token, accountId, script: workerName() }
