@@ -649,26 +649,39 @@ export class Downloader {
   //
   // COBALT_API_URL accepts a COMMA- or space-separated LIST, so the operator can
   // chain several private instances for resilience (each tunnels the media, so
-  // any one that resolves the URL works). We only ship one open public instance
-  // by default — other public ones were pruned as dead weight (canine.tools
-  // needs a JWT, kwiatekmiki 403s, eepy.today/oceanofanything are down) since a
-  // dead instance only adds a timeout to every request. Probed 2026-07: only
-  // co.otomir23.me answers open POSTs.
+  // any one that resolves the URL works).
+  //
+  // The public list is short on purpose — a dead instance only adds a timeout to
+  // every request — but one entry is too short: a single instance means one
+  // shared rate limit, and `error.too_many_requests` on it is a failed download
+  // for the user with nothing behind it. Every entry below was verified on
+  // 2026-08-15 *from a Worker on Cloudflare's network*, not just from a dev box,
+  // because that is where these run and several instances refuse datacenter
+  // egress outright (both kittycat.boo endpoints answer 403 there while working
+  // fine locally). Re-probe with cobalt.directory's /api/tests, which reports
+  // per-service results and flags the instances behind Turnstile — those need a
+  // challenge token and are useless to us regardless of what they support.
   //
   // A Pro request flips this order. The private instances are ours: not
   // rate-limited and not shared with the public internet, which is worth more
   // to someone who paid than the public instance's warm start is.
+  private static readonly publicCobaltInstances = [
+    'https://co.otomir23.me/',
+    'https://rue-cobalt.xenon.zone/',
+    'https://cobaltapi.cjs.nz/',
+  ]
+
   private get cobaltInstances(): string[] {
-    const publicInstance = 'https://co.otomir23.me/'
+    const public_ = Downloader.publicCobaltInstances
     const private_ = (process.env.COBALT_API_URL ?? '')
       .split(/[\s,]+/)
       .map((s) => s.trim())
       .filter(Boolean)
 
     if (this.priority && private_.length > 0) {
-      return [...private_, publicInstance]
+      return [...private_, ...public_]
     }
-    return [publicInstance, ...private_]
+    return [...public_, ...private_]
   }
 
   // Public Instagram web app id — required by the GraphQL/web-API endpoints.
@@ -1616,20 +1629,23 @@ export class Downloader {
     const shortcode =
       parseInstagramShortcode(resolvedUrl) || parseInstagramShortcode(url)
 
-    // Order by reliability + cost. As of 2026-08-15 the honest summary is that
-    // only step 2 resolves anything, so an anonymous Instagram request is
-    // expected to fail — see lessons/2026-08-15-instagram-logged-out-wall.md.
-    //   1. Embed page — fast, login-free, no authenticated hit. Every post
-    //      probed on 2026-08-15 came back as the "the link to this photo or
-    //      video may be broken" shell with `contextJSON: null` (from a
-    //      residential IP as well as from Cloudflare, so this is Instagram
-    //      closing the surface, not an IP block). Kept because it is one cheap
-    //      GET and the evidence is a handful of posts, not a proof.
-    //   2. The private media API — the only path that still resolves anything,
-    //      and the only one the session buys anything on. No-ops (returns null,
-    //      sends nothing) for an uncredentialed resolve, and tried after the
-    //      embed so the burner account is only used when actually needed.
-    //   3. Cobalt — the datacenter-reachable fallback. Instagram's own signed
+    // Order by reliability + cost:
+    //   1. Embed page — fast, login-free, no authenticated hit; resolves public
+    //      posts, reels and carousels (and bails rather than misrendering a
+    //      video as a photo when its JSON doesn't parse). Verified 2026-08-15
+    //      from Cloudflare's own network against four famous public posts.
+    //      A post Instagram will not serve logged-out returns the same "the link
+    //      to this photo or video may be broken" shell as a deleted one, with
+    //      `contextJSON: null` — that shell is NOT evidence the surface is gone,
+    //      which is exactly the trap in
+    //      lessons/2026-08-15-instagram-logged-out-wall.md.
+    //   2. The private media API — the only path that resolves what Instagram
+    //      will not serve anonymously, and the only one the session buys
+    //      anything on. No-ops (returns null, sends nothing) for an
+    //      uncredentialed resolve, and tried after the embed so the burner
+    //      account is only used when actually needed.
+    //   3. Cobalt — the datacenter-reachable fallback, and the one that answers
+    //      when the embed shell comes back. Instagram's own signed
     //      video CDN URLs are frequently refused with an
     //      HTTP 500/403 when re-fetched from a datacenter IP (e.g. Vercel), even
     //      though extraction succeeded — so the /api/video proxy can't stream
@@ -1693,11 +1709,11 @@ export class Downloader {
     if (!this.instagramSessionId) {
       console.warn(
         this.instagramSessionConfigured
-          ? 'Instagram extraction failed on an anonymous request. A session IS configured; it is withheld by design from requests without the `ig` grant, so this is the expected ceiling for a public visitor — not a missing secret.'
+          ? 'Instagram extraction failed on an anonymous request. A session IS configured; it is withheld by design from requests without the `ig` grant. Public posts resolve without it, so this is a post Instagram will not serve logged-out — not a missing secret.'
           : 'Instagram extraction failed and IG_SESSIONID is not set — login-gated posts require it.',
       )
       throw new Error(
-        'Instagram now serves posts only to logged-in accounts, so this link cannot be downloaded here. This is Instagram-wide, not something about your link — other platforms still work.',
+        'Could not download this Instagram post. Public posts, reels and carousels work — this one is private, age- or region-restricted, or has been deleted, and Instagram serves those only to a logged-in account.',
       )
     }
     throw new Error(
@@ -1726,7 +1742,7 @@ export class Downloader {
         )
       }
       throw new Error(
-        'This is an Instagram story/highlight — Instagram only serves these to a logged-in account, so downloading them needs a configured Instagram session (IG_SESSIONID).',
+        'This is an Instagram story/highlight — Instagram only serves these to a logged-in account, so downloading them needs a configured Instagram session (IG_SESSIONID). Public posts and reels work without one.',
       )
     }
 
