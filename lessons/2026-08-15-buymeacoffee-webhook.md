@@ -84,6 +84,17 @@ one-time Lifetime — and the grant behind them was automated. New:
   produced a description that asked for $5 and never said what for. The user's
   correction was blunt and correct. A constraint inherited from a dead context
   needs re-deriving, not enforcing.
+- **Declared it live before anything had been delivered *by the provider*.**
+  Every production check passed — signatures, grants, cancellation, row
+  lifecycle — because every one of them was a request I signed and sent myself.
+  The provider's own first delivery was challenged at the edge by Bot Fight
+  Mode and never reached the Worker at all. `wrangler tail` was silent, which
+  reads exactly like "nobody has sent anything yet" rather than like a failure.
+  Found by querying `firewallEventsAdaptive`, which showed
+  `managed_challenge / botFight / /api/billing/bmc` from AWS with the user agent
+  `BMC-HTTPS-ROBOT`. This is the second provider it has happened to on this zone
+  and it was in the lessons already; I tested the half I controlled and called
+  it done.
 - **The obvious design was silently broken.** The first shape was the one the
   README already documents: the webhook lands, `UPDATE users SET grants = 'pro'
   WHERE email = ?`. It is wrong for the *most common* path, not an edge case.
@@ -165,6 +176,10 @@ one-time Lifetime — and the grant behind them was automated. New:
 - When the discriminator is a string typed into someone else's dashboard,
   compare it with the punctuation folded out. Six characters render as a dash
   and none of them are distinguishable in an editor.
+- A webhook is not verified until the *provider* has delivered one. Requests you
+  sign yourself skip the edge, and the edge is where two of these have died.
+  Silence in `wrangler tail` is ambiguous: it means "not delivered", never "not
+  sent".
 - A lifetime price is a multiple of the annual, never a discount on it. Price
   the irreversible side high: unsold is free, underpriced is permanent.
 - Copy written for someone else's dashboard is not done until it has been seen

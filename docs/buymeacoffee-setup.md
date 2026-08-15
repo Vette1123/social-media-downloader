@@ -473,7 +473,37 @@ Reached from the membership's Recovery tab. Fill three of the four.
    rather than waiting to find out from a supporter who paid $35 and got
    nothing.
 
-5. **Check the page after adding a project.** Each one adds a membership card
+5. **Let the delivery through the edge.** Cloudflare's Bot Fight Mode issues a
+   `managed_challenge` to the provider's sender, and a challenged request never
+   reaches the Worker: `wrangler tail` shows nothing at all, the endpoint looks
+   dead, and the dashboard's response preview shows a Cloudflare interstitial
+   instead of `ok`. This has now happened to two providers on this zone.
+
+   The sender is `BMC-HTTPS-ROBOT` from AWS. `3.23.31.0/24` is allowlisted in
+   **Security → WAF → Tools → IP Access Rules** with `mode: whitelist`, which is
+   the only way to exempt anything from Bot Fight Mode on a Free plan — it
+   cannot be scoped by path, and WAF skip rules do not apply to it.
+
+   **This can drift.** If the provider ever sends from outside that range,
+   grants stop silently. Nothing in the Worker logs will say so, because the
+   Worker never runs. The one query that answers it:
+
+   ```powershell
+   $h = @{ Authorization = "Bearer $env:CLOUDFLARE_API_TOKEN"; 'Content-Type' = 'application/json' }
+   $zid = (Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/zones?name=socialdownloader.space" -Headers $h).result[0].id
+   $body = '{"query":"query { viewer { zones(filter: {zoneTag: \"' + $zid + '\"}) { firewallEventsAdaptive(limit: 20, filter: {clientRequestPath: \"/api/billing/bmc\"}, orderBy: [datetime_DESC]) { datetime action source clientIP clientAsn userAgent } } } }"}'
+   (Invoke-RestMethod -Uri "https://api.cloudflare.com/client/v4/graphql" -Method POST -Headers $h -Body $body).data.viewer.zones[0].firewallEventsAdaptive
+   ```
+
+   Any row with `action: managed_challenge` and `source: botFight` is a
+   delivery that never arrived. Allowlist the `clientIP` it reports.
+
+   The permanent alternative, deliberately not taken: a second Worker with no
+   assets, on its own `workers.dev` hostname, outside the zone entirely. It
+   removes this failure class for good at the cost of a second deployment and a
+   second copy of the secret. Worth revisiting if this drifts twice.
+
+6. **Check the page after adding a project.** Each one adds a membership card
    and an extras card. Past three or four projects the page stops being
    readable, and the exit is a Buy Me a Coffee account per project — fully
    generic names, separate payouts and stats, at the cost of a payout setup
@@ -554,10 +584,24 @@ Both `bmc webhook: level not configured here` warnings appeared in the log with
 the offending name printed, which is the operator's only signal that something
 was dropped.
 
-**Not tested, and untestable from here:** the real payload. Every field name in
-`pickEmail` and `pickLevel` is inference — the provider publishes them only
-behind its dashboard login. The first live event decides whether they are right,
-which is what step 4 above is for.
+Then against **production**, after deploying: unsigned and forged signatures
+refused with `401 bad signature` from the handler itself; a sibling project's
+level accepted and ignored; our own level written to `supporters` with
+`grants=pro`; the cancellation deleting the row. Test rows removed after.
+
+**The real payload is confirmed.** A `membership.started` test event sent from
+the dashboard on 2026-08-15 reached the handler, verified against our HMAC, and
+logged `level not configured here membership.started Basic` — `Basic` being the
+provider's own test fixture. That single line proves four things at once: the
+signature scheme matches, the event type really is spelled `membership.started`,
+`pickEmail` found an address (the handler never reaches the level check
+otherwise), and `pickLevel` found a name rather than `(none)`. Nothing in
+`EMAIL_KEYS` or `LEVEL_KEYS` is a guess any more.
+
+**What is still untested:** a real purchase of a real level, end to end. The
+dashboard's fixture always says `Basic`, so the one path never exercised is the
+one where the name actually matches and an account gets entitled. Buying your
+own monthly and cancelling it is the only way to close that gap.
 
 ## Reusing this in another project
 
