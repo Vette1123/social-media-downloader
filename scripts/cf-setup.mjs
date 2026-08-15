@@ -168,10 +168,14 @@ function run(command, args, env) {
 // --- steps ----------------------------------------------------------------
 
 async function resolveContext() {
-  const env = readEnvFile(ENV_FILE)
-  if (!env) {
+  // No .env is normal in CI, where the token arrives as a repository secret and
+  // there is nothing to upload from a file. It is only fatal for `secrets`,
+  // which is the one step that reads the file for its payload — and that step
+  // says so itself. Everything else works from the environment alone.
+  const env = readEnvFile(ENV_FILE) ?? {}
+  if (!existsSync(ENV_FILE) && !process.env.CLOUDFLARE_API_TOKEN) {
     throw new SetupError(
-      `Missing ${path.relative(ROOT, ENV_FILE)}.\n` +
+      `Missing ${path.relative(ROOT, ENV_FILE)} and no CLOUDFLARE_API_TOKEN in the environment.\n` +
         '  Copy .env.sample to .env and paste your API token into it.',
     )
   }
@@ -519,43 +523,32 @@ async function apexRedirectViaPageRule(ctx, zone) {
 const WAF_TAG = '[smd-waf]'
 
 /**
+ * The crawler policy, read from the same file src/app/robots.tsx renders.
+ *
+ * robots.txt is a request and the WAF is the enforcement, so the two have to
+ * agree: inviting a crawler in one and stopping it in the other is invisible
+ * until the traffic never arrives. One file, two readers.
+ *
+ * Read rather than imported: this script is plain .mjs run by node with no
+ * bundler and no path aliases, and it already reads wrangler.jsonc the same way.
+ */
+const CRAWLERS = JSON.parse(readFileSync(path.join(ROOT, 'src/config/crawlers.json'), 'utf8'))
+
+/**
  * Never challenge these.
  *
  * `cf.client.bot` covers what Cloudflare has verified by reverse DNS — the
- * search crawlers proper. The user agents here are the ones it does not verify
- * and we still want: the link unfurlers that render a preview card when someone
- * shares a page in a chat app, and the AI search crawlers that src/app/robots.tsx
- * already invites by name. Blocking those at the edge while inviting them in
- * robots.txt is the kind of contradiction that shows up as "we get no traffic
- * from X" a quarter later.
+ * search crawlers proper. Naming them as well costs nothing and covers the lag
+ * before a new crawler IP is verified. The unfurlers are never verified at all:
+ * they are what renders a preview card when someone shares a page in a chat app.
+ *
+ * `robotsOnlyTokens` is deliberately absent — `Google-Extended` and friends are
+ * policy names for robots.txt and never appear as a real user agent.
  */
 const ALLOWED_BOT_UAS = [
-  // Link unfurlers.
-  'WhatsApp',
-  'facebookexternalhit',
-  'Facebot',
-  'Twitterbot',
-  'TelegramBot',
-  'Slackbot',
-  'Discordbot',
-  'LinkedInBot',
-  'redditbot',
-  'Pinterest',
-  'SkypeUriPreview',
-  // Search crawlers, named as well as verified: reverse-DNS verification can
-  // lag a new crawler IP, and this list costs nothing.
-  'Googlebot',
-  'bingbot',
-  'DuckDuckBot',
-  'YandexBot',
-  'Applebot',
-  // AI crawlers that drive discovery — kept in step with robots.tsx.
-  'GPTBot',
-  'OAI-SearchBot',
-  'ChatGPT-User',
-  'PerplexityBot',
-  'ClaudeBot',
-  'anthropic-ai',
+  ...CRAWLERS.unfurlers,
+  ...CRAWLERS.searchCrawlers,
+  ...CRAWLERS.aiCrawlers,
 ]
 
 /**
@@ -623,8 +616,25 @@ const WAF_RULES = [
     action: 'block',
   },
   {
-    // First of the rules that matter, and it skips the rest of the ruleset:
-    // everything below only ever sees traffic that is not already trusted.
+    // The other half of robots.txt's Disallow list. Those lines are a request,
+    // and the crawlers worth naming there are precisely the ones known for
+    // ignoring it — CCBot and Bytespider most of all. This is the same list,
+    // enforced. `block` rather than a challenge: none of them can solve one, so
+    // a challenge is only a slower block that costs the edge more work.
+    //
+    // Ahead of the allow rule, and that ordering is load-bearing. Cloudflare
+    // verifies several of these by reverse DNS — Amazonbot, AhrefsBot,
+    // SemrushBot and Bytespider are all "verified bots" — so `cf.client.bot`
+    // below is TRUE for them, and behind the allow rule this would never fire on
+    // most of the list it was written for. Verified means "who it claims to be",
+    // not "welcome here".
+    description: `${WAF_TAG} block the scrapers robots.txt disallows`,
+    expression: orUserAgent(CRAWLERS.disallowedScrapers),
+    action: 'block',
+  },
+  {
+    // Skips the rest of the ruleset: everything below only ever sees traffic
+    // that is not already trusted.
     description: `${WAF_TAG} allow verified bots, unfurlers and search crawlers`,
     expression: `(cf.client.bot) or ${orUserAgent(ALLOWED_BOT_UAS)}`,
     action: 'skip',
@@ -815,13 +825,25 @@ async function stepWaf(ctx) {
     }
   })
 
+  // Cloudflare bakes the JS-detections script into the HTML it has already
+  // stored, so turning the setting off changes nothing a visitor sees until the
+  // cache is dropped. That cost a day once (see the OAuth brand-verification
+  // lesson), which is why this is a step and not a sentence in a README.
+  if (botsOk) {
+    const purged = await task('Zone cache purged (the JS-detections tag lives in cached HTML)', () =>
+      cf(ctx.token, `/zones/${zone.id}/purge_cache`, {
+        method: 'POST',
+        body: { purge_everything: true },
+      }),
+    )
+    if (!purged) info('Purge by hand: dashboard -> Caching -> Configuration -> Purge Everything.')
+  }
+
   if (failed.length) {
     warn(`${failed.length} of the above were skipped — the token is missing a scope for each.`)
-    info('Needs, per group: Zone WAF: Edit, Zone Bot Management: Edit, Zone Settings: Edit.')
+    info('Needs, per group: Zone WAF: Edit, Bot Management: Edit, Zone Settings: Edit, Cache Purge.')
   }
-  if (botsOk) {
-    info('Purge the zone cache now — the JS-detections tag is baked into cached HTML.')
-  }
+  info('Now run `pnpm cf:health` — it is the only thing that can see who the edge stopped.')
 }
 
 // --- edge health ----------------------------------------------------------

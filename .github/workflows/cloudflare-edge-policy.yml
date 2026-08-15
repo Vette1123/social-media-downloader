@@ -1,0 +1,56 @@
+name: Cloudflare edge policy
+
+# The WAF rules, the bot settings and the TLS settings are zone state, not repo
+# state: nothing in a deploy re-applies them, and a change made in the dashboard
+# outlives every push. So they are re-applied on a schedule, and the run then
+# reads back who the edge actually stopped.
+#
+# Deliberately not part of the deploy workflow. Applying zone policy needs token
+# scopes the deploy does not (WAF, Bot Management, Analytics), and a scope
+# missing there must never be able to block shipping the site.
+on:
+  schedule:
+    # Mondays, 06:17 UTC. Off the hour because everyone else's cron is on it.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: cloudflare-edge-policy
+  cancel-in-progress: false
+
+jobs:
+  policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # No pnpm install: scripts/cf-setup.mjs has no dependencies and reads its
+      # config from src/config/crawlers.json and wrangler.jsonc directly.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # Idempotent — the rules are tagged and replaced, so a run that changes
+      # nothing is the normal outcome. It is the run that DOES change something
+      # which is worth reading: it means the zone had drifted.
+      - name: Re-apply WAF, bot and TLS policy
+        run: node scripts/cf-setup.mjs waf
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Fails the run when a search crawler or one of our own senders was
+      # blocked or challenged in the last 24h. This is the only place that can
+      # see it: a request stopped at the edge never reaches the Worker, so it
+      # appears in no log the deploy pipeline touches.
+      #
+      # Needs Zone -> Analytics: Read on the token, which is a scope of its own.
+      # If this step fails with an authz message rather than a finding, widen the
+      # token rather than deleting the step.
+      - name: Report who the edge stopped
+        run: node scripts/cf-setup.mjs health
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

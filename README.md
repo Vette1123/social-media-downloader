@@ -293,6 +293,25 @@ Setting this up for a fork or self-hosted deployment, in order:
    fails closed with a 503 while that secret is missing, and Creem eventually
    stops retrying — so a purchase made in that window is billed with no
    subscription recorded.
+4. **Edge policy** — `pnpm cf:waf` applies the zone's WAF rules, rate limit, bot
+   settings and TLS settings; `pnpm cf:health` reads back who the edge stopped in
+   the last 24 hours. Both are idempotent, and
+   `.github/workflows/cloudflare-edge-policy.yml` runs them weekly, because zone
+   state is not repo state and a dashboard edit outlives every push.
+
+   The single thing to understand before touching it: **free-plan Bot Fight Mode
+   runs outside the Ruleset Engine, so no `skip` rule can exempt anything from
+   it.** Left on, it challenges crawlers, webhook senders and Google's own
+   review fetches, and a challenged request appears in no log — not
+   `wrangler tail`, not the deploy, nowhere but the zone's firewall events. It is
+   off, and the defence it provided is re-expressed as WAF rules that can be
+   scoped. `pnpm cf:health` is the only witness; run it after every change.
+
+   Which crawlers are welcome lives in **`src/config/crawlers.json`**, read by
+   both `src/app/robots.tsx` (the request) and `scripts/cf-setup.mjs` (the
+   enforcement). Editing one list changes both, which is the point: a crawler
+   invited in robots.txt and blocked at the edge is invisible until the traffic
+   never arrives.
 
 ## How to use
 

@@ -109,6 +109,18 @@ required step after touching those lists.
   history instead of failing the check — otherwise the check would stay red for
   24 hours after every fix and be ignored by the second day.
 
+- **Verifying the rate limit by tripping it.** 40 parallel POSTs to
+  `/api/download` with an invalid URL — no upstream call, so nothing but our own
+  edge was spent — returned exactly 30 × `400` from the handler then 10 × `429`,
+  and recovered on the next request 12 seconds later. A limit that has never
+  been tripped is a guess about a number.
+- **Checking rule order against Cloudflare's definition of "verified".**
+  Amazonbot, AhrefsBot, SemrushBot and Bytespider are all Cloudflare *verified*
+  bots, so `cf.client.bot` is true for them and the allowlist skips the rest of
+  the ruleset. The block for the scrapers robots.txt disallows therefore has to
+  sit **ahead** of the allow rule, or it never fires on most of the list it was
+  written for. Verified means "who it claims to be", not "welcome here".
+
 ## Rules
 
 - Free-plan Bot Fight Mode runs outside the Ruleset Engine. No `skip` rule
@@ -131,6 +143,14 @@ required step after touching those lists.
   client IPs. Dozens of residential addresses in several countries are users; a
   handful of datacenter ones are a scraper. The name of the HTTP library says
   nothing about who is holding it.
+- Keep the advisory list and the enforced list in one file
+  (`src/config/crawlers.json`). Two copies of a crawler policy drift into
+  inviting and blocking the same crawler, and nothing reports that.
+- A rule that must beat the allowlist goes **above** it. `skip` with
+  `ruleset: 'current'` ends evaluation for that request.
+- Zone state is not repo state. Nothing in a deploy re-applies it and a dashboard
+  edit outlives every push, so it is re-applied on a schedule
+  (`.github/workflows/cloudflare-edge-policy.yml`) rather than trusted.
 
 Related: [[2026-08-15-google-oauth-brand-verification.md]] and
 `docs/buymeacoffee-setup.md`, both of which describe symptoms this change

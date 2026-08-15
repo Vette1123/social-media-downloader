@@ -1,0 +1,69 @@
+{
+  "_comment": [
+    "One crawler policy, read by two places that must never disagree:",
+    "src/app/robots.tsx (advisory — a request, obeyed only by crawlers that choose to)",
+    "and scripts/cf-setup.mjs (enforcement — WAF rules at the Cloudflare edge).",
+    "",
+    "Splitting them is how a site ends up inviting a crawler in robots.txt while",
+    "blocking it at the edge, which is invisible until the traffic never arrives.",
+    "",
+    "The lists below are HTTP user-agent substrings, matched case-sensitively by",
+    "Cloudflare's `http.user_agent contains` and emitted verbatim as robots.txt",
+    "User-Agent lines — except robotsOnlyTokens, which are policy names that never",
+    "appear in a real request."
+  ],
+
+  "searchCrawlers": [
+    "Googlebot",
+    "bingbot",
+    "DuckDuckBot",
+    "YandexBot",
+    "Applebot"
+  ],
+
+  "aiCrawlers": [
+    "GPTBot",
+    "OAI-SearchBot",
+    "ChatGPT-User",
+    "PerplexityBot",
+    "ClaudeBot",
+    "anthropic-ai"
+  ],
+
+  "unfurlers": [
+    "WhatsApp",
+    "facebookexternalhit",
+    "Facebot",
+    "Twitterbot",
+    "TelegramBot",
+    "Slackbot",
+    "Discordbot",
+    "LinkedInBot",
+    "redditbot",
+    "Pinterest",
+    "SkypeUriPreview"
+  ],
+
+  "robotsOnlyTokens": [
+    "Perplexity-User",
+    "Google-Extended",
+    "Claude-Web",
+    "Applebot-Extended",
+    "Bingbot"
+  ],
+
+  "disallowedScrapers": [
+    "CCBot",
+    "Bytespider",
+    "Amazonbot",
+    "Diffbot",
+    "Omgili",
+    "AhrefsBot",
+    "SemrushBot",
+    "MJ12bot",
+    "DotBot",
+    "DataForSeoBot",
+    "SERankingBacklinksBot",
+    "PetalBot"
+  ]
+}
