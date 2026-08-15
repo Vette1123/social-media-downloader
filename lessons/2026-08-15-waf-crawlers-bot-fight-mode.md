@@ -63,6 +63,22 @@ there is silent and costs indexing. Checked rather than assumed: Node's global
 pass. The near miss is the lesson: any UA rule has to be read against every
 first-party client that talks to production, not just against the scrapers.
 
+**The challenge list stopped real users for three hours, and nothing said so.**
+`okhttp` went into the scripted-UA list because it appears on every "block these
+scrapers" list on the internet. Three hours later the zone's firewall events had
+58 challenges on `/api/download` from **19 distinct residential IPs across
+Canada, Brazil and France**, about three requests each — the shape of people
+downloading a couple of videos, not of a scraper. okhttp is the default HTTP
+client on Android, so anything wrapping this site in an app arrives with it.
+
+Nothing else could have shown this. The Worker never ran, so `wrangler tail` was
+empty; the asset store never answered, so there was no log line; and the users
+saw a Cloudflare challenge page, which nobody reports as a bug. The site looked
+perfectly healthy from every angle available. **A user-agent list written from
+the scraper's point of view will stop users, and the only witness is the zone's
+own event log** — which is why `pnpm cf:health` now exists and why it is the
+required step after touching those lists.
+
 ## What worked
 
 - **Reading the sibling repo's script before writing anything** — it carries two
@@ -81,6 +97,18 @@ first-party client that talks to production, not just against the scrapers.
   readback. The readback proves a rule exists; only the probe proves it does what
   it says.
 
+- **Reading the events back before calling it done.** The same query that found
+  the okhttp problem also proved the change worked: `socialdownloader-indexnow`,
+  `BMC-HTTPS-ROBOT`, `GoogleAgent-URLContext` and a bare `Google` agent were all
+  being challenged by `source: botFight` in the hours *before* the switch, and
+  none after it. The IndexNow one is the quiet cost — it fetches the deployed
+  sitemap after every deploy and swallows its own failures, so it had been
+  failing silently for as long as Bot Fight Mode had been on.
+- **Distinguishing a live rule from a dead one in the health output.** Events
+  from `botFight` cannot recur now that it is off, so they print dimmed as
+  history instead of failing the check — otherwise the check would stay red for
+  24 hours after every fix and be ignored by the second day.
+
 ## Rules
 
 - Free-plan Bot Fight Mode runs outside the Ruleset Engine. No `skip` rule
@@ -97,6 +125,12 @@ first-party client that talks to production, not just against the scrapers.
   each one actually sends.
 - Edge-caching HTML is a deploy problem, not a cache problem. Do not enable it
   without a purge in the deploy path.
+- **Run `pnpm cf:health` after every WAF change, and again a day later.** A rule
+  that stops the wrong client produces no error anywhere else in this stack.
+- Judge a user-agent by the traffic it actually carries here — count the distinct
+  client IPs. Dozens of residential addresses in several countries are users; a
+  handful of datacenter ones are a scraper. The name of the HTTP library says
+  nothing about who is holding it.
 
 Related: [[2026-08-15-google-oauth-brand-verification.md]] and
 `docs/buymeacoffee-setup.md`, both of which describe symptoms this change

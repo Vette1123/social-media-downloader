@@ -15,6 +15,11 @@
  *                                       Bot Fight Mode off, TLS. See stepWaf —
  *                                       this is the step that decides whether
  *                                       search crawlers reach the site
+ *   node scripts/cf-setup.mjs health    who the edge stopped in the last 24h,
+ *                                       and whether any of it was a crawler or
+ *                                       one of our own senders. Run it after
+ *                                       every change to the WAF rules — nothing
+ *                                       else can see traffic that dies there
  *   node scripts/cf-setup.mjs all       every step above, in order, skipping
  *                                       whatever is already done
  *
@@ -566,12 +571,24 @@ const JUNK_UAS = [
   'Go-http-client',
   'node-fetch',
   'axios/',
-  'okhttp',
   'HeadlessChrome',
   'PhantomJS',
   'wget/',
   'curl/',
 ]
+
+/**
+ * `okhttp` was on that list for three hours and is deliberately not on it now.
+ *
+ * It challenged 58 requests to /api/download from 19 distinct residential IPs
+ * across Canada, Brazil and France, at about three requests each — the shape of
+ * people downloading a couple of videos, not of a scraper. okhttp is the default
+ * HTTP client on Android, so anything wrapping this site in an app reaches us
+ * with it, and those are users. `pnpm cf:setup health` is what surfaced it; run
+ * that after touching this list.
+ *
+ * The abuse case okhttp was meant to cover is the rate limit's job instead.
+ */
 
 /**
  * Paths this rule must never touch: the webhook senders are exactly the kind of
@@ -807,6 +824,160 @@ async function stepWaf(ctx) {
   }
 }
 
+// --- edge health ----------------------------------------------------------
+
+/**
+ * What the WAF rules actually did, read back from the zone's firewall events.
+ *
+ * This exists because a rule that stops the wrong client leaves no trace
+ * anywhere else. The request never reaches the Worker, so `wrangler tail` is
+ * silent; it never reaches the asset store, so there is no access log; and the
+ * sender sees a Cloudflare challenge page rather than an error worth reporting.
+ * The zone's own event log is the only witness, and nothing consults it unless
+ * asked.
+ *
+ * It has already earned its place. The first run after the rules went live
+ * showed `okhttp/4.12.0` — the default Android HTTP client — challenged 58 times
+ * on /api/download from 19 residential IPs in three countries. That was real
+ * people, stopped by a user-agent list written from a scraper's point of view.
+ *
+ * `firewallEventsAdaptiveGroups` (the aggregated dataset) is not available on
+ * the free plan and the raw query is capped at a 24 hour span, so this fetches
+ * raw events and counts them here.
+ */
+const HEALTH_HOURS = 23.5
+
+/**
+ * Clients whose challenge or block is a defect, not a defence.
+ *
+ * Search crawlers first: a challenge to one of these is an unindexed page. Then
+ * this project's own senders — `indexnow` submits the deployed sitemap after
+ * every deploy and swallows its own failures, so it fails silently by design;
+ * the webhook robots pay for support that never gets granted.
+ */
+const HEALTH_MUST_PASS = [
+  /googlebot/i,
+  /google-inspectiontool|googleagent|^google$/i,
+  /bingbot|duckduckbot|yandexbot|applebot|baiduspider/i,
+  /gptbot|oai-searchbot|chatgpt-user|perplexity|claudebot|anthropic/i,
+  /facebookexternalhit|twitterbot|telegrambot|whatsapp|discordbot|linkedinbot|slackbot/i,
+  /socialdownloader-indexnow/i,
+  /bmc-https-robot|creem/i,
+]
+
+const STOPPED_ACTIONS = new Set(['block', 'managed_challenge', 'challenge', 'jschallenge', 'drop'])
+
+/**
+ * Mechanisms that are switched off, so their events can only predate the switch.
+ *
+ * `botFight` is the whole reason stepWaf exists. Its events are still the most
+ * useful thing in the window — they are the evidence of what it was stopping —
+ * but they cannot recur, so they are printed as history rather than counted as
+ * failures. If one ever appears with a timestamp after the last `waf` run,
+ * something turned Bot Fight Mode back on in the dashboard.
+ */
+const HISTORICAL_SOURCES = new Set(['botFight'])
+
+async function graphql(token, query) {
+  const response = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  })
+  const payload = await response.json()
+  if (payload.errors?.length) {
+    const detail = payload.errors.map((e) => e.message).join('; ')
+    throw new SetupError(
+      `${detail}\n  Needs Zone -> Analytics: Read on the token — a scope of its own, ` +
+        'separate from the WAF ones.',
+    )
+  }
+  return payload.data
+}
+
+async function stepHealth(ctx) {
+  step('Edge health (last 24h of firewall events)')
+
+  const zone = await findZone(ctx.token, ctx.accountId)
+  if (!zone) throw new SetupError(`Zone ${APEX} is not on this account.`)
+
+  const since = new Date(Date.now() - HEALTH_HOURS * 3600_000).toISOString()
+  const data = await graphql(
+    ctx.token,
+    `query { viewer { zones(filter: { zoneTag: "${zone.id}" }) {
+        firewallEventsAdaptive(
+          limit: 1000
+          filter: { datetime_gt: "${since}" }
+          orderBy: [datetime_DESC]
+        ) { datetime action source clientRequestPath userAgent clientIP }
+      } } }`,
+  )
+
+  const events = data.viewer.zones[0]?.firewallEventsAdaptive ?? []
+  if (events.length === 0) {
+    ok('No firewall events at all in the window — nothing was stopped at the edge.')
+    return
+  }
+  info(`${events.length} events (the raw dataset caps at 1000; older ones fall off first)`)
+
+  // Grouped by what a human would act on: who was stopped, by which mechanism,
+  // and from how many distinct addresses. The IP count is the tell — a handful
+  // of datacenter addresses is a scraper, dozens of residential ones are users.
+  const groups = new Map()
+  for (const event of events) {
+    const agent = event.userAgent || '(no user agent)'
+    const key = `${event.action} ${event.source} ${agent}`
+    const group = groups.get(key) ?? { action: event.action, source: event.source, agent, ips: new Set(), paths: new Set(), count: 0 }
+    group.count += 1
+    group.ips.add(event.clientIP)
+    group.paths.add(event.clientRequestPath)
+    groups.set(key, group)
+  }
+
+  const stopped = [...groups.values()]
+    .filter((g) => STOPPED_ACTIONS.has(g.action))
+    .sort((a, b) => b.count - a.count)
+
+  if (stopped.length === 0) {
+    ok('Nothing was blocked or challenged in the window.')
+  }
+
+  const mustPass = []
+  let historical = 0
+  for (const group of stopped) {
+    const line =
+      `${String(group.count).padStart(4)}  ${group.action.padEnd(18)} ${group.source.padEnd(15)} ` +
+      `${group.ips.size} IP${group.ips.size === 1 ? ' ' : 's'}  ${group.agent.slice(0, 52)}  ` +
+      C.dim([...group.paths].slice(0, 2).join(' '))
+    const shouldPass = HEALTH_MUST_PASS.some((pattern) => pattern.test(group.agent))
+
+    if (HISTORICAL_SOURCES.has(group.source)) {
+      historical += 1
+      console.log(C.dim(`  ${line}  (before Bot Fight Mode was turned off)`))
+      continue
+    }
+    if (shouldPass) {
+      mustPass.push(group)
+      console.log(`${C.red('✗')} ${line}`)
+      continue
+    }
+    console.log(`  ${line}`)
+  }
+
+  console.log('')
+  if (historical > 0) {
+    info(`${historical} group(s) dimmed above are Bot Fight Mode's, from before it was disabled.`)
+  }
+  if (mustPass.length > 0) {
+    warn(`${mustPass.length} of those must never be stopped — crawler or first-party sender.`)
+    info('Fix the rule that names them (WAF_RULES / JUNK_UAS above), then re-run `waf`.')
+    process.exitCode = 1
+    return
+  }
+  ok('No search crawler and no first-party sender was stopped by a live rule.')
+  info('Residential IP counts in double digits are users, not scrapers — check before shrugging.')
+}
+
 // --- entry point ----------------------------------------------------------
 
 async function main() {
@@ -835,6 +1006,10 @@ async function main() {
   }
   if (command === 'waf') {
     await stepWaf(ctx)
+    return
+  }
+  if (command === 'health') {
+    await stepHealth(ctx)
     return
   }
   if (command === 'all') {

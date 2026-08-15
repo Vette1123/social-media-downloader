@@ -35,7 +35,23 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         // Aggressive scrapers — block
-        userAgent: ['CCBot', 'Bytespider', 'Amazonbot', 'Diffbot', 'Omgili'],
+        userAgent: [
+          'CCBot',
+          'Bytespider',
+          'Amazonbot',
+          'Diffbot',
+          'Omgili',
+          // Backlink and SEO-audit crawlers. They send no visitors and index
+          // nothing a person searches; they walk the whole site to sell the
+          // resulting report. `pnpm cf:health` shows them arriving.
+          'AhrefsBot',
+          'SemrushBot',
+          'MJ12bot',
+          'DotBot',
+          'DataForSeoBot',
+          'SERankingBacklinksBot',
+          'PetalBot',
+        ],
         disallow: '/',
       },
     ],

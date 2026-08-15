@@ -18,7 +18,8 @@
     "cf:startup": "node --experimental-vm-modules scripts/worker-startup.mjs",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "cf:setup": "node scripts/cf-setup.mjs",
-    "cf:waf": "node scripts/cf-setup.mjs waf"
+    "cf:waf": "node scripts/cf-setup.mjs waf",
+    "cf:health": "node scripts/cf-setup.mjs health"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
