@@ -57,6 +57,16 @@ things, one a real bug and one self-inflicted:
   endpoint just returned "no items", so `logInstagramRefusal` now names the
   three states apart — locked account, stale cookie, refused media id.
 
+## Where it ended up
+
+Once the checkpoint was cleared and the fixes deployed, every shape resolves
+against the live session: a restricted reel, a live story (the exact URL that
+failed with "could not resolve that Instagram account" before the fix), and a
+highlight — with the public path unchanged for everyone else. The one thing not
+provable from here is the entitlement itself, because a locally minted token
+cannot verify against production's rotated `PRO_TOKEN_SECRET`; that needs a real
+sign-in on an `ig`-granted account.
+
 ## Mistakes
 
 - **I proved a negative from two unrepresentative URLs.** One shortcode I invented;
@@ -101,6 +111,14 @@ things, one a real bug and one self-inflicted:
   came back identical, which reads exactly like "the grant does nothing" — a
   false alarm about a live entitlement. Verify the probe reproduces a *known*
   positive before trusting its negative.
+- **Then it was still identical, for a second reason.** A token minted locally
+  from `.dev.vars` does not verify against production, whose `PRO_TOKEN_SECRET`
+  has since been rotated — so `readProToken` returned null and every probe was
+  anonymous no matter what claims it carried. `wrangler tail` settled it in one
+  request: the Worker logged "A session **IS** configured … requested
+  anonymously", which is the token failing, not the secret missing. A hand-minted
+  token can only ever test the path *after* verification; the grant itself has
+  to be exercised through a real sign-in.
 - **Wasted a probe on a 5 ms green run.** `d.getVideoInfo is not a function` (it
   is `downloadVideo`), swallowed by a `catch` into a `console.log` that vitest
   hides unless you pass `--silent=false`. A probe that finishes instantly has
