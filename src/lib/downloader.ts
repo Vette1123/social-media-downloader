@@ -541,6 +541,88 @@ interface IgReel {
   items?: IgStoryItem[]
 }
 
+/**
+ * Why a private Instagram endpoint gave us nothing — the one line an operator
+ * needs to tell three very different situations apart:
+ *
+ *   checkpoint_required  the account is LOCKED. Instagram wants a challenge
+ *                        cleared in a browser before it answers anything, so
+ *                        every credentialed call fails until someone signs in
+ *                        as that account, clears it, and re-uploads the
+ *                        cookies. No amount of retrying helps, and retrying is
+ *                        what got it locked.
+ *   HTML on a 200        the session was rejected outright (the ~600 KB login
+ *                        wall) — the cookie is stale.
+ *   anything else        Instagram refusing this particular media id.
+ *
+ * Distinguishing these took a full afternoon once; it should take one log line
+ * from now on. See lessons/2026-08-15-instagram-logged-out-wall.md.
+ */
+function logInstagramRefusal(
+  endpoint: string,
+  subject: string,
+  response: { status?: number; data?: unknown },
+): void {
+  const data = response.data as { message?: string } | string | undefined
+  const message = typeof data === 'object' ? data?.message : undefined
+  if (message === 'checkpoint_required') {
+    console.warn(
+      `instagram ${endpoint}: the session's account is LOCKED (checkpoint_required). Every credentialed resolve fails until the challenge is cleared in a browser and IG_SESSIONID (plus its companion cookies) are re-uploaded.`,
+    )
+    return
+  }
+  console.warn(
+    `instagram ${endpoint}: no item for ${subject}`,
+    response.status,
+    typeof data === 'string' ? 'html (login wall — session stale)' : 'json',
+    message ?? '',
+  )
+}
+
+/**
+ * One story / highlight item mapped onto our shared shape. Both story routes
+ * end here — the item fetched directly by its media id, and the one picked out
+ * of a reel — so the two cannot drift apart. Null when the item carries neither
+ * a video nor an image, which is the caller's cue to raise.
+ */
+function storyItemToVideoData(
+  item: IgStoryItem,
+  owner: string,
+  originalUrl: string,
+  fallbackId?: string,
+): VideoData | null {
+  const video = item.video_versions?.[0]?.url
+  const image = item.image_versions2?.candidates?.[0]?.url
+  const id = String(item.pk ?? fallbackId ?? Date.now())
+  const common = {
+    id,
+    title: `Instagram story by @${owner}`,
+    url: originalUrl,
+    author: owner,
+    description: '',
+    isPhotoCarousel: false,
+  }
+
+  if (video) {
+    return {
+      ...common,
+      thumbnail: image || '',
+      duration: Math.round(item.video_duration || 0),
+      downloadUrl: video,
+    }
+  }
+  if (image) {
+    return {
+      ...common,
+      thumbnail: image,
+      duration: 0,
+      downloadUrl: '',
+      images: [{ id: `${id}_0`, url: image, thumbnail: image }],
+    }
+  }
+  return null
+}
+
 // Instagram's GraphQL endpoint rejects requests that don't carry its anti-CSRF
 // tokens (csrftoken + lsd) — it bounces them to a "Page Not Found" HTML page.
 // The tokens are harvested from a homepage GET and cached briefly here to avoid
@@ -1756,25 +1838,39 @@ export class Downloader {
       Cookie: cookie,
     }
 
+    // A /stories/<user>/<pk>/ link carries the item's OWN media id, so ask for
+    // that item directly and skip resolving the account behind it. This is the
+    // fast path and, more importantly, the reliable one: the username lookup
+    // below answers 429 far more often than not, which is why story links
+    // failed for a credentialed request while highlight links — which never
+    // need a username — worked. See
+    // lessons/2026-08-15-instagram-logged-out-wall.md.
+    if (story.storyPk) {
+      const direct = await this.instagramMediaItem(story.storyPk, headers)
+      const parsed =
+        direct &&
+        storyItemToVideoData(
+          direct,
+          direct.user?.username || story.username || 'instagram',
+          originalUrl,
+          story.storyPk,
+        )
+      if (parsed) return parsed
+    }
+
     // Resolve which reel to fetch: a highlight id directly, or the user id
     // behind a username.
     let reelId: string
     if (story.highlightId) {
       reelId = `highlight:${story.highlightId}`
     } else if (story.username) {
-      const prof = await http.get(
-        `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(
-          story.username,
-        )}`,
-        { headers, timeout: 15000, validateStatus: () => true },
-      )
-      const userId = prof.data?.data?.user?.id
+      const userId = await this.resolveInstagramUserId(story.username, headers)
       if (!userId) {
         throw new Error(
           'Could not resolve that Instagram account (it may be private, or the session has expired).',
         )
       }
-      reelId = String(userId)
+      reelId = userId
     } else {
       throw new Error('Unrecognised Instagram story link.')
     }
@@ -1791,6 +1887,7 @@ export class Downloader {
       reelMap[reelId] ?? (Object.values(reelMap)[0] as IgReel | undefined)
     const items = (reel?.items ?? []) as IgStoryItem[]
     if (items.length === 0) {
+      logInstagramRefusal('reels_media', reelId, reels)
       throw new Error(
         'No story items are available — the story may have expired (stories last 24 hours) or the account has none right now.',
       )
@@ -1806,39 +1903,45 @@ export class Downloader {
         )) ||
       items[0]
 
-    const video = item?.video_versions?.[0]?.url
-    const image = item?.image_versions2?.candidates?.[0]?.url
-    const owner = reel?.user?.username || story.username || 'instagram'
-    const id = String(item?.pk ?? story.storyPk ?? Date.now())
-
-    if (video) {
-      return {
-        id,
-        title: `Instagram story by @${owner}`,
-        url: originalUrl,
-        thumbnail: image || '',
-        duration: Math.round(item?.video_duration || 0),
-        author: owner,
-        description: '',
-        downloadUrl: video,
-        isPhotoCarousel: false,
-      }
-    }
-    if (image) {
-      return {
-        id,
-        title: `Instagram story by @${owner}`,
-        url: originalUrl,
-        thumbnail: image,
-        duration: 0,
-        author: owner,
-        description: '',
-        downloadUrl: '',
-        images: [{ id: `${id}_0`, url: image, thumbnail: image }],
-        isPhotoCarousel: false,
-      }
-    }
+    const parsed = storyItemToVideoData(
+      item,
+      reel?.user?.username || story.username || 'instagram',
+      originalUrl,
+      story.storyPk,
+    )
+    if (parsed) return parsed
     throw new Error('Could not extract media from that story item.')
+  }
+
+  /**
+   * The numeric user id behind a username, via the same blended search the web
+   * client's search box calls.
+   *
+   * NOT `web_profile_info`: that is the obvious endpoint and it rate-limits to
+   * 429 under any real use, taking the whole story path down with it. Search
+   * matches on substrings, so only an exact username counts — otherwise
+   * `/stories/nasa/…` could resolve to `nasa_fanpage`.
+   */
+  private async resolveInstagramUserId(
+    username: string,
+    headers: Record<string, string>,
+  ): Promise<string> {
+    const response = await http.get(
+      `https://www.instagram.com/api/v1/web/search/topsearch/?context=blended&query=${encodeURIComponent(
+        username,
+      )}`,
+      { headers, timeout: 15000, validateStatus: () => true },
+    )
+    const users = response.data?.users
+    if (!Array.isArray(users)) return ''
+    const wanted = username.toLowerCase()
+    for (const entry of users) {
+      const user = entry?.user
+      if (String(user?.username ?? '').toLowerCase() === wanted) {
+        return String(user?.pk ?? '')
+      }
+    }
+    return ''
   }
 
   /**
@@ -2878,6 +2981,29 @@ export class Downloader {
    * for an anonymous resolve this is a large download that cannot succeed.
    * Returning null up front keeps it off the free path entirely.
    */
+  /**
+   * One item from `/api/v1/media/<id>/info/`, the endpoint Instagram's own web
+   * client calls. Posts, reels and story items all live behind it and all come
+   * back in the same `items[0]` shape, which is why both the post extractor and
+   * the story extractor route through here.
+   *
+   * A rejected session answers with HTML (or JSON with no items); both become
+   * null so the caller falls through to its next method — the graceful
+   * degradation the credential gate promises.
+   */
+  private async instagramMediaItem(
+    mediaId: string,
+    headers: Record<string, string>,
+  ): Promise<IgStoryItem | null> {
+    const response = await http.get(
+      `https://www.instagram.com/api/v1/media/${encodeURIComponent(mediaId)}/info/`,
+      { headers, timeout: 20000, validateStatus: () => true },
+    )
+    const item = response.data?.items?.[0] as IgStoryItem | undefined
+    if (!item) logInstagramRefusal('media/info', mediaId, response)
+    return item ?? null
+  }
+
   private async tryInstagramMediaInfo(
     shortcode: string,
     originalUrl: string,
@@ -2887,25 +3013,13 @@ export class Downloader {
     if (!mediaId) return null
 
     const { csrf } = await this.getInstagramTokens()
-    const response = await http.get(
-      `https://www.instagram.com/api/v1/media/${mediaId}/info/`,
-      {
-        headers: {
-          'User-Agent': this.userAgent,
-          'X-IG-App-ID': this.instagramAppId,
-          Accept: '*/*',
-          Referer: `https://www.instagram.com/p/${shortcode}/`,
-          Cookie: this.instagramCookieWith(csrf),
-        },
-        timeout: 20000,
-        validateStatus: () => true,
-      },
-    )
-
-    // A rejected session answers with HTML (or JSON with no items), which the
-    // optional chaining turns into a null result and a fall-through to the next
-    // method — the graceful degradation the credential gate promises.
-    const item: IgMediaInfoItem | undefined = response.data?.items?.[0]
+    const item = await this.instagramMediaItem(mediaId, {
+      'User-Agent': this.userAgent,
+      'X-IG-App-ID': this.instagramAppId,
+      Accept: '*/*',
+      Referer: `https://www.instagram.com/p/${shortcode}/`,
+      Cookie: this.instagramCookieWith(csrf),
+    })
     if (!item) return null
 
     const parsed = this.parseInstagramMedia(
