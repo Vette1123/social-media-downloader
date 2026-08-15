@@ -11,6 +11,10 @@
  *   node scripts/cf-setup.mjs zone      add the domain to Cloudflare, print the
  *                                       nameservers to set at the registrar
  *   node scripts/cf-setup.mjs domain    attach apex + www to the Worker
+ *   node scripts/cf-setup.mjs waf       zone protection: WAF rules, rate limit,
+ *                                       Bot Fight Mode off, TLS. See stepWaf —
+ *                                       this is the step that decides whether
+ *                                       search crawlers reach the site
  *   node scripts/cf-setup.mjs all       every step above, in order, skipping
  *                                       whatever is already done
  *
@@ -478,6 +482,331 @@ async function apexRedirectViaPageRule(ctx, zone) {
   }
 }
 
+// --- WAF, bots and TLS ----------------------------------------------------
+
+/**
+ * Zone-level protection, ported from the sibling movies project's WAF script.
+ *
+ * The headline is what it turns OFF. Free-plan **Bot Fight Mode runs before the
+ * WAF phases**, so no skip/allow rule can exempt anything from it — it decides
+ * on its own whether a client looks automated and serves a managed challenge.
+ * A challenged request never reaches this Worker and never reaches the asset
+ * store either, which on this zone has already cost us, twice, in ways that
+ * took a day each to diagnose:
+ *
+ *   - every payment-provider webhook delivery (docs/buymeacoffee-setup.md),
+ *     worked around with an IP Access Rule whitelist for one AWS /24;
+ *   - Google's OAuth brand-verification fetch (lessons/2026-08-15-…).
+ *
+ * The same mechanism challenges a crawler that Cloudflare has not verified by
+ * reverse DNS, and a challenge served to Googlebot or to Search Console's
+ * sitemap fetch is an unindexed page. That is the SEO cost, and it is invisible
+ * — nothing in `wrangler tail` records a request that was stopped at the edge.
+ *
+ * What replaces it: the three custom rules below plus one rate limit, all in
+ * the WAF phases, where an allowlist actually applies. Crawlers and unfurlers
+ * are skipped past every product; scripted clients are challenged; the one
+ * genuinely expensive endpoint is rate limited.
+ *
+ * Idempotent: rules are tagged with WAF_TAG in their description and replaced
+ * on every run. Any hand-made rule in the zone without that prefix is kept.
+ */
+const WAF_TAG = '[smd-waf]'
+
+/**
+ * Never challenge these.
+ *
+ * `cf.client.bot` covers what Cloudflare has verified by reverse DNS — the
+ * search crawlers proper. The user agents here are the ones it does not verify
+ * and we still want: the link unfurlers that render a preview card when someone
+ * shares a page in a chat app, and the AI search crawlers that src/app/robots.tsx
+ * already invites by name. Blocking those at the edge while inviting them in
+ * robots.txt is the kind of contradiction that shows up as "we get no traffic
+ * from X" a quarter later.
+ */
+const ALLOWED_BOT_UAS = [
+  // Link unfurlers.
+  'WhatsApp',
+  'facebookexternalhit',
+  'Facebot',
+  'Twitterbot',
+  'TelegramBot',
+  'Slackbot',
+  'Discordbot',
+  'LinkedInBot',
+  'redditbot',
+  'Pinterest',
+  'SkypeUriPreview',
+  // Search crawlers, named as well as verified: reverse-DNS verification can
+  // lag a new crawler IP, and this list costs nothing.
+  'Googlebot',
+  'bingbot',
+  'DuckDuckBot',
+  'YandexBot',
+  'Applebot',
+  // AI crawlers that drive discovery — kept in step with robots.tsx.
+  'GPTBot',
+  'OAI-SearchBot',
+  'ChatGPT-User',
+  'PerplexityBot',
+  'ClaudeBot',
+  'anthropic-ai',
+]
+
+/**
+ * Scripted clients, challenged rather than blocked.
+ *
+ * These are the defence Bot Fight Mode was providing, expressed where it can be
+ * scoped. `managed_challenge` and not `block`: a misclassified real client gets
+ * a puzzle and still gets in.
+ */
+const JUNK_UAS = [
+  'python-requests',
+  'scrapy',
+  'Go-http-client',
+  'node-fetch',
+  'axios/',
+  'okhttp',
+  'HeadlessChrome',
+  'PhantomJS',
+  'wget/',
+  'curl/',
+]
+
+/**
+ * Paths this rule must never touch: the webhook senders are exactly the kind of
+ * client it describes. Buy Me a Coffee posts from AWS as `BMC-HTTPS-ROBOT` and
+ * the other provider posts with an `axios` user agent, and both verify an HMAC
+ * over their own body before a byte is trusted — they do not need UA screening
+ * and cannot survive it.
+ */
+const WEBHOOK_PATH_PREFIX = '/api/billing/'
+
+/**
+ * Extensions nothing here serves. `out/` contains no .php/.asp/.jpg at all —
+ * checked, not assumed — so no real request can match, and every hit is a
+ * vulnerability scan.
+ *
+ * This saves no Worker CPU: `not_found_handling: "404-page"` already answers
+ * these from the asset store without invoking the Worker (see
+ * cloudflare/worker.js). It is here to keep the scans out of the analytics that
+ * the rest of these rules are read against.
+ */
+const PROBE_EXTENSIONS = ['.php', '.asp', '.aspx', '.cgi', '.env', '.sql', '.bak']
+
+const orUserAgent = (fragments) =>
+  fragments.map((f) => `(http.user_agent contains "${f}")`).join(' or ')
+
+const WAF_RULES = [
+  {
+    description: `${WAF_TAG} block extensions this site never serves`,
+    expression: PROBE_EXTENSIONS.map(
+      (ext) => `ends_with(http.request.uri.path, "${ext}")`,
+    ).join(' or '),
+    action: 'block',
+  },
+  {
+    // First of the rules that matter, and it skips the rest of the ruleset:
+    // everything below only ever sees traffic that is not already trusted.
+    description: `${WAF_TAG} allow verified bots, unfurlers and search crawlers`,
+    expression: `(cf.client.bot) or ${orUserAgent(ALLOWED_BOT_UAS)}`,
+    action: 'skip',
+    action_parameters: {
+      ruleset: 'current',
+      phases: ['http_ratelimit', 'http_request_sbfm'],
+      products: ['bic', 'hot', 'rateLimit', 'securityLevel', 'uaBlock', 'waf', 'zoneLockdown'],
+    },
+  },
+  {
+    description: `${WAF_TAG} challenge scripted clients`,
+    expression:
+      `((${orUserAgent(JUNK_UAS)}) or (http.user_agent eq ""))` +
+      ` and not starts_with(http.request.uri.path, "${WEBHOOK_PATH_PREFIX}")`,
+    action: 'managed_challenge',
+  },
+]
+
+/**
+ * The only endpoint worth rate limiting.
+ *
+ * A page view is a static asset and costs nothing; /api/download is the one
+ * that spends an extractor call, an upstream quota and real Worker CPU per hit.
+ * 30 requests per 10 s per IP is far above any human — a person pastes one link
+ * at a time — and well below what makes the endpoint someone else's free API.
+ *
+ * Free-plan limits shape the rest: one rate-limit rule per zone (so this
+ * replaces whatever is there, including Cloudflare's default "leaked
+ * credentials" rule), a 10 s window, `block` as the only action, and no regex
+ * in the expression — `starts_with` is what there is.
+ */
+const RATE_LIMIT_RULE = {
+  description: `${WAF_TAG} rate limit the extractor endpoint`,
+  expression: 'starts_with(http.request.uri.path, "/api/download")',
+  action: 'block',
+  ratelimit: {
+    characteristics: ['ip.src', 'cf.colo.id'],
+    period: 10,
+    requests_per_period: 30,
+    mitigation_timeout: 10,
+  },
+}
+
+/** A phase entrypoint is created on first use; Cloudflare 404s it until then. */
+async function phaseEntrypoint(token, zoneId, phase) {
+  const existing = await cf(token, `/zones/${zoneId}/rulesets/phases/${phase}/entrypoint`, {
+    allowFailure: true,
+  })
+  if (existing.success) return existing.result
+
+  return cf(token, `/zones/${zoneId}/rulesets`, {
+    method: 'POST',
+    body: { name: `smd-${phase}`, kind: 'zone', phase, rules: [] },
+  })
+}
+
+/** Strips the fields the API returns but rejects on write (id, version, ref…). */
+function writableRule(rule) {
+  return {
+    description: rule.description,
+    expression: rule.expression,
+    action: rule.action,
+    enabled: rule.enabled !== false,
+    ...(rule.action_parameters ? { action_parameters: rule.action_parameters } : {}),
+    ...(rule.ratelimit ? { ratelimit: rule.ratelimit } : {}),
+  }
+}
+
+/**
+ * Replaces our tagged rules in a phase, keeping every other rule in place.
+ * `replaceAll` is for the rate-limit phase, where the free plan allows exactly
+ * one rule and an untagged leftover would take the slot.
+ */
+async function putPhaseRules(token, zoneId, phase, rules, { replaceAll = false } = {}) {
+  const ruleset = await phaseEntrypoint(token, zoneId, phase)
+  const kept = replaceAll
+    ? []
+    : (ruleset.rules ?? [])
+        .filter((r) => !(r.description ?? '').startsWith(WAF_TAG))
+        .map(writableRule)
+
+  await cf(token, `/zones/${zoneId}/rulesets/${ruleset.id}`, {
+    method: 'PUT',
+    body: {
+      name: ruleset.name,
+      description: ruleset.description ?? '',
+      kind: ruleset.kind,
+      phase: ruleset.phase,
+      rules: [...rules.map(writableRule), ...kept],
+    },
+  })
+}
+
+async function stepWaf(ctx) {
+  step('WAF, bots and TLS')
+
+  const zone = await findZone(ctx.token, ctx.accountId)
+  if (!zone) throw new SetupError(`Zone ${APEX} is not on this account. Run the \`zone\` step first.`)
+
+  // Each group below needs a different token permission, so one missing scope
+  // must not stop the others — above all it must not stop the bot-mode step,
+  // which is the one that decides whether crawlers reach the site at all.
+  const failed = []
+  const task = async (label, fn) => {
+    try {
+      await fn()
+      ok(label)
+      return true
+    } catch (error) {
+      warn(`${label} — skipped: ${error.message}`)
+      failed.push(label)
+      return false
+    }
+  }
+
+  await task('Custom rules: probes blocked, crawlers allowed, scripts challenged', () =>
+    putPhaseRules(ctx.token, zone.id, 'http_request_firewall_custom', WAF_RULES),
+  )
+
+  await task('Rate limit: 30 req/10s per IP on /api/download', () =>
+    putPhaseRules(ctx.token, zone.id, 'http_ratelimit', [RATE_LIMIT_RULE], { replaceAll: true }),
+  )
+
+  // Bot Fight Mode off, and two settings that ride along with it.
+  //
+  // `enable_js` (JavaScript Detections) injects /cdn-cgi/challenge-platform/…
+  // /jsd/main.js into every HTML response to compute a bot score. Nothing here
+  // reads that score — the rules above classify on user agent and
+  // `cf.client.bot` — and the score itself is a paid Bot Management feature. It
+  // is a script every real visitor downloads and executes to feed a signal no
+  // rule consults, on a site whose whole performance story is that a page view
+  // runs no code. It also cannot be removed by toggling alone: the tag is baked
+  // into cached HTML, so purge the cache after this runs.
+  //
+  // `is_robots_txt_managed` is on by default and does not merge: the edge
+  // serves Cloudflare's own /robots.txt in place of the exported one, so
+  // src/app/robots.tsx might as well not exist — and Cloudflare's version has no
+  // `Sitemap:` line, which is most of why robots.txt is served at all.
+  const botsOk = await task('Bot Fight Mode, JS detections and managed robots.txt off', () =>
+    cf(ctx.token, `/zones/${zone.id}/bot_management`, {
+      method: 'PUT',
+      body: { fight_mode: false, enable_js: false, is_robots_txt_managed: false },
+    }),
+  )
+
+  // Separate call on purpose: `ai_bots_protection` is newer than the three
+  // above and a rejection of this field must not take Bot Fight Mode's `false`
+  // down with it.
+  //
+  // Set to `disabled`, which is the opposite of what the movies project does,
+  // because this site wants AI crawlers: robots.tsx allows GPTBot,
+  // PerplexityBot and ClaudeBot by name and there is an /llms.txt. Edge
+  // enforcement here would silently overrule both.
+  await task('AI crawler blocking off (this site invites them — see robots.tsx)', () =>
+    cf(ctx.token, `/zones/${zone.id}/bot_management`, {
+      method: 'PUT',
+      body: { ai_bots_protection: 'disabled' },
+    }),
+  )
+
+  // TLS. All three are free-plan zone settings and idempotent.
+  //   min_tls_version 1.2 — the default keeps TLS 1.0/1.1 handshakes alive for
+  //     a site with no legacy clients.
+  //   ssl 'strict' — Full (Strict). The origin is this Worker on a Custom
+  //     Domain, so strict cannot break the origin leg.
+  //   HSTS 6 months + includeSubDomains, deliberately without preload: max_age
+  //     is what browsers latch onto and preload is the part that is genuinely
+  //     hard to undo.
+  await task('TLS: min 1.2, Full (Strict), HSTS 6mo', async () => {
+    const settings = [
+      ['min_tls_version', '1.2'],
+      ['ssl', 'strict'],
+      [
+        'security_header',
+        {
+          strict_transport_security: {
+            enabled: true,
+            max_age: 15552000,
+            include_subdomains: true,
+            preload: false,
+            nosniff: true,
+          },
+        },
+      ],
+    ]
+    for (const [id, value] of settings) {
+      await cf(ctx.token, `/zones/${zone.id}/settings/${id}`, { method: 'PATCH', body: { value } })
+    }
+  })
+
+  if (failed.length) {
+    warn(`${failed.length} of the above were skipped — the token is missing a scope for each.`)
+    info('Needs, per group: Zone WAF: Edit, Zone Bot Management: Edit, Zone Settings: Edit.')
+  }
+  if (botsOk) {
+    info('Purge the zone cache now — the JS-detections tag is baked into cached HTML.')
+  }
+}
+
 // --- entry point ----------------------------------------------------------
 
 async function main() {
@@ -504,6 +833,10 @@ async function main() {
     await stepDomain(ctx)
     return
   }
+  if (command === 'waf') {
+    await stepWaf(ctx)
+    return
+  }
   if (command === 'all') {
     const status = await stepCheck(ctx)
     // Deploy before secrets: the secrets endpoint targets a script that has to
@@ -512,12 +845,15 @@ async function main() {
     else info('Worker already deployed — skipping build. Use `deploy` to force one.')
     await stepSecrets(ctx)
     const zone = await stepZone(ctx)
-    if (zone.status === 'active') await stepDomain(ctx)
+    if (zone.status === 'active') {
+      await stepDomain(ctx)
+      await stepWaf(ctx)
+    }
     return
   }
 
   throw new SetupError(
-    `Unknown command "${command}". Expected one of: check, deploy, secrets, zone, domain, all`,
+    `Unknown command "${command}". Expected one of: check, deploy, secrets, zone, domain, waf, all`,
   )
 }
 

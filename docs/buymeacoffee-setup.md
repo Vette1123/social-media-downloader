@@ -480,9 +480,17 @@ Reached from the membership's Recovery tab. Fill three of the four.
    instead of `ok`. This has now happened to two providers on this zone.
 
    The sender is `BMC-HTTPS-ROBOT` from AWS. `3.23.31.0/24` is allowlisted in
-   **Security → WAF → Tools → IP Access Rules** with `mode: whitelist`, which is
-   the only way to exempt anything from Bot Fight Mode on a Free plan — it
+   **Security → WAF → Tools → IP Access Rules** with `mode: whitelist`, which
+   was the only way to exempt anything from Bot Fight Mode on a Free plan — it
    cannot be scoped by path, and WAF skip rules do not apply to it.
+
+   **Bot Fight Mode itself is off as of 2026-08-15** (`pnpm cf:waf` — see
+   `stepWaf` in scripts/cf-setup.mjs), so this class of failure should no longer
+   occur for any sender. What replaced it is a WAF rule that challenges scripted
+   user agents, and that rule excludes `/api/billing/*` precisely so a webhook
+   POST is never screened on its user agent. The IP allowlist is kept as cover
+   for anything else on the zone that might reach for a challenge, but it is no
+   longer the mechanism keeping deliveries alive.
 
    **This can drift.** If the provider ever sends from outside that range,
    grants stop silently. Nothing in the Worker logs will say so, because the
