@@ -33,7 +33,7 @@ vi.mock('./httpClient', () => ({
   },
 }))
 
-const { Downloader } = await import('./downloader')
+const { Downloader, resetInstagramSessionLock } = await import('./downloader')
 
 const STORY_PK = '3963591788455603283'
 const USER_ID = '44734399045'
@@ -54,11 +54,13 @@ function asked(fragment: string): boolean {
 
 beforeEach(() => {
   requested.length = 0
+  resetInstagramSessionLock()
   process.env.IG_SESSIONID = 'test-session-cookie-value'
 })
 
 afterEach(() => {
   delete process.env.IG_SESSIONID
+  resetInstagramSessionLock()
   responder = () => ({})
 })
 
@@ -154,6 +156,83 @@ describe('a highlight link', () => {
     expect(asked('highlight%3A18056801944028464')).toBe(true)
     expect(asked('web_profile_info')).toBe(false)
     expect(asked('topsearch')).toBe(false)
+  })
+})
+
+describe('a story link with no item id', () => {
+  it('still routes to the story extractor, not the generic one', async () => {
+    responder = (url) =>
+      url.includes('topsearch')
+        ? { users: [{ user: { username: 'canvaindia', pk: USER_ID } }] }
+        : url.includes('reels_media')
+          ? {
+              reels: {
+                [USER_ID]: {
+                  user: { username: 'canvaindia' },
+                  items: [storyItem],
+                },
+              },
+            }
+          : {}
+
+    const result = await new Downloader({ credentialed: true }).downloadVideo(
+      'https://www.instagram.com/stories/canvaindia/',
+    )
+
+    expect(result.downloadUrl).toBe(VIDEO)
+    expect(result.title).toContain('story')
+    // No item id to ask for, so this is the one shape that must resolve the
+    // account — and it still must not use web_profile_info to do it.
+    expect(asked('web_profile_info')).toBe(false)
+    expect(asked('topsearch')).toBe(true)
+  })
+})
+
+/**
+ * Instagram answers `checkpoint_required` when it wants the account to prove
+ * itself to a human. Nothing we send clears that, and every further request
+ * carrying the cookie is both a guaranteed failure and more evidence of
+ * automation — which is what provokes the lock. So the cookie is held back for
+ * a cooldown, and the user is told what is actually wrong.
+ */
+describe('a locked Instagram account', () => {
+  const CHECKPOINT = { message: 'checkpoint_required', lock: true }
+
+  it('stops sending the session and says why', async () => {
+    responder = () => CHECKPOINT
+
+    await expect(
+      new Downloader({ credentialed: true }).downloadVideo(
+        `https://www.instagram.com/stories/canvaindia/${STORY_PK}/`,
+      ),
+    ).rejects.toThrow(/Could not resolve that Instagram account/)
+
+    requested.length = 0
+
+    await expect(
+      new Downloader({ credentialed: true }).downloadVideo(
+        `https://www.instagram.com/stories/canvaindia/${STORY_PK}/`,
+      ),
+    ).rejects.toThrow(/verify itself/)
+    // The whole point of the cooldown: the second request sends nothing.
+    expect(requested).toHaveLength(0)
+  })
+
+  it('leaves the anonymous path alone', async () => {
+    responder = () => CHECKPOINT
+    await new Downloader({ credentialed: true })
+      .downloadVideo(`https://www.instagram.com/stories/canvaindia/${STORY_PK}/`)
+      .catch(() => undefined)
+
+    // A locked operator account must not change what a public visitor sees.
+    responder = (url) =>
+      url.includes('embed')
+        ? '<html><img class="EmbeddedMediaImage" src="https://cdn.example/p.jpg"/></html>'
+        : {}
+    const result = await new Downloader().downloadVideo(
+      'https://www.instagram.com/p/CmUv48DLvxd/',
+    )
+    expect(result.images?.[0]?.url).toBe('https://cdn.example/p.jpg')
   })
 })
 

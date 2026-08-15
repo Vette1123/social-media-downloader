@@ -38,6 +38,11 @@ const platformPatterns: Record<
     // Downloader.downloadInstagramStory).
     /^(https?:\/\/)?(www\.)?instagram\.com\/stories\/highlights\/\d+/,
     /^(https?:\/\/)?(www\.)?instagram\.com\/stories\/[\w.-]+\/\d+/,
+    // …and the bare-account form, which is what "copy link" on a profile ring
+    // gives you. Without it the link missed every platform and fell through to
+    // the generic extractor, which answers "could not download this generic
+    // content" — a dead end for a link we can actually resolve.
+    /^(https?:\/\/)?(www\.)?instagram\.com\/stories\/[\w.-]+\/?$/,
     // New-style share links (resolved to a canonical URL before extraction)
     /^(https?:\/\/)?(www\.)?instagram\.com\/share\/[\w-]+/,
     /^(https?:\/\/)?(www\.)?instagram\.com\/s\/[\w-]+/,
@@ -187,7 +192,15 @@ export function parseInstagramShortcode(url: string): string | null {
  * Recognise an Instagram story or highlight URL and pull out what we need to
  * fetch it. Returns null for ordinary post/reel URLs.
  *   /stories/<username>/<storyPk>/        → { username, storyPk }
+ *   /stories/<username>/                  → { username }
  *   /stories/highlights/<highlightId>/    → { highlightId }
+ *
+ * The bare-username form is what you get by copying the address bar while a
+ * story is open in some clients, and by tapping "copy link" on a profile ring.
+ * Without it that link fell through to the generic extractor and failed with
+ * "could not download this generic content", which tells the user nothing —
+ * the story extractor already treats `storyPk` as optional and takes the
+ * newest item when it is missing.
  */
 export function parseInstagramStory(
   url: string,
@@ -196,6 +209,10 @@ export function parseInstagramStory(
   if (hi) return { highlightId: hi[1] }
   const st = url.match(/instagram\.com\/stories\/([\w.-]+)\/(\d+)/)
   if (st) return { username: st[1], storyPk: st[2] }
+  // `highlights` is a path segment, not an account, so it must not fall through
+  // to here as a username once the id-bearing form above has missed.
+  const user = url.match(/instagram\.com\/stories\/([\w.-]+)\/?(?:[?#]|$)/)
+  if (user && user[1] !== 'highlights') return { username: user[1] }
   return null
 }
 

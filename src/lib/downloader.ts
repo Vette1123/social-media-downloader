@@ -542,6 +542,32 @@ interface IgReel {
 }
 
 /**
+ * How long to stop sending the session after Instagram answers
+ * `checkpoint_required`.
+ *
+ * The lock is cleared by a human in a browser, never by us, so every request we
+ * keep sending in the meantime is a failed download that also deepens the
+ * automation signature that caused the lock. Isolate-local and deliberately so:
+ * a cooldown that outlived the isolate would need shared state, and being
+ * approximately right in each isolate is the whole benefit here.
+ */
+const IG_LOCK_COOLDOWN_MS = 30 * 60 * 1000
+let instagramLockedUntil = 0
+
+function noteInstagramSessionLocked(): void {
+  instagramLockedUntil = Date.now() + IG_LOCK_COOLDOWN_MS
+}
+
+function instagramSessionLocked(): boolean {
+  return Date.now() < instagramLockedUntil
+}
+
+/** Test seam: the cooldown is module state, and a test must be able to clear it. */
+export function resetInstagramSessionLock(): void {
+  instagramLockedUntil = 0
+}
+
+/**
  * Why a private Instagram endpoint gave us nothing — the one line an operator
  * needs to tell three very different situations apart:
  *
@@ -566,8 +592,9 @@ function logInstagramRefusal(
   const data = response.data as { message?: string } | string | undefined
   const message = typeof data === 'object' ? data?.message : undefined
   if (message === 'checkpoint_required') {
+    noteInstagramSessionLocked()
     console.warn(
-      `instagram ${endpoint}: the session's account is LOCKED (checkpoint_required). Every credentialed resolve fails until the challenge is cleared in a browser and IG_SESSIONID (plus its companion cookies) are re-uploaded.`,
+      `instagram ${endpoint}: the session's account is LOCKED (checkpoint_required). Every credentialed resolve fails until the challenge is cleared in a browser and IG_SESSIONID (plus its companion cookies) are re-uploaded. Holding the cookie back for ${IG_LOCK_COOLDOWN_MS / 60000} minutes.`,
     )
     return
   }
@@ -794,6 +821,9 @@ export class Downloader {
   // migrations/0007 and `hasGrant`.
   private get instagramSessionId(): string {
     if (!this.credentialed) return ''
+    // A locked account rejects every private call, so continuing to attach the
+    // cookie only fails slower and looks more like a bot. See IG_LOCK_COOLDOWN_MS.
+    if (instagramSessionLocked()) return ''
     return process.env.IG_SESSIONID?.trim() || ''
   }
 
@@ -1784,6 +1814,15 @@ export class Downloader {
     // for the client, and this is no worse than the prior behavior.
     if (unverifiedVideo) return unverifiedVideo
 
+    // A credentialed request whose session is locked reached here as if it were
+    // anonymous. Say so, rather than describing this post as the unusual one:
+    // for a grant holder every login-gated post fails until the lock clears.
+    if (this.credentialed && instagramSessionLocked()) {
+      throw new Error(
+        'Could not download this Instagram post. It needs a logged-in Instagram account, and this downloader’s account has been asked by Instagram to verify itself — that has to be done before login-only posts work again. Public posts, reels and carousels are unaffected.',
+      )
+    }
+
     // Every login-free path failed. The most common cause now is a login-gated
     // post (Instagram serves these only to authenticated users); resolving them
     // requires a valid IG_SESSIONID. Surface that distinctly so the operator
@@ -1817,6 +1856,12 @@ export class Downloader {
     story: { username?: string; storyPk?: string; highlightId?: string },
     originalUrl: string,
   ): Promise<VideoData> {
+    if (this.credentialed && instagramSessionLocked()) {
+      throw new Error(
+        'Instagram has asked this downloader’s Instagram account to verify itself, so story and highlight downloads are paused until that is done. Public posts, reels and carousels are unaffected.',
+      )
+    }
+
     if (!this.instagramSessionId) {
       if (this.instagramSessionConfigured) {
         console.warn(
