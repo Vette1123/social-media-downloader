@@ -32,6 +32,31 @@ So: the GraphQL extractor is removed (the server refuses the *query id*, not the
 post — nothing to re-point), and Instagram otherwise works for the public
 exactly as before.
 
+## Then the `ig` grant turned out to be broken too — twice over
+
+Testing every content shape against the credentialed path found two more
+things, one a real bug and one self-inflicted:
+
+- **Story links had been failing for `ig` accounts while highlights worked.**
+  The path resolved `username -> user id` through `web_profile_info`, which
+  answers 429 under any real use. Highlights carry their own reel id and never
+  touch it, which is exactly why the failure looked random. A story link already
+  carries the item's own media id, so it now asks `media/info` for that item
+  directly and never looks the account up; the reel route remains as a fallback,
+  with the username resolved through blended search (exact match only, or
+  `/stories/nasa/…` could resolve to `nasa_fanpage`). Five tests in
+  `downloaderStory.test.ts` pin it, including "sends nothing at all when
+  uncredentialed".
+- **I got the burner account locked.** After a few hundred probe requests in an
+  hour, every private endpoint started answering
+  `{"message":"checkpoint_required","lock":true}` — `media/info`, search, even
+  `accounts/current_user`. It had answered 200 thirty minutes earlier. Nothing in
+  the code can recover from this: someone has to sign in as that account in a
+  browser, clear the challenge, and re-upload `IG_SESSIONID` and its companion
+  cookies. Diagnosing it took far longer than it should have because every
+  endpoint just returned "no items", so `logInstagramRefusal` now names the
+  three states apart — locked account, stale cookie, refused media id.
+
 ## Mistakes
 
 - **I proved a negative from two unrepresentative URLs.** One shortcode I invented;
@@ -60,6 +85,22 @@ exactly as before.
   first case. Every anonymous Instagram failure — i.e. the normal case — accused
   the operator of a missing secret. That is what sent the investigation looking
   for a broken deployment instead of a restricted post.
+- **I treated a credentialed session like a test fixture.** The `ig` path uses a
+  real Instagram account, it deliberately bypasses both caches, and there is one
+  of it. Hundreds of probe requests against it in an hour is not testing, it is
+  an automation signature — and Instagram locked it. A matrix against the
+  credentialed path needs a handful of requests, spaced, with the anonymous path
+  carrying every case it can.
+- **I spent two runs blaming Instagram for my own machine.** `fetch failed` /
+  `ECONNRESET` landing on a different call each run looked exactly like
+  throttling. It was undici on this box: the same URLs answered fine from
+  PowerShell, and `node --dns-result-order=ipv4first` fixed it. Before concluding
+  a remote host is rate-limiting you, reproduce the failure with a second client.
+- **The production probe read the wrong header and I nearly filed the result.**
+  It sent `Authorization: Bearer`; the Worker reads `X-Pro-Token`. Every tier
+  came back identical, which reads exactly like "the grant does nothing" — a
+  false alarm about a live entitlement. Verify the probe reproduces a *known*
+  positive before trusting its negative.
 - **Wasted a probe on a 5 ms green run.** `d.getVideoInfo is not a function` (it
   is `downloadVideo`), swallowed by a `catch` into a `console.log` that vitest
   hides unless you pass `--silent=false`. A probe that finishes instantly has
@@ -101,3 +142,13 @@ exactly as before.
 - Do not write a platform-is-dead warning into user-facing copy on the strength
   of a morning's probing. The README edit was live in a commit before the
   contradicting evidence arrived.
+- The credentialed path is one real account, not a fixture. Probe it in tens of
+  requests, not hundreds, and prove everything you can on the anonymous path
+  first. `checkpoint_required` is the bill for getting this wrong, and only a
+  human with a browser can pay it.
+- Reproduce a transport failure with a second HTTP client before blaming the
+  remote host. `--dns-result-order=ipv4first` is the first thing to try on this
+  machine.
+- A probe that hits a live entitlement must first prove it can see that
+  entitlement working. An all-tiers-identical result means "my probe is wrong"
+  until a known-positive says otherwise.
