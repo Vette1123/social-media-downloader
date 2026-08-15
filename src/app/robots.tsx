@@ -1,8 +1,19 @@
 import type { MetadataRoute } from 'next'
 import { siteConfig } from '@/config/site'
+import crawlers from '@/config/crawlers.json'
 
 // Written once at build time into out/robots.txt. See sitemap.tsx.
 export const dynamic = 'force-static'
+
+// The lists live in src/config/crawlers.json because scripts/cf-setup.mjs reads
+// the same file to build the WAF rules. robots.txt is a request; the WAF is the
+// enforcement. Splitting the two lists is how a site ends up asking a crawler in
+// here and blocking it at the edge — see the file's own comment.
+const ALLOWED = [
+  ...crawlers.aiCrawlers,
+  ...crawlers.searchCrawlers,
+  ...crawlers.robotsOnlyTokens,
+]
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -13,45 +24,17 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/'],
       },
       {
-        userAgent: [
-          // Search-aware AI crawlers (allow — drives discovery)
-          'GPTBot',
-          'OAI-SearchBot',
-          'ChatGPT-User',
-          'PerplexityBot',
-          'Perplexity-User',
-          'Google-Extended',
-          'ClaudeBot',
-          'Claude-Web',
-          'anthropic-ai',
-          'Applebot',
-          'Applebot-Extended',
-          'Bingbot',
-          'DuckDuckBot',
-          'YandexBot',
-        ],
+        // Search-aware AI crawlers and the search engines proper — named so the
+        // allowance survives a future tightening of the wildcard rule above.
+        userAgent: ALLOWED,
         allow: '/',
         disallow: ['/api/'],
       },
       {
-        // Aggressive scrapers — block
-        userAgent: [
-          'CCBot',
-          'Bytespider',
-          'Amazonbot',
-          'Diffbot',
-          'Omgili',
-          // Backlink and SEO-audit crawlers. They send no visitors and index
-          // nothing a person searches; they walk the whole site to sell the
-          // resulting report. `pnpm cf:health` shows them arriving.
-          'AhrefsBot',
-          'SemrushBot',
-          'MJ12bot',
-          'DotBot',
-          'DataForSeoBot',
-          'SERankingBacklinksBot',
-          'PetalBot',
-        ],
+        // Aggressive scrapers and backlink-audit crawlers: no visitors, no
+        // index anyone searches, and a full walk of the site each time. The
+        // ones that ignore this are blocked at the edge by the same list.
+        userAgent: crawlers.disallowedScrapers,
         disallow: '/',
       },
     ],
