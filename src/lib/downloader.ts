@@ -703,6 +703,20 @@ export class Downloader {
   }
 
   /**
+   * Whether a session exists on this deployment at all, ignoring whether *this*
+   * request may use it.
+   *
+   * Only for log lines, and only so they stop lying. `instagramSessionId` is
+   * empty for two completely different reasons — nobody configured a cookie, or
+   * the caller is anonymous and must never be sent ours — and reporting both as
+   * "IG_SESSIONID is not set" sends whoever reads the log to check a secret
+   * that is already there.
+   */
+  private get instagramSessionConfigured(): boolean {
+    return Boolean(process.env.IG_SESSIONID?.trim())
+  }
+
+  /**
    * The whole Cookie header to send Instagram, assembled from one env var per
    * cookie.
    *
@@ -1602,19 +1616,21 @@ export class Downloader {
     const shortcode =
       parseInstagramShortcode(resolvedUrl) || parseInstagramShortcode(url)
 
-    // Order by reliability + cost:
-    //   1. Embed page — fast, login-free, no authenticated hit; resolves the
-    //      majority of public posts (and now bails rather than misrendering a
-    //      video as a photo when its JSON doesn't parse).
-    //   2. The private media API — the only path that still resolves anything
-    //      Instagram will not serve anonymously, and the only one the session
-    //      buys anything on. No-ops (returns null, sends nothing) for an
-    //      uncredentialed resolve, and tried after the embed so the burner
-    //      account is only used when actually needed.
-    //   3. GraphQL — kept as a fallback, but currently answers every doc_id
-    //      request with "execution error" (see tryInstagramMediaInfo).
-    //   4. Cobalt — the datacenter-reachable fallback. Instagram's own signed
-    //      video CDN URLs (from embed/GraphQL) are frequently refused with an
+    // Order by reliability + cost. As of 2026-08-15 the honest summary is that
+    // only step 2 resolves anything, so an anonymous Instagram request is
+    // expected to fail — see lessons/2026-08-15-instagram-logged-out-wall.md.
+    //   1. Embed page — fast, login-free, no authenticated hit. Every post
+    //      probed on 2026-08-15 came back as the "the link to this photo or
+    //      video may be broken" shell with `contextJSON: null` (from a
+    //      residential IP as well as from Cloudflare, so this is Instagram
+    //      closing the surface, not an IP block). Kept because it is one cheap
+    //      GET and the evidence is a handful of posts, not a proof.
+    //   2. The private media API — the only path that still resolves anything,
+    //      and the only one the session buys anything on. No-ops (returns null,
+    //      sends nothing) for an uncredentialed resolve, and tried after the
+    //      embed so the burner account is only used when actually needed.
+    //   3. Cobalt — the datacenter-reachable fallback. Instagram's own signed
+    //      video CDN URLs are frequently refused with an
     //      HTTP 500/403 when re-fetched from a datacenter IP (e.g. Vercel), even
     //      though extraction succeeded — so the /api/video proxy can't stream
     //      them and the player is dead. Cobalt re-extracts the clip and hands
@@ -1628,10 +1644,6 @@ export class Downloader {
       () =>
         shortcode
           ? this.tryInstagramMediaInfo(shortcode, url)
-          : Promise.resolve(null),
-      () =>
-        shortcode
-          ? this.tryInstagramGraphQL(shortcode, url)
           : Promise.resolve(null),
       () => this.tryCobaltInstances(resolvedUrl),
     ]
@@ -1680,10 +1692,12 @@ export class Downloader {
     // knows whether to configure/refresh the cookie.
     if (!this.instagramSessionId) {
       console.warn(
-        'Instagram extraction failed and IG_SESSIONID is not set — login-gated posts require it.',
+        this.instagramSessionConfigured
+          ? 'Instagram extraction failed on an anonymous request. A session IS configured; it is withheld by design from requests without the `ig` grant, so this is the expected ceiling for a public visitor — not a missing secret.'
+          : 'Instagram extraction failed and IG_SESSIONID is not set — login-gated posts require it.',
       )
       throw new Error(
-        'Could not download this Instagram post. It may be private, age-restricted, or login-only (this post requires a logged-in Instagram session).',
+        'Instagram now serves posts only to logged-in accounts, so this link cannot be downloaded here. This is Instagram-wide, not something about your link — other platforms still work.',
       )
     }
     throw new Error(
@@ -1706,8 +1720,13 @@ export class Downloader {
     originalUrl: string,
   ): Promise<VideoData> {
     if (!this.instagramSessionId) {
+      if (this.instagramSessionConfigured) {
+        console.warn(
+          'Instagram story requested anonymously. A session IS configured but never attaches to a request without the `ig` grant.',
+        )
+      }
       throw new Error(
-        'This is an Instagram story/highlight — Instagram only serves these to a logged-in account, so downloading them needs a configured Instagram session (IG_SESSIONID). Public posts and reels work without one.',
+        'This is an Instagram story/highlight — Instagram only serves these to a logged-in account, so downloading them needs a configured Instagram session (IG_SESSIONID).',
       )
     }
 
@@ -2882,68 +2901,17 @@ export class Downloader {
     return parsed
   }
 
-  /**
-   * Instagram extractor via Instagram's own web GraphQL endpoint. Returns the
-   * full `shortcode_media` graph (handles photos, reels/videos and multi-item
-   * carousels).
-   *
-   * Unlike the embed page, this endpoint enforces the web client's anti-CSRF
-   * tokens — without a harvested csrftoken + lsd it returns a "Page Not Found"
-   * HTML stub. With them it works login-free for public posts; with a valid
-   * IG_SESSIONID cookie it also resolves login-gated posts (which the embed
-   * serves as "broken media" and Cobalt can't fetch from a datacenter IP).
-   */
-  private async tryInstagramGraphQL(
-    shortcode: string,
-    originalUrl: string,
-  ): Promise<VideoData | null> {
-    const { csrf, lsd } = await this.getInstagramTokens()
-
-    const variables = {
-      shortcode,
-      fetch_tagged_user_count: null,
-      hoisted_comment_id: null,
-      hoisted_reply_id: null,
-    }
-    const form = new URLSearchParams()
-    form.append('av', '0')
-    form.append('__d', 'www')
-    form.append('__user', '0')
-    form.append('__a', '1')
-    form.append('__req', '1')
-    form.append('dpr', '1')
-    form.append('lsd', lsd)
-    form.append('variables', JSON.stringify(variables))
-    form.append('doc_id', '8845758582119845')
-
-    const cookie = this.instagramCookieWith(csrf)
-
-    const response = await http.post(
-      'https://www.instagram.com/graphql/query/',
-      form.toString(),
-      {
-        headers: {
-          'User-Agent': this.userAgent,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-IG-App-ID': this.instagramAppId,
-          'X-FB-LSD': lsd,
-          'X-CSRFToken': this.instagramCsrf(csrf),
-          'X-ASBD-ID': '129477',
-          Accept: '*/*',
-          Origin: 'https://www.instagram.com',
-          Referer: `https://www.instagram.com/p/${shortcode}/`,
-          ...(cookie ? { Cookie: cookie } : {}),
-        },
-        timeout: 20000,
-      },
-    )
-
-    const media: IgShortcodeMedia | undefined =
-      response.data?.data?.xdt_shortcode_media ??
-      response.data?.data?.shortcode_media
-    if (!media) return null
-    return this.parseInstagramMedia(media, shortcode, originalUrl)
-  }
+  // REMOVED 2026-08-15: the web GraphQL extractor (`/graphql/query/` with
+  // doc_id 8845758582119845). Instagram retired the persisted query — the
+  // endpoint answers every request with
+  //   {"errors":[{"message":"execution error","severity":"CRITICAL"}],"data":null}
+  // and it is the *query id* that is refused, not the post: it fails identically
+  // for a live post, a deleted one, anonymously, and with a valid session. A
+  // doc_id harvested fresh from Instagram's own bundle that same day
+  // (PolarisPostRootQuery_instagramRelayOperation = 28067070969622724) is refused
+  // the same way for a logged-out caller, so re-pointing it buys nothing either.
+  // It only cost two round-trips per Instagram resolve. See
+  // lessons/2026-08-15-instagram-logged-out-wall.md.
 
   /**
    * Primary Instagram extractor: the public embed page. It is designed to be
