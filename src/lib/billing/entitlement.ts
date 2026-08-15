@@ -49,6 +49,39 @@ export function hasGrant(row: { grants?: string | null } | null, grant: Grant): 
   return row.grants.split(',').some((name) => name.trim() === grant)
 }
 
+/** The stored set, trimmed and de-duplicated, in the order it was written. */
+function grantSet(current: string | null | undefined): string[] {
+  if (!current) return []
+  const seen = new Set<string>()
+  for (const name of current.split(',')) {
+    const trimmed = name.trim()
+    if (trimmed) seen.add(trimmed)
+  }
+  return [...seen]
+}
+
+/**
+ * Add one grant, preserving every other one.
+ *
+ * Read-modify-write rather than `grants = 'pro'`, because the column is a set
+ * and `ig` lives in it too. A writer that assigns the whole column — as the
+ * documented one-line `wrangler d1 execute` does — silently detaches the
+ * Instagram session from an account that had both, and nothing would report it.
+ * Typed as `string` rather than `Grant` so the webhook can carry a grant name
+ * that came from configuration.
+ */
+export function withGrant(current: string | null | undefined, grant: string): string {
+  const names = grantSet(current)
+  if (!names.includes(grant)) names.push(grant)
+  return names.join(',')
+}
+
+/** Remove one grant, preserving every other one. Null when nothing is left. */
+export function withoutGrant(current: string | null | undefined, grant: string): string | null {
+  const names = grantSet(current).filter((name) => name !== grant)
+  return names.length > 0 ? names.join(',') : null
+}
+
 /**
  * Whether a period the customer has already paid for is still running.
  *

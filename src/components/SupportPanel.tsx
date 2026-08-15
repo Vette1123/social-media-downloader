@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { CheckIcon, CoffeeIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
 import { PRO_BENEFITS } from '@/config/pro'
+import { SUPPORT_PRICES } from '@/config/support'
 import { useTier } from '@/lib/entitlements'
 
 /**
@@ -47,8 +48,8 @@ export function SupportPanel({ variant = 'full' }: { variant?: 'full' | 'compact
             This site is free and has no limits.
           </p>
           <p className='mt-1 text-sm text-white/60'>
-            Keeping the resolvers up costs money. If it saved you time, a coffee
-            helps — and supporters get the batch queue.
+            Keeping the resolvers up costs money. ${SUPPORT_PRICES.monthly} a
+            month covers a slice of it, and switches on the batch queue.
           </p>
         </div>
         <Link
@@ -74,8 +75,8 @@ export function SupportPanel({ variant = 'full' }: { variant?: 'full' | 'compact
         </h2>
         <p className='mt-3 text-sm text-white/70 md:text-base'>
           Every download here is free, with no account and no limits, and that
-          is not changing. If this has saved you time, a one-off coffee covers a
-          bit of what it costs to keep the resolvers up.
+          is not changing. A membership covers a slice of what it costs to keep
+          the resolvers up — and switches these four on for you.
         </p>
 
         <div className='mt-6 flex flex-wrap items-center gap-4'>
@@ -84,18 +85,19 @@ export function SupportPanel({ variant = 'full' }: { variant?: 'full' | 'compact
             className='btn-grad inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold whitespace-nowrap'
           >
             <CoffeeIcon className='h-4 w-4' />
-            Buy me a coffee
+            Support this — ${SUPPORT_PRICES.monthly}/month
           </Link>
           <Link
             href='/pro'
             className='text-sm text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline'
           >
-            What supporters get
+            Or ${SUPPORT_PRICES.lifetime} once, forever
           </Link>
         </div>
 
         <p className='mt-4 text-xs text-white/50'>
-          One-off, any amount. Nothing renews and there is nothing to cancel.
+          Cancel any time, from Buy Me a Coffee. A one-off coffee of any amount
+          works too.
         </p>
       </div>
 

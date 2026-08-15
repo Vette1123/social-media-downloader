@@ -64,6 +64,17 @@ export const siteConfig = {
      * stop selling rather than to keep rewording the same offer.
      */
     sponsor: 'https://buymeacoffee.com/vetteotp',
+    /**
+     * The two membership levels, rather than the tip jar.
+     *
+     * A separate link because the two asks are different: `sponsor` is a
+     * one-off of any amount and grants nothing automatically, while this page
+     * carries the levels the webhook actually recognises — pay here and the
+     * extras switch themselves on. Anywhere the copy mentions supporter status
+     * must point at this one, or someone follows the ask, pays, and gets
+     * nothing. See docs/buymeacoffee-setup.md.
+     */
+    membership: 'https://buymeacoffee.com/vetteotp/membership',
   },
   twitterTag: '@Sadge1996',
   /**

@@ -12,6 +12,7 @@ import { requireDb, type WorkerEnv } from '../apiRoutes'
 import type { WaitUntilContext } from '../edgeCache'
 import { ACCESS_TOKEN_TTL_MS, signToken } from '../proToken'
 import { hasGrant, isEntitled, isProAt } from '../billing/entitlement'
+import { claimSupporterGrants } from '../billing/bmc'
 import {
   OAUTH_STATE_COOKIE,
   OAUTH_VERIFIER_COOKIE,
@@ -286,6 +287,19 @@ export async function handleAuthCallback(
       { success: false, error: 'Could not create your account. Please try again.' },
       { status: 500 },
     )
+  }
+
+  // Support usually arrives before the account does — nothing on the support
+  // page asks anyone to sign in first — so the webhook can only record the
+  // grant against an email address. This is where it becomes an entitlement.
+  // Run on every sign-in rather than only on creation: someone who supports
+  // months after signing up gets it on their next visit without a hand-run
+  // UPDATE. A miss is one primary-key lookup, and a failure here must not cost
+  // anyone their session.
+  try {
+    await claimSupporterGrants(db, user.id, claims.email)
+  } catch (error) {
+    console.error('auth: could not claim supporter grants', String(error))
   }
 
   const raw = await createSession(db, user.id, now)

@@ -35,6 +35,7 @@ import {
   useAccount,
 } from '@/lib/account'
 import { useHydrated, useOnPageVisible, usePeekOnScroll } from '@/lib/clientEnv'
+import { SUPPORT_PRICES } from '@/config/support'
 import { HABIT_THRESHOLD, useProSignals } from '@/lib/proSignals'
 
 /** First name, or the local part of the address. Never the whole email: this
@@ -180,7 +181,7 @@ function ProPill({
       <span>Support</span>
       {earned && (
         <span className='hidden font-medium text-cyan-100/80 sm:inline'>
-          · {today} today, buy me a coffee?
+          · {today} today — batch them for ${SUPPORT_PRICES.monthly}?
         </span>
       )}
     </Link>

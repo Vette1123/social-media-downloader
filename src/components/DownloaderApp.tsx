@@ -39,6 +39,7 @@ import { InstallPrompt } from '@/components/InstallPrompt'
 import { PastDueBanner } from '@/components/PastDueBanner'
 import { PromoSlot } from '@/components/PromoSlot'
 import { ProNudge } from '@/components/ProNudge'
+import { SUPPORT_PRICES } from '@/config/support'
 import { parseBatchInput } from '@/lib/batchQueue'
 import { recordResolve } from '@/lib/proSignals'
 import { nowMs, useIsIOSLike } from '@/lib/clientEnv'
@@ -1595,12 +1596,12 @@ export function DownloaderApp() {
           <ProNudge
             id='post-download'
             tone='attached'
-            action='Buy me a coffee'
+            action={`Support this — $${SUPPORT_PRICES.monthly}/month`}
             lede={
               <>
                 Saved you some time? This site is free to use and not free to
-                run — supporters also get a queue, ZIP bundles and no sponsor
-                card.
+                run — supporters get the batch queue, ZIP bundles, priority on
+                every link and no sponsor card, switched on automatically.
               </>
             }
           />
