@@ -738,10 +738,15 @@ async function stepWaf(ctx) {
   if (!zone) throw new SetupError(`Zone ${APEX} is not on this account. Run the \`zone\` step first.`)
 
   // Each group below needs a different token permission, so one missing scope
-  // must not stop the others — above all it must not stop the bot-mode step,
-  // which is the one that decides whether crawlers reach the site at all.
+  // must not stop the others — a gap in the TLS scope should not cost the WAF
+  // rules. But a gap in the WAF or bot scopes is different in kind: the whole
+  // point of the step is that those get applied, so `core` groups also decide
+  // the exit code. Warning and exiting 0 would let the weekly workflow report
+  // success while applying nothing, which is exactly how a token edit that
+  // silently dropped two permissions went unnoticed for an hour.
   const failed = []
-  const task = async (label, fn) => {
+  const coreFailed = []
+  const task = async (label, fn, { core = false } = {}) => {
     try {
       await fn()
       ok(label)
@@ -749,16 +754,21 @@ async function stepWaf(ctx) {
     } catch (error) {
       warn(`${label} — skipped: ${error.message}`)
       failed.push(label)
+      if (core) coreFailed.push(label)
       return false
     }
   }
 
-  await task('Custom rules: probes blocked, crawlers allowed, scripts challenged', () =>
-    putPhaseRules(ctx.token, zone.id, 'http_request_firewall_custom', WAF_RULES),
+  await task(
+    'Custom rules: probes blocked, crawlers allowed, scripts challenged',
+    () => putPhaseRules(ctx.token, zone.id, 'http_request_firewall_custom', WAF_RULES),
+    { core: true },
   )
 
-  await task('Rate limit: 30 req/10s per IP on /api/download', () =>
-    putPhaseRules(ctx.token, zone.id, 'http_ratelimit', [RATE_LIMIT_RULE], { replaceAll: true }),
+  await task(
+    'Rate limit: 30 req/10s per IP on /api/download',
+    () => putPhaseRules(ctx.token, zone.id, 'http_ratelimit', [RATE_LIMIT_RULE], { replaceAll: true }),
+    { core: true },
   )
 
   // Bot Fight Mode off, and two settings that ride along with it.
@@ -776,11 +786,14 @@ async function stepWaf(ctx) {
   // serves Cloudflare's own /robots.txt in place of the exported one, so
   // src/app/robots.tsx might as well not exist — and Cloudflare's version has no
   // `Sitemap:` line, which is most of why robots.txt is served at all.
-  const botsOk = await task('Bot Fight Mode, JS detections and managed robots.txt off', () =>
-    cf(ctx.token, `/zones/${zone.id}/bot_management`, {
-      method: 'PUT',
-      body: { fight_mode: false, enable_js: false, is_robots_txt_managed: false },
-    }),
+  const botsOk = await task(
+    'Bot Fight Mode, JS detections and managed robots.txt off',
+    () =>
+      cf(ctx.token, `/zones/${zone.id}/bot_management`, {
+        method: 'PUT',
+        body: { fight_mode: false, enable_js: false, is_robots_txt_managed: false },
+      }),
+    { core: true },
   )
 
   // Separate call on purpose: `ai_bots_protection` is newer than the three
@@ -845,8 +858,17 @@ async function stepWaf(ctx) {
   if (failed.length) {
     warn(`${failed.length} of the above were skipped — the token is missing a scope for each.`)
     info('Needs, per group: Zone WAF: Edit, Bot Management: Edit, Zone Settings: Edit, Cache Purge.')
+    info('Editing a token in the dashboard REPLACES its permission set — re-check every row.')
   }
   info('Now run `pnpm cf:health` — it is the only thing that can see who the edge stopped.')
+
+  if (coreFailed.length > 0) {
+    // Non-zero so the weekly workflow goes red. The rules already on the zone
+    // keep working — this says they could not be re-applied, not that they are
+    // gone.
+    warn(`${coreFailed.length} of those were the point of this step. Nothing was re-applied.`)
+    process.exitCode = 1
+  }
 }
 
 // --- edge health ----------------------------------------------------------
