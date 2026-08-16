@@ -22,7 +22,15 @@ rather than on a cycle:
 | Offer | Price | Grants |
 | ----- | ----- | ------ |
 | `<Tag> — Supporter` | $5 monthly · $50 yearly | supporter status, ends when they cancel |
-| `<Tag> — Lifetime` | $99 once | supporter status, never revoked |
+| `Lifetime — everything I build` | $99 once | supporter status in **every** project, never revoked |
+
+**The lifetime is untagged, and not by choice.** The provider allows exactly one
+lifetime level per account, so a second project cannot have its own — the
+dashboard refuses it. The level is therefore generic: one name, repeated
+verbatim in every project's `SUPPORT_LIFETIME`, granting in all of them at once.
+The recurring level stays tagged, so the $5 offer still unlocks one project.
+Renaming the level in the dashboard stops it granting *everywhere* at once, so
+the string changes in every project's config in the same sitting.
 
 Same prices in every project — the tag is the only thing that differs.
 
@@ -88,7 +96,7 @@ under one address and signed in with another. Move it by hand.
 | ----- | ------------ | -------------- |
 | `<Tag>` | `Downloader` | `SUPPORT_TAG` in `src/config/support.ts` |
 | Recurring level | `Downloader — Supporter` | derived, `SUPPORT_MEMBERSHIP` |
-| One-time level | `Downloader — Lifetime` | derived, `SUPPORT_LIFETIME` |
+| One-time level | `Lifetime — everything I build` | `SUPPORT_LIFETIME` (untagged, shared with every project) |
 | Membership URL | `https://buymeacoffee.com/vetteotp/membership` | `siteConfig.links.membership` |
 | Webhook URL | `https://www.socialdownloader.space/api/billing/bmc` | dashboard |
 | Secret | `BMC_WEBHOOK_SECRET` | Worker secret |
@@ -214,16 +222,22 @@ Here is my direct line: <your WhatsApp / Telegram number>. Message me any time �
 
 **Advanced settings** — free trial off, member limit off, Discord roles off.
 
-## Level 2 — Lifetime (one-time)
+## Level 2 — Lifetime (one-time, account-wide)
 
 A second membership level, set to bill **once** rather than on a cycle. It is
 still a membership, so it has its own rewards list and fires the same
 `membership.started` event.
 
+There is only ever one of these on the account, and it grants in every project —
+so its name, description and rewards may not mention the downloader. The current
+copy in this section is the old project-specific version; the generic
+replacement lives in `movies-streaming-platform/docs/buymeacoffee-setup.md`
+under "Level 2", and that is the copy the dashboard now holds.
+
 **Name**
 
 ```
-Downloader — Lifetime
+Lifetime — everything I build
 ```
 
 **Price** — `99`, one-time.
@@ -632,9 +646,10 @@ Then change one line:
 export const SUPPORT_TAG = 'Notes'
 ```
 
-which gives `Notes — Supporter` and `Notes — Lifetime`. Create those two offers
-in the dashboard under exactly those names, point a new webhook endpoint at the
-new project, and it is done.
+which gives `Notes — Supporter`. Create that one level in the dashboard under
+exactly that name, copy `SUPPORT_LIFETIME` across **unchanged** — the lifetime
+level is shared by every project and already exists on the account — point a new
+webhook endpoint at the new project, and it is done.
 
 The one setting to leave alone is `fallback`. It defaults to `null` — an
 unrecognised name grants nothing — and that default is what keeps one membership
