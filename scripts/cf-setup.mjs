@@ -753,11 +753,19 @@ async function stepWaf(ctx) {
       return true
     } catch (error) {
       warn(`${label} — skipped: ${error.message}`)
-      failed.push(label)
+      failed.push({ label, message: error.message })
       if (core) coreFailed.push(label)
       return false
     }
   }
+
+  /**
+   * A permission gap and a failed request read the same in the log, and the
+   * advice for them is opposite: widen the token, or just run it again. A run
+   * that lost TLS and the purge to two `fetch failed` errors was reported as a
+   * missing scope, which is a wrong turn worth not repeating.
+   */
+  const looksLikeScope = (message) => /10000|Authentication|403|permission/i.test(message)
 
   await task(
     'Custom rules: probes blocked, crawlers allowed, scripts challenged',
@@ -855,10 +863,14 @@ async function stepWaf(ctx) {
     if (!purged) info('Purge by hand: dashboard -> Caching -> Configuration -> Purge Everything.')
   }
 
-  if (failed.length) {
-    warn(`${failed.length} of the above were skipped — the token is missing a scope for each.`)
-    info('Needs, per group: Zone WAF: Edit, Bot Management: Edit, Zone Settings: Edit, Cache Purge.')
+  const scopeGaps = failed.filter((f) => looksLikeScope(f.message))
+  if (scopeGaps.length > 0) {
+    warn(`${scopeGaps.length} of the above need a token scope this token does not have.`)
+    info('Per group: Zone WAF: Edit, Bot Management: Edit, Zone Settings: Edit, Cache Purge.')
     info('Editing a token in the dashboard REPLACES its permission set — re-check every row.')
+  }
+  if (failed.length > scopeGaps.length) {
+    warn(`${failed.length - scopeGaps.length} failed for another reason — re-run before reading anything into it.`)
   }
   info('Now run `pnpm cf:health` — it is the only thing that can see who the edge stopped.')
 
