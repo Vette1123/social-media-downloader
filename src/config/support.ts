@@ -30,12 +30,24 @@ export const SUPPORT_TAG = 'Downloader'
 export const SUPPORT_MEMBERSHIP = `${SUPPORT_TAG} — Supporter`
 
 /**
- * The one-time purchase, on the Extras shelf rather than as a second membership
- * level. Two shelves keep the membership list at one card per project instead
- * of two, which is what makes the tag scheme survive a third and fourth
- * project. $35, once.
+ * The one-time purchase — and the one offer that is deliberately NOT tagged.
+ *
+ * Buy Me a Coffee allows exactly one lifetime level per account, not one per
+ * project, so a tagged `Downloader — Lifetime` cannot coexist with a second
+ * project's. The choice that leaves is either no lifetime at all, or one that
+ * covers everything on the account. This is the second: the string below is
+ * shared verbatim by every project's support config, every endpoint recognises
+ * it, and $99 buys supporter status in all of them at once.
+ *
+ * That is the exact behaviour `SUPPORT_TAG` exists to prevent, allowed here on
+ * purpose and only here. The *recurring* membership is still tagged, so the
+ * cheap offer cannot leak across projects.
+ *
+ * Renamed in the dashboard, it stops granting everywhere at once — so the string
+ * has to change in every project's config in the same sitting. The other copy
+ * lives in `movies-streaming-platform/config/support.ts`.
  */
-export const SUPPORT_LIFETIME = `${SUPPORT_TAG} — Lifetime`
+export const SUPPORT_LIFETIME = 'Lifetime — everything I build'
 
 /**
  * What each one costs, in whole dollars, so the site and the dashboard cannot

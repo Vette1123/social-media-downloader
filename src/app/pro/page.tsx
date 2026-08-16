@@ -108,8 +108,9 @@ export default function Support() {
                 {SUPPORT_LIFETIME}
               </strong>
               . Sign in here with the same address you paid with and the extras
-              are already on, usually within minutes. Both cover this downloader;
-              my other projects have their own, at the same price.
+              are already on, usually within minutes. The monthly covers this
+              downloader; the lifetime covers every project I build, including
+              the ones that do not exist yet.
             </p>
             <p className='mt-3 text-sm text-white/60'>
               Prefer{' '}

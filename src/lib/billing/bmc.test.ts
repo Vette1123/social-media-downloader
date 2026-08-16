@@ -202,7 +202,7 @@ describe('pickLevel', () => {
 
 describe('resolveLevel', () => {
   it('matches a configured level regardless of case and spacing', () => {
-    expect(resolveLevel(CONFIG, '  DOWNLOADER   LIFETIME ')).toEqual({
+    expect(resolveLevel(CONFIG, '  LIFETIME —  EVERYTHING I BUILD ')).toEqual({
       grant: 'pro',
       lifetime: true,
     })
