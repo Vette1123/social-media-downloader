@@ -250,6 +250,12 @@ export default function RootLayout({
             run. Anything added later that listens for DOMContentLoaded on
             `window` will hear this second one, so listen on `document`.
 
+            The same loader runs in the streaming project
+            (movies-streaming-platform/lib/bmc-widget.ts), kept in step by hand:
+            the two share no package, and only the settings object differs. Both
+            files name the other, because the first version of this drifted the
+            moment one side was improved.
+
             Skipped entirely under Save-Data, on the same reasoning as the
             low-power branch above: a reader who asked for less should not spend
             their bytes on our donation button.
