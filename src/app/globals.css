@@ -847,3 +847,20 @@ dialog[open]::backdrop {
 .low-power .glow-card::before {
   display: none !important;
 }
+
+/* The Buy Me a Coffee widget stacks itself at z-index 9999 and higher, so its
+   floating button sits on top of the image lightbox and the account panel —
+   both of which live at z-50. It appends bare <div>s to <body> with no class
+   and, for two of the five nodes, no id either, so those two are only reachable
+   by shape: a class-less direct child of <body>. Nothing of ours matches (React
+   portals here are class-named), and the one element that does is static, where
+   z-index means nothing.
+
+   40 keeps the tip jar above the page and under every overlay we own. Raising
+   an overlay above 9999 instead would work once and then have to be repeated
+   for the next one. */
+body > div[id^='bmc-'],
+body > iframe[id^='bmc-'],
+body > div:not([class]) {
+  z-index: 40 !important;
+}
