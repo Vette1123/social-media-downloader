@@ -229,20 +229,19 @@ export default function RootLayout({
 
         {/* Buy Me a Coffee's floating tip jar, loaded off the critical path.
 
-            Three constraints decide the shape of this, and together they rule
-            out both the snippet the provider hands you and next/script:
+            The provider's own snippet — a plain <script defer src> with the
+            settings as data attributes — does render here, and is what the
+            sister project ships. This is that tag, built later and by hand,
+            for one reason: a deferred script still downloads as part of the
+            page load and still delays DOMContentLoaded, and 8KB of vendor
+            script plus a webfont and an iframe have no business competing with
+            the first paint for something nobody came here to use.
 
-            1. React drops it. A <script src> without `async` is never emitted
-               into the prerendered HTML — the tag simply is not in `out/`, and
-               the widget never loads. Verified against this build.
-            2. `async` alone does not fix it. The vendor bundle does all of its
-               work inside a `DOMContentLoaded` listener with no readyState
-               guard, so any tag that starts executing after that event has
-               fired downloads 8KB and then does nothing. Same reason every
-               next/script strategy fails here.
-            3. It should cost nothing. It is a tip jar, not the product: 8KB of
-               vendor script, a webfont and an iframe have no business
-               competing with the first paint.
+            `async` is not the way out of that. The vendor bundle does all of
+            its work inside a `DOMContentLoaded` listener with no readyState
+            guard, so any tag that starts executing after that event has fired
+            downloads and then does nothing — the reason every next/script
+            strategy fails on this widget too, measured in the sister project.
 
             So: inject after `load`, in idle time, and hand the bundle the event
             it is waiting for. By then the real DOMContentLoaded is long gone,
