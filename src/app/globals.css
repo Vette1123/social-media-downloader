@@ -864,3 +864,20 @@ body > iframe[id^='bmc-'],
 body > div:not([class]) {
   z-index: 40 !important;
 }
+
+/* ...with one exception, and it is the whole reason the widget can be closed.
+   The vendor's button handler only ever *opens*: it swaps the cup for a
+   chevron but keeps the same open-again onclick. Closing is the overlay's job
+   — a full-screen class-less <div> the bundle stacks at 9999999, above the
+   button at 9999, so a click on the chevron lands on the overlay and the
+   overlay closes it.
+
+   Flattening both to 40 above destroys that: same z-index, and the button is
+   appended after the overlay, so DOM order lifts it on top and the chevron
+   re-runs "open". On a phone that leaves the 16px x as the only way out of a
+   full-screen iframe. One below the overlay restores the vendor's ordering
+   inside our band. The overlay is 0x0 while closed, so it never blocks the
+   opening click. */
+#bmc-wbtn {
+  z-index: 39 !important;
+}
