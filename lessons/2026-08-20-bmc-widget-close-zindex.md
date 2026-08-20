@@ -10,9 +10,12 @@ widget swaps in once the panel is open, the thing that *looks* like a close
 button — did nothing, leaving a full-screen iframe with only a 16px `×` in the
 corner as the way out.
 
-Fixed by dropping the widget button one layer, `#bmc-wbtn { z-index: 39 }`, so
-the vendor's own overlay sits above it again. Also set `message:''`, so the
-widget no longer shows a bubble at all.
+Two commits. The first drops the widget button one layer, `#bmc-wbtn {
+z-index: 39 }`, so the vendor's own overlay sits above it again — correct on a
+desktop, and it left the phone with no visible control at all. The second moves
+the bundle's own mobile close button out of the status bar to bottom centre,
+which is what actually fixed the phone. Also set `message:''`, so the widget no
+longer shows a bubble.
 
 ## Mistakes
 
@@ -49,9 +52,26 @@ argues for shipping less script. The one-line z-index restores the vendor's
 intended ordering inside our band instead.
 
 **Not verified on a device.** `tsc` is clean and the reasoning traces the whole
-bundle, but nothing here has been tapped on a real phone. The 2026-08-10 footer
+bundle, but nothing here had been tapped on a real phone. The 2026-08-10 footer
 lesson already says a layout change is not verified until the page is on
 screen, and this is a layout change.
+
+**Which is how the fix shipped making the phone worse.** Dropping the button
+below the overlay is right on a desktop, where the panel is a corner card and
+the space around it closes. On a phone the panel *is* the screen — the bundle
+sets an explicit height on top of its `bottom`, so the iframe reaches the
+bottom edge — and putting the button under that overlay left nothing to tap at
+all. It came back as "on PWA it's fucked, I can't see it": the same screen the
+paragraph above had declined to look at.
+
+**The control that was there all along.** The bundle does ship a mobile close
+button, `#bmc-close-btn`, revealed only below 480px — read in the same sitting
+as everything else in this file and skipped, because the search had already
+found its answer. It is a 16px grey x on no background at `top: 16px; right:
+16px`, over the avatar and pin the provider's own page draws in that corner,
+and in an installed PWA — no browser chrome, so the panel starts at the true
+top of the display — under the status bar. On screen the whole time and not
+visible. Moved to bottom centre on a dark disc above the home indicator.
 
 ## What worked
 
@@ -71,6 +91,12 @@ in how our source interacts with theirs.
   control or can see from our own files.
 - Before writing a handler to fix a third-party widget, read its bundle. The
   behaviour that looks missing is often present and being blocked by us.
+- A widget's close affordance is per-breakpoint. Finding the one the desktop
+  uses does not mean the phone uses it — check what the bundle reveals under
+  its own media query before deciding what is missing.
+- `top: 16px` is inside the status bar once the app is installed. Anything
+  fixed to a screen edge in a `viewport-fit: cover` app needs `env()`, and a
+  third-party widget will never have it.
 
 ---
 
