@@ -870,7 +870,14 @@ dialog[open]::backdrop {
    be tapped while one is up.
 
    Raising an overlay of ours above 9999 instead would work once and then have
-   to be repeated for the next one. */
+   to be repeated for the next one.
+
+   The same band, and everything below it, exists in the streaming project
+   (movies-streaming-platform/styles/globals.css) against the same vendor
+   bundle, kept in step by hand like the loader is. It reaches the same nodes by
+   a different selector — the inline z-index rather than the missing class — so
+   a grep for one will not find the other. Only the corner differs: that widget
+   is bottom-left, to stay off the hero's trailer toggle. */
 body > div[id^='bmc-'],
 body > iframe[id^='bmc-'],
 body > div:not([class]) {
