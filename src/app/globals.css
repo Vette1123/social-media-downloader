@@ -911,19 +911,27 @@ body > div:not([class]) {
    browser chrome, so the panel starts at the true top of the display — under
    the status bar. Reported as "I can't see it", which is exactly right.
 
-   So: bottom right, above the home indicator, on a dark disc that reads
-   against the panel's white — the corner the widget's own button occupies when
-   closed, so the control does not move between states. `env()` resolves
-   because the viewport is `viewport-fit: cover`. The button carries an empty
-   onclick and closes only because the click bubbles to the overlay, so nothing
-   here may stop propagation. The bundle leaves it `visibility: hidden` above
+   So: bottom right, on a dark disc that reads against the panel's white — the
+   corner the widget's own button occupies when closed, so the control does not
+   move between states.
+
+   Lifted clear of two things rather than one. `env(safe-area-inset-bottom)`
+   keeps it off the home indicator, and the 64px on top of that clears the
+   provider's own `buymeacoffee.com/…` pill, which is pinned to the bottom of
+   its page and runs nearly the full width — so there is no sideways position
+   that avoids it, only a higher one. The band above it is empty at every
+   scroll position, because the pill is pinned and the content stops short of
+   it. `env()` resolves because the viewport is `viewport-fit: cover`.
+
+   The button carries an empty onclick and closes only because the click
+   bubbles to the overlay, so nothing here may stop propagation. The bundle leaves it `visibility: hidden` above
    480px, where the panel is a corner card and clicking beside it closes —
    untouched here. */
 #bmc-close-btn {
   top: auto !important;
   left: auto !important;
   right: calc(18px + env(safe-area-inset-right)) !important;
-  bottom: calc(18px + env(safe-area-inset-bottom)) !important;
+  bottom: calc(64px + env(safe-area-inset-bottom)) !important;
   width: 48px !important;
   height: 48px !important;
   background: #0d0c22 !important;
