@@ -881,3 +881,42 @@ body > div:not([class]) {
 #bmc-wbtn {
   z-index: 39 !important;
 }
+
+/* Where the close control lives on a phone.
+
+   On a narrow screen the widget's panel is the whole screen — the iframe is
+   100vw wide and, because the bundle sets an explicit height on top of its
+   `bottom`, tall enough to reach the bottom edge too. The floating button and
+   its chevron are behind all of it, so the only way out is the bundle's own
+   close button, which it parks at `top: 16px; right: 16px` as a 16px grey x on
+   nothing.
+
+   That lands in the worst place available: over the avatar and pin the
+   provider's own page draws in the same corner, and in an installed PWA — no
+   browser chrome, so the panel starts at the true top of the display — under
+   the status bar. Reported as "I can't see it", which is exactly right.
+
+   So: bottom centre, above the home indicator, on a dark disc that reads
+   against the panel's white. `env()` resolves because the viewport is
+   `viewport-fit: cover`. The button carries an empty onclick and closes only
+   because the click bubbles to the overlay, so nothing here may stop
+   propagation. The bundle leaves it `visibility: hidden` above 480px, where the
+   panel is a corner card and clicking beside it closes — untouched here. */
+#bmc-close-btn {
+  top: auto !important;
+  right: auto !important;
+  left: 50% !important;
+  bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+  width: 48px !important;
+  height: 48px !important;
+  margin-left: -24px !important;
+  background: #0d0c22 !important;
+  box-shadow: 0 6px 20px rgb(13 12 34 / 0.35) !important;
+}
+#bmc-close-btn svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+#bmc-close-btn svg path {
+  fill: #fff !important;
+}
