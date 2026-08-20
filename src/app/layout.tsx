@@ -43,7 +43,7 @@ const bmcWidgetScript = `(function(){try{
 var n=navigator;if(n.connection&&n.connection.saveData){return;}
 var a={name:'BMC-Widget',cfasync:'false',id:'vetteotp',
 description:'Support me on Buy me a coffee!',
-message:'This downloader is free, no ads, no sign-up. A coffee keeps the servers up. ☕',
+message:'',
 color:'#5F7FFF',position:'right',x_margin:'18',y_margin:'18'};
 function load(){var s=document.createElement('script');s.async=true;
 s.src='https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js';
@@ -266,8 +266,9 @@ export default function RootLayout({
             no level name we recognise, and lib/billing/bmc.ts matches on that
             name alone. The path that turns somebody into a supporter is /pro.
             If a payer ever reports tipping here and getting nothing switched
-            on, this comment is the why — and it is why the message promises
-            nothing in return. */}
+            on, this comment is the why — and it is why `message` is empty: the
+            bubble is the only place the widget could have promised something,
+            so it says nothing at all. */}
         <script dangerouslySetInnerHTML={{ __html: bmcWidgetScript }} />
       </head>
       <body
