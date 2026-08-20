@@ -14,8 +14,9 @@ Two commits. The first drops the widget button one layer, `#bmc-wbtn {
 z-index: 39 }`, so the vendor's own overlay sits above it again — correct on a
 desktop, and it left the phone with no visible control at all. The second moves
 the bundle's own mobile close button out of the status bar to bottom centre,
-which is what actually fixed the phone. Also set `message:''`, so the widget no
-longer shows a bubble.
+which is what actually fixed the phone, and splits the z-index band so the open
+panel outranks our corner controls instead of being covered by them. Also set
+`message:''`, so the widget no longer shows a bubble.
 
 ## Mistakes
 
@@ -73,6 +74,19 @@ and in an installed PWA — no browser chrome, so the panel starts at the true
 top of the display — under the status bar. On screen the whole time and not
 visible. Moved to bottom centre on a dark disc above the home indicator.
 
+**Then our own chrome floated over the payment form.** With the close button
+found and moved, the next screenshot still had two of our controls — the pin
+toggle and the account pill, fixed at z-50 in `.corner-slot--right` — drawn on
+top of the provider's panel, in the same corner it puts its own avatar. Read as
+a third bug; it is the first one again.
+
+The band pinned the widget at 40 "above the page and under every overlay we
+own", and that sentence is true of a 64px button and false of the same widget
+open on a phone, where it *is* a full-screen overlay and outranks our corner
+chrome. One rule was being asked to answer for two states with opposite needs.
+Split: the band goes to 60 and the button alone stays at 39, which is the
+constraint the band was actually written for.
+
 ## What worked
 
 Reading the minified bundle rather than guessing. `curl` it, expand `;{}` onto
@@ -91,6 +105,9 @@ in how our source interacts with theirs.
   control or can see from our own files.
 - Before writing a handler to fix a third-party widget, read its bundle. The
   behaviour that looks missing is often present and being blocked by us.
+- A widget that is a corner button in one state and a full-screen sheet in
+  another needs two z-index answers. One band for both is a bug waiting for
+  whichever state was not being looked at.
 - A widget's close affordance is per-breakpoint. Finding the one the desktop
   uses does not mean the phone uses it — check what the bundle reveals under
   its own media query before deciding what is missing.
