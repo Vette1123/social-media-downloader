@@ -3145,7 +3145,7 @@ export class Downloader {
       `https://api.vxtwitter.com/${username}/status/${tweetId}`,
       {
         headers: {
-          'User-Agent': this.userAgent,
+          'User-Agent': 'SocialMediaDownloader/1.0',
           Accept: 'application/json',
         },
         timeout: 20000,
