@@ -28,6 +28,7 @@ vi.mock('./ytdlp', () => ({
 
 type PrivateDownloader = {
   downloadGeneric(url: string, platform: string): Promise<unknown>
+  tryPageScrape(url: string): Promise<{ downloadUrl: string } | null>
   fallbackAudioViaVideo(
     url: string,
   ): Promise<{ musicUrl?: string; downloadUrl: string } | null>
@@ -79,6 +80,54 @@ afterEach(() => {
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
   probeMock.mockReset()
+})
+
+describe('discarded generic responses', () => {
+  it.each([
+    [404, 'text/html'],
+    [503, 'video/mp4'],
+    [200, 'application/json'],
+  ])('cancels an unused %s %s body', async (status, contentType) => {
+    const cancel = vi.fn()
+    const response = new Response(new ReadableStream({ cancel }), {
+      status,
+      headers: { 'Content-Type': contentType },
+    })
+    const fetchMock = vi.fn().mockResolvedValue(response)
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      priv(new Downloader()).tryPageScrape('https://site.example/watch/1'),
+    ).resolves.toBeNull()
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('still returns a direct media URL without consuming its body', async () => {
+    const cancel = vi.fn()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(new ReadableStream({ cancel }), {
+        headers: { 'Content-Type': 'video/mp4' },
+      }),
+    ))
+
+    await expect(
+      priv(new Downloader()).tryPageScrape('https://site.example/clip.mp4'),
+    ).resolves.toMatchObject({ downloadUrl: 'https://site.example/clip.mp4' })
+    expect(cancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('continues fallback when cancelling an unused body fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(new ReadableStream({
+        cancel: () => Promise.reject(new Error('stream already closed')),
+      }), { status: 503 }),
+    ))
+
+    await expect(
+      priv(new Downloader()).tryPageScrape('https://site.example/watch/1'),
+    ).resolves.toBeNull()
+  })
 })
 
 describe('the generic chain behind a walled origin', () => {
