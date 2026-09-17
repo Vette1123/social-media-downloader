@@ -61,6 +61,42 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('the Twitter API client', () => {
+  it.each([false, true])(
+    'resolves a post with possibly_sensitive=%s as an API client',
+    async (sensitive) => {
+      const mediaUrl = 'https://video.twimg.com/example.mp4'
+      const spy = stubFetch({
+        possibly_sensitive: sensitive,
+        text: 'A public video',
+        user_name: 'Example',
+        media_extended: [
+          {
+            type: 'video',
+            url: mediaUrl,
+            thumbnail_url: 'https://pbs.twimg.com/example.jpg',
+          },
+        ],
+      })
+      const result = await new Downloader().downloadVideo(
+        'https://x.com/example/status/1234567890',
+      )
+
+      expect(result.downloadUrl).toBe(mediaUrl)
+      expect(result.images).toBeUndefined()
+      expect(spy).toHaveBeenCalledTimes(1)
+      expect(String(spy.mock.calls[0][0])).toBe(
+        'https://api.vxtwitter.com/example/status/1234567890',
+      )
+      const headers = new Headers(spy.mock.calls[0][1]?.headers)
+      expect(headers.get('User-Agent')).toBe('SocialMediaDownloader/1.0')
+      expect(headers.get('Accept')).toBe('application/json')
+      expect(headers.has('Cookie')).toBe(false)
+      expect(headers.has('Authorization')).toBe(false)
+    },
+  )
+})
+
 describe('the Twitch clip slug', () => {
   it('reads both link shapes', () => {
     expect(parseTwitchClipSlug('https://clips.twitch.tv/HappyPandaKappa-x1')).toBe(

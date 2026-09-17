@@ -30,6 +30,7 @@ the index for exactly that.
 
 | Date | Lesson | The one thing |
 | --- | --- | --- |
+| 2026-09-17 | [The Twitter API request claimed to be Chrome](2026-09-17-twitter-api-user-agent.md) | A successful probe with different headers did not reproduce the failure; the API returned 403 to our Chrome identity and 200 to an honest API client. |
 | 2026-08-10 | [Creem payout-account rejection](2026-08-10-creem-payout-rejection.md) | A reviewer reads the marketing, not the code — "no watermark" describes a circumvention tool even when the code only fetches public files. |
 | 2026-08-10 | [Withdrawing the subscription](2026-08-10-withdrawing-the-subscription.md) | When the question is "who gets this feature", change the input to the decision, never the decision points — and a capability that must never be sold needs its own name, not a flag inside one that is. |
 | 2026-08-13 | [Every generic platform was dead, and one was pretending not to be](2026-08-13-platform-sweep.md) | The shared public resolver is blocked by the origins it resolves, so each platform now reads its own embed surface first — and a sweep that only checks `success: true` will score an HTML error page as a working video. |
