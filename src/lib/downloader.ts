@@ -1654,15 +1654,19 @@ export class Downloader {
       redirect: 'follow',
       signal: AbortSignal.timeout(10000),
     })
-    if (!response.ok) return null
     const contentType = response.headers.get('content-type') ?? ''
+    const directMedia = isDirectMediaType(contentType)
+    const isHtml = contentType.includes('html')
+    if (!response.ok || directMedia || !isHtml) {
+      await response.body?.cancel().catch(() => {})
+    }
+    if (!response.ok) return null
     const finalUrl = response.url || url
 
     // A direct media link pasted as-is: no page to scrape, and the URL is
     // already the answer. Nothing reads the body, so cancel it rather than
     // leaving a video streaming into a Worker that will never look at it.
-    if (isDirectMediaType(contentType)) {
-      await response.body?.cancel().catch(() => {})
+    if (directMedia) {
       return {
         id: parseVideoId(url) || finalUrl.slice(-32),
         title: filenameTitle(finalUrl),
@@ -1674,7 +1678,7 @@ export class Downloader {
         downloadUrl: finalUrl,
       }
     }
-    if (!contentType.includes('html')) return null
+    if (!isHtml) return null
 
     const html = await readCappedText(response)
     // Redirects mean the final URL, not the pasted one, is what relative srcs
