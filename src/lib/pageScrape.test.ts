@@ -371,7 +371,7 @@ describe('fetchThroughRelay', () => {
   const WALLED = '<html><title>.</title></html>'
 
   it('uses only the reader where the other free relays refuse our egress', async () => {
-    // Re-measured from the deployed Worker on 2026-09-23: the reader answers
+    // Re-measured from the deployed Worker on 2026-09-22: the reader answers
     // Cloudflare egress with the real markup, while the archive and the CORS
     // proxy still refuse it (403/429 in ~250 ms each) — so on Workers those
     // two are skipped and the reader is not.
@@ -437,6 +437,40 @@ describe('fetchThroughRelay', () => {
     expect(fetchMock.mock.calls[0][1]).toMatchObject({
       headers: { 'X-Return-Format': 'html' },
     })
+  })
+
+  it('rides out a rate-limit answer and asks for fresh bytes on the retry', async () => {
+    // The reader answers 429 with a retry-after of a few seconds when it has
+    // seen too much of an address; a 403 challenge is cached until the fetch
+    // says otherwise. One bounded retry with the cache bypassed turns both
+    // into the page instead of into "still blocked".
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('slow down', { status: 429, headers: { 'retry-after': '0' } }),
+      )
+      .mockResolvedValueOnce(new Response(REAL_PAGE))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({
+      headers: { 'X-Return-Format': 'html', 'x-no-cache': 'true' },
+    })
+  })
+
+  it('gives up after three rate-limit answers rather than stalling the resolve', async () => {
+    vi.stubEnv('DEPLOY_TARGET', 'cloudflare')
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response('{}', { status: 429, headers: { 'retry-after': '0' } }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
   it('asks the archive for the bytes as captured, not the rewritten view', async () => {

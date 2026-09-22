@@ -55,7 +55,7 @@ export function htmlScrapingAvailable(): boolean {
  *
  * They are the last resort for a page that answered us with a bot wall: read
  * it through somebody else's address instead. Measured from the deployed
- * Worker on 2026-09-23 against a host that walls us, the Internet Archive and
+ * Worker on 2026-09-22 against a host that walls us, the Internet Archive and
  * the allorigins CORS proxy still refuse Cloudflare egress (403/429 in ~250 ms
  * each) while answering the same request from a residential connection, so on
  * Workers they are two doomed subrequests. The reader (r.jina.ai), which an

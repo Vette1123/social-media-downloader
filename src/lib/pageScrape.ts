@@ -221,7 +221,7 @@ function corsProxyUrl(target: string): RelayAttempt {
 export async function fetchThroughRelay(target: string): Promise<string | null> {
   const configured = unlockerUrl(target)
   // The reader is always first: it answers every egress we run on, including
-  // Cloudflare (re-measured 2026-09-23 — the older reading of all three
+  // Cloudflare (re-measured 2026-09-22 — the older reading of all three
   // refusing is stale as far as it goes). The archive and the CORS proxy still
   // refuse Workers, so off Workers they would only buy timeouts. See
   // secondaryRelaysUsable().
@@ -236,18 +236,48 @@ export async function fetchThroughRelay(target: string): Promise<string | null> 
   return null
 }
 
+/**
+ * How long to wait before trying a relay again: the service's own retry-after
+ * when it sent one (capped so a hostile header cannot stall the resolve), two
+ * seconds when it did not, one second for a challenge — which a fresh fetch,
+ * not a longer wait, is what clears.
+ */
+function retryWaitSeconds(response: Response): number {
+  if (response.status === 403) return 1
+  const retryAfter = Number(response.headers.get('retry-after'))
+  if (!Number.isFinite(retryAfter) || retryAfter < 0) return 2
+  return Math.min(retryAfter, 5)
+}
+
 async function relay({ url, headers }: RelayAttempt): Promise<string | null> {
-  try {
-    // Longer than the direct fetch: these services load the page themselves,
-    // sometimes in a real browser, and 10 seconds is not enough for that.
-    const response = await fetch(url, { headers, signal: AbortSignal.timeout(25_000) })
-    if (!response.ok) return null
-    const html = await readCappedText(response)
-    // A wall relayed through anything is still a wall.
-    return looksLikeBotWall(html) ? null : html
-  } catch {
-    return null
+  // The reader rate-limits the addresses it sees most and answers 429 with a
+  // retry-after of a few seconds; a challenge it has cached for a fetch like
+  // this one comes back 403 until the fetch asks for fresh bytes. Both are
+  // worth two more tries inside the same resolve — waits are seconds, and
+  // this path only runs after everything else has already failed. A wall, a
+  // missing page, or any other status is the relay declining, not stalling,
+  // and stays a single attempt.
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    let response: Response
+    try {
+      response = await fetch(url, {
+        headers: attempt === 1 ? headers : { ...headers, 'x-no-cache': 'true' },
+        signal: AbortSignal.timeout(25_000),
+      })
+    } catch {
+      return null
+    }
+    if (response.ok) {
+      const html = await readCappedText(response)
+      // A wall relayed through anything is still a wall.
+      return looksLikeBotWall(html) ? null : html
+    }
+    const retryable = response.status === 429 || response.status === 403
+    if (!retryable || attempt === 3) return null
+    const waitMs = retryWaitSeconds(response) * 1000
+    await new Promise((resolve) => setTimeout(resolve, waitMs))
   }
+  return null
 }
 
 /**
