@@ -370,30 +370,46 @@ describe('fetchThroughRelay', () => {
   const REAL_PAGE = `<html><body>${'word '.repeat(MIN_REAL_PAGE_BYTES)}</body></html>`
   const WALLED = '<html><title>.</title></html>'
 
-  it('spends nothing on the free relays where they refuse our egress', async () => {
-    // Measured from the deployed Worker: the reader, the archive and the CORS
-    // proxy all refuse Cloudflare egress, so on Workers these three calls are
-    // ~750 ms of wall and about 6 ms of CPU buying a guaranteed null.
+  it('uses only the reader where the other free relays refuse our egress', async () => {
+    // Re-measured from the deployed Worker on 2026-09-23: the reader answers
+    // Cloudflare egress with the real markup, while the archive and the CORS
+    // proxy still refuse it (403/429 in ~250 ms each) — so on Workers those
+    // two are skipped and the reader is not.
     vi.stubEnv('DEPLOY_TARGET', 'cloudflare')
     vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
-    const fetchMock = vi.fn(async () => new Response(REAL_PAGE))
-    vi.stubGlobal('fetch', fetchMock)
-
-    await expect(fetchThroughRelay('https://site.example/v')).resolves.toBeNull()
-    expect(fetchMock).not.toHaveBeenCalled()
-  })
-
-  it('still uses a configured unlocker on Cloudflare, and only that', async () => {
-    // The unlocker is an endpoint the operator chose, on egress that is not
-    // ours — the reason for the whole mechanism, and unaffected by the above.
-    vi.stubEnv('DEPLOY_TARGET', 'cloudflare')
-    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://unlock.example/?url={url}')
     const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock.mock.calls[0][0]).toBe(
+    expect(fetchMock.mock.calls[0][0]).toBe('https://r.jina.ai/https://site.example/v')
+  })
+
+  it('gives up after the reader alone where it delivers only a wall', async () => {
+    vi.stubEnv('DEPLOY_TARGET', 'cloudflare')
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(WALLED))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('reaches a configured unlocker on Cloudflare only after the reader fails', async () => {
+    // The unlocker is an endpoint the operator chose, on egress that is not
+    // ours — the reason for the whole mechanism, and unaffected by the above.
+    vi.stubEnv('DEPLOY_TARGET', 'cloudflare')
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', 'https://unlock.example/?url={url}')
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(WALLED))
+      .mockResolvedValueOnce(new Response(REAL_PAGE))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[0][0]).toBe('https://r.jina.ai/https://site.example/v')
+    expect(fetchMock.mock.calls[1][0]).toBe(
       'https://unlock.example/?url=https%3A%2F%2Fsite.example%2Fv',
     )
   })

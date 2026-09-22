@@ -21,6 +21,10 @@ const PAGE = `<html><head><title>A Clip</title>
   <img src="https://static.site.example/thumbs/static4/1/17/171/17187864/4_360.jpg">
   </body></html>`
 
+/** The same page with the height its own structured data would state. */
+const pageWithHeight = async (): Promise<string | null> =>
+  PAGE.replace('</body>', '<script type="application/ld+json">{"height": "720"}</script></body>')
+
 const WATCH = 'https://www.site.example/video-YI0Ch192Dyi/some-slug/'
 
 function configure(rules: unknown): void {
@@ -158,5 +162,35 @@ describe('resolveByRule', () => {
 
     await resolveByRule(WATCH, page)
     expect(fetchMock).toHaveBeenCalledTimes(4)
+  })
+
+  it('probes the height the page states about itself first', async () => {
+    configure([{ ...RULE, hcap: '"height":\\s*"(\\d+)"' }])
+    const wanted = 'https://www.site.example/dload/YI0Ch192Dyi/720/17187864-720p.mp4'
+    vi.stubGlobal('fetch', headMock([wanted]))
+
+    expect((await resolveByRule(WATCH, pageWithHeight))?.mediaUrl).toBe(wanted)
+  })
+
+  it('returns the stated height unverified when every probe answered with a page', async () => {
+    // A host that walls our address answers the media HEAD with the same wall
+    // it serves for the page — 200, text/html — so no ladder can be verified
+    // from here. The page's own height is the answer the recipe would have
+    // built anyway; refusing it would turn a working link into the block
+    // message.
+    configure([{ ...RULE, hcap: '"height":\\s*"(\\d+)"' }])
+    const fetchMock = headMock([])
+    vi.stubGlobal('fetch', fetchMock)
+
+    const media = await resolveByRule(WATCH, pageWithHeight)
+    expect(media?.mediaUrl).toBe(
+      'https://www.site.example/dload/YI0Ch192Dyi/720/17187864-720p.mp4',
+    )
+  })
+
+  it('still gives up when there is no stated height and no probe serves', async () => {
+    configure([RULE])
+    vi.stubGlobal('fetch', headMock([]))
+    await expect(resolveByRule(WATCH, page)).resolves.toBeNull()
   })
 })

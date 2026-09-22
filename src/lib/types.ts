@@ -45,6 +45,12 @@ export interface VideoData {
   // function's egress. Only set for `status:'tunnel'`, never for a raw CDN
   // `redirect` URL (those need our proxy for referer/content-type).
   tunnel?: boolean
+  // True when downloadUrl came from a host recipe (siteRules.ts): a URL built
+  // from the page rather than read off it, on a host that may wall our
+  // server's egress entirely. The browser can still save it — a navigation
+  // with the referrer stripped gets the full file as an attachment — while our
+  // own proxy would only reach the wall. See directSaveUrl in apiRoutes.ts.
+  directBrowser?: boolean
   // Set when no downloadable stream could be extracted but the video can still
   // be played via an embedded player (used for YouTube, which bot-blocks free
   // extraction from datacenters). The UI shows the embed and hides the

@@ -407,6 +407,12 @@ function triggerDirectDownload(url: string, filename: string) {
   void filename
   const iframe = document.createElement('iframe')
   iframe.style.display = 'none'
+  // Some origins serve a truncated file to any request carrying a referrer
+  // that is not their own, and ours always is. Navigating with the referrer
+  // stripped is indistinguishable from a fresh address-bar visit, which is
+  // the request shape such hosts answer in full — with the attachment header
+  // that turns the navigation into a download.
+  iframe.referrerPolicy = 'no-referrer'
   iframe.src = url
   document.body.appendChild(iframe)
   // Give the navigation→download time to start, then tear the iframe down.
@@ -603,7 +609,13 @@ async function downloadDirectWithProgress(
 ): Promise<DirectDownloadOutcome> {
   let oversize = false
   try {
-    const response = await fetch(url)
+    // Referrer stripped: a cross-origin fetch always carries ours, and some
+    // origins answer a stranger's referrer with a stub file instead of the
+    // real one — worse than failing, because it would save as a success. With
+    // no referrer such an origin also sends no CORS header, so the read fails
+    // and the caller falls through to the navigation handoff, which gets the
+    // full file. Cobalt tunnels ignore the referrer either way.
+    const response = await fetch(url, { referrerPolicy: 'no-referrer' })
     if (!response.ok || !response.body) return 'failed'
     if (responseSize(response) > MAX_IN_MEMORY_DOWNLOAD_BYTES) {
       await response.body.cancel().catch(() => {})

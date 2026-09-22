@@ -50,16 +50,17 @@ export function htmlScrapingAvailable(): boolean {
 }
 
 /**
- * Whether the free relays in pageScrape.ts are worth a subrequest here.
+ * Whether the two *other* free relays in pageScrape.ts are worth a subrequest
+ * here — the archive and the CORS proxy. The reader is not gated: see below.
  *
  * They are the last resort for a page that answered us with a bot wall: read
  * it through somebody else's address instead. Measured from the deployed
- * Worker on 2026-08-03 against a host that walls us, all three — the Jina
- * reader, the Internet Archive and the allorigins CORS proxy — refused
- * Cloudflare egress in about 250 ms each, while all three answered the same
- * request from a residential connection. So on Workers this is three doomed
- * subrequests, ~750 ms of wall and about 6 ms of CPU, spent to learn something
- * already known.
+ * Worker on 2026-09-23 against a host that walls us, the Internet Archive and
+ * the allorigins CORS proxy still refuse Cloudflare egress (403/429 in ~250 ms
+ * each) while answering the same request from a residential connection, so on
+ * Workers they are two doomed subrequests. The reader (r.jina.ai), which an
+ * older measurement had refusing too, now answers that egress with the real
+ * markup and is always tried regardless of this gate.
  *
  * A configured SCRAPE_UNLOCKER_URL is a different thing — an endpoint the
  * operator chose, on egress that is not ours — and is still tried everywhere.
@@ -67,7 +68,7 @@ export function htmlScrapingAvailable(): boolean {
  * Off Cloudflare (local, a self-hosted box, any residential or unblocked IP)
  * the relays work and stay on.
  */
-export function freeRelaysUsable(): boolean {
+export function secondaryRelaysUsable(): boolean {
   return process.env.DEPLOY_TARGET !== 'cloudflare'
 }
 

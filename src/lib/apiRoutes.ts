@@ -17,6 +17,7 @@
  */
 
 import { Downloader } from './downloader'
+import type { VideoData } from './types'
 import { validateUrl, detectPlatform, parseYouTubeId } from './validator'
 import { getCached, setCached } from './responseCache'
 import { worthCaching } from './cacheWorthy'
@@ -96,6 +97,21 @@ function toMediaUrl(mediaUrl: string, proxyPath: string): string {
 function asDirectTunnel(url: string | undefined): string | undefined {
   if (!url || url.startsWith('/')) return undefined
   return url.replace(/^http:\/\//i, 'https://')
+}
+
+/**
+ * The raw URL the browser can save on its own, when there is one.
+ *
+ * A Cobalt tunnel streams with `Content-Disposition: attachment` from any
+ * address. A recipe-built URL (see `directBrowser` in types.ts) comes from a
+ * host that may wall our own egress: a navigation with the referrer stripped
+ * gets the full file as an attachment there, where the proxy would only reach
+ * the wall. Anything else has no direct form and stays on the proxy.
+ */
+export function directSaveUrl(videoData: Pick<VideoData, 'tunnel' | 'directBrowser' | 'downloadUrl'>): string | undefined {
+  if (videoData.tunnel) return asDirectTunnel(videoData.downloadUrl)
+  if (videoData.directBrowser) return videoData.downloadUrl
+  return undefined
 }
 
 /**
@@ -304,9 +320,7 @@ export async function handleDownload(
     const proxyImage = (u: string) =>
       isInstagram && u ? `/api/image?url=${encodeURIComponent(u)}` : u
 
-    const directVideoUrl = videoData.tunnel
-      ? asDirectTunnel(videoData.downloadUrl)
-      : undefined
+    const directVideoUrl = directSaveUrl(videoData)
     const directAudioUrl = videoData.tunnel
       ? asDirectTunnel(videoData.musicUrl)
       : undefined
@@ -332,8 +346,9 @@ export async function handleDownload(
         rawMusicUrl: videoData.musicUrl,
         directVideoUrl,
         directAudioUrl,
-        // Only ever set from a cobalt tunnel here, and a tunnel always answers
-        // with Content-Disposition: attachment.
+        // Only ever set alongside directVideoUrl: a tunnel, or a recipe-built
+        // URL — each of which downloads as an attachment once the referrer is
+        // stripped, which is how the browser's own manager is handed the file.
         directIsAttachment: true,
         // A gallery entry can be a clip (a carousel that mixes stills and
         // video). Its bytes need the video proxy — the image proxy would set

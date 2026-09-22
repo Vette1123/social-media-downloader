@@ -27,7 +27,7 @@ import {
   pageTitle,
   scriptContaining,
 } from './htmlExtract'
-import { freeRelaysUsable } from './nativeMedia'
+import { secondaryRelaysUsable } from './nativeMedia'
 
 /**
  * How much of the page is pulled off the wire at all. `readCappedText` stops
@@ -220,13 +220,14 @@ function corsProxyUrl(target: string): RelayAttempt {
  */
 export async function fetchThroughRelay(target: string): Promise<string | null> {
   const configured = unlockerUrl(target)
-  // Empty on Cloudflare: all three free relays refuse our egress there, so the
-  // only thing they buy is three timeouts. See freeRelaysUsable().
-  const attempts = freeRelaysUsable()
-    ? [readerUrl(target), archiveUrl(target), corsProxyUrl(target)]
-    : []
+  // The reader is always first: it answers every egress we run on, including
+  // Cloudflare (re-measured 2026-09-23 — the older reading of all three
+  // refusing is stale as far as it goes). The archive and the CORS proxy still
+  // refuse Workers, so off Workers they would only buy timeouts. See
+  // secondaryRelaysUsable().
+  const attempts: RelayAttempt[] = [readerUrl(target)]
+  if (secondaryRelaysUsable()) attempts.push(archiveUrl(target), corsProxyUrl(target))
   if (configured) attempts.push({ url: configured })
-  if (attempts.length === 0) return null
 
   for (const attempt of attempts) {
     const html = await relay(attempt)
