@@ -187,12 +187,18 @@ function archiveUrl(target: string): RelayAttempt {
  * markdown, which throws away exactly what is being looked for here (the same
  * embed came back as 361 bytes of prose instead of 8 KB of markup). Asking for
  * HTML keeps the document intact.
+ *
+ * The reader meters anonymous callers by address, and datacenter egress —
+ * Workers first among them — exhausts that shared quota within minutes of a
+ * busy spell and then answers 429 for as long as it likes. `JINA_API_KEY`
+ * authenticates the call onto the key's own quota instead; without it the
+ * anonymous path is used unchanged, and a bad key just fails like a wall.
  */
 function readerUrl(target: string): RelayAttempt {
-  return {
-    url: `https://r.jina.ai/${target}`,
-    headers: { 'X-Return-Format': 'html' },
-  }
+  const headers: Record<string, string> = { 'X-Return-Format': 'html' }
+  const key = process.env.JINA_API_KEY?.trim()
+  if (key) headers.Authorization = `Bearer ${key}`
+  return { url: `https://r.jina.ai/${target}`, headers }
 }
 
 /**
