@@ -60,6 +60,9 @@ type BatchFormat = 'video' | 'audio'
 function triggerTunnelDownload(url: string) {
   const iframe = document.createElement('iframe')
   iframe.style.display = 'none'
+  // Same reason as triggerDirectDownload: some origins truncate the file for
+  // any request carrying a referrer that is not their own.
+  iframe.referrerPolicy = 'no-referrer'
   iframe.src = url
   document.body.appendChild(iframe)
   window.setTimeout(() => iframe.remove(), 120000)

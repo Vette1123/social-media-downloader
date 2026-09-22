@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  directSaveUrl,
   handleDownload,
   handleImages,
   resolveCacheKey,
@@ -31,6 +32,51 @@ describe('resolveCacheKey', () => {
   it('is identical regardless of who is asking', () => {
     expect(resolveCacheKey('video', 'hd', 'auto', 'https://x.com/a')).toBe(
       'video|hd|auto|https://x.com/a',
+    )
+  })
+})
+
+/**
+ * Two shapes of URL the browser saves without passing through our proxy: a
+ * Cobalt tunnel, and a recipe-built link from a host that walls our own
+ * egress. Everything else must stay on the proxy — handing the browser a raw
+ * CDN URL that needs our referer would fail from the tab.
+ */
+describe('directSaveUrl', () => {
+  const base = {
+    id: 'x',
+    title: 'A clip',
+    url: 'https://site.example/v/1',
+    thumbnail: '',
+    duration: 0,
+    author: 'site.example',
+    description: '',
+    downloadUrl: 'https://cdn.example/raw/clip.mp4',
+  }
+
+  it('hands over a tunnel URL as-is', () => {
+    expect(directSaveUrl({ ...base, tunnel: true })).toBe('https://cdn.example/raw/clip.mp4')
+  })
+
+  it('forces an insecure tunnel URL to https so navigation is not mixed content', () => {
+    expect(
+      directSaveUrl({ ...base, tunnel: true, downloadUrl: 'http://tunnel.example/f' }),
+    ).toBe('https://tunnel.example/f')
+  })
+
+  it('hands over recipe-built media for the browser to save itself', () => {
+    expect(directSaveUrl({ ...base, directBrowser: true })).toBe(
+      'https://cdn.example/raw/clip.mp4',
+    )
+  })
+
+  it('is absent for an ordinary proxied stream', () => {
+    expect(directSaveUrl(base)).toBeUndefined()
+  })
+
+  it('prefers the tunnel form when both flags are somehow set', () => {
+    expect(directSaveUrl({ ...base, tunnel: true, directBrowser: true })).toBe(
+      'https://cdn.example/raw/clip.mp4',
     )
   })
 })

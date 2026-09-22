@@ -23,7 +23,8 @@
  *     "page":    "https://www.site.example/embed/$1/",
  *     "fid":     "/thumbs/static\\d+/\\d+/\\d+/\\d+/(\\d+)/",
  *     "media":   "https://www.site.example/dload/$1/{h}/$2-{h}p.mp4",
- *     "heights": [1080, 720, 480]
+ *     "heights": [1080, 720, 480],
+ *     "hcap":    "\"height\":\\s*\"(\\d+)\""
  *   }]
  *
  * `id` is matched against the pasted URL and `fid` against the fetched page;
@@ -31,6 +32,15 @@
  * each height in turn, highest first, and the first that answers with something
  * other than a web page wins — a rendition that does not exist tends to answer
  * 200 with an error page rather than 404.
+ *
+ * `hcap` (optional) is matched against the fetched page for a height the page
+ * states about itself — structured data usually carries one. That height is
+ * probed first, and it is also the answer when every probe comes back as a web
+ * page: a host that walls our server's address answers HEAD requests with the
+ * same wall it serves for the page, so no ladder can be verified from there
+ * and refusing would turn a working link into the block message. The page's
+ * own height is returned unverified instead; from an address the host answers
+ * normally the probe still decides.
  */
 
 import type { ScrapedMedia } from './pageScrape'
@@ -42,6 +52,7 @@ export interface SiteRule {
   fid: string
   media: string
   heights?: number[]
+  hcap?: string
 }
 
 /** Probed highest-first when a rule does not name its own ladder. */
@@ -122,22 +133,28 @@ function fill(template: string, id: string, fid: string, height: number): string
 }
 
 /**
- * A rendition that exists answers with a file; one that does not tends to
- * answer 200 with an error page, so the content type is the only reliable
- * signal. HEAD keeps it to headers — the bytes are the visitor's browser's job,
- * not ours.
+ * What a HEAD probe can tell: a file, a page (either a rendition that was
+ * never encoded, which tends to answer 200 with an error page rather than
+ * 404, or the wall a walled host answers a datacenter address with), or no
+ * answer at all. The content type is the only reliable signal for the first —
+ * HEAD keeps it to headers; the bytes are the visitor's browser's job, not
+ * ours. A network failure counts as no file, same as before.
  */
-async function serves(mediaUrl: string): Promise<boolean> {
+type Rendition = 'serves' | 'page' | 'absent'
+
+async function probeRendition(mediaUrl: string): Promise<Rendition> {
   try {
     const response = await fetch(mediaUrl, {
       method: 'HEAD',
       redirect: 'follow',
       signal: AbortSignal.timeout(8_000),
     })
-    if (!response.ok) return false
-    return !(response.headers.get('content-type') ?? '').includes('text/html')
+    if (!response.ok) return 'absent'
+    return (response.headers.get('content-type') ?? '').includes('text/html')
+      ? 'page'
+      : 'serves'
   } catch {
-    return false
+    return 'absent'
   }
 }
 
@@ -173,17 +190,29 @@ export async function resolveByRule(
   const fid = capture(rule.fid, html)
   if (!fid) return null
 
-  const heights = (rule.heights ?? DEFAULT_HEIGHTS).slice(0, MAX_PROBES)
-  for (const height of heights) {
+  const stated = rule.hcap ? Number(capture(rule.hcap, html)) : NaN
+  const ladder = (rule.heights ?? DEFAULT_HEIGHTS).slice(0, MAX_PROBES)
+  const order =
+    Number.isFinite(stated) && stated > 0
+      ? [stated, ...ladder.filter((height) => height !== stated)].slice(0, MAX_PROBES)
+      : ladder
+
+  const result = (mediaUrl: string): ScrapedMedia => ({
+    mediaUrl,
+    isStream: false,
+    title: pageTitle(html, id),
+    thumbnail: pageThumbnail(html),
+  })
+
+  let walled: string | null = null
+  for (const height of order) {
     const mediaUrl = fill(rule.media, id, fid, height)
-    if (await serves(mediaUrl)) {
-      return {
-        mediaUrl,
-        isStream: false,
-        title: pageTitle(html, id),
-        thumbnail: pageThumbnail(html),
-      }
-    }
+    const verdict = await probeRendition(mediaUrl)
+    if (verdict === 'serves') return result(mediaUrl)
+    // The page's own height answered with a page from an egress the host does
+    // not serve files to — nothing here can confirm it, and the recipe built
+    // the URL the same way it would have built a verified one.
+    if (verdict === 'page' && height === stated) walled = mediaUrl
   }
-  return null
+  return walled ? result(walled) : null
 }

@@ -1666,6 +1666,7 @@ export class Downloader {
     // show us the page at all", which are the same failure to the code above
     // and completely different news to the user.
     const walled = looksLikeBotWall(html)
+    let fromRule = false
     if (!media) {
       // The recipe first: it is host-specific (a no-op for any host without
       // one), it probes a ladder of renditions rather than trusting a link, and
@@ -1679,6 +1680,7 @@ export class Downloader {
       // while every free relay now refuses to fetch on behalf of a Worker at
       // all, which made the whole recipe path dead code.
       media = await resolveByRule(url, fetchPageDirectThenRelay)
+      fromRule = media !== null
 
       // Otherwise read the watch page itself from an address the site will
       // answer, and extract from that exactly as if we had fetched it. Only
@@ -1704,6 +1706,7 @@ export class Downloader {
       author: new URL(url).hostname.replace(/^www\./, ''),
       description: '',
       downloadUrl: media.mediaUrl,
+      directBrowser: fromRule || undefined,
     }
   }
 
