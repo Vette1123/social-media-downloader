@@ -30,6 +30,7 @@ the index for exactly that.
 
 | Date | Lesson | The one thing |
 | --- | --- | --- |
+| 2026-09-22 | [The link the browser had to fetch itself](2026-09-22-recipe-direct-browser.md) | Recipe-built URLs hand off to the browser with the referrer stripped (that host serves the full file referrer-less and a stub otherwise), and the only relay that answers Workers meters anonymous egress — measure it from two egresses before blaming the target, and never burn its quota with diagnostics. |
 | 2026-09-22 | [The download that needed two taps](2026-09-22-the-download-that-needed-two-taps.md) | A single-attempt fetch on a download button fails on the first transient drop; the existing `withRetry` moved to `lib/retry.ts` and now guards both the client download and the proxy's upstream hop. |
 | 2026-09-22 | [Third-party CDN referer gap](2026-09-22-cdn-referer-gap.md) | `getMediaReferer` only knew main-social hosts, so every third-party CDN got no Referer; map CDN hosts (not just site origins), fall back to the page URL when unmapped, and never claim Referer fixes a stale signed URL. |
 | 2026-09-17 | [The Twitter API request claimed to be Chrome](2026-09-17-twitter-api-user-agent.md) | A successful probe with different headers did not reproduce the failure; the API returned 403 to our Chrome identity and 200 to an honest API client. |
