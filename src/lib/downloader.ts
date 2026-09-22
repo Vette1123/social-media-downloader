@@ -33,49 +33,7 @@ import { htmlScrapingAvailable, nativeMediaAvailable } from './nativeMedia'
 import { getMediaReferer } from './proxyHeaders'
 import { tryYouTubeInnertube } from './youtubeInnertube'
 import { ytdlpInfo, ytdlpProbe } from './ytdlp'
-
-// Retry a flaky network op with exponential backoff + light jitter. Only retries
-// errors the caller marks retryable (429 / 5xx / timeouts) — a hard 404/private
-// post fails fast. Backoff is 400ms, 900ms, ~2s so a transient rate-limit or
-// cold-start on a public instance is ridden out instead of surfacing to the user.
-async function withRetry<T>(
-  fn: (attempt: number) => Promise<T>,
-  opts: { retries?: number; isRetryable?: (e: unknown) => boolean } = {},
-): Promise<T> {
-  const retries = opts.retries ?? 2
-  const isRetryable = opts.isRetryable ?? (() => true)
-  let lastError: unknown
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      return await fn(attempt)
-    } catch (e) {
-      lastError = e
-      if (attempt === retries || !isRetryable(e)) break
-      const base = 400 * Math.pow(2.2, attempt)
-      const jitter = base * 0.25 * ((attempt % 3) / 3)
-      await new Promise((r) => setTimeout(r, Math.round(base + jitter)))
-    }
-  }
-  throw lastError
-}
-
-// True for transient failures worth retrying: network timeouts/resets and HTTP
-// 429 / 5xx. A definitive 4xx (bad/private/removed post) is NOT retried.
-function isTransientError(e: unknown): boolean {
-  const err = e as { code?: string; response?: { status?: number } }
-  if (
-    err?.code === 'ECONNABORTED' ||
-    err?.code === 'ETIMEDOUT' ||
-    err?.code === 'ECONNRESET' ||
-    err?.code === 'ENOTFOUND'
-  ) {
-    return true
-  }
-  const status = err?.response?.status
-  if (typeof status === 'number') return status === 429 || status >= 500
-  // No response at all (network layer) — worth one more try.
-  return err instanceof Error && !('response' in (err as object))
-}
+import { isTransientError, withRetry } from './retry'
 
 
 /**
@@ -1692,8 +1650,14 @@ export class Downloader {
     if (
       media &&
       !media.isStream &&
-      (await this.probeStream(media.mediaUrl, { rejectHtml: true })).verdict !==
-        'ok'
+      (
+        await this.probeStream(media.mediaUrl, {
+          rejectHtml: true,
+          // Some CDNs gate by Referer; when the CDN host has no mapping,
+          // fall back to the page the URL came from.
+          pageReferer: finalUrl,
+        })
+      ).verdict !== 'ok'
     ) {
       media = null
     }
@@ -2710,7 +2674,7 @@ export class Downloader {
    */
   private async probeStream(
     url: string,
-    opts?: { rejectHtml?: boolean; expect?: 'video' },
+    opts?: { rejectHtml?: boolean; expect?: 'video'; pageReferer?: string },
   ): Promise<StreamProbe> {
     // Native fetch rather than axios: axios's `responseType: 'stream'` hands
     // back a Node Readable, which its fetch adapter cannot produce and which
@@ -2719,7 +2683,7 @@ export class Downloader {
     const abort = new AbortController()
     const timer = setTimeout(() => abort.abort(), 12000)
     try {
-      const referer = getMediaReferer(url)
+      const referer = getMediaReferer(url) || opts?.pageReferer || ''
       const headers: Record<string, string> = {
         Range: 'bytes=0-1024',
         'User-Agent': this.userAgent,

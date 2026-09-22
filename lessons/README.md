@@ -30,6 +30,8 @@ the index for exactly that.
 
 | Date | Lesson | The one thing |
 | --- | --- | --- |
+| 2026-09-22 | [The download that needed two taps](2026-09-22-the-download-that-needed-two-taps.md) | A single-attempt fetch on a download button fails on the first transient drop; the existing `withRetry` moved to `lib/retry.ts` and now guards both the client download and the proxy's upstream hop. |
+| 2026-09-22 | [Third-party CDN referer gap](2026-09-22-cdn-referer-gap.md) | `getMediaReferer` only knew main-social hosts, so every third-party CDN got no Referer; map CDN hosts (not just site origins), fall back to the page URL when unmapped, and never claim Referer fixes a stale signed URL. |
 | 2026-09-17 | [The Twitter API request claimed to be Chrome](2026-09-17-twitter-api-user-agent.md) | A successful probe with different headers did not reproduce the failure; the API returned 403 to our Chrome identity and 200 to an honest API client. |
 | 2026-09-17 | [Cancel responses the generic resolver does not use](2026-09-17-generic-response-cleanup.md) | Discarded page-scrape response bodies are now cancelled, with tests proving the cancellation; no production latency claim is attached. |
 | 2026-08-10 | [Creem payout-account rejection](2026-08-10-creem-payout-rejection.md) | A reviewer reads the marketing, not the code — "no watermark" describes a circumvention tool even when the code only fetches public files. |

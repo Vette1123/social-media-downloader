@@ -31,7 +31,7 @@
  *     `validateStatus` says otherwise. Several call sites pass
  *     `validateStatus: () => true` and check `.status` by hand.
  *   - Network/timeout failures throw WITHOUT a `.response`, because
- *     `isTransientError` in downloader.ts distinguishes the two that way.
+ *     `isTransientError` in retry.ts distinguishes the two that way.
  *   - `.headers` supports dictionary access, and `set-cookie` comes back as an
  *     array (Instagram's CSRF bootstrap reads it).
  *   - `.request.res.responseUrl` exposes the post-redirect URL, which the

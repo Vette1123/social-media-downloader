@@ -4,6 +4,17 @@
 // given media URL, or '' when none is needed (e.g. Cobalt tunnel URLs and
 // signed CDN URLs that ignore the header).
 
+// Host-boundary match: a bare substring check for a short suffix would also
+// hit longer unrelated hosts that merely end in those characters.
+function isHost(url: string, domain: string): boolean {
+  try {
+    const host = new URL(url).hostname
+    return host === domain || host.endsWith('.' + domain)
+  } catch {
+    return false
+  }
+}
+
 export function getMediaReferer(url: string): string {
   // YouTube / googlevideo (incl. Piped-proxied playback URLs)
   if (
@@ -25,7 +36,7 @@ export function getMediaReferer(url: string): string {
   if (
     url.includes('twimg.com') ||
     url.includes('twitter.com') ||
-    url.includes('x.com')
+    isHost(url, 'x.com')
   )
     return 'https://x.com/'
 
@@ -45,6 +56,46 @@ export function getMediaReferer(url: string): string {
     url.includes('instagram.com')
   )
     return 'https://www.instagram.com/'
+
+  // Third-party tube CDNs gate hotlinking by Referer. Checked before the
+  // fallthrough so CDN hosts get their site's origin.
+  if (
+    url.includes('sitea.com') ||
+    url.includes('cdna.com') ||
+    url.includes('cdna.org')
+  )
+    return 'https://www.sitea.com/'
+
+  if (
+    url.includes('siteb.com') ||
+    url.includes('cdnb.com') ||
+    url.includes('cdnb.org') ||
+    url.includes('cdnb.com')
+  )
+    return 'https://www.siteb.com/'
+
+  if (url.includes('sitec.com') || url.includes('sitec.org'))
+    return 'https://www.sitec.com/'
+
+  if (url.includes('sited.com') || url.includes('cdnd.com'))
+    return 'https://www.sited.com/'
+
+  if (url.includes('sitee.com') || url.includes('cdne.com'))
+    return 'https://www.sitee.com/'
+
+  if (url.includes('sitef.com') || url.includes('cdnf.com'))
+    return 'https://www.sitef.com/'
+
+  if (url.includes('siteg.com') || url.includes('cdng.com'))
+    return 'https://www.siteg.com/'
+
+  if (url.includes('siteh.com') || url.includes('cdnh.com'))
+    return 'https://www.siteh.com/'
+
+  if (url.includes('sitei.com') || url.includes('cdni.com'))
+    return 'https://www.sitei.com/'
+
+  if (url.includes('sitej.com')) return 'https://sitej.com/'
 
   // Cobalt tunnel URLs and anything else — no referer needed
   return ''
