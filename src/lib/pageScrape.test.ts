@@ -428,6 +428,7 @@ describe('fetchThroughRelay', () => {
     // Left to itself it returns the page as markdown prose — measured at 361
     // bytes for a page whose markup is 8 KB, with the wanted attribute gone.
     vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    vi.stubEnv('JINA_API_KEY', '')
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(REAL_PAGE),
     )
@@ -436,6 +437,22 @@ describe('fetchThroughRelay', () => {
     await fetchThroughRelay('https://site.example/v')
     expect(fetchMock.mock.calls[0][1]).toMatchObject({
       headers: { 'X-Return-Format': 'html' },
+    })
+  })
+
+  it('authenticates the reader when a key is configured, onto its own quota', async () => {
+    // The anonymous quota is metered by address and datacenter egress burns it
+    // within minutes; a key moves the call onto the key's quota instead.
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    vi.stubEnv('JINA_API_KEY', 'jr-abc123')
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(REAL_PAGE),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await fetchThroughRelay('https://site.example/v')
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+      headers: { 'X-Return-Format': 'html', Authorization: 'Bearer jr-abc123' },
     })
   })
 
