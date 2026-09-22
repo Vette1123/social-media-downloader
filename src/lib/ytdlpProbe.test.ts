@@ -209,12 +209,12 @@ describe('ytdlpProbe format selection', () => {
   })
 
   /**
-   * The measuredPornHub shape: every rendition is a muxed mp4 whose vcodec/
+   * The measured tube-host shape: every rendition is a muxed mp4 whose vcodec/
    * acodec are null (yt-dlp does not populate them for these), plus an HLS
    * manifest at top level. The null-codec entries must win — rejecting them
    * made this whole host fail while perfect files sat in the list.
    */
-  const PORNHUB_LIKE = {
+  const TUBE_LIKE = {
     title: 'measured shape',
     duration: 1725,
     protocol: 'm3u8_native',
@@ -247,7 +247,7 @@ describe('ytdlpProbe format selection', () => {
   }
 
   it('selects a muxed format with unset codecs instead of failing', async () => {
-    dumpJson.mockResolvedValue(PORNHUB_LIKE)
+    dumpJson.mockResolvedValue(TUBE_LIKE)
     const probe = await ytdlpProbe('https://site.example/view_video.php?v=1', 'video')
     expect(probe?.downloadUrl).toBe('https://ev.cdn.example/1080P_4000K_1.mp4?sig=1')
     expect(probe?.title).toBe('measured shape')
@@ -266,7 +266,7 @@ describe('ytdlpProbe format selection', () => {
           acodec: 'none',
           height: 1080,
         },
-        { ...PORNHUB_LIKE.formats[2] },
+        { ...TUBE_LIKE.formats[2] },
       ],
     })
     const probe = await ytdlpProbe('https://site.example/v', 'video')
@@ -274,7 +274,7 @@ describe('ytdlpProbe format selection', () => {
   })
 
   it('demotes AV1 renditions to their equal-height H.264 sibling', async () => {
-    // Measured on Eporner: each height ships twice, once as AV1.
+    // Measured on a third-party host: each height ships twice, once as AV1.
     dumpJson.mockResolvedValue({
       title: 't',
       formats: [

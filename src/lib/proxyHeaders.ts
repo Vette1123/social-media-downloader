@@ -4,6 +4,17 @@
 // given media URL, or '' when none is needed (e.g. Cobalt tunnel URLs and
 // signed CDN URLs that ignore the header).
 
+// Host-boundary match: a bare substring check for a short suffix would also
+// hit longer unrelated hosts that merely end in those characters.
+function isHost(url: string, domain: string): boolean {
+  try {
+    const host = new URL(url).hostname
+    return host === domain || host.endsWith('.' + domain)
+  } catch {
+    return false
+  }
+}
+
 export function getMediaReferer(url: string): string {
   // YouTube / googlevideo (incl. Piped-proxied playback URLs)
   if (
@@ -25,7 +36,7 @@ export function getMediaReferer(url: string): string {
   if (
     url.includes('twimg.com') ||
     url.includes('twitter.com') ||
-    url.includes('x.com')
+    isHost(url, 'x.com')
   )
     return 'https://x.com/'
 
@@ -45,6 +56,46 @@ export function getMediaReferer(url: string): string {
     url.includes('instagram.com')
   )
     return 'https://www.instagram.com/'
+
+  // Third-party tube CDNs gate hotlinking by Referer. Checked before the
+  // fallthrough so CDN hosts get their site's origin.
+  if (
+    url.includes('pornhub.com') ||
+    url.includes('phncdn.com') ||
+    url.includes('phncdn.org')
+  )
+    return 'https://www.pornhub.com/'
+
+  if (
+    url.includes('xhamster.com') ||
+    url.includes('xhcdn.com') ||
+    url.includes('xhcdn.org') ||
+    url.includes('xhpingcdn.com')
+  )
+    return 'https://www.xhamster.com/'
+
+  if (url.includes('eporner.com') || url.includes('eporner.org'))
+    return 'https://www.eporner.com/'
+
+  if (url.includes('redtube.com') || url.includes('redtubevids.com'))
+    return 'https://www.redtube.com/'
+
+  if (url.includes('youporn.com') || url.includes('ypcdn.com'))
+    return 'https://www.youporn.com/'
+
+  if (url.includes('tube8.com') || url.includes('tube8cdn.com'))
+    return 'https://www.tube8.com/'
+
+  if (url.includes('spankbang.com') || url.includes('sbcdn.com'))
+    return 'https://www.spankbang.com/'
+
+  if (url.includes('xvideos.com') || url.includes('xvideos-cdn.com'))
+    return 'https://www.xvideos.com/'
+
+  if (url.includes('xnxx.com') || url.includes('xnxx-cdn.com'))
+    return 'https://www.xnxx.com/'
+
+  if (url.includes('motherless.com')) return 'https://motherless.com/'
 
   // Cobalt tunnel URLs and anything else — no referer needed
   return ''

@@ -78,10 +78,10 @@ Rules added to the personal rulebook:
 - Unicode lookalikes (… vs ..., emoji) make eyeballed literals liars. Read the
   exact codepoints before matching.
 
-Also learned: PornHub/Eporner formats carry vcodec/acodec = null on muxed mp4s
-— "unknown" must not be treated as "audio-only" (`carriesBothTracks`), and
-Eporner needs `--impersonate chrome` (TLS wall), which ytdlpProbe now tries
-first with a plain retry fallback.
+Also learned: several third-party tube extractors carry vcodec/acodec = null
+on muxed mp4s — "unknown" must not be treated as "audio-only"
+(`carriesBothTracks`), and one of them needs `--impersonate chrome` (TLS
+wall), which ytdlpProbe now tries first with a plain retry fallback.
 
 ## Round four: imports beyond YouTube, taste memory
 /api/playlist became a multi-source expander (YouTube playlist, Reddit subreddit/user via public .json with an old.reddit fallback, Pinterest board RSS, Vimeo channel/user RSS). One response shape keeps BatchPanel source-blind. Subtitle language joined prefs (optional field, invalid dropped not rejected) — picker floats it first and records on download; syncs through the existing account flow. Per-platform quality memory: re-pick on a result remembers for that platform only, resolve-time override beats global, hint+reset under the toggle.

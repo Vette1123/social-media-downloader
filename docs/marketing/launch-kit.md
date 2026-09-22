@@ -167,8 +167,9 @@ rewrite — check it against the rule at the top of this file first.
 
 The alternatives on AlternativeTo were picked to keep the association clean:
 open-source and mainstream tools only. Entries the site itself flags for
-malware or bundleware (JDownloader, ClipGrab) and ones whose own description
-lists adult sites were deliberately skipped, as was Internet Download Manager.
+malware or bundleware (JDownloader, ClipGrab), ones pitched outside a
+mainstream-tool association, and Internet Download Manager were deliberately
+skipped.
 "Support for 4K" was left unticked on the listing — YouTube resolves through
 the in-Worker ANDROID_VR client at a 360p ceiling, and a feature checkbox is a
 claim.

@@ -17,6 +17,7 @@
  */
 
 import { getMediaReferer, resolveRangeResponse } from './proxyHeaders'
+import { isTransientError, withRetry } from './retry'
 
 // Several of these CDNs serve different (or no) content to non-browser clients.
 const BROWSER_UA =
@@ -200,7 +201,26 @@ export async function handleVideoProxy(request: Request): Promise<Response> {
       ...(rangeHeader ? { Range: rangeHeader } : {}),
     })
 
-    const response = await fetch(videoUrl, { headers, redirect: 'follow' })
+    // One upstream retry on a transient failure (429/5xx/network drop). A
+    // cold CDN edge or a one-shot 502 otherwise turns into a red banner on
+    // the visitor's first tap; the second tap succeeds because the upstream
+    // has warmed. Definitive 4xx answers are returned as-is, never retried.
+    const response = await withRetry(
+      async () => {
+        const res = await fetch(videoUrl, { headers, redirect: 'follow' })
+        if (res.ok || res.status === 206) return res
+        if (res.status === 429 || res.status >= 500) {
+          await res.body?.cancel().catch(() => {})
+          const err = new Error(`upstream ${res.status}`) as Error & {
+            response?: { status?: number }
+          }
+          err.response = { status: res.status }
+          throw err
+        }
+        return res
+      },
+      { retries: 1, isRetryable: isTransientError },
+    )
     if (!response.ok && response.status !== 206) {
       return json(
         { error: `Failed to fetch video: ${response.status}` },

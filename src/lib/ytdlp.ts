@@ -167,8 +167,8 @@ function isProgressiveHttp(format: YtdlpFormat): boolean {
 
 /**
  * yt-dlp leaves `vcodec`/`acodec` unset (null) on single muxed files for
- * several hosts — measured on PornHub and Eporner, whose every rendition
- * arrives exactly that way. Null means "unknown", and the file is by
+ * several hosts — measured across third-party tube extractors, whose every
+ * rendition arrives exactly that way. Null means "unknown", and the file is by
  * construction video+audio together; the only actively dangerous value is the
  * literal `'none'`, which marks a single-track adaptive stream this app
  * cannot use without ffmpeg. So: reject `'none'`, accept everything else.
@@ -228,7 +228,7 @@ export async function ytdlpProbe(
   try {
     const ytdlp = await loadYtdlp()
     // Chrome impersonation clears the TLS-fingerprint walls several hosts put
-    // up (measured: Eporner resets the plain connection mid-metadata and
+    // up (measured: one host resets the plain connection mid-metadata and
     // answers an impersonated one in full). The wrapper may predate the
     // option, so a refusal here retries plainly rather than failing the URL.
     const baseFlags = {

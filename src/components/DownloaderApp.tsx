@@ -121,6 +121,7 @@ import {
   type HistoryEntry,
 } from '@/lib/history'
 import { saveBlob, saveMedia } from '@/lib/blobSaver'
+import { isTransientError, withRetry } from '@/lib/retry'
 import { canShareFile, fileFromBlob, shareFile } from '@/lib/shareFile'
 import { audioTagsFor } from '@/lib/audioTags'
 import { bytesFromDataUrl, tagMp3 } from '@/lib/id3'
@@ -267,6 +268,36 @@ async function streamToBlob(
 
 /** Thrown by `streamToBlob` when its `bail` predicate asks it to stop. */
 class StreamBailout extends Error {}
+
+/**
+ * Fetch a media URL into a blob, retrying transient failures.
+ *
+ * The first tap after a cold PWA open often loses the race to the radio or
+ * hits a one-shot upstream 5xx; without a retry that surfaces as the red
+ * "Failed to download" banner and the visitor has to press again. Non-2xx
+ * answers carry their status so `isTransientError` can tell a definitive
+ * 404/private post (fail fast) from a flaky 429/5xx (worth one more try).
+ */
+async function fetchMediaBlob(
+  url: string,
+  onProgress: (pct: number | null) => void,
+): Promise<Blob> {
+  return withRetry(
+    async () => {
+      const response = await fetch(url)
+      if (!response.ok) {
+        await response.body?.cancel().catch(() => {})
+        const err = new Error(`HTTP ${response.status}`) as Error & {
+          response?: { status?: number }
+        }
+        err.response = { status: response.status }
+        throw err
+      }
+      return streamToBlob(response, onProgress)
+    },
+    { retries: 2, isRetryable: isTransientError },
+  )
+}
 
 /**
  * True once the measured rate says this transfer won't finish in a reasonable
@@ -1678,12 +1709,7 @@ export function DownloaderApp() {
     dispatch({ type: 'SET_PROGRESS', payload: 0 })
 
     try {
-      const response = await fetch(state.downloadUrl)
-
-      if (!response.ok) {
-        throw new Error('Failed to download video')
-      }
-      const blob = await streamToBlob(response, (p) =>
+      const blob = await fetchMediaBlob(state.downloadUrl, (p) =>
         dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
       await deliver(blob, nameFile('mp4'))
@@ -1811,12 +1837,7 @@ export function DownloaderApp() {
     dispatch({ type: 'SET_PROGRESS', payload: 0 })
 
     try {
-      const response = await fetch(state.audioUrl)
-
-      if (!response.ok) {
-        throw new Error('Failed to download audio')
-      }
-      const blob = await streamToBlob(response, (p) =>
+      const blob = await fetchMediaBlob(state.audioUrl, (p) =>
         dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
       await deliverAudio(blob, nameFile('mp3'))
