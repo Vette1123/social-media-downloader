@@ -468,15 +468,24 @@ function buildChecks() {
       check: async (response) => {
         if (response.status !== 200) return `expected 200, got ${response.status}`
 
-        // The check above already resolved this exact URL, so a second request
-        // must come from one of the two cache tiers.
-        const repeat = await fetch(`${BASE}/api/download`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }),
-        })
-        const tier = repeat.headers.get('x-cache')
-        const payload = await repeat.json()
+        // The check above already resolved this exact URL, so a repeat must
+        // come from one of the two cache tiers. The write goes through
+        // waitUntil — after the first response returns — so an immediate
+        // repeat can legitimately lose the race; ask a few times over half a
+        // second before accepting a MISS as the answer.
+        let tier = null
+        let payload = null
+        for (let attempt = 0; attempt < 5; attempt++) {
+          if (attempt > 0) await new Promise((r) => setTimeout(r, 150))
+          const repeat = await fetch(`${BASE}/api/download`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }),
+          })
+          tier = repeat.headers.get('x-cache')
+          payload = await repeat.json()
+          if (tier === 'HIT' || tier === 'EDGE') break
+        }
         if (!payload.success) return `repeat resolve failed: ${payload.error}`
 
         const onWorkersDev = new URL(BASE).hostname.endsWith('.workers.dev')
