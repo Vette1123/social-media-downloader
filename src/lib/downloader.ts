@@ -1311,9 +1311,10 @@ export class Downloader {
       return this.downloadFacebook(url)
     }
 
-    // Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo — no bespoke
-    // extractor; resolved generically through Cobalt (which tunnels the media
-    // so it plays/downloads from any IP, including Vercel).
+    // Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, SoundCloud,
+    // Dailymotion, LinkedIn — no bespoke extractor (LinkedIn has a small
+    // embed read of its own); the rest resolve generically through Cobalt,
+    // which tunnels the media so it plays/downloads from any IP.
     const genericPlatforms: SupportedPlatform[] = [
       'pinterest',
       'reddit',
@@ -1321,6 +1322,9 @@ export class Downloader {
       'snapchat',
       'twitch',
       'vimeo',
+      'soundcloud',
+      'dailymotion',
+      'linkedin',
       'generic',
     ]
     if (genericPlatforms.includes(platform)) {
@@ -1508,6 +1512,7 @@ export class Downloader {
       threads: () => this.tryThreadsEmbed(url),
       pinterest: () => this.tryPinterestPin(url),
       reddit: () => this.tryRedditEmbed(url),
+      linkedin: () => this.tryLinkedInPost(url),
     }
 
     const methods: Array<() => Promise<VideoData | null>> = []
@@ -1952,6 +1957,51 @@ export class Downloader {
     return {
       id: /post\/([\w-]+)/.exec(url)?.[1] || media.mediaUrl.slice(-32),
       title: media.title === 'Threads' ? `Threads post by @${author}` : media.title,
+      url,
+      thumbnail: media.thumbnail,
+      duration: 0,
+      author,
+      description: '',
+      downloadUrl: media.mediaUrl,
+      isPhotoCarousel: false,
+    }
+  }
+
+  /**
+   * LinkedIn, via the same surface the link-preview crawlers read.
+   *
+   * A public post serves its media in the anonymous HTML's og: tags — the
+   * every-crawler-gets-this view — while the app shell an authenticated
+   * browser gets is a wall. Asking as a link crawler (the same trick
+   * tryThreadsEmbed uses) keeps us on the open side of that wall. Private
+   * posts render no og:video at all, so the failure is a clean null and the
+   * chain moves on.
+   */
+  private async tryLinkedInPost(url: string): Promise<VideoData | null> {
+    const canonical = url.split(/[?#]/)[0].replace(/\/$/, '')
+    const response = await http.get(canonical, {
+      headers: {
+        'User-Agent': LINK_CRAWLER_AGENT,
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      timeout: 15000,
+      validateStatus: () => true,
+    })
+    if (response.status !== 200) return null
+
+    const html = typeof response.data === 'string' ? response.data : ''
+    const media = extractMediaFromHtml(html, canonical)
+    if (!media || media.isStream) return null
+
+    // Share links (lnkd.in/…) redirect to their post URL; the author slug
+    // only makes sense on it. The slug runs `name_hash-stuff-activity-…`,
+    // so the readable name is everything before the first underscore.
+    const author =
+      /linkedin\.com\/posts\/([^/?#]+)/.exec(canonical)?.[1]?.split('_')[0] ||
+      'LinkedIn'
+    return {
+      id: /activity-(\d+)/.exec(canonical)?.[1] || media.mediaUrl.slice(-32),
+      title: media.title,
       url,
       thumbnail: media.thumbnail,
       duration: 0,

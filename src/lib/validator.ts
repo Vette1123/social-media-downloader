@@ -10,6 +10,9 @@ export type SupportedPlatform =
   | 'snapchat'
   | 'twitch'
   | 'vimeo'
+  | 'soundcloud'
+  | 'dailymotion'
+  | 'linkedin'
   | 'generic'
   | 'unknown'
 
@@ -112,6 +115,35 @@ const platformPatterns: Record<
   ],
   vimeo: [
     /^(https?:\/\/)?(www\.|player\.)?vimeo\.com\/(?:video\/)?\d+/,
+  ],
+  // SoundCloud and Dailymotion have no bespoke extractor either — they sit in
+  // Cobalt's own service list, so recognition is what buys anything here: the
+  // narration, the Recent label and the result card name the platform instead
+  // of reading "Web".
+  soundcloud: [
+    // A track, playlist or artist/track pair — a bare profile URL stays
+    // generic on purpose: there is nothing saveable at the top of a profile.
+    /^(https?:\/\/)?(www\.)?soundcloud\.com\/[\w.-]+\/[\w.-]+/,
+    // snd.sc short links
+    /^(https?:\/\/)?snd\.sc\/[\w-]+/,
+  ],
+  dailymotion: [
+    /^(https?:\/\/)?(www\.)?dailymotion\.com\/video\/[\w]+/,
+    // dai.ly short links
+    /^(https?:\/\/)?dai\.ly\/[\w]+/,
+  ],
+  // LinkedIn is in neither cobalt list; it gets its own embed read
+  // (tryLinkedInPost) the way Threads does.
+  linkedin: [
+    // Posts: /posts/<author-slug>/<post-slug> — the slug runs multisegment, so
+    // the range spills across slashes until the next key path.
+    /^(https?:\/\/)?(www\.)?linkedin\.com\/posts\/[\w\-%./]+/,
+    // Feed updates, incl. urn:… shapes
+    /^(https?:\/\/)?(www\.)?linkedin\.com\/feed\/update\/[\w:%./-]+/,
+    // Pulse articles that carry a video lead
+    /^(https?:\/\/)?(www\.)?linkedin\.com\/pulse\/[\w\-%./]+/,
+    // lnkd.in share links (the app's "copy link")
+    /^(https?:\/\/)?lnkd\.in\/[\w-]+/,
   ],
 }
 

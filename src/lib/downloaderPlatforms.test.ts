@@ -19,6 +19,7 @@ type PrivateDownloader = {
   tryRedditEmbed(url: string): Promise<VideoDataLike | null>
   tryPinterestPin(url: string): Promise<VideoDataLike | null>
   tryThreadsEmbed(url: string): Promise<VideoDataLike | null>
+  tryLinkedInPost(url: string): Promise<VideoDataLike | null>
   tryVimeo(url: string): Promise<VideoDataLike | null>
   resolveRedirect(url: string): Promise<string>
   parseFacebookHtml(html: string, url: string): VideoDataLike | null
@@ -293,6 +294,100 @@ describe('the Threads embed extractor', () => {
     expect(headers['User-Agent']).toContain('facebookexternalhit')
     expect(result?.downloadUrl).toBe('https://cdn.example/clip.mp4')
     expect(result?.title).toBe('Threads post by @someone')
+  })
+})
+
+/**
+ * LinkedIn public posts serve their media in og: tags to link crawlers, the
+ * way Threads does — the app shell is a wall, the crawler view is not. Tested
+ * here rather than only live because the same trap as Threads applies: a
+ * browser UA sees the shell and every scrape of it comes up empty.
+ */
+describe('the LinkedIn post extractor', () => {
+  const post = `<html><head>
+    <meta property="og:title" content="Why the rollout slipped" />
+    <meta property="og:image" content="https://media.example.linkedin.com/poster.jpg" />
+    <meta property="og:video:secure_url" content="https://media.example.linkedin.com/dms/clip.mp4" />
+  </head><body></body></html>`
+
+  it('reads the og video off the post URL as a link crawler', async () => {
+    const spy = stubFetch(post)
+    const result = await priv(new Downloader()).tryLinkedInPost(
+      'https://www.linkedin.com/posts/satyanadella_share-week-crew-activity-7260000000000000000-aBcD/?trk=public_post_feed-clip',
+    )
+    // Query is stripped (utm/trk tracking changes nothing), not sent upstream.
+    expect(String(spy.mock.calls[0][0])).toBe(
+      'https://www.linkedin.com/posts/satyanadella_share-week-crew-activity-7260000000000000000-aBcD',
+    )
+    const headers = spy.mock.calls[0][1]?.headers as Record<string, string>
+    expect(headers['User-Agent']).toContain('facebookexternalhit')
+    expect(result?.downloadUrl).toBe(
+      'https://media.example.linkedin.com/dms/clip.mp4',
+    )
+    expect(result?.title).toBe('Why the rollout slipped')
+    // The slug's readable half is the poster's name; the hash tail is not.
+    expect(result?.author).toBe('satyanadella')
+  })
+
+  it('returns null on a post that has no video', async () => {
+    stubFetch(
+      '<html><head><meta property="og:title" content="Text only" /></head></html>',
+    )
+    expect(
+      await priv(new Downloader()).tryLinkedInPost(
+        'https://www.linkedin.com/posts/someone_a-plain-piece-of-text-activity-123',
+      ),
+    ).toBeNull()
+  })
+
+  it('returns null when the wall answers instead of the post', async () => {
+    // LinkedIn's own denial answer is 999; any non-200 takes the same branch.
+    stubFetch('', { status: 403 })
+    expect(
+      await priv(new Downloader()).tryLinkedInPost(
+        'https://www.linkedin.com/feed/update/urn:li:ugcPost:7260000000000000000/',
+      ),
+    ).toBeNull()
+  })
+})
+
+/**
+ * The three platforms newly routed to downloadGeneric. SoundCloud and
+ * Dailymotion resolve through Cobalt's own service list, so recognition only
+ * has to be right about shareable links — a bare profile or playlist URL
+ * should fall through to generic, not claim a platform it cannot name.
+ */
+describe('recognising the long-tail platforms', () => {
+  it.each([
+    'https://soundcloud.com/artist-a/the-real-track-name',
+    'https://snd.sc/aB12cD',
+  ])('names %s SoundCloud', (url) => {
+    expect(detectPlatform(url)).toBe('soundcloud')
+  })
+
+  it('leaves a SoundCloud profile to the generic path', () => {
+    expect(detectPlatform('https://soundcloud.com/artist-a')).toBe('generic')
+  })
+
+  it.each([
+    'https://www.dailymotion.com/video/x8abcde',
+    'https://dai.ly/x8abcde',
+  ])('names %s Dailymotion', (url) => {
+    expect(detectPlatform(url)).toBe('dailymotion')
+  })
+
+  it.each([
+    'https://www.linkedin.com/posts/satyanadella_share-week-crew-activity-7260000000000000000-aBcD/',
+    'https://www.linkedin.com/feed/update/urn:li:ugcPost:7260000000000000000/',
+    'https://lnkd.in/e-aB12cD',
+  ])('names %s LinkedIn', (url) => {
+    expect(detectPlatform(url)).toBe('linkedin')
+  })
+
+  it('leaves a LinkedIn profile to the generic path', () => {
+    expect(detectPlatform('https://www.linkedin.com/in/satyanadella')).toBe(
+      'generic',
+    )
   })
 })
 
