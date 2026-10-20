@@ -51,6 +51,8 @@ import {
   handleLogout,
   handleRefresh,
 } from './auth/routes'
+import { handleTelegram, telegramHealth } from './telegram'
+import { asDirectTunnel, directSaveUrl } from './directSave'
 
 // requireDb and WorkerEnv live in their own leaf module. Importing them from
 // here would put apiRoutes back in an import cycle with auth/routes and the
@@ -85,34 +87,13 @@ function toMediaUrl(mediaUrl: string, proxyPath: string): string {
 }
 
 /**
- * A cobalt tunnel streams from any IP with `Content-Disposition: attachment`,
- * so the browser can pull it directly instead of re-streaming every byte
- * through the Worker — which would both cost CPU and put video traffic through
- * Cloudflare, which the free plan does not permit.
- *
- * Forced to https: a self-hosted instance behind a TLS-terminating proxy can
- * report an http self-URL, and an https page navigating to that is a
- * mixed-content navigation which displays the file instead of downloading it.
+ * The direct-save decision lives in ./directSave (a leaf — the Telegram
+ * webhook imports its logic but must not import apiRoutes, whose import cycle
+ * would turn into init closures for this whole route table). Both are
+ * re-exported here under this module's own name so the App Router wrappers and
+ * the existing tests import one module.
  */
-function asDirectTunnel(url: string | undefined): string | undefined {
-  if (!url || url.startsWith('/')) return undefined
-  return url.replace(/^http:\/\//i, 'https://')
-}
-
-/**
- * The raw URL the browser can save on its own, when there is one.
- *
- * A Cobalt tunnel streams with `Content-Disposition: attachment` from any
- * address. A recipe-built URL (see `directBrowser` in types.ts) comes from a
- * host that may wall our own egress: a navigation with the referrer stripped
- * gets the full file as an attachment there, where the proxy would only reach
- * the wall. Anything else has no direct form and stays on the proxy.
- */
-export function directSaveUrl(videoData: Pick<VideoData, 'tunnel' | 'directBrowser' | 'downloadUrl'>): string | undefined {
-  if (videoData.tunnel) return asDirectTunnel(videoData.downloadUrl)
-  if (videoData.directBrowser) return videoData.downloadUrl
-  return undefined
-}
+export { handleTelegram, directSaveUrl, telegramHealth }
 
 /**
  * The verified token, or null for an absent, malformed or expired one.
@@ -758,6 +739,9 @@ export const API_ROUTES: Record<string, { method: string; handler: Handler }> = 
   '/api/auth/refresh': { method: 'POST', handler: handleRefresh },
   '/api/auth/logout': { method: 'POST', handler: handleLogout },
   '/api/account': { method: 'POST', handler: handleAccount },
+  '/api/telegram': { method: 'POST', handler: handleTelegram },
+  '/api/telegram/health': { method: 'GET', handler: () =>
+    Response.json(telegramHealth()) },
   ...Object.fromEntries(
     Object.entries(MEDIA_PROXY_HANDLERS).map(([pathname, handler]) => [
       pathname,
