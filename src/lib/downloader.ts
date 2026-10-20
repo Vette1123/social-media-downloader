@@ -18,6 +18,7 @@ import {
   OriginBlockedError,
   readCappedText,
 } from './pageScrape'
+import { resolveVideoSite } from './videoSites'
 import { resolveByRule } from './siteRules'
 import { VideoData, ImageData } from './types'
 import {
@@ -382,7 +383,7 @@ const BROWSER_PAGE_HEADERS: Record<string, string> = {
  * Read a recipe's page from wherever it will answer: the host itself first,
  * a relay only if that fails. See the call site in `tryPageScrape`.
  */
-async function fetchPageDirectThenRelay(target: string): Promise<string | null> {
+async function fetchPageDirect(target: string): Promise<string | null> {
   try {
     const response = await fetch(target, {
       headers: BROWSER_PAGE_HEADERS,
@@ -391,13 +392,19 @@ async function fetchPageDirectThenRelay(target: string): Promise<string | null> 
     })
     if (response.ok) {
       const html = await readCappedText(response)
-      // A stub is not the page; fall through to the relay rather than feeding
-      // the recipe markup that cannot contain what it is looking for.
-      if (html && !looksLikeBotWall(html)) return html
+      if (html) return html
     }
   } catch {
-    // Network failure is the same news as a wall here: try the relay.
+    // Network failure is the same news as a wall here.
   }
+  return null
+}
+
+async function fetchPageDirectThenRelay(target: string): Promise<string | null> {
+  const html = await fetchPageDirect(target)
+  // A stub is not the page; fall through to the relay rather than feeding it
+  // markup that cannot contain what it is looking for.
+  if (html && !looksLikeBotWall(html)) return html
   return fetchThroughRelay(target)
 }
 
@@ -1513,6 +1520,10 @@ export class Downloader {
     const methods: Array<() => Promise<VideoData | null>> = []
     const own = ownEndpoint[platform]
     if (own) methods.push(own)
+    // A named host has a cheaper, more reliable recipe than Cobalt: one page
+    // read and, at most, one player request. It returns null without a request
+    // for every other host.
+    methods.push(() => this.tryVideoSite(url))
     methods.push(() => this.tryCobaltInstances(url))
     // Last resort, and the only extractor that runs with nothing configured.
     // Cobalt's public instance serves a fixed platform list, so before this a
@@ -1589,6 +1600,42 @@ export class Downloader {
       description: '',
       downloadUrl: probe.downloadUrl,
       isPhotoCarousel: false,
+    }
+  }
+
+  /**
+   * Sites whose MP4 is never in the document the watch page returns to a
+   * datacenter address: it is behind an embed hash, a player request, a token,
+   * or an escaped JSON config only the relay sees. See `videoSites` for the
+   * per-host recipes.
+   */
+  private async tryVideoSite(url: string): Promise<VideoData | null> {
+    const resolved = await resolveVideoSite(
+      url,
+      { direct: fetchPageDirect, relay: fetchThroughRelay },
+      this.userAgent,
+    )
+    if (!resolved) return null
+
+    const probe = await this.probeStream(resolved.mediaUrl, {
+      rejectHtml: true,
+      expect: 'video',
+      pageReferer: resolved.pageUrl,
+    })
+    // A page or a JPEG is a definite miss: returning it would ship a broken
+    // save. An unreachable URL is kept, because these CDNs gate by address and
+    // the proxy fetch may well be answered where this probe was not.
+    if (probe.verdict === 'wrong-type') return null
+
+    return {
+      id: parseVideoId(url) || resolved.mediaUrl.slice(-32),
+      title: resolved.title,
+      url,
+      thumbnail: resolved.thumbnail,
+      duration: 0,
+      author: new URL(url).hostname.replace(/^www\./, ''),
+      description: '',
+      downloadUrl: resolved.mediaUrl,
     }
   }
 
@@ -2265,36 +2312,43 @@ export class Downloader {
     const shortcode =
       parseInstagramShortcode(resolvedUrl) || parseInstagramShortcode(url)
 
-    // Order by reliability + cost:
-    //   1. Embed page — fast, login-free, no authenticated hit; resolves public
-    //      posts, reels and carousels (and bails rather than misrendering a
-    //      video as a photo when its JSON doesn't parse). Verified 2026-08-15
-    //      from Cloudflare's own network against four famous public posts.
-    //      A post Instagram will not serve logged-out returns the same "the link
-    //      to this photo or video may be broken" shell as a deleted one, with
-    //      `contextJSON: null` — that shell is NOT evidence the surface is gone,
-    //      which is exactly the trap in
-    //      lessons/2026-08-15-instagram-logged-out-wall.md.
-    //   2. The crawler view of the post page — the surface that answers the
-    //      reels the embed will not. Its JSON ships `is_video: true` with no
-    //      `video_url` for a good share of reels, and for those this is the only
-    //      logged-out path to the actual MP4. Login-free, so every visitor gets
-    //      it. Second rather than first because it costs ~700 KB against the
-    //      embed's ~260 KB and answers a smaller set.
-    //   3. The private media API — the only path that resolves what Instagram
-    //      will not serve anonymously, and the only one the session buys
-    //      anything on. No-ops (returns null, sends nothing) for an
-    //      uncredentialed resolve, and tried after the free paths so the burner
-    //      account is only used when actually needed.
-    //   4. Cobalt — the datacenter-reachable fallback. Instagram's own signed
-    //      video CDN URLs are frequently refused with an
-    //      HTTP 500/403 when re-fetched from a datacenter IP (e.g. Vercel), even
-    //      though extraction succeeded — so the /api/video proxy can't stream
-    //      them and the player is dead. Cobalt re-extracts the clip and hands
-    //      back a URL that DOES stream from any IP, so it's the rescue path when
-    //      the primary stream is unreachable here. It is also the one that
-    //      answers a reel with the post's cover JPEG when its own extraction
-    //      failed, which is why every stream below is type-checked.
+    // The chain, ordered by what each surface answers:
+    //   1. The embed page — first and alone, for a link that has not already
+    //      named itself a video. Fast, login-free, no authenticated hit;
+    //      resolves public posts and carousels (and bails rather than
+    //      misrendering a video as a photo when its JSON doesn't parse).
+    //      Verified 2026-08-15 from Cloudflare's own network against four
+    //      famous public posts. A post Instagram will not serve logged-out
+    //      returns the same "the link to this photo or video may be broken"
+    //      shell as a deleted one, with `contextJSON: null` — that shell is NOT
+    //      evidence the surface is gone, which is exactly the trap in
+    //      lessons/2026-08-15-instagram-logged-out-wall.md. For a `/reel/` or
+    //      `/tv/` link the embed is skipped instead of run first: it ships
+    //      `is_video: true` with no `video_url` by design, and it proved so
+    //      useless for reels that it once misrendered them as JPEGs
+    //      (lessons/2026-09-06-the-tunnel-that-served-a-jpeg.md) — fetching 260
+    //      KB to learn the URL's own shape again is cost without answer.
+    //   2. Then the video-hunters, RACED rather than tried in turn — the shape
+    //      TikTok already runs (see downloadTikTok), measured there before it
+    //      was measured here. Sequentially they read, worst case, embed + a
+    //      series of slow misses + Cobalt, and a visitor paid all of it; raced,
+    //      the answer arrives with the fastest of the three:
+    //      - the crawler view — the surface that answers the reels the embed
+    //        will not (~700 KB, login-free, every visitor). It is also the one
+    //        Instagram rate-limits (IG_CRAWLER_COOLDOWN_MS), so during a 429
+    //        window it no-ops here without costing a doomed request.
+    //      - the private media API — the only path that resolves what Instagram
+    //        will not serve anonymously, and the only one the session buys
+    //        anything on. No-ops (returns null, sends nothing) for an
+    //        uncredentialed resolve.
+    //      - Cobalt — the datacenter-reachable rescue. Instagram's own signed
+    //        video CDN URLs are frequently refused with an HTTP 500/403 when
+    //        re-fetched from a datacenter IP (e.g. Vercel), even though
+    //        extraction succeeded — so the /api/video proxy can't stream them
+    //        and the player is dead. Cobalt re-extracts the clip and hands
+    //        back a URL that DOES stream from any IP. It is also the one that
+    //        answers a reel with the post's cover JPEG when its own extraction
+    //        failed, which is why every stream below is type-checked.
 
     // Whether a still image can possibly be the right answer for this link.
     // `/reel/` and `/tv/` settle it before any request; for a `/p/` URL the
@@ -2303,54 +2357,30 @@ export class Downloader {
     let expectsVideo =
       instagramLinkIsVideo(url) || instagramLinkIsVideo(resolvedUrl)
 
-    // Named, because when this chain ends with a cover image for a reel the
-    // only useful question is which of the four refused and how — and from
-    // outside a deployed isolate every one of those failures looks identical.
-    // Same reasoning as the Innertube log line; see youtubeInnertube.ts.
-    const methods: Array<{ name: string; run: () => Promise<VideoData | null> }> = [
-      {
-        name: 'embed',
-        run: async () => {
-          if (!shortcode) return null
-          const embed = await this.tryInstagramEmbed(shortcode, url)
-          expectsVideo = expectsVideo || embed.isVideo
-          return embed.data
-        },
-      },
-      {
-        name: 'crawler',
-        run: () =>
-          shortcode && expectsVideo
-            ? this.tryInstagramCrawlerView(shortcode, url)
-            : Promise.resolve(null),
-      },
-      {
-        name: 'media-info',
-        run: () =>
-          shortcode
-            ? this.tryInstagramMediaInfo(shortcode, url)
-            : Promise.resolve(null),
-      },
-      { name: 'cobalt', run: () => this.tryCobaltInstances(resolvedUrl) },
-    ]
-
-    /** One word per method, for the give-up line at the bottom. */
+    // One word per method, for the give-up line at the bottom.
     const outcomes: string[] = []
 
-    // Hold the first video result whose stream we couldn't confirm reachable, so
-    // that if no method yields a verified-playable stream we still return
-    // something (preserving prior behavior) rather than failing outright.
-    let unverifiedVideo: VideoData | null = null
-    // And, separately, a gallery that arrived for a link that promised a video.
-    // It is not the answer while any extractor is left, but it beats failing.
-    let stillsOnly: VideoData | null = null
+    // What the judged methods park for the give-up path. Two facts survive a
+    // fully-lost race: a video URL a method extracted but we could not confirm
+    // reachable from HERE (returned anyway, per prior behavior), and a gallery
+    // that arrived for a link that promised a video. Held in one mutable object
+    // because runAndJudge is a closure — a bare `let` only a closure writes is
+    // narrowed to `never` by the type checker.
+    const held: {
+      unverified: VideoData | null
+      stills: VideoData | null
+    } = { unverified: null, stills: null }
 
-    for (const method of methods) {
+    // Who judged each method: the walk pulls the sequential loop's per-result
+    // logic out so the SAME judgement (probe, catch, park, outcome word) runs
+    // when the method is a racer — `firstResult` keeps the first VERIFIED
+    // answer, and a judged null is just another loser.
+    const runAndJudge = async (method: { name: string; run: () => Promise<VideoData | null> }): Promise<VideoData | null> => {
       try {
         const result = await method.run()
         if (!result) {
           outcomes.push(`${method.name}:nothing`)
-          continue
+          return null
         }
         // IG never uses the TikTok-style slideshow render path.
         result.isPhotoCarousel = false
@@ -2373,33 +2403,85 @@ export class Downloader {
           if (probe.verdict === 'wrong-type') {
             // Not a maybe. Never hold it as a fallback.
             outcomes.push(`${method.name}:not-a-video`)
-            continue
+            return null
           }
-          if (!unverifiedVideo) unverifiedVideo = result
+          held.unverified ??= result
           outcomes.push(`${method.name}:unreachable`)
-          continue
+          return null
         }
 
         if ((result.images?.length ?? 0) > 0) {
           if (!expectsVideo) return result
           outcomes.push(`${method.name}:stills(${result.images?.length})`)
-          stillsOnly ??= result
-          continue
+          held.stills ??= result
+          return null
         }
         outcomes.push(`${method.name}:empty`)
+        return null
       } catch (e) {
         outcomes.push(
           `${method.name}:threw(${e instanceof Error ? e.message.slice(0, 40) : '?'})`,
         )
+        return null
       }
     }
+
+    // Phase 1 — the embed, alone and only for a link that has not already
+    // named itself a video: a /reel/ or /tv/ URL answers that question in its
+    // own shape, and for reels the embed ships nothing extractable, so
+    // fetching it pays 260 KB and a subrequest for an answer the URL already
+    // carried. For a /p/ link it is still the cheap first answer, and the one
+    // that tells the chain a photo-titled post is actually a video.
+    if (!expectsVideo) {
+      const embedResult = await runAndJudge({
+        name: 'embed',
+        run: async () => {
+          if (!shortcode) return null
+          const embed = await this.tryInstagramEmbed(shortcode, url)
+          expectsVideo = expectsVideo || embed.isVideo
+          return embed.data
+        },
+      })
+      if (embedResult) return embedResult
+    }
+
+    // Phase 2 — the video-hunters, raced rather than tried in turn, the shape
+    // TikTok's resolver already runs (see downloadTikTok). Sequentially, a reel
+    // landed on the crawler's 429 cooldown and failed whole, and a healthy reel
+    // paid every upstream's silence before Cobalt was even asked; raced, the
+    // answer arrives with whichever verifies first, and a rate-limited crawler
+    // costs the window's no-op instead of the resolve.
+    const racers: Array<{
+      name: string
+      run: () => Promise<VideoData | null>
+    }> = [
+      {
+        name: 'crawler',
+        run: () =>
+          shortcode && expectsVideo
+            ? this.tryInstagramCrawlerView(shortcode, url)
+            : Promise.resolve(null),
+      },
+      {
+        name: 'media-info',
+        run: () =>
+          shortcode
+            ? this.tryInstagramMediaInfo(shortcode, url)
+            : Promise.resolve(null),
+      },
+      { name: 'cobalt', run: () => this.tryCobaltInstances(resolvedUrl) },
+    ]
+    const raced = await firstResult(
+      racers.map((method) => () => runAndJudge(method)),
+    )
+    if (raced) return raced
 
     // No method produced a verified-reachable stream. If we did extract a video
     // URL (just couldn't confirm it here), return it anyway — it may still play
     // for the client, and this is no worse than the prior behavior.
-    if (unverifiedVideo) {
+    if (held.unverified) {
       console.warn(`Instagram fell back to an unverified stream: ${outcomes.join(' ')}`)
-      return unverifiedVideo
+      return held.unverified
     }
     // A gallery for a video link is the last thing tried, never the first: it
     // is the poster, and handing it over as though it were the clip is the
@@ -2417,11 +2499,11 @@ export class Downloader {
     // through to the honest error below is better: "we are being rate-limited,
     // try again" is something a visitor can act on, and a picture named after
     // the reel they asked for is the complaint that started all of this.
-    if (stillsOnly && !stillsAreJustTheCover(expectsVideo, stillsOnly.images?.length ?? 0)) {
+    if (held.stills && !stillsAreJustTheCover(expectsVideo, held.stills.images?.length ?? 0)) {
       console.warn(`Instagram gave a reel its cover image: ${outcomes.join(' ')}`)
-      return stillsOnly
+      return held.stills
     }
-    if (stillsOnly) {
+    if (held.stills) {
       console.warn(`Instagram refused a cover-only reel: ${outcomes.join(' ')}`)
     }
 

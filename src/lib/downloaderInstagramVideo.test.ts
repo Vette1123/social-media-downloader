@@ -630,3 +630,136 @@ describe('a gallery offered for a video link', () => {
     expect(stillsAreJustTheCover(true, 0)).toBe(false)
   })
 })
+
+/**
+ * The chain a reel rides, end to end.
+ *
+ * Measured against production on 2026-10-20: with the crawler view 429'd, EVERY
+ * reel answered "rate-limiting … give it a few minutes" in ~2.5s — the crawl
+ * state lived 10 minutes, the embed was fetched and answered nothing for reels
+ * anyway, and Cobalt, the one rescue, waited at the back. The visitor clicked
+ * twice: once into that wall, once later, at whatever point the window had
+ * passed or Cobalt had warmed. The chain now races the video-hunters the way
+ * TikTok's resolver already races tikwm against Cobalt, and the embed is not
+ * fetched at all for a /reel/ link.
+ */
+describe('the chain a reel rides', () => {
+  const REEL_URL = 'https://www.instagram.com/reel/DKcalTzoftf/'
+  // ISO base media: `ftyp` at offset 4, what `looksLikeImageBytes` reads for.
+  const MP4 = [0, 0, 0, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]
+
+  afterEach(() => {
+    resetInstagramCrawlerCooldown()
+    resetCobaltCooldown()
+  })
+
+  function stubFetch(
+    route: (url: string, method: string) => Response | Promise<Response>,
+  ) {
+    return vi.fn(async (input: unknown, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : (input as Request).url
+      const method = init?.method ?? 'GET'
+      return route(url, method)
+    })
+  }
+
+  it('never fetches the embed for a reel link', async () => {
+    const fetchSpy = stubFetch((url, method) => {
+      if (url.includes('/embed/captioned/')) {
+        throw new Error(`embed fetched for a reel: ${method} ${url}`)
+      }
+      if (/instagram\.com\/reel\//.test(url)) {
+        return new Response('', { status: 429, headers: { 'content-type': 'text/html' } })
+      }
+      if (method === 'POST') {
+        return Response.json({
+          status: 'tunnel',
+          filename: 'instagram_DKcalTzoftf.mp4',
+          url: 'https://tunnel.example/clip',
+        })
+      }
+      // Anything left is the probe of the tunnel.
+      return new Response(new Uint8Array(MP4), {
+        status: 206,
+        headers: { 'content-range': 'bytes 0-1024/64' },
+      })
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await new Downloader().downloadVideo(REEL_URL)
+    expect(result.downloadUrl).toBe('https://tunnel.example/clip')
+    expect(fetchSpy.mock.calls.map((c) => String(c[0])).some((u) => u.includes('/embed/captioned/'))).toBe(false)
+  })
+
+  /**
+   * The race, and the reason it exists. Sequentially, a crawler request that
+   * never settled held the whole resolve hostage behind it — the visitor paid
+   * its stall in full before Cobalt was asked. Raced, Cobalt's answer is the
+   * resolve's answer, and the crawler's stall costs nothing. The stub below
+   * never settles its reel request on purpose: under the old order this test
+   * does not fail, it does not finish.
+   */
+  it('answers from cobalt while the crawler view is still stalling', async () => {
+    vi.stubGlobal(
+      'fetch',
+      stubFetch((url, method) => {
+        if (/instagram\.com\/reel\//.test(url)) {
+          return new Promise<Response>(() => {})
+        }
+        if (method === 'POST') {
+          return Response.json({
+            status: 'tunnel',
+            filename: 'instagram_DKcalTzoftf.mp4',
+            url: 'https://tunnel.example/clip',
+          })
+        }
+        return new Response(new Uint8Array(MP4), {
+          status: 206,
+          headers: { 'content-range': 'bytes 0-1024/64' },
+        })
+      }),
+    )
+
+    const result = await new Downloader().downloadVideo(REEL_URL)
+    expect(result.downloadUrl).toBe('https://tunnel.example/clip')
+  })
+
+  /**
+   * A /p/ carousel keeps the embed-first order: the embed is the one surface
+   * that answers those cheaply, and the URL's own shape settles nothing there.
+   */
+  it('still asks the embed first for a /p/ link that answers', async () => {
+    const media = {
+      __typename: 'GraphSidecar',
+      shortcode: 'CmUv48DLvxd',
+      owner: { username: 'nasa' },
+      edge_sidecar_to_children: {
+        edges: [
+          { node: { is_video: false, display_url: 'https://cdn.example/one.jpg' } },
+          { node: { is_video: false, display_url: 'https://cdn.example/two.jpg' } },
+        ],
+      },
+    }
+    // The page's own shape: `"contextJSON":"<json-of-json>"`, spelled with
+    // JSON.stringify twice so every quote is escaped exactly as embedded.
+    const token = JSON.stringify(
+      JSON.stringify({ gql_data: { shortcode_media: media } }),
+    )
+    const fetchSpy = stubFetch((url) => {
+      if (url.includes('/embed/captioned/')) {
+        return new Response(
+          `<html><script type="application/json">{"contextJSON":${token}}</script><div data-media-type="GraphSidecar"></div></html>`,
+          { status: 200, headers: { 'content-type': 'text/html' } },
+        )
+      }
+      throw new Error(`embed chain continued, embed had answered: ${url}`)
+    })
+    vi.stubGlobal('fetch', fetchSpy)
+
+    const result = await new Downloader().downloadVideo(
+      'https://www.instagram.com/p/CmUv48DLvxd/',
+    )
+    expect(result.images?.length).toBe(2)
+    expect(fetchSpy.mock.calls.map((c) => String(c[0])).some((u) => u.includes('/embed/captioned/'))).toBe(true)
+  })
+})

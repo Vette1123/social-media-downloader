@@ -10,6 +10,7 @@
  */
 
 import type { VideoMetadata } from './appReducer'
+import { isTransientError, withRetry } from './retry'
 import { resolveTikTokInBrowser } from './tikwmClient'
 import { detectPlatform } from './validator'
 
@@ -142,11 +143,30 @@ async function resolveOnServer(
   }
   if (opts.proToken) headers['X-Pro-Token'] = opts.proToken
 
-  const response = await fetch('/api/download', {
-    method: 'POST',
-    headers,
-    signal: opts.signal,
-    body: JSON.stringify({ url, type, quality, format }),
-  })
-  return response.json()
+  // One retry on the resolve POST itself — the same first-tap-after-a-cold-open
+  // radio loss the client's media fetches already ride out (see
+  // lessons/2026-09-22-the-download-that-needed-two-taps.md). Only a thrown
+  // network error is retried, and only once: a server answer the app can read
+  // is never re-sent, so a resolve that Instagram actually refused costs one
+  // extractor run, not two.
+  return withRetry(
+    async () => {
+      const response = await fetch('/api/download', {
+        method: 'POST',
+        headers,
+        signal: opts.signal,
+        body: JSON.stringify({ url, type, quality, format }),
+      })
+      return response.json()
+    },
+    {
+      retries: 1,
+      // A user abort is not a network failure: re-sending after a cancelled
+      // resolve would hang the request back up behind a closed door.
+      isRetryable: (e) =>
+        !opts.signal?.aborted &&
+        isTransientError(e) &&
+        !(e as { response?: { status?: number } }).response,
+    },
+  )
 }
