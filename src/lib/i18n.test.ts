@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { LOCALES, isLocale, isRtl, translate, type TKey } from './i18n'
-import { isSuccessMessage } from './appReducer'
 
 describe('translate', () => {
   it('falls back per-key to English when a dictionary lacks the key', () => {
@@ -24,41 +23,40 @@ describe('translate', () => {
 })
 
 /**
- * The banner paints itself green and the Pro nudge appears only when
- * `isSuccessMessage` recognises the text — and since translation, the text it
- * inspects is whatever the dictionary returned. That makes the sign-off emoji
- * a load-bearing part of every translation, which is not obvious to anyone
- * adding a locale. Nothing enforced it, so this does: drop the 🎉 from a
- * future dictionary and a successful download starts reporting itself in red.
+ * The banner tones itself off the typed message kind, not the words — so a
+ * translation may be reworded or drop an emoji without anything turning red.
+ * What actually needs guarding per locale is plainer: every completion key
+ * exists, fills {n}, and returns real prose rather than falling back half-
+ * rendered. An empty or untranslated string is exactly what an English-only
+ * contributor shipping a new locale would leave behind.
  */
-describe('success markers survive every translation', () => {
-  const SUCCESS_KEYS: TKey[] = [
+describe('completion messages exist in every locale', () => {
+  const COMPLETION_KEYS: TKey[] = [
+    'msgProcessed',
     'msgVideoDone',
     'msgDownloadStarted',
     'msgSlideshowDone',
     'msgAudioDone',
     'msgImagesDone',
+    'preparingDownload',
+    'cancelDownload',
+    'downloadCanceled',
   ]
 
   for (const locale of LOCALES) {
-    for (const key of SUCCESS_KEYS) {
-      it(`${locale}/${key} still reads as success`, () => {
-        expect(isSuccessMessage(translate(locale, key, { n: 1 }))).toBe(true)
+    for (const key of COMPLETION_KEYS) {
+      it(`${locale}/${key} translates to non-empty prose`, () => {
+        const text = translate(locale, key, { n: 1 })
+        expect(text.trim().length).toBeGreaterThan(0)
+        // A dictionary missing the key would fall back to English rather than
+        // to its own words — possible, but worth knowing about per locale.
+        // (English IS English, so it only matters for the other four.)
+        if (locale !== 'en') {
+          expect(text).not.toBe(translate('en', key, { n: 1 }))
+        }
       })
     }
   }
-
-  // The one success message the reducer sets itself, in English, and maps to
-  // a translation only at render — so the predicate must keep seeing English.
-  it('msgProcessed is matched before translation, not after', () => {
-    expect(isSuccessMessage('Content processed successfully!')).toBe(true)
-  })
-
-  it('an in-flight message is not mistaken for a result', () => {
-    for (const locale of LOCALES) {
-      expect(isSuccessMessage(translate(locale, 'preparingDownload'))).toBe(false)
-    }
-  })
 })
 
 describe('locale guards', () => {

@@ -127,6 +127,25 @@ export function dismissNudge(id: string): void {
   emit()
 }
 
+/**
+ * Whether a finished download may carry the attached Pro ask this time.
+ *
+ * The ask earns its placement by being rare. Every save producing a pitch is
+ * exactly how a footnote reads as a stream of interruptions — and the toolbar's
+ * blindness is permanent once trained. The first save of the day keeps its
+ * moment (it is when someone is most likely deciding whether the site is
+ * worth supporting); afterwards the card gets a turn once every three saves.
+ * The day count already exists (recordResolve), so no second ledger.
+ */
+export const SAVES_PER_ATTACHED_NUDGE = 3
+
+export function attachedNudgeDue(resolvesToday: number): boolean {
+  // Zero is a day that hasn't started (the pre-render snapshot) — the quiet
+  // state. Rendering the ask beside it would be a pitch with no observation.
+  if (resolvesToday === 0) return false
+  return resolvesToday <= 1 || resolvesToday % SAVES_PER_ATTACHED_NUDGE === 0
+}
+
 export function useProSignals(): ProSignals {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 }

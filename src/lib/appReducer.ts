@@ -47,6 +47,31 @@ export interface VideoMetadata {
   directIsAttachment?: boolean
 }
 
+/**
+ * What a status line IS, not what its text happens to contain.
+ *
+ * `message` used to be a plain string whose kind was inferred from emoji
+ * markers inside the prose — a parse of our own copy, and every reader
+ * (banner classes, screen-reader role, Pro nudge, Recent stamping) ran its
+ * own copy of the same sniffing list. The marker list drifted the moment a
+ * success string stopped carrying its emoji, so the kind travels with the
+ * message now and the string is only ever words.
+ *
+ * - `info`  neutral status ("Preparing your download…"). Not a failure, so
+ *   it must not paint the banner red.
+ * - `success` a resolve finished; nothing has landed on disk yet.
+ * - `saved` a file actually reached the visitor's disk — narrower than
+ *   success, and the Recent stamp and the Pro nudge key off the difference.
+ * - `error` a failure; the only kind that interrupts (alert / assertive)
+ *   and offers a retry.
+ */
+export type MessageKind = 'info' | 'success' | 'saved' | 'error'
+
+export interface AppMessage {
+  kind: MessageKind
+  text: string
+}
+
 export interface AppState {
   url: string
   originalUrl: string
@@ -54,7 +79,7 @@ export interface AppState {
   downloading: boolean
   downloadingAudio: boolean
   downloadingImages: boolean
-  message: string
+  message: AppMessage | null
   downloadUrl: string
   audioUrl: string
   videoMetadata: VideoMetadata | null
@@ -73,7 +98,7 @@ export type AppAction =
   | { type: 'SET_DOWNLOADING'; payload: boolean }
   | { type: 'SET_DOWNLOADING_AUDIO'; payload: boolean }
   | { type: 'SET_DOWNLOADING_IMAGES'; payload: boolean }
-  | { type: 'SET_MESSAGE'; payload: string }
+  | { type: 'SET_MESSAGE'; payload: AppMessage }
   | { type: 'SET_DOWNLOAD_URL'; payload: string }
   | { type: 'SET_AUDIO_URL'; payload: string }
   | { type: 'SET_VIDEO_METADATA'; payload: VideoMetadata | null }
@@ -102,7 +127,7 @@ export const initialState: AppState = {
   downloading: false,
   downloadingAudio: false,
   downloadingImages: false,
-  message: '',
+  message: null,
   downloadUrl: '',
   audioUrl: '',
   videoMetadata: null,
@@ -157,54 +182,16 @@ export function autoOpensPreview({
 }
 
 /**
- * Whether the status line is reporting a win.
- *
- * `message` is a single string carrying both outcomes, so every reader has to
- * decide which one it is holding. There are two such readers — the banner,
- * which paints itself green or red, and the post-download Pro nudge, which may
- * only appear after something actually saved — and a second copy of this list
- * would drift the moment a new success path is added. One predicate, so a
- * message that reads as success reads that way everywhere.
- *
- * The sign-off emoji is the marker because it is what the success paths
- * already agreed on, and it is the only part of those strings that is not
- * prose someone will reword.
- */
-const SAVED_MARKERS = ['🎉', '🎵', '🎬', '🖼️'] as const
-const SUCCESS_MARKERS = ['success', ...SAVED_MARKERS] as const
-
-export function isSuccessMessage(message: string): boolean {
-  return SUCCESS_MARKERS.some((marker) => message.includes(marker))
-}
-
-/**
- * Whether a file actually reached the visitor's disk.
- *
- * Narrower than `isSuccessMessage`, and the difference is the whole point: a
- * finished *resolve* also reads as a success ("Content processed successfully!")
- * and it is not a download. The Recent list stamps a row as saved off this, so
- * treating the two alike would mark every link somebody merely pasted as one
- * they already have — which is the opposite of the question it answers.
- *
- * The emoji are the marker because they are what the eight completion paths
- * already agreed on, in five languages, and they are the only part of those
- * strings that is not prose somebody will reword.
- */
-export function isSavedMessage(message: string): boolean {
-  return SAVED_MARKERS.some((marker) => message.includes(marker))
-}
-
-/**
  * True while a link is being resolved or a file is actively transferring —
  * `state.loading` covers only the former; the latter is three independent
  * flags because video/audio/images can each be mid-transfer on their own.
  *
- * Two readers, which is why it lives here beside `isSuccessMessage` rather
- * than in the component: the promo slot (which must stay off-screen for the
- * whole paste-to-download path), and the banner's retry offer. The banner
- * needs it because its own text cannot say — "Preparing your download…"
- * carries no success marker, so on message alone it is indistinguishable from
- * a failure, and a retry is only ever meaningful once nothing is in flight.
+ * Two readers, which is why it lives here rather than in the component: the
+ * promo slot (which must stay off-screen for the whole paste-to-download
+ * path), and the banner's retry offer. The banner needs it because an `info`
+ * status like "Preparing your download…" is not a failure and must not offer
+ * a restart mid-transfer — a retry is only ever meaningful once nothing is
+ * in flight.
  */
 export function isResolvingOrDownloading(
   state: Pick<
@@ -317,7 +304,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
     case 'RESET_DOWNLOAD_STATE':
       return {
         ...state,
-        message: '',
+        message: null,
         downloadUrl: '',
         audioUrl: '',
         originalUrl: '',
@@ -346,7 +333,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         : payloadMeta
       return {
         ...state,
-        message: 'Content processed successfully!',
+        message: { kind: 'success', text: 'Content processed successfully!' },
         downloadUrl: action.payload.downloadUrl || '',
         audioUrl: action.payload.audioUrl || '',
         originalUrl: action.payload.originalUrl,
