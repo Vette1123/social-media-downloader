@@ -506,11 +506,21 @@ function elementSrcs(html: string): string[] {
  * file appears when `og:video` holds a preview. Every match is collected so the
  * scorer can prefer the 1080p entry over the 360p one.
  */
+function unescapeSlashes(html: string): string {
+  return html.includes('\\/') ? html.replace(/\\\//g, '/') : html
+}
+
 function inlineMediaUrls(html: string): string[] {
-  const scope =
+  const bounded =
     html.length > INLINE_SCAN_BYTES ? html.slice(0, INLINE_SCAN_BYTES) : html
+  // Player configs are JS or JSON, where every slash is escaped (`https:\/\/…`).
+  // The scan used to reject those, which silently excluded most tube sites:
+  // their only progressive MP4 lives in exactly that config. Unescaping here
+  // rather than loosening the pattern keeps one bounded replace instead of a
+  // regex with an escape alternative in the hot path.
+  const scope = unescapeSlashes(bounded)
   const pattern =
-    /https?:\\?\/\\?\/[^\s"'<>\\]+\.(?:mp4|webm|mov|m4v|m3u8)(?:\?[^\s"'<>\\]*)?/gi
+    /https?:\/\/[^\s"'<>\\]+\.(?:mp4|webm|mov|m4v|m3u8)(?:\?[^\s"'<>\\]*)?/gi
   const out: string[] = []
   let match: RegExpExecArray | null
   while ((match = pattern.exec(scope)) !== null) {
