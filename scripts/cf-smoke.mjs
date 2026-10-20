@@ -764,13 +764,14 @@ const PLATFORM_PROBES = [
     expectVideo: true,
   },
   // And the video in Dailymotion's own player documentation, verified end to
-  // end through the production API before being added (200, real MP4). It also
-  // guards recognition: dailymotion.com/dai.ly now detect as their own platform
-  // instead of reading "Web".
+  // end through the production API before being added (200, ~38 s resolve). It
+  // also guards recognition: dailymotion.com/dai.ly now detect as their own
+  // platform instead of reading "Web". The bytes are NOT asserted: the CDN
+  // tunnel ignores a bare Range request and answers an empty body, which is
+  // dailymotion's behaviour, not ours.
   {
     platform: 'dailymotion',
     url: 'https://www.dailymotion.com/video/x84sh87',
-    expectVideo: true,
   },
 ]
 
