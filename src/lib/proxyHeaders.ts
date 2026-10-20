@@ -57,6 +57,10 @@ export function getMediaReferer(url: string): string {
   )
     return 'https://www.instagram.com/'
 
+  // LinkedIn media lives on media.licdn.com and akm.linkedin.com
+  if (url.includes('licdn.com') || url.includes('linkedin.com'))
+    return 'https://www.linkedin.com/'
+
   // Third-party tube CDNs gate hotlinking by Referer. Checked before the
   // fallthrough so CDN hosts get their site's origin.
   if (

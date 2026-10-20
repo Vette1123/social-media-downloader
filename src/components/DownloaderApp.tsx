@@ -698,6 +698,9 @@ const PLATFORM_DISPLAY: Record<string, string> = {
   snapchat: 'Snapchat',
   twitch: 'Twitch',
   vimeo: 'Vimeo',
+  soundcloud: 'SoundCloud',
+  dailymotion: 'Dailymotion',
+  linkedin: 'LinkedIn',
   // Any other host. Recent titles read "Web video" rather than falling back to
   // "Saved link", so the list stays content-shaped for long-tail saves too.
   generic: 'Web',

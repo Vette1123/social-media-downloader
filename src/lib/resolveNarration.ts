@@ -42,6 +42,9 @@ const PLATFORMS: Partial<
   snapchat: { name: 'Snapchat', noun: 'video' },
   twitch: { name: 'Twitch', noun: 'clip' },
   vimeo: { name: 'Vimeo', noun: 'video' },
+  soundcloud: { name: 'SoundCloud', noun: 'track' },
+  dailymotion: { name: 'Dailymotion', noun: 'video' },
+  linkedin: { name: 'LinkedIn', noun: 'post' },
 }
 
 /** The platform's own name, as it writes it. Null for anything unrecognised. */
