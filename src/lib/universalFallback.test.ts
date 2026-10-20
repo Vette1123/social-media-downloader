@@ -130,6 +130,47 @@ describe('discarded generic responses', () => {
   })
 })
 
+describe('the relay after an empty direct read', () => {
+  it('reads a page with no media through the relay and extracts from that', async () => {
+    vi.stubEnv('DEPLOY_TARGET', 'cloudflare')
+    const plain = `<!doctype html><html><head><title>No clip</title></head>
+      <body>${'<p>filler</p>'.repeat(400)}</body></html>`
+    const relayed = `<!doctype html><html><head><title>A clip</title>
+      <meta property="og:video:secure_url" content="https://cdn.example/relay/clip.mp4" />
+      </head><body>${'<p>filler</p>'.repeat(400)}</body></html>`
+    const spy = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.startsWith('https://r.jina.ai/')) {
+        return new Response(relayed, {
+          status: 200,
+          headers: { 'Content-Type': 'text/html' },
+        })
+      }
+      if (url.includes('plain.example')) {
+        return new Response(plain, {
+          status: 200,
+          headers: { 'Content-Type': 'text/html' },
+        })
+      }
+      return new Response(new ArrayBuffer(64), {
+        status: 200,
+        headers: { 'Content-Type': 'video/mp4' },
+      })
+    })
+    vi.stubGlobal('fetch', spy)
+
+    await expect(
+      priv(new Downloader()).tryPageScrape('https://plain.example/watch/1'),
+    ).resolves.toMatchObject({
+      downloadUrl: 'https://cdn.example/relay/clip.mp4',
+    })
+    expect(spy).toHaveBeenCalledWith(
+      'https://r.jina.ai/https://plain.example/watch/1',
+      expect.anything(),
+    )
+  })
+})
+
 describe('the generic chain behind a walled origin', () => {
   it('still reports the block when nothing after the scraper resolves', async () => {
     vi.stubEnv('DEPLOY_TARGET', 'cloudflare')

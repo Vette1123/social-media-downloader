@@ -18,7 +18,6 @@ import {
   OriginBlockedError,
   readCappedText,
 } from './pageScrape'
-import { resolveVideoSite } from './videoSites'
 import { resolveByRule } from './siteRules'
 import { VideoData, ImageData } from './types'
 import {
@@ -383,7 +382,7 @@ const BROWSER_PAGE_HEADERS: Record<string, string> = {
  * Read a recipe's page from wherever it will answer: the host itself first,
  * a relay only if that fails. See the call site in `tryPageScrape`.
  */
-async function fetchPageDirect(target: string): Promise<string | null> {
+async function fetchPageDirectThenRelay(target: string): Promise<string | null> {
   try {
     const response = await fetch(target, {
       headers: BROWSER_PAGE_HEADERS,
@@ -392,19 +391,13 @@ async function fetchPageDirect(target: string): Promise<string | null> {
     })
     if (response.ok) {
       const html = await readCappedText(response)
-      if (html) return html
+      // A stub is not the page; fall through to the relay rather than feeding
+      // the recipe markup that cannot contain what it is looking for.
+      if (html && !looksLikeBotWall(html)) return html
     }
   } catch {
-    // Network failure is the same news as a wall here.
+    // Network failure is the same news as a wall here: try the relay.
   }
-  return null
-}
-
-async function fetchPageDirectThenRelay(target: string): Promise<string | null> {
-  const html = await fetchPageDirect(target)
-  // A stub is not the page; fall through to the relay rather than feeding it
-  // markup that cannot contain what it is looking for.
-  if (html && !looksLikeBotWall(html)) return html
   return fetchThroughRelay(target)
 }
 
@@ -1520,10 +1513,6 @@ export class Downloader {
     const methods: Array<() => Promise<VideoData | null>> = []
     const own = ownEndpoint[platform]
     if (own) methods.push(own)
-    // A named host has a cheaper, more reliable recipe than Cobalt: one page
-    // read and, at most, one player request. It returns null without a request
-    // for every other host.
-    methods.push(() => this.tryVideoSite(url))
     methods.push(() => this.tryCobaltInstances(url))
     // Last resort, and the only extractor that runs with nothing configured.
     // Cobalt's public instance serves a fixed platform list, so before this a
@@ -1600,42 +1589,6 @@ export class Downloader {
       description: '',
       downloadUrl: probe.downloadUrl,
       isPhotoCarousel: false,
-    }
-  }
-
-  /**
-   * Sites whose MP4 is never in the document the watch page returns to a
-   * datacenter address: it is behind an embed hash, a player request, a token,
-   * or an escaped JSON config only the relay sees. See `videoSites` for the
-   * per-host recipes.
-   */
-  private async tryVideoSite(url: string): Promise<VideoData | null> {
-    const resolved = await resolveVideoSite(
-      url,
-      { direct: fetchPageDirect, relay: fetchThroughRelay },
-      this.userAgent,
-    )
-    if (!resolved) return null
-
-    const probe = await this.probeStream(resolved.mediaUrl, {
-      rejectHtml: true,
-      expect: 'video',
-      pageReferer: resolved.pageUrl,
-    })
-    // A page or a JPEG is a definite miss: returning it would ship a broken
-    // save. An unreachable URL is kept, because these CDNs gate by address and
-    // the proxy fetch may well be answered where this probe was not.
-    if (probe.verdict === 'wrong-type') return null
-
-    return {
-      id: parseVideoId(url) || resolved.mediaUrl.slice(-32),
-      title: resolved.title,
-      url,
-      thumbnail: resolved.thumbnail,
-      duration: 0,
-      author: new URL(url).hostname.replace(/^www\./, ''),
-      description: '',
-      downloadUrl: resolved.mediaUrl,
     }
   }
 
@@ -1729,10 +1682,13 @@ export class Downloader {
       media = await resolveByRule(url, fetchPageDirectThenRelay)
       fromRule = media !== null
 
-      // Otherwise read the watch page itself from an address the site will
-      // answer, and extract from that exactly as if we had fetched it. Only
-      // worth a request when the page we did get was a wall.
-      if (!media && walled) {
+      // Otherwise read the watch page from an address the site will answer and
+      // extract from that exactly as if we had fetched it. A page can yield
+      // nothing for reasons other than a wall — a challenge that is large
+      // enough to look real, or a player config this build of the extractor
+      // could not read — so the relay is worth one attempt whenever the direct
+      // read came up empty.
+      if (!media) {
         const relayed = await fetchThroughRelay(url)
         if (relayed) media = extractMediaFromHtml(relayed, url)
       }
