@@ -520,6 +520,40 @@ function buildChecks() {
     },
 
     {
+      name: 'api/telegram webhook answers with its own shape',
+      request: {
+        pathname: '/api/telegram/health',
+        method: 'GET',
+      },
+      check: async (response, body) => {
+        if (response.status !== 200) return `expected 200, got ${response.status}`
+        const payload = JSON.parse(new TextDecoder().decode(body))
+        // enabled is whatever the deployment's secrets say; the route must
+        // answer the GET with the same key either way.
+        if (typeof payload.enabled !== 'boolean') return 'no enabled field'
+        return null
+      },
+    },
+
+    {
+      name: 'api/telegram accepts an update without a token',
+      request: {
+        pathname: '/api/telegram',
+        method: 'POST',
+        json: { message: { chat: { id: 1 }, text: 'https://vimeo.com/76979871' } },
+      },
+      check: async (response, body) => {
+        // With no bot token every update is answered 200 and silently dropped;
+        // with one, this is a real resolve — so only 200 means "reachable, and
+        // not retry-storming Telegram's delivery".
+        if (response.status !== 200) return `expected 200, got ${response.status}`
+        const payload = JSON.parse(new TextDecoder().decode(body))
+        if (payload.ok !== true) return 'update was not acknowledged'
+        return null
+      },
+    },
+
+    {
       name: 'api/images maps URLs without buffering',
       request: {
         pathname: '/api/images',
