@@ -49,6 +49,8 @@ export type TKey =
   | 'processing'
   | 'downloadingBtn'
   | 'preparingDownload'
+  | 'cancelDownload'
+  | 'downloadCanceled'
   | 'progressLine'
   | 'clickToDownload'
   | 'videoBtn'
@@ -90,6 +92,8 @@ const en: Record<TKey, string> = {
   processing: 'Processing...',
   downloadingBtn: 'Downloading...',
   preparingDownload: 'Preparing your download…',
+  cancelDownload: 'Cancel',
+  downloadCanceled: 'Download canceled.',
   progressLine: 'Downloading… {pct}%',
   clickToDownload: 'Click to download your content',
   videoBtn: 'Video',
@@ -132,6 +136,8 @@ const es: Partial<Record<TKey, string>> = {
   processing: 'Procesando...',
   downloadingBtn: 'Descargando...',
   preparingDownload: 'Preparando tu descarga…',
+  cancelDownload: 'Cancelar',
+  downloadCanceled: 'Descarga cancelada.',
   progressLine: 'Descargando… {pct}%',
   clickToDownload: 'Haz clic para descargar tu contenido',
   videoBtn: 'Video',
@@ -174,6 +180,8 @@ const pt: Partial<Record<TKey, string>> = {
   processing: 'Processando...',
   downloadingBtn: 'Baixando...',
   preparingDownload: 'Preparando o seu download…',
+  cancelDownload: 'Cancelar',
+  downloadCanceled: 'Download cancelado.',
   progressLine: 'Baixando… {pct}%',
   clickToDownload: 'Clique para baixar seu conteúdo',
   videoBtn: 'Vídeo',
@@ -216,6 +224,8 @@ const id: Partial<Record<TKey, string>> = {
   processing: 'Memproses...',
   downloadingBtn: 'Mengunduh...',
   preparingDownload: 'Menyiapkan unduhan Anda…',
+  cancelDownload: 'Batalkan',
+  downloadCanceled: 'Unduhan dibatalkan.',
   progressLine: 'Mengunduh… {pct}%',
   clickToDownload: 'Klik untuk mengunduh konten Anda',
   videoBtn: 'Video',
@@ -258,6 +268,8 @@ const ar: Partial<Record<TKey, string>> = {
   processing: 'جارٍ المعالجة...',
   downloadingBtn: 'جارٍ التنزيل...',
   preparingDownload: 'جارٍ تجهيز تنزيلك…',
+  cancelDownload: 'إلغاء',
+  downloadCanceled: 'تم إلغاء التنزيل.',
   progressLine: 'جارٍ التنزيل… {pct}%',
   clickToDownload: 'انقر لتنزيل المحتوى',
   videoBtn: 'فيديو',

@@ -4,7 +4,6 @@ import {
   autoOpensPreview,
   initialState,
   isResolvingOrDownloading,
-  isSuccessMessage,
   retryTarget,
   type ImageData,
 } from './appReducer'
@@ -61,38 +60,62 @@ describe('autoOpensPreview', () => {
 })
 
 /**
- * Two things read this: the status banner picks green or red, and the
- * post-download Pro nudge only appears after something actually saved. A false
- * positive shows a paying-customer pitch under a failure message.
+ * The status banner used to infer green/red/neutral from emoji markers inside
+ * the message text — a parse of our own copy, re-implemented per reader. The
+ * kind now travels with the message, so these pin what the reducer guarantees:
+ * kind survives a dispatch verbatim, and the reducer's own success is flagged
+ * as resolve-done (`success`), never as file-on-disk (`saved`) — the Recent
+ * stamp must not fire for a link that was merely pasted.
  */
-describe('isSuccessMessage', () => {
-  it.each([
-    'Video downloaded successfully! 🎉',
-    'Download started. Check your downloads. 🎉',
-    'Slideshow video rendered and downloaded! 🎬',
-    'Audio extracted 🎵',
-    '3 image(s) downloaded individually! 🖼️',
-    'Saved 2 of 3 links to Recent — tap any to download. 🎉',
-  ])('reads %s as a win', (message) => {
-    expect(isSuccessMessage(message)).toBe(true)
+describe('the typed message channel', () => {
+  it('stores kind and text verbatim', () => {
+    const state = appReducer(initialState, {
+      type: 'SET_MESSAGE',
+      payload: { kind: 'info', text: 'Preparing your download…' },
+    })
+    expect(state.message).toEqual({
+      kind: 'info',
+      text: 'Preparing your download…',
+    })
   })
 
-  it.each([
-    'Failed to download video file',
-    'Couldn’t resolve any of those 3 links. Check they’re public post URLs and try again.',
-    'Preparing your download…',
-    'Rendering slideshow video... this takes ~30 seconds.',
-    '',
-  ])('reads %s as not a win', (message) => {
-    expect(isSuccessMessage(message)).toBe(false)
+  it('clears to null on reset', () => {
+    const messaged = appReducer(initialState, {
+      type: 'SET_MESSAGE',
+      payload: { kind: 'error', text: 'nope' },
+    })
+    expect(
+      appReducer(messaged, { type: 'RESET_DOWNLOAD_STATE' }).message,
+    ).toBeNull()
+  })
+
+  it('a finished resolve is a success, not a save', () => {
+    const state = appReducer(initialState, {
+      type: 'SET_DOWNLOAD_SUCCESS',
+      payload: {
+        originalUrl: 'https://www.tiktok.com/@a/video/1',
+        metadata: {
+          title: 't',
+          author: 'a',
+          duration: 0,
+          thumbnail: '',
+          platform: 'tiktok',
+        },
+      },
+    })
+    expect(state.message?.kind).toBe('success')
+    // The text is mapped per-locale at render (displayMessage), so the
+    // reducer always sets the English constant.
+    expect(state.message?.text).toBe('Content processed successfully!')
   })
 })
 
 /**
- * The banner's second gate. `isSuccessMessage` alone cannot tell a failure
- * from a running commentary — "Preparing your download…" is not a win either —
- * so the retry offer also asks whether anything is still in flight. Without
- * this, every transfer in progress renders a button offering to restart it.
+ * The banner's second gate. An `error` message alone cannot distinguish a
+ * settled failure from a running commentary — the in-flight kinds arrive as
+ * `info` — so the retry offer also asks whether anything is still in flight.
+ * Without this, every transfer in progress renders a button offering to
+ * restart itself.
  */
 describe('isResolvingOrDownloading', () => {
   const idle = {
@@ -115,17 +138,21 @@ describe('isResolvingOrDownloading', () => {
     expect(isResolvingOrDownloading({ ...idle, [flag]: true })).toBe(true)
   })
 
-  it('suppresses the retry offer under an in-flight message', () => {
-    const message = 'Preparing your download…'
+  it('suppresses the retry offer under an in-flight info status', () => {
+    // Exactly the banner's condition: kind error on screen, but something
+    // still running underneath (a proxied transfer after a stall).
     const state = { ...idle, downloading: true }
-    // Exactly the banner's condition: not a win, but not a result either.
-    expect(isSuccessMessage(message)).toBe(false)
-    expect(!isSuccessMessage(message) && !isResolvingOrDownloading(state)).toBe(false)
+    const showRetry = (msg: { kind: string } | null) =>
+      msg?.kind === 'error' && !isResolvingOrDownloading(state)
+    expect(showRetry({ kind: 'error' })).toBe(false)
   })
 
   it('offers the retry once a failure has settled', () => {
-    const message = 'Failed to download video file'
-    expect(!isSuccessMessage(message) && !isResolvingOrDownloading(idle)).toBe(true)
+    const showRetry = (msg: { kind: string } | null) =>
+      msg?.kind === 'error' && !isResolvingOrDownloading(idle)
+    expect(showRetry({ kind: 'error' })).toBe(true)
+    expect(showRetry({ kind: 'info' })).toBe(false)
+    expect(showRetry({ kind: 'saved' })).toBe(false)
   })
 })
 

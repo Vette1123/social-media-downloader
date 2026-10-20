@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, type PanInfo } from 'motion/react'
 import {
@@ -55,6 +55,11 @@ const slideVariants = {
 const OFFSET_THRESHOLD = 80
 const VELOCITY_THRESHOLD = 400
 
+// What TAB may cycle through while the lightbox is open. Only elements that
+// are actually laid out count — the guard removes anything display:none.
+const FOCUSABLE =
+  'button:not([disabled]), [href], input, select, video, [tabindex]:not([tabindex="-1"])'
+
 export function ImageLightbox({
   images,
   activeIndex,
@@ -79,6 +84,32 @@ export function ImageLightbox({
   // the first render pass — see lib/clientEnv for why this isn't an effect.
   const mounted = useHydrated()
 
+  // A dialog that declares aria-modal must keep the modifier keys it promised:
+  // without a trap, TAB walks straight out into the dimmed page underneath,
+  // where focus sits hidden behind the lightbox and a sighted keyboard user is
+  // steering a screen they cannot see. Mounted on the fixed root (below), so
+  // the loop stays inside the dialog.
+  const dialogRef = useRef<HTMLDivElement>(null)
+  // Focus flows back to whatever opened the lightbox when it closes — the
+  // gallery thumbnail that was clicked. Without the return, the caret is left
+  // on a portal node that has been removed from the tree and the next TAB
+  // starts from the top of the document.
+  const previouslyFocused = useRef<HTMLElement | null>(null)
+  const dialogOpen = !!current && mounted
+
+  useEffect(() => {
+    if (!dialogOpen) return
+    previouslyFocused.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+    // The dialog root takes initial focus (tabIndex -1): pressing TAB once
+    // lands on the close button, and the announcement reads the aria-label.
+    dialogRef.current?.focus()
+    return () => {
+      previouslyFocused.current?.focus()
+      previouslyFocused.current = null
+    }
+  }, [dialogOpen])
+
   // Track direction so AnimatePresence's enter/exit slides the right way.
   // Update it just before calling onNext/onPrev — React batches both updates so
   // `direction` is already correct when the new activeIndex re-renders.
@@ -98,6 +129,28 @@ export function ImageLightbox({
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
+        return
+      }
+      if (e.key === 'Tab') {
+        // Trap the loop: whichever side the caret enters from, it wraps to the
+        // other end of the dialog's own focusables instead of escaping into
+        // the dimmed page. shift+TAB wraps backwards the same way.
+        const root = dialogRef.current
+        if (!root) return
+        const focusables = Array.from(
+          root.querySelectorAll<HTMLElement>(FOCUSABLE),
+        ).filter((el) => el.offsetWidth > 0 || el.offsetHeight > 0)
+        if (focusables.length === 0) return
+        e.preventDefault()
+        const active = document.activeElement
+        const index = focusables.indexOf(active as HTMLElement)
+        let nextIndex: number
+        if (e.shiftKey) {
+          nextIndex = index <= 0 ? focusables.length - 1 : index - 1
+        } else {
+          nextIndex = index === focusables.length - 1 ? 0 : index + 1
+        }
+        focusables[nextIndex].focus()
         return
       }
       if (!hasMultiple) return
@@ -181,7 +234,9 @@ export function ImageLightbox({
 
   return createPortal(
     <div
-      className='fixed inset-0 z-50 flex flex-col bg-black/85 backdrop-blur-md'
+      ref={dialogRef}
+      tabIndex={-1}
+      className='fixed inset-0 z-50 flex flex-col bg-black/85 backdrop-blur-md outline-none'
       onClick={handleBackdropClick}
       role='dialog'
       aria-modal='true'

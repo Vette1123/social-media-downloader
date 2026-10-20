@@ -16,8 +16,7 @@ import {
   initialState,
   isResolvingOrDownloading,
   retryTarget,
-  isSavedMessage,
-  isSuccessMessage,
+  type AppMessage,
   type VideoMetadata,
 } from '@/lib/appReducer'
 import {
@@ -44,7 +43,7 @@ import { PromoSlot } from '@/components/PromoSlot'
 import { ProNudge } from '@/components/ProNudge'
 import { SUPPORT_PRICES } from '@/config/support'
 import { parseBatchInput } from '@/lib/batchQueue'
-import { recordResolve } from '@/lib/proSignals'
+import { attachedNudgeDue, recordResolve, useProSignals } from '@/lib/proSignals'
 import {
   formatDate,
   nowMs,
@@ -270,6 +269,16 @@ async function streamToBlob(
 class StreamBailout extends Error {}
 
 /**
+ * Anything thrown by a fetch/stream the visitor (or unmount) aborted, in the
+ * two shapes JS produces. A cancel is user intent, not site failure — it must
+ * never retry (withRetry would, given half a chance) and never render as a red
+ * banner.
+ */
+function isAbortError(err: unknown): boolean {
+  return err instanceof Error && err.name === 'AbortError'
+}
+
+/**
  * Fetch a media URL into a blob, retrying transient failures.
  *
  * The first tap after a cold PWA open often loses the race to the radio or
@@ -277,14 +286,17 @@ class StreamBailout extends Error {}
  * "Failed to download" banner and the visitor has to press again. Non-2xx
  * answers carry their status so `isTransientError` can tell a definitive
  * 404/private post (fail fast) from a flaky 429/5xx (worth one more try).
+ * An aborted transfer (`signal`) is deliberately not retryable: the caller
+ * asked for it to stop.
  */
 async function fetchMediaBlob(
   url: string,
   onProgress: (pct: number | null) => void,
+  signal?: AbortSignal,
 ): Promise<Blob> {
   return withRetry(
     async () => {
-      const response = await fetch(url)
+      const response = await fetch(url, { signal })
       if (!response.ok) {
         await response.body?.cancel().catch(() => {})
         const err = new Error(`HTTP ${response.status}`) as Error & {
@@ -295,7 +307,10 @@ async function fetchMediaBlob(
       }
       return streamToBlob(response, onProgress)
     },
-    { retries: 2, isRetryable: isTransientError },
+    {
+      retries: 2,
+      isRetryable: (e) => !isAbortError(e) && isTransientError(e),
+    },
   )
 }
 
@@ -313,8 +328,8 @@ function isTooSlowToStream(
   return projectedMs > MAX_STREAM_SECONDS * 1000
 }
 
-// isResolvingOrDownloading now lives in lib/appReducer, beside
-// isSuccessMessage — the banner's retry offer needs the same predicate the
+// isResolvingOrDownloading now lives in lib/appReducer, next to the typed
+// AppMessage kind - the banner's retry offer needs the same predicate the
 // promo slot does, and one copy keeps them from drifting apart.
 
 // Capture a self-contained snapshot of a thumbnail. Loads the image through our
@@ -606,6 +621,7 @@ async function downloadDirectWithProgress(
   // the file around for the share sheet, and to write tags into an MP3 — which
   // is why this is awaited and its result ignored.
   deliver: (blob: Blob, filename: string) => unknown = saveMedia,
+  signal?: AbortSignal,
 ): Promise<DirectDownloadOutcome> {
   let oversize = false
   try {
@@ -615,7 +631,7 @@ async function downloadDirectWithProgress(
     // no referrer such an origin also sends no CORS header, so the read fails
     // and the caller falls through to the navigation handoff, which gets the
     // full file. Cobalt tunnels ignore the referrer either way.
-    const response = await fetch(url, { referrerPolicy: 'no-referrer' })
+    const response = await fetch(url, { referrerPolicy: 'no-referrer', signal })
     if (!response.ok || !response.body) return 'failed'
     if (responseSize(response) > MAX_IN_MEMORY_DOWNLOAD_BYTES) {
       await response.body.cancel().catch(() => {})
@@ -665,12 +681,9 @@ function ProgressLine({ pct }: { pct: number | null }) {
  * constant of its own ('Content processed successfully!'), which is mapped
  * here rather than by threading a locale through the pure reducer.
  */
-function displayMessage(
-  t: (key: Parameters<ReturnType<typeof useT>>[0]) => string,
-  message: string,
-): string {
-  if (message === 'Content processed successfully!') return t('msgProcessed')
-  return message
+function displayMessage(t: (key: Parameters<ReturnType<typeof useT>>[0]) => string, message: AppMessage): string {
+  if (message.text === 'Content processed successfully!') return t('msgProcessed')
+  return message.text
 }
 
 const PLATFORM_DISPLAY: Record<string, string> = {
@@ -961,6 +974,10 @@ export function DownloaderApp() {
   // Core-flow copy follows the chosen language (footer picker); deep copy —
   // hints, FAQ, legal — stays English by design. See lib/i18n.ts.
   const t = useT()
+  // The per-day resolve count already lives in the pro-signal store — reused
+  // to keep the attached Pro ask rare (attachedNudgeDue), not as a second
+  // counter for the same behaviour.
+  const { today: resolvesToday } = useProSignals()
   // The same choice as a tag, for the Intl formatters that do their own wording.
   const locale = useLocale()
   // Bumped when a per-platform quality override changes, so the hint under
@@ -1110,10 +1127,16 @@ export function DownloaderApp() {
           setPlatformQualityMap(getStoredQualityMap())
         }
       } else {
-        dispatch({ type: 'SET_MESSAGE', payload: explain(data.error, target) })
+        dispatch({
+        type: 'SET_MESSAGE',
+        payload: { kind: 'error', text: explain(data.error, target) },
+      })
       }
     } catch (err) {
-      dispatch({ type: 'SET_MESSAGE', payload: explain(errorText(err), target) })
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { kind: 'error', text: explain(errorText(err), target) },
+      })
     } finally {
       setRepicking(null)
     }
@@ -1168,7 +1191,10 @@ export function DownloaderApp() {
     if (browserIsOffline()) {
       resetResult()
       dispatch({ type: 'SET_URL', payload: target })
-      dispatch({ type: 'SET_MESSAGE', payload: explain('', target) })
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { kind: 'error', text: explain('', target) },
+      })
       return
     }
 
@@ -1208,11 +1234,17 @@ export function DownloaderApp() {
           }
         }, 500)
       } else {
-        dispatch({ type: 'SET_MESSAGE', payload: explain(data.error, target) })
+        dispatch({
+        type: 'SET_MESSAGE',
+        payload: { kind: 'error', text: explain(data.error, target) },
+      })
       }
     } catch (err) {
       console.error('Processing error:', err)
-      dispatch({ type: 'SET_MESSAGE', payload: explain(errorText(err), target) })
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { kind: 'error', text: explain(errorText(err), target) },
+      })
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
     }
@@ -1276,10 +1308,13 @@ export function DownloaderApp() {
     dispatch({ type: 'SET_URL', payload: '' })
     dispatch({
       type: 'SET_MESSAGE',
-      payload:
-        saved > 0
-          ? `Saved ${saved} of ${urls.length} links to Recent — tap any to download. 🎉`
-          : `Couldn’t resolve any of those ${urls.length} links. Check they’re public post URLs and try again.`,
+      payload: {
+        kind: saved > 0 ? 'success' : 'error',
+        text:
+          saved > 0
+            ? `Saved ${saved} of ${urls.length} links to Recent — tap any to download. 🎉`
+            : `Couldn’t resolve any of those ${urls.length} links. Check they’re public post URLs and try again.`,
+      },
     })
   }
 
@@ -1507,12 +1542,29 @@ export function DownloaderApp() {
    */
   const lastFocusedMessage = useRef('')
 
+  // One AbortController per media transfer (video, audio, slideshow, gallery).
+  // Owned here so the progress row's Cancel button can stop whatever is
+  // running, with BatchPanel's abortRef as the precedent. Never reused across
+  // transfers: a stale controller must not cancel a fresh one.
+  const cancelRef = useRef<AbortController | null>(null)
+
+  /** Pressed from the progress row. The transfer's catch path polls its
+   *  controller's `signal.aborted` to report a cancel distinctly from a
+   *  failure — and to skip the proxy fallback it would otherwise retry. */
+  const cancelTransfer = useCallback(() => {
+    cancelRef.current?.abort()
+  }, [])
+
   useEffect(() => {
+    const message = state.message
     if (!finePointer) return
-    if (!isSuccessMessage(state.message)) return
+    // success = resolve finished, saved = file on disk: both bring the card to
+    // its done state, and both hand the cursor back for the next link.
+    if (!message || (message.kind !== 'success' && message.kind !== 'saved'))
+      return
     if (isResolvingOrDownloading(state)) return
-    if (lastFocusedMessage.current === state.message) return
-    lastFocusedMessage.current = state.message
+    if (lastFocusedMessage.current === message.text) return
+    lastFocusedMessage.current = message.text
     inputRef.current?.focus({ preventScroll: true })
   }, [finePointer, state])
 
@@ -1525,17 +1577,18 @@ export function DownloaderApp() {
    * eight chances to forget one, and the forgotten one would quietly claim a
    * link had never been saved.
    *
-   * `isSavedMessage` is deliberately narrower than `isSuccessMessage`: a
-   * finished resolve also reads as a success, and a link somebody merely pasted
-   * is exactly what this must not mark.
+   * `saved` is deliberately narrower than `success`: a finished resolve is a
+   * success too, and a link somebody merely pasted is exactly what this must
+   * not mark.
    */
   const lastSavedMessage = useRef('')
 
   useEffect(() => {
+    const message = state.message
     if (!state.originalUrl) return
-    if (!isSavedMessage(state.message)) return
-    if (lastSavedMessage.current === state.message + state.originalUrl) return
-    lastSavedMessage.current = state.message + state.originalUrl
+    if (!message || message.kind !== 'saved') return
+    if (lastSavedMessage.current === message.text + state.originalUrl) return
+    lastSavedMessage.current = message.text + state.originalUrl
     markSaved(state.originalUrl, nowMs())
   }, [state.message, state.originalUrl])
 
@@ -1668,6 +1721,13 @@ export function DownloaderApp() {
     // (saves the function's egress). No progress bar — the browser's own
     // download manager takes over instantly.
     const direct = state.videoMetadata?.directVideoUrl
+    const cancelled = () => cancelRef.current?.signal.aborted === true
+    const canceledNote = () =>
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { kind: 'info', text: t('downloadCanceled') },
+      })
+    cancelRef.current = new AbortController()
     if (direct) {
       const filename = nameFile('mp4')
       // The instance resolves server-side before the first byte, so nothing
@@ -1675,19 +1735,32 @@ export function DownloaderApp() {
       // "preparing" state until the stream starts reporting.
       dispatch({ type: 'SET_DOWNLOADING', payload: true })
       dispatch({ type: 'SET_PROGRESS', payload: null })
-      dispatch({ type: 'SET_MESSAGE', payload: t('preparingDownload') })
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { kind: 'info', text: t('preparingDownload') },
+      })
       const outcome = await downloadDirectWithProgress(
         direct,
         filename,
         (p) => dispatch({ type: 'SET_PROGRESS', payload: p }),
         deliver,
+        cancelRef.current.signal,
       )
+      if (cancelled()) {
+        // A cancel is not a failure — falling through would hand the browser
+        // the very file the visitor just told us to stop, or restart the whole
+        // transfer through the proxy.
+        dispatch({ type: 'SET_DOWNLOADING', payload: false })
+        dispatch({ type: 'SET_PROGRESS', payload: null })
+        canceledNote()
+        return
+      }
       if (outcome === 'saved') {
         dispatch({ type: 'SET_DOWNLOADING', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({
           type: 'SET_MESSAGE',
-          payload: t('msgVideoDone'),
+          payload: { kind: 'saved', text: t('msgVideoDone') },
         })
         dispatch({ type: 'SET_URL', payload: '' })
         return
@@ -1708,7 +1781,7 @@ export function DownloaderApp() {
           dispatch({ type: 'SET_PROGRESS', payload: null })
           dispatch({
             type: 'SET_MESSAGE',
-            payload: t('msgDownloadStarted'),
+            payload: { kind: 'info', text: t('msgDownloadStarted') },
           })
         }, 2800)
         return
@@ -1721,22 +1794,28 @@ export function DownloaderApp() {
     dispatch({ type: 'SET_PROGRESS', payload: 0 })
 
     try {
-      const blob = await fetchMediaBlob(state.downloadUrl, (p) =>
-        dispatch({ type: 'SET_PROGRESS', payload: p }),
+      const blob = await fetchMediaBlob(
+        state.downloadUrl,
+        (p) => dispatch({ type: 'SET_PROGRESS', payload: p }),
+        cancelRef.current.signal,
       )
       await deliver(blob, nameFile('mp4'))
 
       dispatch({
         type: 'SET_MESSAGE',
-        payload: t('msgVideoDone'),
+        payload: { kind: 'saved', text: t('msgVideoDone') },
       })
       dispatch({ type: 'SET_URL', payload: '' })
     } catch (error) {
       console.error('Download failed:', error)
-      dispatch({
-        type: 'SET_MESSAGE',
-        payload: 'Failed to download video file',
-      })
+      if (isAbortError(error)) {
+        canceledNote()
+      } else {
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: { kind: 'error', text: 'Failed to download video file' },
+        })
+      }
     } finally {
       dispatch({ type: 'SET_DOWNLOADING', payload: false })
       dispatch({ type: 'SET_PROGRESS', payload: null })
@@ -1748,10 +1827,14 @@ export function DownloaderApp() {
     const rawMusicUrl = state.videoMetadata?.rawMusicUrl
     if (!images || images.length === 0) return
 
+    cancelRef.current = new AbortController()
     dispatch({ type: 'SET_DOWNLOADING', payload: true })
     dispatch({
       type: 'SET_MESSAGE',
-      payload: 'Rendering slideshow video... this takes ~30 seconds.',
+      payload: {
+        kind: 'info',
+        text: 'Rendering slideshow video... this takes ~30 seconds.',
+      },
     })
 
     try {
@@ -1763,6 +1846,7 @@ export function DownloaderApp() {
           audioUrl: rawMusicUrl,
           perImageSeconds: 3,
         }),
+        signal: cancelRef.current.signal,
       })
 
       if (!response.ok) {
@@ -1777,18 +1861,28 @@ export function DownloaderApp() {
 
       dispatch({
         type: 'SET_MESSAGE',
-        payload: t('msgSlideshowDone'),
+        payload: { kind: 'saved', text: t('msgSlideshowDone') },
       })
       dispatch({ type: 'SET_URL', payload: '' })
     } catch (error) {
       console.error('Slideshow render failed:', error)
-      dispatch({
-        type: 'SET_MESSAGE',
-        payload:
-          error instanceof Error
-            ? `Slideshow render failed: ${error.message}`
-            : 'Failed to render slideshow video',
-      })
+      if (isAbortError(error)) {
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: { kind: 'info', text: t('downloadCanceled') },
+        })
+      } else {
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: {
+            kind: 'error',
+            text:
+              error instanceof Error
+                ? `Slideshow render failed: ${error.message}`
+                : 'Failed to render slideshow video',
+          },
+        })
+      }
     } finally {
       dispatch({ type: 'SET_DOWNLOADING', payload: false })
       dispatch({ type: 'SET_PROGRESS', payload: null })
@@ -1802,25 +1896,42 @@ export function DownloaderApp() {
     // bypassing our proxy. Only set when the audio source is itself a tunnel
     // (the "→ MP3" flow); re-serving a video stream as audio keeps the proxy.
     const direct = state.videoMetadata?.directAudioUrl
+    const cancelled = () => cancelRef.current?.signal.aborted === true
+    const canceledNote = () =>
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { kind: 'info', text: t('downloadCanceled') },
+      })
+    cancelRef.current = new AbortController()
     if (direct) {
       // Same as the video path: stream it so the bar is real, and fall back to
       // the browser's download manager when the stream can't be read.
       const filename = nameFile('mp3')
       dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: true })
       dispatch({ type: 'SET_PROGRESS', payload: null })
-      dispatch({ type: 'SET_MESSAGE', payload: t('preparingDownload') })
+      dispatch({
+        type: 'SET_MESSAGE',
+        payload: { kind: 'info', text: t('preparingDownload') },
+      })
       const outcome = await downloadDirectWithProgress(
         direct,
         filename,
         (p) => dispatch({ type: 'SET_PROGRESS', payload: p }),
         deliverAudio,
+        cancelRef.current.signal,
       )
+      if (cancelled()) {
+        dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
+        dispatch({ type: 'SET_PROGRESS', payload: null })
+        canceledNote()
+        return
+      }
       if (outcome === 'saved') {
         dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({
           type: 'SET_MESSAGE',
-          payload: t('msgAudioDone'),
+          payload: { kind: 'saved', text: t('msgAudioDone') },
         })
         dispatch({ type: 'SET_URL', payload: '' })
         return
@@ -1838,7 +1949,7 @@ export function DownloaderApp() {
           dispatch({ type: 'SET_PROGRESS', payload: null })
           dispatch({
             type: 'SET_MESSAGE',
-            payload: t('msgDownloadStarted'),
+            payload: { kind: 'info', text: t('msgDownloadStarted') },
           })
         }, 2800)
         return
@@ -1849,22 +1960,28 @@ export function DownloaderApp() {
     dispatch({ type: 'SET_PROGRESS', payload: 0 })
 
     try {
-      const blob = await fetchMediaBlob(state.audioUrl, (p) =>
-        dispatch({ type: 'SET_PROGRESS', payload: p }),
+      const blob = await fetchMediaBlob(
+        state.audioUrl,
+        (p) => dispatch({ type: 'SET_PROGRESS', payload: p }),
+        cancelRef.current.signal,
       )
       await deliverAudio(blob, nameFile('mp3'))
 
       dispatch({
         type: 'SET_MESSAGE',
-        payload: t('msgAudioDone'),
+        payload: { kind: 'saved', text: t('msgAudioDone') },
       })
       dispatch({ type: 'SET_URL', payload: '' })
     } catch (error) {
       console.error('Audio download failed:', error)
-      dispatch({
-        type: 'SET_MESSAGE',
-        payload: 'Failed to download audio file',
-      })
+      if (isAbortError(error)) {
+        canceledNote()
+      } else {
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: { kind: 'error', text: 'Failed to download audio file' },
+        })
+      }
     } finally {
       dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
       dispatch({ type: 'SET_PROGRESS', payload: null })
@@ -1920,12 +2037,16 @@ export function DownloaderApp() {
     if (selectedImages.length === 0) {
       dispatch({
         type: 'SET_MESSAGE',
-        payload: `Pick at least one of the ${galleryNoun} first`,
+        payload: {
+          kind: 'error',
+          text: `Pick at least one of the ${galleryNoun} first`,
+        },
       })
       return
     }
 
     dispatch({ type: 'SET_DOWNLOADING_IMAGES', payload: true })
+    cancelRef.current = new AbortController()
 
     try {
       // Kind travels with the URL: the route names a clip `.mp4` and sends it
@@ -1946,6 +2067,7 @@ export function DownloaderApp() {
             items,
             title: state.videoMetadata.title,
           }),
+          signal: cancelRef.current.signal,
         })
 
         if (!response.ok) {
@@ -1981,13 +2103,17 @@ export function DownloaderApp() {
 
         await Promise.all(
           entries.map(async (entry) => {
+            const signal = cancelRef.current?.signal
             try {
-              const imageResponse = await fetch(entry.url)
+              const imageResponse = await fetch(entry.url, { signal })
               if (!imageResponse.ok) {
                 throw new Error(`HTTP ${imageResponse.status}`)
               }
               zip.file(entry.filename, await imageResponse.arrayBuffer())
             } catch (error) {
+              // A cancel must tear the whole archive build down, not become a
+              // "-failed.txt" note inside a file the visitor just stopped.
+              if (isAbortError(error)) throw error
               console.error(`Failed to fetch ${entry.filename}:`, error)
               // Mirror the previous behaviour: a failed image leaves a note in
               // the archive rather than silently shrinking it.
@@ -2017,7 +2143,10 @@ export function DownloaderApp() {
 
         dispatch({
           type: 'SET_MESSAGE',
-          payload: `${selectedImages.length} ${galleryNoun} downloaded as ZIP! 🗜️`,
+          payload: {
+            kind: 'saved',
+            text: `${selectedImages.length} ${galleryNoun} downloaded as ZIP! 🗜️`,
+          },
         })
         dispatch({ type: 'SET_URL', payload: '' })
       } else {
@@ -2041,9 +2170,12 @@ export function DownloaderApp() {
 
         const totalImages = data.images.length
         for (let i = 0; i < data.images.length; i++) {
+          if (cancelRef.current.signal.aborted) return
           const imageData = data.images[i]
           try {
-            const imageResponse = await fetch(imageData.url)
+            const imageResponse = await fetch(imageData.url, {
+              signal: cancelRef.current.signal,
+            })
             if (!imageResponse.ok) continue
 
             const blob = await imageResponse.blob()
@@ -2062,21 +2194,35 @@ export function DownloaderApp() {
 
             await new Promise((resolve) => setTimeout(resolve, 500))
           } catch (error) {
+            // The save loop's per-item tolerance stops at a cancel: carrying on
+            // would keep writing files after the visitor asked it to stop.
+            if (isAbortError(error)) return
             console.error('Failed to download individual image:', error)
           }
         }
+        if (cancelRef.current.signal.aborted) return
         dispatch({
           type: 'SET_MESSAGE',
-          payload: t('msgImagesDone', { n: selectedImages.length }),
+          payload: { kind: 'saved', text: t('msgImagesDone', { n: selectedImages.length }) },
         })
         dispatch({ type: 'SET_URL', payload: '' })
       }
     } catch (error) {
       console.error('Image download failed:', error)
-      dispatch({
-        type: 'SET_MESSAGE',
-        payload: `Could not save those ${galleryNoun} — the links may have expired. Paste the post again to refresh them.`,
-      })
+      if (isAbortError(error)) {
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: { kind: 'info', text: t('downloadCanceled') },
+        })
+      } else {
+        dispatch({
+          type: 'SET_MESSAGE',
+          payload: {
+            kind: 'error',
+            text: `Could not save those ${galleryNoun} — the links may have expired. Paste the post again to refresh them.`,
+          },
+        })
+      }
     } finally {
       dispatch({ type: 'SET_DOWNLOADING_IMAGES', payload: false })
       dispatch({ type: 'SET_PROGRESS', payload: null })
@@ -2694,36 +2840,46 @@ export function DownloaderApp() {
           ("top disappears"). scroll-margin-top leaves ~6rem so the header always
           clears the browser chrome. */}
       <div className='results-section mt-6 space-y-4 scroll-mt-24'>
-        {state.message && (
-          // Plain conditional + CSS reveal. key={message} remounts on new text
-          // so the entrance re-fires as state feedback. No height animation to
-          // stall, no 0-height ghost left in the space-y flow.
-          <div
-            key={state.message}
-            // A failure interrupts; a confirmation waits its turn. Announcing
-            // "this post is private" politely means it queues behind whatever
-            // the page was already reading out, and somebody using a screen
-            // reader hears the reason for the silence long after the silence.
-            // Safe to switch per message because key={message} remounts the
-            // element, so no live region ever changes role in place.
-            role={isSuccessMessage(state.message) ? 'status' : 'alert'}
-            aria-live={isSuccessMessage(state.message) ? 'polite' : 'assertive'}
-            className={`animate-section-in p-3 rounded-xl text-center text-sm md:text-base ${
-              isSuccessMessage(state.message)
-                ? 'bg-green-500/20 text-green-300 border border-green-500/30'
-                : 'bg-red-500/20 text-red-300 border border-red-500/30'
-            }`}
-          >
-            {displayMessage(t, state.message)}
-            {!isSuccessMessage(state.message) &&
-              !isResolvingOrDownloading(state) &&
-              retryLink && (
+        {(() => {
+          // Plain conditional + CSS reveal. key={message.text} remounts on new
+          // text so the entrance re-fires as state feedback. No height
+          // animation to stall, no 0-height ghost left in the space-y flow.
+          const message = state.message
+          if (!message) return null
+          const { kind, text } = message
+          const isError = kind === 'error'
+          const isDone = kind === 'success' || kind === 'saved'
+          return (
+            <div
+              key={text}
+              // A failure interrupts; a confirmation waits its turn. Announcing
+              // "this post is private" politely means it queues behind whatever
+              // the page was already reading out, and somebody using a screen
+              // reader hears the reason for the silence long after the silence.
+              // Safe to switch per message because key={text} remounts the
+              // element, so no live region ever changes role in place.
+              role={isError ? 'alert' : 'status'}
+              aria-live={isError ? 'assertive' : 'polite'}
+              className={`animate-section-in p-3 rounded-xl text-center text-sm md:text-base ${
+                isError
+                  ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  : isDone
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                    // A status in progress is nobody's failure. The old single
+                    // string treated it like one and painted the whole banner
+                    // red for "downloading…" - red means stop, so a routine
+                    // transfer flashed a disaster.
+                    : 'bg-white/5 text-white/80 border border-white/15'
+              }`}
+            >
+              {displayMessage(t, message)}
+              {isError && !isResolvingOrDownloading(state) && retryLink && (
                 // A failed resolve usually means "the source hiccuped", not
                 // "give up" — offer the retry where the failure is, instead
                 // of making someone scroll up and re-click Process. Gated on
-                // isResolvingOrDownloading because "Preparing your download…"
-                // is not a success message either: without it, every running
-                // transfer offers to restart itself.
+                // isResolvingOrDownloading because an in-flight status is not
+                // an error either: without it, every running transfer offers
+                // to restart itself.
                 <button
                   type='button'
                   onClick={() => void handleProcess(retryLink)}
@@ -2732,23 +2888,24 @@ export function DownloaderApp() {
                   {t('tryAgain')}
                 </button>
               )}
-            {canSendToApp && (
-              // The other half of a download on a phone. The file is on the
-              // device now, but what somebody actually came to do is put it in
-              // a chat — and finding it again in a Downloads folder is the part
-              // that makes people give up. Rendered only where the OS really
-              // takes this file (see lib/shareFile), so it never appears as a
-              // button that does nothing on a desktop.
-              <button
-                type='button'
-                onClick={() => void handleSendToApp()}
-                className='btn-press mx-auto mt-2 block rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold transition-colors hover:bg-white/10'
-              >
-                {lastSaved.failed ? t('sendFailed') : t('sendToApp')}
-              </button>
-            )}
-          </div>
-        )}
+              {isDone && canSendToApp && (
+                // The other half of a download on a phone. The file is on the
+                // device now, but what somebody actually came to do is put it in
+                // a chat — and finding it again in a Downloads folder is the part
+                // that makes people give up. Rendered only where the OS really
+                // takes this file (see lib/shareFile), so it never appears as a
+                // button that does nothing on a desktop.
+                <button
+                  type='button'
+                  onClick={() => void handleSendToApp()}
+                  className='btn-press mx-auto mt-2 block rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold transition-colors hover:bg-white/10'
+                >
+                  {lastSaved.failed ? t('sendFailed') : t('sendToApp')}
+                </button>
+              )}
+            </div>
+          )
+        })()}
 
         {batchMisses.length > 0 && !isResolvingOrDownloading(state) && (
           // The other half of "Saved 14 of 20". A count is not an answer: the
@@ -2783,12 +2940,12 @@ export function DownloaderApp() {
           </Surface>
         )}
 
-        {/* Attached to the success line, and only ever to that one. This is the
-            single point in the flow where the visitor has what they came for
-            and is not waiting on anything — the one moment an ask is not an
-            interruption. It reads as a footnote to the confirmation above it
-            rather than a second banner. */}
-        {isSuccessMessage(state.message) && (
+        {/* Attached to the success line, and only ever to that one, and only
+            when its turn comes (attachedNudgeDue) — the ask is a plus, so it
+            must read as a footnote and not a drumbeat. This is the single
+            point in the flow where the visitor has what they came for and is
+            not waiting on anything. */}
+        {state.message?.kind === 'success' && attachedNudgeDue(resolvesToday) && (
           <ProNudge
             id='post-download'
             tone='attached'
@@ -2864,11 +3021,16 @@ export function DownloaderApp() {
                   />
                 )}
                 <div className='flex-1 min-w-0'>
-                  <h3 className='text-white font-medium text-sm md:text-base line-clamp-2'>
+                  {/* break-words: a source can hand back one unbroken token
+                      (base64, a Bangla hashtag run) that no space or hyphen
+                      rescues — without it such a token escapes the card.
+                      line-clamp-2 keeps any *breaking* worst case to two
+                      lines; both guards solve different halves. */}
+                  <h3 className='break-words text-white font-medium text-sm md:text-base line-clamp-2'>
                     {state.videoMetadata.title}
                   </h3>
                   {resultAuthor && (
-                    <p className='text-white/70 text-xs md:text-sm mt-1'>
+                    <p className='break-words line-clamp-2 text-white/70 text-xs md:text-sm mt-1'>
                       by {resultAuthor}
                     </p>
                   )}
@@ -3011,8 +3173,10 @@ export function DownloaderApp() {
                           console.error('Video preview error:', e)
                           dispatch({
                             type: 'SET_MESSAGE',
-                            payload:
-                              'Preview unavailable, but download should work',
+                            payload: {
+                              kind: 'info',
+                              text: 'Preview unavailable, but download should work',
+                            },
                           })
                         }}
                       >
@@ -3508,6 +3672,17 @@ export function DownloaderApp() {
                         )}
                       </div>
                       <ProgressLine pct={pct} />
+                      {/* Cancel owns the transfer: for a long file (or a big
+                          carousel) stopping is not an edge case, it is the
+                          second-most-likely action. An undo is: cancelling is
+                          free to undo — press the button again. */}
+                      <button
+                        type='button'
+                        onClick={cancelTransfer}
+                        className='btn-press mx-auto mt-1 block rounded-lg border border-white/20 px-3 py-1 text-xs font-semibold text-white/70 transition-colors hover:bg-white/10 hover:text-white'
+                      >
+                        {t('cancelDownload')}
+                      </button>
                     </div>
                   )
                 })()}
