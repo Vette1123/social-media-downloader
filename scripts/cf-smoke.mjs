@@ -763,6 +763,15 @@ const PLATFORM_PROBES = [
     url: 'https://clips.twitch.tv/IncredulousAbstemiousFennelImGlitch',
     expectVideo: true,
   },
+  // And the video in Dailymotion's own player documentation, verified end to
+  // end through the production API before being added (200, real MP4). It also
+  // guards recognition: dailymotion.com/dai.ly now detect as their own platform
+  // instead of reading "Web".
+  {
+    platform: 'dailymotion',
+    url: 'https://www.dailymotion.com/video/x84sh87',
+    expectVideo: true,
+  },
 ]
 
 /**
