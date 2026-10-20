@@ -94,7 +94,8 @@ async function sendMessage(
 }
 
 export async function handleTelegram(request: Request): Promise<Response> {
-  if (!telegramEnabled()) return Response.json({ enabled: false })
+  if (!telegramEnabled())
+    return Response.json({ enabled: false, ok: true })
   if (!webhookAuthorized(request)) return new Response(null, { status: 401 })
 
   const update = (await request.json().catch(() => null)) as
