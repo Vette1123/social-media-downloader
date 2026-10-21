@@ -9,6 +9,14 @@ be private" 422 would be false, and a truth-telling count on the Recent
 "unsaved" row when the queue cap would silently drop links.
 
 ## Mistakes
+- The cover guard first landed in `tryLinkedInPost` only — and prod still
+  shipped the cover JPEG, caught by the post-deploy probe: `tryPageScrape`,
+  third in the chain for the same URL, extracted the same og answer from the
+  same page. Two callers needing the same rejection is the signal the guard
+  belongs in `extractMediaFromHtml` itself (keyed on the LinkedIn page, not
+  the asset host, so the same JPEG shape elsewhere keeps working). The probe
+  after deploy is what found it; without it a "guarded" lie would have
+  shipped green.
 - The first version of the failure-copy tests stubbed a fetch that answered
   one empty string, which trips `looksLikeBotWall` (anything under 2 KB is a
   wall by design) — the resolve chain never reached the new copy and threw

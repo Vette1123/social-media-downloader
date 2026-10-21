@@ -16,6 +16,26 @@ import {
 const BASE = 'https://example.com/watch/123'
 
 describe('picking the real file over a preview', () => {
+  it('refuses the cover JPEG LinkedIn serves as og:video on post URLs', () => {
+    // Verified live: video posts hand anonymous readers a
+    // media.licdn.com/dms/image/…/videocover… JPEG (content-type image/jpeg);
+    // the file never leaves the signed-in app. Serving it is the
+    // Instagram-reel trap again - the poster is not the download.
+    const html =
+      '<meta property="og:video:secure_url" content="https://media.licdn.com/dms/image/v2/D4E12aQ/videocover-high/videocover/0/1699999999999.jpg">'
+    expect(
+      extractMediaFromHtml(
+        html,
+        'https://www.linkedin.com/posts/satyanadella_share-week-crew-activity-7260000000000000000-aBcD/',
+      ),
+    ).toBeNull()
+    // The key is the LinkedIn page, not the asset host: the same JPEG shape on
+    // a page nobody walled keeps behaving as a plain candidate.
+    expect(extractMediaFromHtml(html, BASE)?.mediaUrl).toBe(
+      'https://media.licdn.com/dms/image/v2/D4E12aQ/videocover-high/videocover/0/1699999999999.jpg',
+    )
+  })
+
   it('prefers the player source over an og:video preview clip', () => {
     // The reported bug: og:video routinely holds a short teaser so social
     // embeds autoplay something cheap. Taking it first fetched the preview.
