@@ -1513,6 +1513,7 @@ export class Downloader {
       pinterest: () => this.tryPinterestPin(url),
       reddit: () => this.tryRedditEmbed(url),
       linkedin: () => this.tryLinkedInPost(url),
+      soundcloud: () => this.trySoundcloudTrack(url),
     }
 
     const methods: Array<() => Promise<VideoData | null>> = []
@@ -2021,6 +2022,154 @@ export class Downloader {
       author,
       description: '',
       downloadUrl: media.mediaUrl,
+      isPhotoCarousel: false,
+    }
+  }
+
+  /**
+   * SoundCloud, via the app API its own web player calls.
+   *
+   * SoundCloud has no open API contract, but the shape its player uses is
+   * stable and every step was verified live (2026-10-21, datacenter egress —
+   * see scripts/soundcloud-api-probe.mjs): the homepage embeds the app's
+   * `client_id` in its SSR hydrate block, or in one of the a-v2.sndcdn.com
+   * asset bundles; `api-v2.soundcloud.com/resolve?url=…` turns the track URL
+   * into metadata plus `media.transcodings`; and a progressive transcoding's
+   * own URL (carrying `client_id` and `track_authorization`) answers with the
+   * direct file.
+   *
+   * Cobalt is useless here — its instance claims the service and then hands
+   * back HLS-only (m3u8), which this deployment refuses for want of ffmpeg.
+   * The distinction is the protocol field: `progressive` is a single file,
+   * and everything else is a stream. Only progressive is served; an
+   * HLS-only track falls through, where downloadGeneric raises the honest
+   * "HLS stream through its player" message. Cobalt stays behind this method
+   * in the chain — its cooldown engine is still the right answer for another
+   * resolve on the list.
+   */
+  private async trySoundcloudTrack(url: string): Promise<VideoData | null> {
+    // snd.sc and on.soundcloud.com shorteners only point; the API wants the
+    // canonical track URL.
+    let target = url
+    try {
+      const host = new URL(url).hostname
+      if (host === 'snd.sc' || host === 'on.soundcloud.com') {
+        target = await this.resolveRedirect(url)
+      }
+    } catch {
+      return null
+    }
+
+    const homepage = await http.get('https://soundcloud.com/', {
+      headers: { 'User-Agent': BROWSER_AGENT, Accept: 'text/html' },
+      timeout: 15000,
+      validateStatus: () => true,
+    })
+    if (homepage.status !== 200 || typeof homepage.data !== 'string') return null
+    const html = homepage.data
+
+    // The id rides the SSR hydrate block on the homepage; when the block has
+    // moved, one asset bundle still carries it.
+    let clientId =
+      /"hydratable"\s*:\s*"apiClient"\s*,\s*"data"\s*:\s*\{\s*"id"\s*:\s*"([^"]+)"/.exec(
+        html,
+      )?.[1] || ''
+    for (const asset of html.matchAll(
+      /<script[^>]+src="(https:\/\/a-v2\.sndcdn\.com\/[^"]+)"/g,
+    )) {
+      if (clientId) break
+      const bundle = await http.get(asset[1], {
+        headers: { 'User-Agent': BROWSER_AGENT },
+        timeout: 15000,
+        validateStatus: () => true,
+      })
+      if (bundle.status !== 200 || typeof bundle.data !== 'string') continue
+      clientId = /,client_id:"([A-Za-z0-9]{32})",/.exec(bundle.data)?.[1] || ''
+    }
+    if (!clientId) return null
+
+    const resolve = await http.get(
+      `https://api-v2.soundcloud.com/resolve?url=${encodeURIComponent(target)}&client_id=${clientId}`,
+      {
+        headers: { 'User-Agent': BROWSER_AGENT, Accept: 'application/json' },
+        timeout: 15000,
+        validateStatus: () => true,
+      },
+    )
+    if (resolve.status !== 200 || typeof resolve.data !== 'object') return null
+    const track = resolve.data as {
+      id?: number
+      title?: string
+      duration?: number
+      policy?: string
+      track_authorization?: string
+      artwork_url?: string
+      user?: { username?: string }
+      media?: {
+        transcodings?: Array<{
+          url?: string
+          snipped?: boolean
+          preset?: string
+          format?: { protocol?: string }
+        }>
+      }
+    }
+
+    // BLOCK is a region lock and SNIP is paywalled — both down to the link,
+    // not the extractor, and the caller's message says that.
+    if (track.policy === 'BLOCK' || track.policy === 'SNIP') return null
+
+    const transcodings = track.media?.transcodings ?? []
+    // Progressive hands over one file; opus is the default preset and mp3 is
+    // the universal container, so mp3 first — the result card says what it is.
+    const streaming =
+      transcodings.find(
+        (t) =>
+          !t.snipped &&
+          t.format?.protocol === 'progressive' &&
+          t.preset === 'mp3_1',
+      ) ||
+      transcodings.find(
+        (t) =>
+          !t.snipped &&
+          t.format?.protocol === 'progressive' &&
+          t.preset?.startsWith('mp3_'),
+      ) ||
+      transcodings.find(
+        (t) => !t.snipped && t.format?.protocol === 'progressive',
+      )
+    if (!streaming?.url || !track.track_authorization) return null
+
+    const fileUrl = new URL(streaming.url)
+    fileUrl.searchParams.set('client_id', clientId)
+    fileUrl.searchParams.set(
+      'track_authorization',
+      track.track_authorization,
+    )
+    const stream = await http.get(fileUrl.toString(), {
+      headers: { 'User-Agent': BROWSER_AGENT, Accept: 'application/json' },
+      timeout: 15000,
+      validateStatus: () => true,
+    })
+    if (stream.status !== 200 || typeof stream.data !== 'object') return null
+    const direct = (stream.data as { url?: string }).url
+    // A defensive re-check: even this far in, the endpoint may hand back a
+    // playlist, and serving m3u8 to a browser download is the HLS trap.
+    if (!direct || /\.m3u8($|\?)/.test(direct)) return null
+
+    return {
+      id: track.id ? String(track.id) : direct.slice(-32),
+      title: track.title?.trim() || 'SoundCloud track',
+      url,
+      // Cobalt does the -large → -t1080x1080 swap; the large artwork is what
+      // the file names, the 1080 is what the card wants.
+      thumbnail: track.artwork_url?.replace(/-large/, '-t1080x1080') || '',
+      // SoundCloud spells duration in milliseconds; everything downstream
+      // (the "Saved"-style metadata, the preview timer) speaks seconds.
+      duration: Math.round((track.duration ?? 0) / 1000),
+      author: track.user?.username?.trim() || 'SoundCloud',
+      description: '',
+      downloadUrl: direct,
       isPhotoCarousel: false,
     }
   }

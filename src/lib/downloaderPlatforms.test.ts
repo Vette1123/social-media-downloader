@@ -31,6 +31,7 @@ type PrivateDownloader = {
   tryLinkedInPost(url: string): Promise<VideoDataLike | null>
   tryVimeo(url: string): Promise<VideoDataLike | null>
   downloadVideo(url: string): Promise<VideoDataLike>
+  trySoundcloudTrack(url: string): Promise<VideoDataLike | null>
   resolveRedirect(url: string): Promise<string>
   parseFacebookHtml(html: string, url: string): VideoDataLike | null
   downloadFacebook(url: string): Promise<VideoDataLike>
@@ -51,6 +52,34 @@ interface VideoDataLike {
 
 function priv(downloader: Downloader): PrivateDownloader {
   return downloader as unknown as PrivateDownloader
+}
+
+/**
+ * The SoundCloud chain reads three different hosts, so a one-answer stub
+ * cannot stage it. Each route is matched in order; anything unmatched is a
+ * small 404 rather than a live network call.
+ */
+function stubFetchRoutes(
+  routes: Array<{ match: RegExp; body: string | unknown }>,
+) {
+  const spy = vi.fn(async (input: RequestInfo | URL) => {
+    for (const route of routes) {
+      if (route.match.test(String(input))) {
+        return new Response(
+          typeof route.body === 'string' ? route.body : JSON.stringify(route.body),
+          {
+            headers: {
+              'Content-Type':
+                typeof route.body === 'string' ? 'text/html' : 'application/json',
+            },
+          },
+        )
+      }
+    }
+    return new Response('{"error": "not staged"}', { status: 404 })
+  })
+  vi.stubGlobal('fetch', spy)
+  return spy
 }
 
 /** One canned response for every request, which is all any of these make. */
@@ -453,6 +482,119 @@ describe('recognising the long-tail platforms', () => {
     expect(detectPlatform('https://www.linkedin.com/in/satyanadella')).toBe(
       'generic',
     )
+  })
+})
+
+/**
+ * The SoundCloud app-API recipe, staged exactly as verified from datacenter
+ * egress: the homepage carries the client id, /resolve hands over metadata
+ * with media.transcodings, and a progressive transcoding's own URL (with
+ * client_id + track_authorization) answers the direct file. Snipped and
+ * HLS encodings must be skipped — this deployment has no player for them.
+ */
+describe('the SoundCloud track extractor', () => {
+  const HOMEPAGE = `<html><head><title>SoundCloud</title></head><body>
+    <script>window.__sc_version="1700000000"</script>
+    <script>{"hydratable":"apiClient","data":{"id":"CLiEnT1234567890aBcDeFgHiJkLmNoP"},
+    "hydratable":"other","data":{"id":"not-the-client"}}</script>
+  </body></html>`
+
+  const TRANS = {
+    id: 293,
+    title: 'In the Zone',
+    duration: 181000,
+    policy: 'MONETIZE',
+    track_authorization: 'ta-token-0',
+    artwork_url: 'https://i1.sndcdn.com/soulhack-large.jpg',
+    user: { username: 'forss' },
+    media: {
+      transcodings: [
+        {
+          preset: 'hls_opus_1_0',
+          format: { protocol: 'hls' },
+          url: 'https://cf-media.sndcdn.com/hls-track.m3u8',
+        },
+        {
+          preset: 'mp3_1_251k',
+          snipped: true,
+          format: { protocol: 'progressive' },
+          url: 'https://cf-media.sndcdn.com/snippet.mp3',
+        },
+        {
+          preset: 'mp3_1',
+          format: { protocol: 'progressive' },
+          url: 'https://cf-media.sndcdn.com/track.mp3?token=t9',
+        },
+      ],
+    },
+  }
+
+  it('serves the progressive file, never the HLS playlist or a snippet', async () => {
+    stubFetchRoutes([
+      { match: /^https:\/\/soundcloud\.com\/$/, body: HOMEPAGE },
+      { match: /api-v2\.soundcloud\.com\/resolve/, body: TRANS },
+      {
+        match: /track\.mp3\?token/,
+        body: { url: 'https://cf-media.sndcdn.com/track.mp3?expires=1' },
+      },
+    ])
+    const result = await priv(new Downloader()).trySoundcloudTrack(
+      'https://soundcloud.com/forss/flickermood',
+    )
+    expect(result?.downloadUrl).toBe(
+      'https://cf-media.sndcdn.com/track.mp3?expires=1',
+    )
+    expect(result?.title).toBe('In the Zone')
+    expect(result?.author).toBe('forss')
+    expect(result?.duration).toBe(181)
+    expect(result?.thumbnail).toBe(
+      'https://i1.sndcdn.com/soulhack-t1080x1080.jpg',
+    )
+  })
+
+  it('falls through where only HLS is served, for the honest message', async () => {
+    stubFetchRoutes([
+      { match: /^https:\/\/soundcloud\.com\/$/, body: HOMEPAGE },
+      {
+        match: /api-v2\.soundcloud\.com\/resolve/,
+        body: { ...TRANS, media: { transcodings: TRANS.media.transcodings[0] ? [
+          TRANS.media.transcodings[0],
+        ] : [] } },
+      },
+    ])
+    await expect(
+      priv(new Downloader()).downloadVideo(
+        'https://soundcloud.com/forss/flickermood',
+      ),
+    ).rejects.toThrow(/HLS stream through its player/)
+  })
+
+  it('finds the client id in an asset bundle when the hydrate block has moved', async () => {
+    const bare =
+      '<html><body><script crossorigin src="https://a-v2.sndcdn.com/assets/55-db72ef36.js"></script></body></html>'
+    const bundle =
+      'curlIp;var api="${{},client_id:"AbCdEf0123456789012345678901234a",tradeoff:1};'
+    const spy = stubFetchRoutes([
+      { match: /^https:\/\/soundcloud\.com\/$/, body: bare },
+      { match: /a-v2\.sndcdn\.com\/assets\/55-/, body: bundle },
+      { match: /api-v2\.soundcloud\.com\/resolve/, body: TRANS },
+      {
+        match: /track\.mp3\?token/,
+        body: { url: 'https://cf-media.sndcdn.com/track.mp3?expires=1' },
+      },
+    ])
+    const result = await priv(new Downloader()).trySoundcloudTrack(
+      'https://soundcloud.com/forss/flickermood',
+    )
+    expect(result?.downloadUrl).toBe(
+      'https://cf-media.sndcdn.com/track.mp3?expires=1',
+    )
+    // The id came from the bundle, and the streaming request carried it.
+    const resolveCalls = spy.mock.calls
+      .map((c) => String(c[0]))
+      .filter((u) => u.includes('/resolve'))
+    expect(resolveCalls.length).toBe(1)
+    expect(resolveCalls[0]).toContain('client_id=AbCdEf0123456789012345678901234a')
   })
 })
 
