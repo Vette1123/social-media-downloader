@@ -28,4 +28,4 @@ jobs:
           node-version: 24
 
       - name: Probe the API-v2 pattern
-        run: node scripts/soundcloud-api-probe.mjs "${{ github.event.inputs.track || 'https://soundcloud.com/forss/flickermood' }}"
+        run: node scripts/soundcloud-api-probe.mjs "${{ github.event.inputs.track }}"
