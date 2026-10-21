@@ -63,19 +63,24 @@ let tracks = []
 if (ARG) {
   tracks = ARG.split(',').map((s) => s.trim()).filter(Boolean)
 } else {
-  const charts = await get(
-    `https://api-v2.soundcloud.com/charts?kind=top&genre=soundcloud:genres:all-music&limit=12&client_id=${candidates[0][1]}`,
-    { Accept: 'application/json' },
-  )
-  const chartsText = await charts.text()
-  console.log('charts', charts.status, chartsText.slice(0, 300))
-  if (charts.status === 200) {
-    const list = JSON.parse(chartsText)
-    tracks = (list.collection ?? [])
-      .map((c) => c.track?.permalink_url)
-      .filter(Boolean)
+  for (const q of ['techno', 'house', 'hip hop']) {
+    const search = await get(
+      `https://api-v2.soundcloud.com/search/tracks?q=${encodeURIComponent(
+        q,
+      )}&limit=8&client_id=${candidates[0][1]}`,
+      { Accept: 'application/json' },
+    )
+    const searchText = await search.text()
+    console.log('search', q, search.status, searchText.slice(0, 120))
+    if (search.status === 200) {
+      const list = JSON.parse(searchText)
+      for (const t of list.collection ?? []) {
+        if (t.permalink_url) tracks.push(t.permalink_url)
+      }
+    }
+    if (tracks.length > 0) break
   }
-  console.log('chart tracks:', tracks.length)
+  console.log('search tracks:', tracks.length)
 }
 if (tracks.length === 0) {
   console.error('NO TRACKS to test')
