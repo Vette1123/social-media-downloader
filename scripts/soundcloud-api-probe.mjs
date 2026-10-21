@@ -4,12 +4,14 @@
  * extractor ships — and again after, to separate a logic bug from a
  * Cloudflare-egress difference.
  *
- * Chain: homepage -> client_id (hydrate block, else a-v2 bundle)
+ * Chain: homepage -> client_id candidates (hydrate block, then a-v2 bundles)
  *        -> api-v2 /resolve -> media.transcodings progressive mp3
  *        -> transcoding url + client_id + track_authorization -> {url}
  *
- * Nothing here ships to production until every step passes; a wall on any step
- * is the same verdict triage the cf-smoke file documents for probe entries.
+ * The homepage carries more than one client id and they are not equal: the
+ * hydrate block and the asset bundles can answer different preset sets. This
+ * script tries every candidate until one yields a progressive stream, which is
+ * the behaviour the extractor needs.
  */
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
@@ -31,103 +33,82 @@ if (homepage.status !== 200 || html.length < 2048) {
   process.exit(1)
 }
 
-// 2. client id — hydrate block first, then the a-v2 bundles.
-let clientId =
+// 2. collect every client id the homepage offers.
+const candidates = []
+const hydrateId =
   /"hydratable"\s*:\s*"apiClient"\s*,\s*"data"\s*:\s*\{\s*"id"\s*:\s*"([^"]+)"/.exec(
     html,
-  )?.[1] || ''
-if (clientId) {
-  console.log('client_id', clientId, 'from hydrate block')
-} else {
-  const assets = [
-    ...html.matchAll(/<script[^>]+src="(https:\/\/a-v2\.sndcdn\.com\/[^"]+)"/g),
-  ].map((m) => m[1])
-  console.log('a-v2 assets on homepage:', assets.length)
-  for (const asset of assets) {
-    if (clientId) break
-    const bundle = await get(asset)
-    if (bundle.status !== 200) {
-      console.log('  bundle', bundle.status, asset)
-      continue
-    }
-    const body = await bundle.text()
-    clientId = /,client_id:"([A-Za-z0-9]{32})",/.exec(body)?.[1] || ''
-    if (clientId) {
-      console.log('client_id', clientId, 'from', asset)
-    }
+  )?.[1]
+if (hydrateId) candidates.push(['hydrate', hydrateId])
+const assets = [
+  ...html.matchAll(/<script[^>]+src="(https:\/\/a-v2\.sndcdn\.com\/[^"]+)"/g),
+].map((m) => m[1])
+console.log('a-v2 assets on homepage:', assets.length)
+for (const asset of assets) {
+  const bundle = await get(asset)
+  if (bundle.status !== 200) {
+    console.log('  bundle', bundle.status, asset)
+    continue
+  }
+  const body = await bundle.text()
+  const id = /,client_id:"([A-Za-z0-9]{32})",/.exec(body)?.[1]
+  if (id) candidates.push([asset, id])
+}
+console.log('client id candidates:', candidates.map((c) => c[1]).join(', '))
+if (candidates.length === 0) {
+  console.error('NO CLIENT ID anywhere on the homepage')
+  process.exit(1)
+}
+
+// 3. try each candidate until one yields a progressive stream.
+let track = null
+let streaming = null
+let chosenId = null
+for (const [source, id] of candidates) {
+  const resolve = await get(
+    `https://api-v2.soundcloud.com/resolve?url=${encodeURIComponent(
+      TRACK,
+    )}&client_id=${id}`,
+    { Accept: 'application/json' },
+  )
+  if (resolve.status !== 200) {
+    console.log('resolve', resolve.status, 'for', source)
+    continue
+  }
+  const t = JSON.parse(await resolve.text())
+  const tc = t.media?.transcodings ?? []
+  const protocols = [...new Set(tc.map((x) => x.format?.protocol))].join('+')
+  console.log('resolve', t.id, source, 'protocols:', protocols)
+  const s =
+    tc.find(
+      (x) =>
+        !x.snipped &&
+        x.format?.protocol === 'progressive' &&
+        x.preset === 'mp3_1',
+    ) ||
+    tc.find(
+      (x) =>
+        !x.snipped &&
+        x.format?.protocol === 'progressive' &&
+        x.preset?.startsWith('mp3_'),
+    ) ||
+    tc.find((x) => !x.snipped && x.format?.protocol === 'progressive')
+  if (s?.url && t.track_authorization) {
+    track = t
+    streaming = s
+    chosenId = id
+    console.log('CHOSEN', source, s.preset, s.url)
+    break
   }
 }
-if (!clientId) {
-  console.error('NO CLIENT ID: hydrate block and a-v2 bundles both empty')
-  console.error('  hydratable present:', /hydratable/.test(html))
-  console.error('  client_id mention in html:', /client_id/.test(html))
+if (!streaming) {
+  console.error('NO CANDIDATE YIELDED A PROGRESSIVE STREAM')
   process.exit(1)
 }
 
-// 3. resolve
-const resolveUrl = `https://api-v2.soundcloud.com/resolve?url=${encodeURIComponent(
-  TRACK,
-)}&client_id=${clientId}`
-const resolve = await get(resolveUrl, { Accept: 'application/json' })
-const resolveText = await resolve.text()
-console.log('resolve', resolve.status, resolveText.length, 'bytes')
-if (resolve.status !== 200) {
-  console.error('RESOLVE FAIL: client_id or endpoint refused')
-  process.exit(1)
-}
-const track = JSON.parse(resolveText)
-console.log(
-  'track id',
-  track.id,
-  'policy',
-  track.policy,
-  'downloadable',
-  track.downloadable,
-)
-const transcodings = track.media?.transcodings ?? []
-console.log('transcodings', transcodings.length)
-for (const t of transcodings) {
-  console.log(
-    '  ',
-    t.preset,
-    t.format?.protocol,
-    'snipped=' + !!t.snipped,
-    String(t.url).slice(0, 90),
-  )
-}
-if (transcodings.length === 0) {
-  console.error('NO TRANSCODINGS: resolve answered without media.transcodings')
-  console.error('  media keys:', Object.keys(track.media ?? {}))
-  process.exit(1)
-}
-
-// 4. pick the progressive mp3 — same three-tier preference as the extractor.
-const streaming =
-  transcodings.find(
-    (t) =>
-      !t.snipped &&
-      t.format?.protocol === 'progressive' &&
-      t.preset === 'mp3_1',
-  ) ||
-  transcodings.find(
-    (t) =>
-      !t.snipped &&
-      t.format?.protocol === 'progressive' &&
-      t.preset?.startsWith('mp3_'),
-  ) ||
-  transcodings.find((t) => !t.snipped && t.format?.protocol === 'progressive')
-if (!streaming?.url || !track.track_authorization) {
-  console.error(
-    'NO PROGRESSIVE: streaming=' + !!streaming?.url,
-    'auth=' + !!track.track_authorization,
-  )
-  process.exit(1)
-}
-console.log('streaming', streaming.preset, streaming.url)
-
-// 5. the direct file
+// 4. the direct file
 const fileUrl = new URL(streaming.url)
-fileUrl.searchParams.set('client_id', clientId)
+fileUrl.searchParams.set('client_id', chosenId)
 fileUrl.searchParams.set('track_authorization', track.track_authorization)
 const stream = await get(fileUrl.toString(), { Accept: 'application/json' })
 const streamText = await stream.text()
