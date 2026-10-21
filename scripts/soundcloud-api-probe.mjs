@@ -82,13 +82,34 @@ if (!apiRes.ok) {
 const track = JSON.parse(apiText)
 console.log(
   'media.translations', track.media?.translations?.length ?? 'absent',
+  'media.transcriptions', track.media?.transcriptions?.length ?? 'absent',
   'downloadable', track.downloadable,
-  'protocol', track.media?.protocol,
+  'id', track.id,
 )
-if (!track.media?.translations?.length) {
-  console.error('NO TRANSLATIONS: queue the media-URL shape against api.soundcloud.com instead')
-  process.exit(1)
-}
+
+// The resolve answer speaks metadata; the per-track endpoint speaks media.
+const trackRes = await fetch(
+  `https://api-v2.soundcloud.com/tracks/${track.id}?client_id=${clientId}`,
+  { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(30_000) },
+)
+const trackText = await trackRes.text()
+const track2 = JSON.parse(trackText)
+console.log('tracks/<id>', trackRes.status)
+console.log(
+  '  translations', track2.media?.translations?.length,
+  'transcriptions', track2.media?.transcriptions?.length,
+  'auth', !!track2.track_authorization,
+)
+for (const t of track2.media?.translations ?? []) console.log('  translation', t)
+for (const t of track2.media?.transcriptions ?? []) console.log('  transcription', t)
+
+// What the SSR page itself ships: several scrapers read the track JSON
+// straight out of the HTML instead of trusting the app API at all.
+const inPage = [...new Set(
+  pageText.match(/[^\s"'{}]+\.mp3[^\s"'{}]*/g) ?? [],
+)].slice(0, 5)
+console.log('page .mp3 hits', inPage.length, inPage)
+
 
 // The byte probe decides whether a translation is streamable or a dead link —
 // only audio bytes at Range 0-15 make this extractable.
