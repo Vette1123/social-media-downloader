@@ -1565,8 +1565,18 @@ export class Downloader {
       }
     }
     if (blocked) throw blocked
+    // Where the generic sentence would be false, say the truth instead:
+    // "may be private" implies a login the reader could make, and for these
+    // two the honest answer is that the file is simply not given out this way.
+    const platformReason: Partial<Record<SupportedPlatform, string>> = {
+      soundcloud:
+        'SoundCloud delivers its audio as an HLS stream through its player, which this extractor cannot repackage as a single file yet.',
+      linkedin:
+        'LinkedIn serves its videos to signed-in members only; the public page publishes just a preview.',
+    }
     throw new Error(
-      `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`,
+      platformReason[platform] ||
+        `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`,
     )
   }
 
@@ -1992,6 +2002,11 @@ export class Downloader {
     const html = typeof response.data === 'string' ? response.data : ''
     const media = extractMediaFromHtml(html, canonical)
     if (!media || media.isStream) return null
+    // Verified live: a public video post's og:video serves its *cover*, a
+    // media.licdn.com/dms/image/…/videocover… JPEG — the file itself never
+    // leaves the signed-in app. Answering the poster is the Instagram-reel
+    // trap again, so refuse the still.
+    if (/\/dms\/image\//.test(media.mediaUrl)) return null
 
     // Share links (lnkd.in/…) redirect to their post URL; the author slug
     // only makes sense on it. The slug runs `name_hash-stuff-activity-…`,
