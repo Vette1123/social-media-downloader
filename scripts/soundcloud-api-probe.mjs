@@ -78,3 +78,30 @@ if (!apiRes.ok) {
   console.error('RESOLVE FAIL: client_id or endpoint refused')
   process.exit(1)
 }
+
+const track = JSON.parse(apiText)
+console.log(
+  'media.translations', track.media?.translations?.length ?? 'absent',
+  'downloadable', track.downloadable,
+  'protocol', track.media?.protocol,
+)
+if (!track.media?.translations?.length) {
+  console.error('NO TRANSLATIONS: queue the media-URL shape against api.soundcloud.com instead')
+  process.exit(1)
+}
+
+// The byte probe decides whether a translation is streamable or a dead link —
+// only audio bytes at Range 0-15 make this extractable.
+const translation = track.media.translations[0]
+console.log('translation', translation)
+const media = await fetch(translation, {
+  headers: { 'User-Agent': UA, Range: 'bytes=0-15' },
+  signal: AbortSignal.timeout(30_000),
+})
+const head = new Uint8Array(await media.arrayBuffer())
+console.log(
+  'bytes', media.status,
+  media.headers.get('content-type'),
+  media.headers.get('content-range'),
+  [...head].map((b) => b.toString(16).padStart(2, '0')).join(' '),
+)
