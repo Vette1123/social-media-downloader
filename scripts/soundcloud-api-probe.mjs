@@ -25,12 +25,20 @@ if (!page.ok || pageText.length < 2048) {
   process.exit(1)
 }
 
-const assets = [...pageText.matchAll(/https:\/\/a\.sndcdn\.com\/assets\/[\w-]+\.js/g)].map(
+const assets = [...pageText.matchAll(/https:\/\/[\w.-]*\.sndcdn\.com\/[^"'\\\s]+\.js/g)].map(
   (m) => m[0],
 )
 console.log('assets', assets.length)
 if (assets.length === 0) {
-  console.error('NO ASSETS: page shape changed')
+  // Dump the shapes the page actually ships, so the pattern-alimony lands in
+  // the next edit rather than a second blind run.
+  const mentions = [...pageText.matchAll(/(?:"|\{)[^"'{}\s,]{0,80}sndcdn[^"'{}\s,]{0,80}/g)].map(
+    (m) => m[0],
+  )
+  const unique = [...new Set(mentions)].slice(0, 20)
+  console.error('NO ASSETS from the old pattern. Mentions of sndcdn in the page:')
+  for (const line of unique) console.error(' ', line.slice(0, 120))
+  console.error('client_id in page html:', /client_id/.test(pageText))
   process.exit(1)
 }
 
