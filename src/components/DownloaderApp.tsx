@@ -466,9 +466,23 @@ function downloadManagerUrl(
  * clearest possible statement of what the queue is for, at the moment they can
  * see the pile themselves.
  */
-function UnsavedRow({ count, urls }: { count: number; urls: string[] }) {
+function UnsavedRow({
+  count,
+  total,
+  urls,
+}: {
+  count: number
+  total: number
+  urls: string[]
+}) {
   const tier = useTier()
-  const label = `${count} not saved yet`
+  // The queue can only take so many per run; when Recent holds more unsaved
+  // links than fit, the button sends the oldest batch and the note says so —
+  // a silent drop is exactly what a count would hide.
+  const label =
+    count < total
+      ? `Queueing the oldest ${count} of ${total}`
+      : `${count} not saved yet`
 
   return (
     <div className='mb-2 flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5'>
@@ -2320,12 +2334,17 @@ export function DownloaderApp() {
    * to a queue that takes twenty would fail at the far end for a reason nobody
    * could see from here.
    */
-  const unsavedLinks = useMemo(
-    () =>
-      history
-        .filter((entry) => !entry.savedAt)
-        .slice(0, MAX_BATCH_URLS)
-        .map((entry) => entry.url),
+  // The queue takes a capped batch, so the true unsaved count arrives
+  // alongside the (possibly trimmed) list rather than being read off
+  // `unsavedLinks.length`, which no longer sees past the cap.
+  const { unsavedLinks, totalUnsaved } = useMemo(
+    () => {
+      const all = history.filter((entry) => !entry.savedAt)
+      return {
+        unsavedLinks: all.slice(0, MAX_BATCH_URLS).map((entry) => entry.url),
+        totalUnsaved: all.length,
+      }
+    },
     [history],
   )
 
@@ -2744,8 +2763,12 @@ export function DownloaderApp() {
               piece of work sitting there: links pasted while browsing that
               nobody has saved yet. The queue is what does that work, so the
               count is the offer. */}
-          {unsavedLinks.length > 1 && (
-            <UnsavedRow count={unsavedLinks.length} urls={unsavedLinks} />
+          {totalUnsaved > 1 && (
+            <UnsavedRow
+              count={unsavedLinks.length}
+              total={totalUnsaved}
+              urls={unsavedLinks}
+            />
           )}
           {historyNote && (
             <p className='mb-2 text-right text-[11px] text-white/45'>

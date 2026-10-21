@@ -3,6 +3,15 @@ import { Downloader, firstResult, parseTwitchClipSlug } from './downloader'
 import { detectPlatform, unwrapLoginWall } from './validator'
 
 /**
+ * Pin native media off: nothing here exercises yt-dlp, and letting the gate
+ * run let it spawn a real extractor process from the failure-copy tests.
+ */
+vi.mock('./nativeMedia', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./nativeMedia')>()),
+  nativeMediaAvailable: () => false,
+}))
+
+/**
  * The platforms that have no bespoke extractor upstream of them and used to be
  * Cobalt's job. The public instance now refuses most of them, so each of these
  * reads the platform's own embed surface instead — and each surface has one
@@ -21,6 +30,7 @@ type PrivateDownloader = {
   tryThreadsEmbed(url: string): Promise<VideoDataLike | null>
   tryLinkedInPost(url: string): Promise<VideoDataLike | null>
   tryVimeo(url: string): Promise<VideoDataLike | null>
+  downloadVideo(url: string): Promise<VideoDataLike>
   resolveRedirect(url: string): Promise<string>
   parseFacebookHtml(html: string, url: string): VideoDataLike | null
   downloadFacebook(url: string): Promise<VideoDataLike>
@@ -348,6 +358,61 @@ describe('the LinkedIn post extractor', () => {
         'https://www.linkedin.com/feed/update/urn:li:ugcPost:7260000000000000000/',
       ),
     ).toBeNull()
+  })
+
+  /**
+   * Shapes verified live: a public video post hands the anonymous og tags its
+   * *cover* — media.licdn.com's /dms/image/…/videocover… path, content-type
+   * image/jpeg — and the file itself never leaves the signed-in app. Serving
+   * the poster as the download is the Instagram-reel trap again.
+   */
+  it('refuses the cover JPEG LinkedIn serves as og:video', async () => {
+    stubFetch(
+      `<html><head>
+        <meta property="og:title" content="Why the rollout slipped" />
+        <meta property="og:video:secure_url" content="https://media.licdn.com/dms/image/v2/D4E12aQH9m/gtQ/videocover-high/videocover/0/1699999999999e" />
+      </head><body></body></html>`,
+    )
+    expect(
+      await priv(new Downloader()).tryLinkedInPost(
+        'https://www.linkedin.com/posts/satyanadella_share-week-crew-activity-7260000000000000000-aBcD/',
+      ),
+    ).toBeNull()
+  })
+
+  /**
+   * A page big enough to pass the bot-wall floor (pageScrape treats anything
+   * under 2 KB as a wall, which is its own pinned story) but with no media to
+   * read: the shape of a SoundCloud SPA page served to a browser-fetched
+   * client where the audio is HLS-only inside the player. The message must
+   * name that, not "may be private".
+   */
+  it('says why a SoundCloud link cannot be resolved rather than failing generically', async () => {
+    stubFetch(
+      `<html><head><title>In the Zone</title></head><body><div>${'d'.repeat(2400)}</div></body></html>`,
+    )
+    await expect(
+      priv(new Downloader()).downloadVideo(
+        'https://soundcloud.com/artist-a/the-real-track-name',
+      ),
+    ).rejects.toThrow(/HLS stream through its player/)
+  })
+
+  /**
+   * A clean, real-sized post page that simply publishes no file: tryLinkedInPost
+   * declined (no video), Cobalt has nothing for the host, and the page itself
+   * has no og:video. "May be private" is false here — the videos only go out
+   * to members.
+   */
+  it('says why a LinkedIn video cannot be resolved rather than failing generically', async () => {
+    stubFetch(
+      `<html><head><title>droid</title></head><body><div>${'d'.repeat(2400)}</div></body></html>`,
+    )
+    await expect(
+      priv(new Downloader()).downloadVideo(
+        'https://www.linkedin.com/posts/satyanadella_share-week-crew-activity-7260000000000000000-aBcD/',
+      ),
+    ).rejects.toThrow(/signed-in members only/)
   })
 })
 
