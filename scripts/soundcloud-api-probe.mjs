@@ -150,6 +150,23 @@ for (const trackUrl of tracks) {
         dlText.slice(0, 120),
       )
     }
+    // HLS diagnostic: is the playlist concatenable (no EXT-X-KEY), or is it
+    // encrypted and therefore a dead end for a single-file download?
+    const hls = tc.find((x) => !x.snipped && x.format?.protocol === 'hls')
+    if (hls?.url && t.track_authorization) {
+      const u = new URL(hls.url)
+      u.searchParams.set('client_id', id)
+      u.searchParams.set('track_authorization', t.track_authorization)
+      const pl = await get(u.toString())
+      const plText = await pl.text()
+      console.log(
+        '  hls playlist',
+        pl.status,
+        'encrypted=' + /#EXT-X-KEY/.test(plText),
+        'segments=' + (plText.match(/#EXTINF/g) ?? []).length,
+      )
+      console.log('  playlist head:', plText.slice(0, 300).replace(/\n/g, ' | '))
+    }
     if (s?.url && t.track_authorization) {
       chosen = { track: t, streaming: s, id, source, trackUrl }
       break
