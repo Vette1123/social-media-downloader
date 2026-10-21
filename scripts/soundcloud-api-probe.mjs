@@ -117,6 +117,14 @@ for (const trackUrl of tracks) {
       continue
     }
     const t = JSON.parse(await resolve.text())
+    console.log(
+      '  track',
+      t.id,
+      'downloadable=' + t.downloadable,
+      'streamable=' + t.streamable,
+      'policy=' + t.policy,
+      'download_url=' + (t.download_url ?? '-'),
+    )
     const tc = t.media?.transcodings ?? []
     const protocols = [...new Set(tc.map((x) => x.format?.protocol))].join('+')
     const s = pick(tc)
@@ -128,6 +136,20 @@ for (const trackUrl of tracks) {
       trackUrl,
       source,
     )
+    // A downloadable track carries its own single-file endpoint; worth testing
+    // even when the transcodings are HLS-only.
+    if (t.downloadable && t.download_url) {
+      const sep = t.download_url.includes('?') ? '&' : '?'
+      const dl = await get(`${t.download_url}${sep}client_id=${id}`)
+      const dlText = await dl.text()
+      console.log(
+        '  download endpoint',
+        dl.status,
+        dl.headers.get('content-type'),
+        'loc=' + dl.headers.get('location'),
+        dlText.slice(0, 120),
+      )
+    }
     if (s?.url && t.track_authorization) {
       chosen = { track: t, streaming: s, id, source, trackUrl }
       break
