@@ -604,6 +604,18 @@ export function extractMediaFromHtml(
     }
   }
 
+  // Verified live: for a post URL, LinkedIn's og:video:secure_url carries the
+  // video's cover — a media.licdn.com /dms/image/…/videocover… JPEG
+  // (content-type image/jpeg); the file itself is served only inside the
+  // signed-in app. Answering the poster is the Instagram-reel trap again, so
+  // refuse the still rather than call it a download.
+  if (
+    /linkedin\.com\/(?:posts|feed)\//.test(baseUrl) &&
+    /\/dms\/image\//.test(best.url)
+  ) {
+    return null
+  }
+
   return {
     mediaUrl: best.url,
     isStream: STREAM_EXT.test(best.url),

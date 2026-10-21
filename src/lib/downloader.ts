@@ -2000,13 +2000,11 @@ export class Downloader {
     if (response.status !== 200) return null
 
     const html = typeof response.data === 'string' ? response.data : ''
+    // The cover-as-video rejection lives in extractMediaFromHtml (pageScrape) —
+    // LinkedIn's og:video is its /dms/image/ poster, and tryPageScrape hit the
+    // same trap on the same page.
     const media = extractMediaFromHtml(html, canonical)
     if (!media || media.isStream) return null
-    // Verified live: a public video post's og:video serves its *cover*, a
-    // media.licdn.com/dms/image/…/videocover… JPEG — the file itself never
-    // leaves the signed-in app. Answering the poster is the Instagram-reel
-    // trap again, so refuse the still.
-    if (/\/dms\/image\//.test(media.mediaUrl)) return null
 
     // Share links (lnkd.in/…) redirect to their post URL; the author slug
     // only makes sense on it. The slug runs `name_hash-stuff-activity-…`,
