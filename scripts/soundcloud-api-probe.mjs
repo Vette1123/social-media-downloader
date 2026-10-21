@@ -10,12 +10,12 @@
  *
  * The homepage carries more than one client id and they are not equal: the
  * hydrate block and the asset bundles can answer different preset sets. This
- * script tries every candidate until one yields a progressive stream, which is
- * the behaviour the extractor needs.
+ * script tries every candidate against real chart tracks until one combination
+ * yields a progressive stream, which is the behaviour the extractor needs.
  */
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-const TRACK = process.argv[2] ?? 'https://soundcloud.com/forss/flickermood'
+const ARG = process.argv[2]
 
 const get = (url, headers = {}) =>
   fetch(url, {
@@ -46,10 +46,7 @@ const assets = [
 console.log('a-v2 assets on homepage:', assets.length)
 for (const asset of assets) {
   const bundle = await get(asset)
-  if (bundle.status !== 200) {
-    console.log('  bundle', bundle.status, asset)
-    continue
-  }
+  if (bundle.status !== 200) continue
   const body = await bundle.text()
   const id = /,client_id:"([A-Za-z0-9]{32})",/.exec(body)?.[1]
   if (id) candidates.push([asset, id])
@@ -60,56 +57,87 @@ if (candidates.length === 0) {
   process.exit(1)
 }
 
-// 3. try each candidate until one yields a progressive stream.
-let track = null
-let streaming = null
-let chosenId = null
-for (const [source, id] of candidates) {
-  const resolve = await get(
-    `https://api-v2.soundcloud.com/resolve?url=${encodeURIComponent(
-      TRACK,
-    )}&client_id=${id}`,
+// 3. the track list: the argument, or the live top chart so the test never
+//    depends on a remembered slug.
+let tracks = []
+if (ARG) {
+  tracks = ARG.split(',').map((s) => s.trim()).filter(Boolean)
+} else {
+  const charts = await get(
+    `https://api-v2.soundcloud.com/charts?kind=top&genre=soundcloud:genres:all-music&limit=12&client_id=${candidates[0][1]}`,
     { Accept: 'application/json' },
   )
-  if (resolve.status !== 200) {
-    console.log('resolve', resolve.status, 'for', source)
-    continue
+  if (charts.status === 200) {
+    const list = JSON.parse(await charts.text())
+    tracks = (list.collection ?? [])
+      .map((c) => c.track?.permalink_url)
+      .filter(Boolean)
   }
-  const t = JSON.parse(await resolve.text())
-  const tc = t.media?.transcodings ?? []
-  const protocols = [...new Set(tc.map((x) => x.format?.protocol))].join('+')
-  console.log('resolve', t.id, source, 'protocols:', protocols)
-  const s =
-    tc.find(
-      (x) =>
-        !x.snipped &&
-        x.format?.protocol === 'progressive' &&
-        x.preset === 'mp3_1',
-    ) ||
-    tc.find(
-      (x) =>
-        !x.snipped &&
-        x.format?.protocol === 'progressive' &&
-        x.preset?.startsWith('mp3_'),
-    ) ||
-    tc.find((x) => !x.snipped && x.format?.protocol === 'progressive')
-  if (s?.url && t.track_authorization) {
-    track = t
-    streaming = s
-    chosenId = id
-    console.log('CHOSEN', source, s.preset, s.url)
-    break
-  }
+  console.log('chart tracks:', tracks.length)
 }
-if (!streaming) {
-  console.error('NO CANDIDATE YIELDED A PROGRESSIVE STREAM')
+if (tracks.length === 0) {
+  console.error('NO TRACKS to test')
   process.exit(1)
 }
 
-// 4. the direct file
-const fileUrl = new URL(streaming.url)
-fileUrl.searchParams.set('client_id', chosenId)
-fileUrl.searchParams.set('track_authorization', track.track_authorization)
+const pick = (tc) =>
+  tc.find(
+    (x) =>
+      !x.snipped &&
+      x.format?.protocol === 'progressive' &&
+      x.preset === 'mp3_1',
+  ) ||
+  tc.find(
+    (x) =>
+      !x.snipped &&
+      x.format?.protocol === 'progressive' &&
+      x.preset?.startsWith('mp3_'),
+  ) ||
+  tc.find((x) => !x.snipped && x.format?.protocol === 'progressive')
+
+// 4. try every track x client id until one yields a progressive stream.
+let chosen = null
+for (const trackUrl of tracks) {
+  for (const [source, id] of candidates) {
+    const resolve = await get(
+      `https://api-v2.soundcloud.com/resolve?url=${encodeURIComponent(
+        trackUrl,
+      )}&client_id=${id}`,
+      { Accept: 'application/json' },
+    )
+    if (resolve.status !== 200) {
+      console.log('resolve', resolve.status, trackUrl, source)
+      continue
+    }
+    const t = JSON.parse(await resolve.text())
+    const tc = t.media?.transcodings ?? []
+    const protocols = [...new Set(tc.map((x) => x.format?.protocol))].join('+')
+    const s = pick(tc)
+    console.log(
+      'resolve',
+      t.id,
+      protocols,
+      s?.preset ?? '-',
+      trackUrl,
+      source,
+    )
+    if (s?.url && t.track_authorization) {
+      chosen = { track: t, streaming: s, id, source, trackUrl }
+      break
+    }
+  }
+  if (chosen) break
+}
+if (!chosen) {
+  console.error('NO TRACK X CLIENT ID YIELDED A PROGRESSIVE STREAM')
+  process.exit(1)
+}
+console.log('CHOSEN', chosen.source, chosen.streaming.preset, chosen.trackUrl)
+
+// 5. the direct file
+const fileUrl = new URL(chosen.streaming.url)
+fileUrl.searchParams.set('client_id', chosen.id)
+fileUrl.searchParams.set('track_authorization', chosen.track.track_authorization)
 const stream = await get(fileUrl.toString(), { Accept: 'application/json' })
 const streamText = await stream.text()
 console.log('stream', stream.status, streamText.slice(0, 200))
