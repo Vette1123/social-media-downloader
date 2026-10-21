@@ -67,8 +67,10 @@ if (ARG) {
     `https://api-v2.soundcloud.com/charts?kind=top&genre=soundcloud:genres:all-music&limit=12&client_id=${candidates[0][1]}`,
     { Accept: 'application/json' },
   )
+  const chartsText = await charts.text()
+  console.log('charts', charts.status, chartsText.slice(0, 300))
   if (charts.status === 200) {
-    const list = JSON.parse(await charts.text())
+    const list = JSON.parse(chartsText)
     tracks = (list.collection ?? [])
       .map((c) => c.track?.permalink_url)
       .filter(Boolean)
