@@ -28,4 +28,8 @@ jobs:
           node-version: 24
 
       - name: Probe the API-v2 pattern
-        run: node scripts/soundcloud-api-probe.mjs "${{ github.event.inputs.track }}"
+        # Through env, never interpolated into the script: a dispatch input
+        # is free text and `${{ }}` pastes it into the shell verbatim.
+        env:
+          TRACK: ${{ github.event.inputs.track }}
+        run: node scripts/soundcloud-api-probe.mjs "$TRACK"

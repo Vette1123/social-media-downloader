@@ -25,6 +25,10 @@ correct and inert: it finds no progressive and falls through to the honest 422.
 - Iterated the probe ~6 times (chart endpoint 404, search fallback, `download_url`
   absent, HLS diagnostic) before one web search of the official release notes
   ended it. The search should have come first.
+- The verdict landed in the lesson but not in the code: `trySoundcloudTrack`'s
+  doc comment still said every step "was verified live" and answered with the
+  file, and the probe workflow pasted its dispatch input straight into the
+  shell. Both caught in review and fixed.
 
 ## What worked
 - The probe workflow (GitHub Actions = the Worker's vantage class) is the only
