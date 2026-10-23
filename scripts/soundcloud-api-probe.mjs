@@ -1,8 +1,8 @@
 /**
- * Faithful replica of Downloader.trySoundcloudTrack, run from datacenter egress
- * (GitHub Actions) so each step can be seen failing or passing before the
- * extractor ships — and again after, to separate a logic bug from a
- * Cloudflare-egress difference.
+ * Replica of the deleted Downloader.trySoundcloudTrack (see git history and
+ * lessons/2026-10-21-soundcloud-progressive-gone.md), run from datacenter
+ * egress (GitHub Actions). Kept as the re-check: if a run ever finds a
+ * progressive transcoding again, the extractor is worth restoring.
  *
  * Chain: homepage -> client_id candidates (hydrate block, then a-v2 bundles)
  *        -> api-v2 /resolve -> media.transcodings progressive mp3

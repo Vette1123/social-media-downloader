@@ -10,6 +10,10 @@ homepage client ids. The official SoundCloud API release notes settle it —
 release `2026-08-12` removed the progressive download URL, and a maintainer
 wrote "we removed progressive mp3 last week" (Aug 17, 2026). The extractor is
 correct and inert: it finds no progressive and falls through to the honest 422.
+Inert was not free — two or more serial fetches per SoundCloud link before the
+same 422 — so review deleted it (2026-10-23); a test now pins that a SoundCloud
+link never calls the homepage or api-v2. Restore from git history if the probe
+ever finds progressive again.
 
 ## Mistakes
 - Built the extractor from cobalt's source (which reads `media.transcodings`
@@ -29,6 +33,8 @@ correct and inert: it finds no progressive and falls through to the honest 422.
   doc comment still said every step "was verified live" and answered with the
   file, and the probe workflow pasted its dispatch input straight into the
   shell. Both caught in review and fixed.
+- Kept the inert extractor wired in because it was "correct". Code that can
+  only return null still spends the request's subrequests and latency.
 
 ## What worked
 - The probe workflow (GitHub Actions = the Worker's vantage class) is the only
