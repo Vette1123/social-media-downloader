@@ -2029,14 +2029,16 @@ export class Downloader {
   /**
    * SoundCloud, via the app API its own web player calls.
    *
-   * SoundCloud has no open API contract, but the shape its player uses is
-   * stable and every step was verified live (2026-10-21, datacenter egress —
-   * see scripts/soundcloud-api-probe.mjs): the homepage embeds the app's
-   * `client_id` in its SSR hydrate block, or in one of the a-v2.sndcdn.com
-   * asset bundles; `api-v2.soundcloud.com/resolve?url=…` turns the track URL
-   * into metadata plus `media.transcodings`; and a progressive transcoding's
-   * own URL (carrying `client_id` and `track_authorization`) answers with the
-   * direct file.
+   * SoundCloud has no open API contract. Verified live (2026-10-21, datacenter
+   * egress — see scripts/soundcloud-api-probe.mjs): the homepage embeds the
+   * app's `client_id` in its SSR hydrate block, or in one of the
+   * a-v2.sndcdn.com asset bundles; and `api-v2.soundcloud.com/resolve?url=…`
+   * turns the track URL into metadata plus `media.transcodings`. The last
+   * step — a progressive transcoding's own URL (carrying `client_id` and
+   * `track_authorization`) answering with the direct file — is no longer
+   * reachable: SoundCloud removed progressive mp3 in its 2026-08-12 API
+   * release, so every track now lists HLS only and this method returns null.
+   * See lessons/2026-10-21-soundcloud-progressive-gone.md.
    *
    * Cobalt is useless here — its instance claims the service and then hands
    * back HLS-only (m3u8), which this deployment refuses for want of ffmpeg.
