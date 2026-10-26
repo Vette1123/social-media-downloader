@@ -11,6 +11,7 @@ import {
 } from '@/lib/batchQueue'
 import {
   categorizeResult,
+  displayOrder,
   isCancelled,
   isZippable,
   rowStatusColorClass,
@@ -276,6 +277,9 @@ export function BatchPanel() {
   // so a video is auto-saved exactly once, on the transition into 'done' —
   // not on every later broadcast that merely repeats it.
   const prevStatusRef = useRef<Map<string, BatchItemStatus>>(new Map())
+  // Finish order per url, so finished rows sink to the bottom in the order
+  // they finished instead of staying wherever they were pasted.
+  const settledRef = useRef<Map<string, number>>(new Map())
   const abortRef = useRef<AbortController | null>(null)
   const runStartedAtRef = useRef<number | null>(null)
 
@@ -321,6 +325,7 @@ export function BatchPanel() {
       const byUrl = new Map(nextItems.map((n) => [n.url, n]))
       next = itemsRef.current.map((it) => byUrl.get(it.url) ?? it)
     }
+    next = displayOrder(next, settledRef.current)
     itemsRef.current = next
     setItems(next)
     for (const item of next) {
@@ -359,6 +364,7 @@ export function BatchPanel() {
     const controller = new AbortController()
     abortRef.current = controller
     prevStatusRef.current = new Map()
+    settledRef.current = new Map()
     setNote('')
     setIsRunning(true)
     runStartedAtRef.current = Date.now()
