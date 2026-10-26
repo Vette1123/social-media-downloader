@@ -58,3 +58,27 @@ export function rowStatusColorClass(item: BatchItem): string {
   if (item.status === 'resolving') return 'text-cyan-300'
   return 'text-white/50'
 }
+
+/**
+ * Row order for the queue: rows still waiting or resolving stay on top in
+ * paste order, and every finished row (done, failed, cancelled) sinks to the
+ * bottom in the order it finished. Lanes finish out of order, so paste order
+ * alone scatters finished rows through the list.
+ *
+ * `settled` is the caller's url → finish-sequence ledger, updated here: a row
+ * entering a finished state gets the next number, a row leaving one (a retry)
+ * loses it and rejoins the pending group.
+ */
+export function displayOrder(items: BatchItem[], settled: Map<string, number>): BatchItem[] {
+  let seq = Math.max(0, ...settled.values())
+  for (const item of items) {
+    const finished = item.status === 'done' || item.status === 'failed'
+    if (!finished) settled.delete(item.url)
+    else if (!settled.has(item.url)) settled.set(item.url, ++seq)
+  }
+  const pending = items.filter((it) => !settled.has(it.url))
+  const finished = items
+    .filter((it) => settled.has(it.url))
+    .sort((a, b) => settled.get(a.url)! - settled.get(b.url)!)
+  return [...pending, ...finished]
+}

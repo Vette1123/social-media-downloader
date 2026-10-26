@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CANCELLED_ERROR, type BatchItem } from './batchQueue'
 import {
   categorizeResult,
+  displayOrder,
   isCancelled,
   isZippable,
   rowStatusColorClass,
@@ -107,5 +108,26 @@ describe('rowStatusColorClass', () => {
   it('is green for a real done result', () => {
     const done = item({ status: 'done', result: { success: true, downloadUrl: 'x' } })
     expect(rowStatusColorClass(done)).toContain('emerald')
+  })
+})
+
+describe('displayOrder', () => {
+  const at = (url: string, status: BatchItem['status']): BatchItem => ({ url, status })
+
+  it('sinks finished rows to the bottom in the order they finished, pending rows keep paste order', () => {
+    const settled = new Map<string, number>()
+    // Paste order a..d; c finishes first, then a.
+    let list = displayOrder([at('a', 'resolving'), at('b', 'queued'), at('c', 'done'), at('d', 'queued')], settled)
+    list = displayOrder(list.map((it) => (it.url === 'a' ? at('a', 'failed') : it)), settled)
+    expect(list.map((it) => it.url)).toEqual(['b', 'd', 'c', 'a'])
+  })
+
+  it('lifts a retried row back out of the finished group', () => {
+    const settled = new Map<string, number>()
+    let list = displayOrder([at('a', 'failed'), at('b', 'done')], settled)
+    list = displayOrder(list.map((it) => (it.url === 'a' ? at('a', 'resolving') : it)), settled)
+    expect(list.map((it) => it.url)).toEqual(['a', 'b'])
+    list = displayOrder(list.map((it) => (it.url === 'a' ? at('a', 'done') : it)), settled)
+    expect(list.map((it) => it.url)).toEqual(['b', 'a'])
   })
 })
