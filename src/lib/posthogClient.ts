@@ -3,7 +3,7 @@
  *
  * posthog-js is the largest chunk this site would ship, and the mobile
  * Lighthouse score is a deliberate number. So the module is only ever imported
- * dynamically, once the browser is idle. Call sites use `ph()`; a static
+ * dynamically, well after the page has loaded. Call sites use `ph()`; a static
  * `import posthog from 'posthog-js'` anywhere would put it back on the critical
  * path. `import type` is fine, it is erased at build.
  */
@@ -82,19 +82,48 @@ function isAutomated(): boolean {
   }
 }
 
+let enabled: boolean | null = null
+
 /**
  * Analytics is production-only and human-only, and this is the one place that
  * decides both. It lives in the gateway every call passes, so a new call site
  * cannot leak dev or bot data by omission. Cloudflare already counts bots
  * (`pnpm cf:health`); PostHog answers questions about people.
  */
-export const analyticsEnabled = (): boolean =>
-  typeof window !== 'undefined' &&
-  Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY) &&
-  process.env.NODE_ENV === 'production' &&
-  !LOCAL_HOST.test(window.location.hostname) &&
-  !window.location.hostname.endsWith('.local') &&
-  !isAutomated()
+export const analyticsEnabled = (): boolean => {
+  if (typeof window === 'undefined') return false
+  // Every `ph()` passes here, and the bot check can open a WebGL context.
+  enabled ??=
+    Boolean(process.env.NEXT_PUBLIC_POSTHOG_KEY) &&
+    process.env.NODE_ENV === 'production' &&
+    !LOCAL_HOST.test(window.location.hostname) &&
+    !window.location.hostname.endsWith('.local') &&
+    !isAutomated()
+  return enabled
+}
+
+/** Past `load`, so the SDK competes with nothing the visitor is waiting for. */
+export const BOOT_DELAY_MS = 4000
+
+/**
+ * Run `fn` once the page has finished loading, BOOT_DELAY_MS have passed and the
+ * browser is idle. `requestIdleCallback` alone is not a delay: on a quiet page it
+ * fires at once, which put the SDK 37 ms behind `load` on the live site.
+ *
+ * ponytail: a visitor who leaves inside this window sends nothing, not even a
+ * pageview, so the shortest bounces are undercounted. Lower BOOT_DELAY_MS to
+ * trade load headroom for those visits.
+ */
+export function afterPageSettles(fn: () => void): void {
+  const wait = () => {
+    setTimeout(() => {
+      if ('requestIdleCallback' in window) window.requestIdleCallback(fn, { timeout: 2000 })
+      else fn()
+    }, BOOT_DELAY_MS)
+  }
+  if (document.readyState === 'complete') wait()
+  else window.addEventListener('load', wait, { once: true })
+}
 
 let instance: PostHog | null = null
 let loading: Promise<PostHog | null> | null = null

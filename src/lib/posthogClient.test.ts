@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs'
 import type { PostHog } from 'posthog-js'
-import { describe, expect, it } from 'vitest'
-import { bootPostHog, isSquareScreenFleet } from './posthogClient'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterPageSettles, BOOT_DELAY_MS, bootPostHog, isSquareScreenFleet } from './posthogClient'
 
 const desktop = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0'
 
@@ -27,5 +28,57 @@ describe('bootPostHog', () => {
     bootPostHog({} as PostHog, () => order.push('init'), pending)
     expect(order).toEqual(['init', 'register', 'capture'])
     expect(pending).toEqual([])
+  })
+})
+
+describe('afterPageSettles', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  function page(readyState: string) {
+    const listeners: Record<string, () => void> = {}
+    const idle = vi.fn((fn: () => void) => fn())
+    vi.useFakeTimers()
+    vi.stubGlobal('document', { readyState })
+    vi.stubGlobal('window', {
+      requestIdleCallback: idle,
+      addEventListener: (name: string, fn: () => void) => {
+        listeners[name] = fn
+      },
+    })
+    return { listeners, idle }
+  }
+
+  it('does nothing until load, then waits out the delay', () => {
+    const { listeners } = page('interactive')
+    const run = vi.fn()
+    afterPageSettles(run)
+    vi.advanceTimersByTime(BOOT_DELAY_MS * 10)
+    expect(run).not.toHaveBeenCalled()
+
+    listeners.load()
+    vi.advanceTimersByTime(BOOT_DELAY_MS - 1)
+    expect(run).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(run).toHaveBeenCalledOnce()
+  })
+
+  it('waits for idle even when the page already loaded', () => {
+    const { idle } = page('complete')
+    const run = vi.fn()
+    afterPageSettles(run)
+    expect(idle).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(BOOT_DELAY_MS)
+    expect(idle).toHaveBeenCalledOnce()
+  })
+})
+
+describe('AnalyticsProvider boot', () => {
+  it('has one trigger: nothing a visitor does can pull the SDK early', () => {
+    const source = readFileSync('src/components/AnalyticsProvider.tsx', 'utf8')
+    expect(source.split('boot()')).toHaveLength(3)
+    expect(source).not.toMatch(/pointerdown|requestIdleCallback/)
   })
 })

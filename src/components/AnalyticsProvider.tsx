@@ -3,8 +3,8 @@
 /**
  * Boots PostHog off the critical path and keeps its context current.
  *
- * Renders nothing. The SDK is fetched when the browser is idle or at the first
- * gesture, whichever is first, so neither LCP nor INP pays for it; anything
+ * Renders nothing. The SDK is fetched only by the timer in `afterPageSettles`,
+ * never by a gesture or an error, so neither LCP nor INP pays for it; anything
  * captured before then is queued by lib/posthogClient and replayed in order.
  */
 
@@ -25,6 +25,7 @@ import { shouldDropException } from '@/lib/analyticsNoise'
 import { scrubEvent } from '@/lib/analyticsPrivacy'
 import { getLocaleSnapshot, subscribeLocale } from '@/lib/i18nStore'
 import {
+  afterPageSettles,
   analyticsEnabled,
   loadPostHog,
   setPostHogInitializer,
@@ -99,12 +100,10 @@ setPostHogInitializer((posthog) => {
   })
 })
 
-const GESTURES = ['pointerdown', 'keydown', 'scroll', 'wheel'] as const
-
 let booted = false
 let stopEarlyCrashReports: (() => void) | null = null
 
-/** The landing $pageview waits for this: it was skipped during the idle window. */
+/** The landing $pageview waits for this: it was skipped during the wait. */
 async function boot(): Promise<void> {
   if (booted) return
   booted = true
@@ -121,30 +120,21 @@ function scheduleBoot(): void {
     document.addEventListener('prerenderingchange', scheduleBoot, { once: true })
     return
   }
-  const onGesture = () => void boot()
-  for (const name of GESTURES) {
-    window.addEventListener(name, onGesture, { capture: true, once: true, passive: true })
-  }
-  if ('requestIdleCallback' in window) {
-    window.requestIdleCallback(() => void boot(), { timeout: 2000 })
-  } else {
-    setTimeout(() => void boot(), 2000)
-  }
+  afterPageSettles(() => void boot())
 }
 
 /**
- * A crash before the idle boot would otherwise be lost, since the SDK's own
- * handler is not attached yet. Queued through the same `ph` path, and removed
- * once the SDK is listening so nothing is reported twice.
+ * A crash before the boot would otherwise be lost, since the SDK's own handler
+ * is not attached yet. Queued through the same `ph` path, and removed once the
+ * SDK is listening so nothing is reported twice. It does not boot early: a stray
+ * extension error would otherwise pull the SDK into the page load.
  */
 function reportEarlyCrashes(): void {
   const onError = (event: ErrorEvent) => {
     trackCaughtError('early_crash', event.error ?? event.message)
-    void boot()
   }
   const onRejection = (event: PromiseRejectionEvent) => {
     trackCaughtError('early_rejection', event.reason)
-    void boot()
   }
   window.addEventListener('error', onError)
   window.addEventListener('unhandledrejection', onRejection)
