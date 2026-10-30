@@ -38,6 +38,8 @@ export interface Offer {
    * text-only card, which is what every current entry does.
    */
   image?: string
+  /** The tag beside the button. Defaults to 'Sponsored'; our own apps say so. */
+  label?: string
 }
 
 /**
@@ -46,6 +48,19 @@ export interface Offer {
  * un-approved program out of rotation without deleting its copy.
  */
 export const OFFERS: readonly Offer[] = [
+  {
+    id: 'masareef',
+    headline: 'Know where your money went',
+    body: 'Masareef is an offline-first, multi-currency spending tracker, from the people behind this site.',
+    cta: 'Get Masareef',
+    // The app's own store chooser, the same link as the footer's "Our apps".
+    href: 'https://vette1123.github.io/masareef-privacy/go',
+    weight: 1,
+    platforms: 'all',
+    placements: ['post-result', 'in-content'],
+    image: '/promo/masareef.png',
+    label: 'Our app',
+  },
   {
     id: 'hitpaw-converter',
     headline: 'Convert and edit what you just saved',
@@ -64,8 +79,11 @@ export const OFFERS: readonly Offer[] = [
     // Redirects to pcloud.com/lifetime. 20% of a $199-399 lifetime plan, and
     // the subid survives the redirect chain through to landing.pcloud.com, so
     // placement attribution works off this one link.
+    // Benched for Masareef: the slot's seed never changes, so two live offers
+    // would not rotate, one would simply never show. Set to 1 and Masareef to 0
+    // to swap back.
     href: 'https://partner.pcloud.com/r/156822',
-    weight: 1,
+    weight: 0,
     platforms: 'all',
     placements: ['post-result', 'in-content'],
   },

@@ -1,7 +1,7 @@
 'use client'
 
 import { trackFeatureUsed } from '@/lib/analytics'
-import { useId, useMemo } from 'react'
+import { useEffect, useId, useMemo } from 'react'
 import { Surface } from '@/components/Surface'
 import { OFFERS, type OfferPlacement } from '@/config/offers'
 import { useHydrated } from '@/lib/clientEnv'
@@ -97,6 +97,11 @@ export function PromoSlot({
   )
 
   const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === '1'
+  const shownOffer = hydrated && tier !== 'pro' ? offer?.id : undefined
+
+  useEffect(() => {
+    if (shownOffer) trackFeatureUsed('promo_shown', { action: shownOffer, outcome: placement })
+  }, [shownOffer, placement])
 
   // When ads are disabled, an offer is required to render anything. When ads
   // are enabled, the slot renders on its own terms without a live offer.
@@ -143,7 +148,7 @@ export function PromoSlot({
           <Surface
             as='a'
             href={offerHref(offer, placement, platform)}
-            onClick={() => trackFeatureUsed('promo_click', { action: placement })}
+            onClick={() => trackFeatureUsed('promo_click', { action: offer.id, outcome: placement })}
             target='_blank'
             rel='sponsored nofollow noopener noreferrer'
             elevation='raised'
@@ -153,7 +158,7 @@ export function PromoSlot({
           >
             {offer.cta}
           </Surface>
-          <span className='text-[11px] text-white/50'>Sponsored</span>
+          <span className='text-[11px] text-white/50'>{offer.label ?? 'Sponsored'}</span>
         </div>
       )}
     </Surface>
