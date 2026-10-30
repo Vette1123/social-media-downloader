@@ -11,8 +11,8 @@
  * without deleting its config.
  *
  * Attribution is via the `subid` query parameter appended by offerHref(), read
- * back in each affiliate network's own dashboard. Cloudflare Web Analytics has
- * no custom-event API and we deliberately run no other tracking.
+ * back in each affiliate network's own dashboard. Shown and clicked counts per
+ * offer are in PostHog, as `promo_shown` and `promo_click`.
  */
 
 export type OfferPlacement = 'post-result' | 'in-content'
