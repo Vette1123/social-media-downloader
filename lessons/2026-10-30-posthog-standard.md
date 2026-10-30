@@ -29,6 +29,10 @@ reports for every surface. The Worker reports its own 5xx and throws with a plai
   this machine's user pnpm config sets `dangerouslyAllowAllBuilds`, which hides
   the error. Reported as pushed before the run was looked at; the site stayed on
   the old build meanwhile.
+- **`requestIdleCallback(fn, { timeout: 2000 })` was treated as a 2 s delay.** It
+  is a ceiling: on the live site the SDK started 37 ms after `load`, and a first
+  scroll or a stray error could pull it earlier. Lighthouse cannot show this,
+  because the bot gate keeps the SDK out of its runs, so its scores looked clean.
 
 ## What worked
 - `resolve()` as the choke point: paste box, batch, re-pick and retry are all
@@ -45,6 +49,8 @@ reports for every surface. The Worker reports its own 5xx and throws with a plai
 - Adding a field to `contentProps` means re-reading what that page promises.
 - List real storage keys before writing a prefix test against them.
 - Batch edit scripts open files with `newline=''` and assert match counts.
+- A Lighthouse score only counts for code the run actually loaded. Check the
+  chunk is in its network list, and time gated code in a real browser.
 - Alert floors are guesses until a week of traffic exists: re-read them then.
 - After adding a dependency, run `pnpm install --frozen-lockfile
   --config.dangerouslyAllowAllBuilds=false` in a clean copy. A plain local install
