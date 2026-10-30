@@ -54,8 +54,7 @@ export function selectOffer(
 
 /**
  * Attribution rides on the affiliate network's own sub-id parameter, read back
- * in their dashboard. Nothing is reported to us, which is what keeps the
- * privacy claim true.
+ * in their dashboard.
  */
 export function offerHref(
   offer: Offer,

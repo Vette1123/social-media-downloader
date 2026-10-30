@@ -118,7 +118,7 @@ export function PromoSlot({
   const showContent = hydrated && tier !== 'pro'
 
   const cardContent = showContent && (
-    <Surface className='animate-section-in group overflow-hidden p-4'>
+    <Surface className='animate-section-in group flex flex-col gap-3 overflow-hidden p-4 sm:flex-row sm:items-center sm:justify-between'>
       {adsEnabled ? (
         <AdUnit />
       ) : (
@@ -128,9 +128,9 @@ export function PromoSlot({
               <img
                 src={offer.image}
                 alt={offer.headline}
-                width={40}
-                height={40}
-                className='h-10 w-10 shrink-0 rounded-lg object-cover'
+                width={48}
+                height={48}
+                className='h-12 w-12 shrink-0 rounded-xl object-cover'
               />
             )}
             <div className='min-w-0'>
@@ -144,7 +144,7 @@ export function PromoSlot({
       )}
 
       {!adsEnabled && offer && (
-        <div className='mt-3 flex items-center justify-between gap-3'>
+        <div className='flex shrink-0 items-center justify-between gap-3 sm:flex-row-reverse'>
           <Surface
             as='a'
             href={offerHref(offer, placement, platform)}
@@ -154,7 +154,7 @@ export function PromoSlot({
             elevation='raised'
             interaction='lift'
             radius='xl'
-            className='px-3 py-2 text-sm font-medium text-white/80 hover:text-white'
+            className='whitespace-nowrap px-3 py-2 text-sm font-medium text-white/80 hover:text-white'
           >
             {offer.cta}
           </Surface>
@@ -168,7 +168,7 @@ export function PromoSlot({
   // through the pre-hydration window and stay held after, even while
   // suppressed, so the SEO/FAQ section below it never shifts.
   if (reservesHeight(placement)) {
-    return <div className='mt-4 min-h-[104px] sm:min-h-[92px]'>{cardContent}</div>
+    return <div className='mt-4 min-h-[188px] sm:min-h-[98px]'>{cardContent}</div>
   }
 
   // `post-result` reserves nothing: with no in-flow content of its own after
