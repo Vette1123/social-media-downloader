@@ -1,6 +1,10 @@
 'use client'
 
-import { beginDownload, trackCaughtError } from '@/lib/analytics'
+import {
+  beginDownload,
+  trackCaughtError,
+  trackFeatureUsed,
+} from '@/lib/analytics'
 import { useCallback, useState } from 'react'
 import { saveBlob } from '@/lib/blobSaver'
 import { usePrefs, setSubtitleLang } from '@/lib/prefs'
@@ -43,6 +47,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
   const [format, setFormat] = useState<SubtitleFormat>(loadFormat)
 
   const chooseFormat = useCallback((next: SubtitleFormat) => {
+    trackFeatureUsed('subtitle_format', { action: next })
     setFormat(next)
     try {
       window.localStorage.setItem(FMT_KEY, next)
@@ -148,6 +153,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
       <button
         type='button'
         onClick={() => {
+          trackFeatureUsed('subtitles_menu', { action: open ? 'close' : 'open' })
           setOpen((v) => !v)
           if (!open) void loadTracks()
         }}

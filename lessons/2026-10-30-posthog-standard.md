@@ -33,6 +33,10 @@ reports for every surface. The Worker reports its own 5xx and throws with a plai
   is a ceiling: on the live site the SDK started 37 ms after `load`, and a first
   scroll or a stray error could pull it earlier. Lighthouse cannot show this,
   because the bot gate keeps the SDK out of its runs, so its scores looked clean.
+- **"Every action tracked" was claimed before anyone counted the controls.** The
+  audit found batch videos auto-saved with no download event, play on the preview
+  never reported, and Recent outside `ph-no-capture` while the comment said it was
+  inside, so a title could reach autocapture through an aria-label.
 
 ## What worked
 - `resolve()` as the choke point: paste box, batch, re-pick and retry are all
@@ -51,6 +55,8 @@ reports for every surface. The Worker reports its own 5xx and throws with a plai
 - Batch edit scripts open files with `newline=''` and assert match counts.
 - A Lighthouse score only counts for code the run actually loaded. Check the
   chunk is in its network list, and time gated code in a real browser.
+- `ph-no-capture` removes the autocapture safety net, so every control inside it
+  needs its own event. Audit by reading handlers, not by the coverage test.
 - Alert floors are guesses until a week of traffic exists: re-read them then.
 - After adding a dependency, run `pnpm install --frozen-lockfile
   --config.dangerouslyAllowAllBuilds=false` in a clean copy. A plain local install

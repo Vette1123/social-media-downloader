@@ -1,6 +1,9 @@
 'use client'
 
-import { beginDownload } from '@/lib/analytics'
+import {
+  beginDownload,
+  trackFeatureUsed,
+} from '@/lib/analytics'
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, type PanInfo } from 'motion/react'
@@ -106,6 +109,8 @@ export function ImageLightbox({
     // lands on the close button, and the announcement reads the aria-label.
     dialogRef.current?.focus()
     return () => {
+      // Here rather than on a button: Escape, the backdrop and the X all land here.
+      trackFeatureUsed('lightbox', { action: 'close' })
       previouslyFocused.current?.focus()
       previouslyFocused.current = null
     }
@@ -119,6 +124,7 @@ export function ImageLightbox({
 
   const paginate = useCallback(
     (dir: 1 | -1) => {
+      trackFeatureUsed('lightbox', { action: dir === 1 ? 'next' : 'previous' })
       setDirection(dir)
       if (dir === 1) onNext()
       else onPrev()
@@ -324,6 +330,7 @@ export function ImageLightbox({
                 playsInline
                 preload='metadata'
                 className='max-h-full max-w-full rounded-lg bg-black shadow-2xl'
+                onPlay={() => trackFeatureUsed('media_play', { action: 'lightbox_video' })}
               />
             ) : (
               <img
