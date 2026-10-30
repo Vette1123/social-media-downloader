@@ -91,3 +91,24 @@ describe('prefChanges', () => {
     ).toEqual([{ key: 'filenameTemplate', value: 'custom' }])
   })
 })
+
+describe('surfaces that have no autocapture to fall back on', () => {
+  const read = (file: string) => readFileSync(`src/components/${file}`, 'utf8')
+
+  it('reports play on every media element', () => {
+    for (const file of ['DownloaderApp.tsx', 'AudioPreview.tsx', 'ImageLightbox.tsx']) {
+      const source = read(file)
+      const players = source.match(/<(video|audio)\s/g) ?? []
+      expect(players.length, file).toBeGreaterThan(0)
+      expect(source.match(/'media_play'/g)?.length, file).toBe(players.length)
+    }
+  })
+
+  it('keeps Recent out of autocapture, its labels quote titles', () => {
+    expect(read('DownloaderApp.tsx').match(/ph-no-capture/g)).toHaveLength(2)
+  })
+
+  it('counts each auto-saved batch video as a download', () => {
+    expect(read('BatchPanel.tsx')).toContain("beginDownload('batch_video'")
+  })
+})

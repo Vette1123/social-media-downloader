@@ -120,13 +120,23 @@ export const FEATURE_AREA = {
   paste_anywhere: 'resolve',
   clipboard_watch: 'resolve',
   quality_repick: 'resolve',
+  quality_reset: 'resolve',
+  result_cleared: 'resolve',
   preview: 'download',
   gallery: 'download',
   gallery_select_all: 'download',
+  image_select: 'download',
+  zip_toggle: 'download',
+  media_play: 'download',
+  source_link: 'download',
+  subtitles_menu: 'download',
+  subtitle_format: 'download',
   lightbox: 'download',
   save_both: 'download',
   send_to_app: 'sharing',
   batch_lanes: 'batch',
+  batch_format: 'batch',
+  send_to_queue: 'batch',
   batch_save_all: 'batch',
   history_reopen: 'history',
   history_remove: 'history',
@@ -324,6 +334,7 @@ export type DownloadKind =
   | 'thumbnail'
   | 'lightbox_image'
   | 'batch_zip'
+  | 'batch_video'
 
 export interface DownloadHandle {
   completed(extra?: { size_bytes?: number; delivery?: string }): void

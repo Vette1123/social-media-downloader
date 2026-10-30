@@ -502,7 +502,10 @@ function UnsavedRow({
       {tier === 'pro' ? (
         <button
           type='button'
-          onClick={() => requestBatchLinks(urls)}
+          onClick={() => {
+            trackFeatureUsed('send_to_queue', { action: 'links', count: urls.length })
+            requestBatchLinks(urls)
+          }}
           className='card-hover rounded-md border border-cyan-400/25 bg-cyan-400/10 px-2 py-1 text-[11px] font-medium text-cyan-200'
         >
           Send them to the queue
@@ -555,6 +558,7 @@ function CollectionAction({
     <button
       type='button'
       onClick={() => {
+        trackFeatureUsed('send_to_queue', { action: 'collection' })
         requestCollectionImport(url)
         onHandOff()
       }}
@@ -1174,6 +1178,10 @@ export function DownloaderApp() {
       })
       }
     } catch (err) {
+      trackFeatureUsed('quality_repick', {
+        action: nextFormat === 'audio' ? 'audio' : nextQuality,
+        outcome: 'failed',
+      })
       dispatch({
         type: 'SET_MESSAGE',
         payload: { kind: 'error', text: explain(errorText(err), target) },
@@ -1192,6 +1200,7 @@ export function DownloaderApp() {
   ) => {
     const target = (overrideUrl ?? state.url).trim()
     if (!target) {
+      trackLinkRejected({ platform: 'none', reason: 'empty' })
       setUrlError(
         'Please paste a TikTok, Twitter/X, Instagram, Facebook, or YouTube URL first',
       )
@@ -1591,7 +1600,9 @@ export function DownloaderApp() {
       // A field handles its own Escape; the URL field's is on the input below,
       // and every other field on the page should keep the key for itself.
       if (isEditableTarget(event.target)) return
-      if (clearResult() && finePointer) inputRef.current?.focus()
+      if (!clearResult()) return
+      trackFeatureUsed('result_cleared', { action: 'escape' })
+      if (finePointer) inputRef.current?.focus()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
@@ -2775,6 +2786,7 @@ export function DownloaderApp() {
                     <button
                       type='button'
                       onClick={() => {
+                        trackFeatureUsed('quality_reset', { action: platform })
                         clearPlatformQuality(platform)
                         clearPlatformFormat(platform)
                         setPlatformQualityMap((m) => removeQuality(m, platform))
@@ -2802,7 +2814,7 @@ export function DownloaderApp() {
           it's least useful. Only a resolve in flight hides it, so the list
           can't be re-tapped mid-request. Tap to re-resolve. */}
       {history.length > 0 && !state.loading && (
-        <div className='animate-section-in mt-4'>
+        <div className='ph-no-capture animate-section-in mt-4'>
           <div className='mb-2 flex items-center justify-between'>
             <span className='flex items-center gap-1.5 text-xs font-medium text-white/50'>
               <ClockIcon className='h-3.5 w-3.5' />
@@ -3250,6 +3262,9 @@ export function DownloaderApp() {
                           href={state.originalUrl}
                           target='_blank'
                           rel='noopener noreferrer'
+                          onClick={() =>
+                            trackFeatureUsed('source_link', { action: platform || 'unknown' })
+                          }
                           className={`inline-flex items-center gap-1 mt-2 text-xs transition-colors underline underline-offset-2 break-all ${cfg.color}`}
                         >
                           <cfg.Icon className='w-3 h-3 flex-shrink-0' />
@@ -3310,6 +3325,7 @@ export function DownloaderApp() {
                         playsInline
                         className='w-full h-auto max-h-[60vh] object-contain bg-black'
                         preload='none'
+                        onPlay={() => trackFeatureUsed('media_play', { action: 'video' })}
                         onError={(e) => {
                           console.error('Video preview error:', e)
                           dispatch({
@@ -3489,6 +3505,9 @@ export function DownloaderApp() {
                                 type='button'
                                 onClick={(e) => {
                                   e.stopPropagation()
+                                  trackFeatureUsed('image_select', {
+                                    action: image.selected ? 'deselect' : 'select',
+                                  })
                                   toggleImageSelection(image.id)
                                 }}
                                 aria-pressed={image.selected}
@@ -3527,12 +3546,15 @@ export function DownloaderApp() {
                                 type='checkbox'
                                 id='downloadAsZip'
                                 checked={state.downloadImagesAsZip}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  trackFeatureUsed('zip_toggle', {
+                                    action: e.target.checked ? 'on' : 'off',
+                                  })
                                   dispatch({
                                     type: 'SET_DOWNLOAD_IMAGES_AS_ZIP',
                                     payload: e.target.checked,
                                   })
-                                }
+                                }}
                                 className='w-4 h-4 accent-cyan-400 bg-white/10 border-white/30 rounded focus:ring-cyan-400 focus:ring-2'
                               />
                               <label

@@ -2,6 +2,7 @@
 
 import {
   beginDownload,
+  contentProps,
   trackBatchCanceled,
   trackBatchFinished,
   trackBatchStarted,
@@ -88,6 +89,7 @@ function triggerTunnelDownload(url: string) {
  */
 async function saveVideoResult(
   result: ResolveResult,
+  url: string,
   template?: string,
 ): Promise<void> {
   const meta = result.metadata
@@ -98,19 +100,24 @@ async function saveVideoResult(
     ext: 'mp4',
     template,
   })
+  const transfer = beginDownload('batch_video', contentProps(meta, url))
   try {
     const direct = meta?.directVideoUrl
     if (direct) {
       triggerTunnelDownload(direct)
+      transfer.completed({ delivery: 'direct' })
       return
     }
-    if (!result.downloadUrl) return
+    if (!result.downloadUrl) throw new Error('No download link')
     const response = await fetch(result.downloadUrl)
-    if (!response.ok) return
-    await saveMedia(await response.blob(), filename)
-  } catch {
-    // Network hiccup or an expired proxy URL — silent, matches the best-effort
-    // contract described above.
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const blob = await response.blob()
+    await saveMedia(blob, filename)
+    transfer.completed({ size_bytes: blob.size, delivery: 'proxy' })
+  } catch (error) {
+    // Network hiccup or an expired proxy URL — silent to the visitor, matches
+    // the best-effort contract described above.
+    transfer.failed(error)
   }
 }
 
@@ -343,7 +350,7 @@ export function BatchPanel() {
       prevStatusRef.current.set(item.url, item.status)
       if (prevStatus !== 'done' && item.status === 'done' && item.result) {
         if (categorizeResult(item.result) === 'video') {
-          void saveVideoResult(item.result, templateRef.current)
+          void saveVideoResult(item.result, item.url, templateRef.current)
         }
       }
     }
@@ -718,7 +725,10 @@ export function BatchPanel() {
             <button
               key={f}
               type='button'
-              onClick={() => setFormat(f)}
+              onClick={() => {
+                trackFeatureUsed('batch_format', { action: f })
+                setFormat(f)
+              }}
               disabled={isRunning}
               aria-pressed={format === f}
               className={`rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${

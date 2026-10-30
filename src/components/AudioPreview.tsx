@@ -1,5 +1,6 @@
 'use client'
 
+import { trackFeatureUsed } from '@/lib/analytics'
 import { MusicIcon } from '@/components/icons'
 
 /**
@@ -34,7 +35,13 @@ export function AudioPreview({
       {/* preload='none', not 'metadata': every result carrying audio would
           otherwise pull the head of the track through /api/audio for a visitor
           who never pressed play. */}
-      <audio src={src} controls preload='none' className='w-full'>
+      <audio
+        src={src}
+        controls
+        preload='none'
+        className='w-full'
+        onPlay={() => trackFeatureUsed('media_play', { action: 'audio' })}
+      >
         Your browser does not support the audio element.
       </audio>
     </div>
