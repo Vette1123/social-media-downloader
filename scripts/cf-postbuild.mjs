@@ -237,6 +237,7 @@ function buildHeaders(files) {
   // One splat covers the entire hashed bundle: JS, CSS and the subsetted
   // woff2 fonts under _next/static/media.
   rules.push(['/_next/static/*', [`Cache-Control: ${IMMUTABLE_CACHE}`]])
+  rules.push(['/promo/*', [`Cache-Control: ${IMAGE_CACHE}`]])
 
   // Extension-less PNGs, listed individually. A splat would be shorter, but
   // these paths interleave with real routes (`/tiktok-downloader` is a page,

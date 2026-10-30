@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { Surface } from '@/components/Surface'
 import { CloseIcon } from '@/components/icons'
 import { useEffect } from 'react'

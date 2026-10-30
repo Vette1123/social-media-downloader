@@ -22,7 +22,7 @@
  * no layout shift for anyone.
  */
 
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { usePathname } from 'next/navigation'
 import { useRef, useState } from 'react'
 import { trackFeatureUsed } from '@/lib/analytics'

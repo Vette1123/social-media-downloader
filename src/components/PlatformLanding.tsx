@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { DownloaderApp } from '@/components/DownloaderApp'
 import { Surface } from '@/components/Surface'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
@@ -257,9 +257,9 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
         <Surface
           glow
           radius='3xl'
-          className='animate-card-enter mx-auto w-full max-w-3xl p-5 shadow-2xl sm:p-8 md:p-10'
+          className='mx-auto w-full max-w-3xl p-5 shadow-2xl sm:p-8 md:p-10'
         >
-          <div className='animate-fade-in-up text-center'>
+          <div className='text-center'>
             <PlatformIconRow activeSlug={platform.slug} />
             <Breadcrumb platform={platform} />
             <h1 className='mb-3 text-2xl font-extrabold tracking-tight text-white text-balance sm:text-3xl md:text-4xl'>
@@ -291,7 +291,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
         </Surface>
 
         {/* WHAT YOU CAN DO — platform feature list */}
-        <section className='mt-16 sm:mt-24'>
+        <section className='defer-render mt-16 sm:mt-24'>
           <SectionHead title={`With this ${platform.name} downloader you can`} />
           <ul className='mx-auto grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2'>
             {platform.featureList.map((f) => (
@@ -308,7 +308,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
         </section>
 
         {/* HIGHLIGHT CARDS */}
-        <section className='mt-16 sm:mt-24'>
+        <section className='defer-render mt-16 sm:mt-24'>
           <div className='grid gap-4 md:grid-cols-3'>
             {platform.cards.map((card) => (
               <Surface
@@ -325,7 +325,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
         </section>
 
         {/* CROSS-LINKS */}
-        <section className='mt-16 sm:mt-24'>
+        <section className='defer-render mt-16 sm:mt-24'>
           <SectionHead
             title='Also try our other downloaders'
             sub='One tool per platform — pick whichever you need.'
@@ -337,11 +337,11 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             mind. The full split belongs on the home page, where someone is
             already browsing; here it is a single line that names the one thing
             worth paying for and gets out of the way. */}
-        <section className='mt-16 sm:mt-24'>
+        <section className='defer-render mt-16 sm:mt-24'>
           <SupportPanel variant='compact' />
         </section>
 
-        <section className='mt-16 sm:mt-24'>
+        <section className='defer-render mt-16 sm:mt-24'>
           <PromoSlot
             placement='in-content'
             platform={OFFER_PLATFORM_BY_SLUG[platform.slug]}

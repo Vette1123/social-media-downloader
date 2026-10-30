@@ -2,6 +2,7 @@ import { GitHubIcon, PortfolioIcon } from '@/components/icons'
 import { LinkCard } from '@/components/LinkCard'
 import { PlayAppPromoCards } from '@/components/PlayAppPromoCards'
 import { siteConfig } from '@/config/site'
+import { INSTALL_SLOT_ID } from '@/lib/clientEnv'
 
 const devLinks = [
   { href: siteConfig.author.url, label: 'Portfolio', Icon: PortfolioIcon },
@@ -16,11 +17,14 @@ const devLinks = [
  */
 export function DevAppLinks() {
   return (
-    <div className='mx-auto mt-6 flex max-w-md flex-wrap items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
-      {devLinks.map((link) => (
-        <LinkCard key={link.label} {...link} />
-      ))}
-      <PlayAppPromoCards />
-    </div>
+    <>
+      <div className='mx-auto mt-6 flex max-w-md flex-wrap items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>
+        {devLinks.map((link) => (
+          <LinkCard key={link.label} {...link} />
+        ))}
+        <PlayAppPromoCards />
+      </div>
+      <div id={INSTALL_SLOT_ID} />
+    </>
   )
 }

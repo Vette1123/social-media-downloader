@@ -22,7 +22,7 @@ import {
   trackSignedOut,
 } from '@/lib/analytics'
 import { type ReactNode, useEffect, useState } from 'react'
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { Surface } from '@/components/Surface'
 import { Avatar, type AvatarIdentity } from '@/components/Avatar'
 import { ConfirmDialog } from '@/components/ConfirmDialog'

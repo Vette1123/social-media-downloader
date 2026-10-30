@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { FilmIcon, GitHubIcon, PortfolioIcon } from '@/components/icons'
 import { LanguagePicker } from '@/components/LanguagePicker'
 import { PlayAppsMenu } from '@/components/PlayAppsMenu'

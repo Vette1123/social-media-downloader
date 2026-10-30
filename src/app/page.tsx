@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { DownloaderApp } from '@/components/DownloaderApp'
 import { Surface } from '@/components/Surface'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
@@ -218,9 +218,9 @@ export default function Home() {
           <Surface
             glow
             radius='3xl'
-            className='animate-card-enter mx-auto w-full max-w-3xl p-5 shadow-2xl sm:p-8 md:p-10'
+            className='mx-auto w-full max-w-3xl p-5 shadow-2xl sm:p-8 md:p-10'
           >
-            <div className='animate-fade-in-up text-center'>
+            <div className='text-center'>
               <div className='mb-6 flex justify-center'>
                 <div className='flex items-center gap-2 md:gap-2.5'>
                   {heroPlatforms.map((p) => (
@@ -299,7 +299,7 @@ export default function Home() {
           {/* ---------------------------------------------------------------
               WHAT YOU CAN DO — 4-across feature band
           ---------------------------------------------------------------- */}
-          <section className='mt-16 sm:mt-24'>
+          <section className='defer-render mt-16 sm:mt-24'>
             <SectionHead
               title='Everything from one link'
               sub='One paste, four ways to save it. No app, no account, nothing installed.'
@@ -330,7 +330,7 @@ export default function Home() {
           {/* ---------------------------------------------------------------
               HOW IT WORKS — 3 steps
           ---------------------------------------------------------------- */}
-          <section className='mt-16 sm:mt-24'>
+          <section className='defer-render mt-16 sm:mt-24'>
             <SectionHead
               title='Three steps, a few seconds'
               sub='No tutorials. No settings. Paste and go.'
@@ -357,7 +357,7 @@ export default function Home() {
           {/* ---------------------------------------------------------------
               PLATFORM QUICK LINKS
           ---------------------------------------------------------------- */}
-          <section className='mt-16 sm:mt-24'>
+          <section className='defer-render mt-16 sm:mt-24'>
             <SectionHead
               title='Jump to a dedicated downloader'
               sub='Prefer a page built for one platform? Pick yours.'
@@ -401,7 +401,7 @@ export default function Home() {
           {/* ---------------------------------------------------------------
               SUPPORT — the ask, and the only one on the page
           ---------------------------------------------------------------- */}
-          <section className='mt-16 sm:mt-24'>
+          <section className='defer-render mt-16 sm:mt-24'>
             <SupportPanel />
           </section>
 
@@ -409,7 +409,7 @@ export default function Home() {
               prop here: the home page serves every platform, so only offers
               marked `platforms: 'all'` are eligible. Sits after the grid and
               before the prose, mirroring PlatformLanding exactly. */}
-          <section className='mt-16 sm:mt-24'>
+          <section className='defer-render mt-16 sm:mt-24'>
             <PromoSlot placement='in-content' />
           </section>
 
@@ -476,7 +476,7 @@ export default function Home() {
               it never becomes a wall nobody reads.
           ---------------------------------------------------------------- */}
           {WHATS_NEW.length > 0 && (
-            <section className='mt-16 sm:mt-24'>
+            <section className='defer-render mt-16 sm:mt-24'>
               <SectionHead
                 title='Recently added'
                 sub='The tool is under active development — here is what changed lately.'

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { SiteFooter } from '@/components/SiteFooter'
 import { Surface } from '@/components/Surface'
 import { CheckIcon, CoffeeIcon } from '@/components/icons'
@@ -39,6 +39,7 @@ export default function Support() {
   return (
     <div className='app-bg relative min-h-[100dvh] overflow-clip'>
       <div className='relative z-10 mx-auto max-w-3xl px-4 py-10 sm:py-16'>
+        <main>
         <div className='text-center'>
           <span className='btn-grad inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase'>
             <CoffeeIcon className='h-3.5 w-3.5' />
@@ -58,7 +59,7 @@ export default function Support() {
         <Surface
           glow
           radius='3xl'
-          className='animate-card-enter mt-8 p-5 shadow-2xl sm:p-8'
+          className='mt-8 p-5 shadow-2xl sm:p-8'
         >
           <div className='grid gap-3 sm:grid-cols-2'>
             <a
@@ -117,7 +118,7 @@ export default function Support() {
             <p className='mt-3 text-sm text-white/60'>
               Prefer{' '}
               <a
-                className='text-cyan-300 hover:text-cyan-200'
+                className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
                 href={siteConfig.links.sponsor}
                 data-pro-cta='pro_coffee'
                 target='_blank'
@@ -129,7 +130,7 @@ export default function Support() {
               on by itself. Same if you signed in with a different address —
               email{' '}
               <a
-                className='text-cyan-300 hover:text-cyan-200'
+                className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
                 href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Supporter — switch on the extras')}`}
               >
                 {siteConfig.supportEmail}
@@ -191,13 +192,13 @@ export default function Support() {
           own terms.
           Questions:{' '}
           <a
-            className='text-cyan-300 hover:text-cyan-200'
+            className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
             href={`mailto:${siteConfig.supportEmail}`}
           >
             {siteConfig.supportEmail}
           </a>
           , answered by{' '}
-          <a className='text-cyan-300 hover:text-cyan-200' href={siteConfig.author.url}>
+          <a className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200' href={siteConfig.author.url}>
             {siteConfig.author.name}
           </a>
           .
@@ -206,6 +207,8 @@ export default function Support() {
         <Link href='/' className='mt-10 inline-block text-sm text-cyan-300 hover:text-cyan-200'>
           Back to the downloader
         </Link>
+
+        </main>
 
         <SiteFooter />
       </div>

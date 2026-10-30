@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { SiteFooter } from '@/components/SiteFooter'
 import { siteConfig } from '@/config/site'
 
@@ -15,6 +15,7 @@ export default function Privacy() {
   return (
     <div className='app-bg relative min-h-[100dvh] overflow-clip'>
       <div className='relative z-10 mx-auto max-w-3xl px-4 py-10 sm:py-16'>
+        <main>
         <h1 className='text-3xl font-bold tracking-tight text-white sm:text-4xl'>
           Privacy Policy
         </h1>
@@ -49,7 +50,7 @@ export default function Privacy() {
             </p>
             <p className='mt-2'>
               We do not store IP addresses. Deleting your account, from{' '}
-              <Link href='/account' className='text-cyan-300 hover:text-cyan-200'>/account</Link>,
+              <Link href='/account' className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'>/account</Link>,
               removes your record and every session immediately. Analytics
               events stay, but nothing links them to you any more.
             </p>
@@ -121,21 +122,21 @@ export default function Privacy() {
             <p>
               Privacy questions, or a request to delete data we hold, go to{' '}
               <a
-                className='text-cyan-300 hover:text-cyan-200'
+                className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
                 href={`mailto:${siteConfig.supportEmail}`}
               >
                 {siteConfig.supportEmail}
               </a>
               , read by{' '}
               <a
-                className='text-cyan-300 hover:text-cyan-200'
+                className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
                 href={siteConfig.author.url}
               >
                 {siteConfig.author.name}
               </a>
               . You can also delete your account and every session yourself, at
               any time, from{' '}
-              <Link href='/account' className='text-cyan-300 hover:text-cyan-200'>
+              <Link href='/account' className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'>
                 /account
               </Link>
               .
@@ -146,6 +147,8 @@ export default function Privacy() {
         <Link href='/' className='mt-10 inline-block text-sm text-cyan-300 hover:text-cyan-200'>
           ← Back to the downloader
         </Link>
+
+        </main>
 
         <SiteFooter />
       </div>

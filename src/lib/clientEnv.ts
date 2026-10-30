@@ -136,6 +136,9 @@ let installOfferable: boolean | null = null
 
 export const INSTALL_DISMISS_KEY = 'smd:install-dismissed'
 
+/** The element at the end of the hero that InstallPrompt portals into. */
+export const INSTALL_SLOT_ID = 'install-slot'
+
 function dismissedEarlier(): boolean {
   try {
     return window.localStorage.getItem(INSTALL_DISMISS_KEY) === '1'
