@@ -24,6 +24,11 @@ reports for every surface. The Worker reports its own 5xx and throws with a plai
   meant trimming what had landed.
 - **`href='/pro'` as a match string also matched deeper-indented lines.** The
   assertion on match count is what caught it.
+- **The first deploy failed at `pnpm install`: `core-js` (via posthog-js) has a
+  build script nobody had approved or denied.** Every local check passed because
+  this machine's user pnpm config sets `dangerouslyAllowAllBuilds`, which hides
+  the error. Reported as pushed before the run was looked at; the site stayed on
+  the old build meanwhile.
 
 ## What worked
 - `resolve()` as the choke point: paste box, batch, re-pick and retry are all
@@ -41,3 +46,7 @@ reports for every surface. The Worker reports its own 5xx and throws with a plai
 - List real storage keys before writing a prefix test against them.
 - Batch edit scripts open files with `newline=''` and assert match counts.
 - Alert floors are guesses until a week of traffic exists: re-read them then.
+- After adding a dependency, run `pnpm install --frozen-lockfile
+  --config.dangerouslyAllowAllBuilds=false` in a clean copy. A plain local install
+  cannot fail the way CI does. On failure pnpm writes a placeholder key into
+  `pnpm-workspace.yaml`, so never run it in the real checkout.
