@@ -36,4 +36,15 @@ describe('reportServerFailure', () => {
     )
     expect(waitUntil).not.toHaveBeenCalled()
   })
+
+  it('ignores 501: a deliberate refusal, sent to every deploy smoke test', () => {
+    const waitUntil = vi.fn()
+    reportServerFailure(
+      new Request('https://x.space/api/youtube'),
+      { POSTHOG_PROJECT_KEY: 'phc_x' },
+      { waitUntil },
+      { route: '/api/youtube', status: 501 },
+    )
+    expect(waitUntil).not.toHaveBeenCalled()
+  })
 })
