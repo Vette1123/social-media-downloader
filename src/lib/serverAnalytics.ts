@@ -65,7 +65,8 @@ export function reportServerFailure(
   failure: ServerFailure,
 ): void {
   const key = env.POSTHOG_PROJECT_KEY
-  if (!key) return
+  // 501 is nativeMedia's deliberate "cannot run here", which nothing failed to do.
+  if (!key || failure.status === 501) return
   const country = (request as Request & { cf?: { country?: string } }).cf?.country
   ctx.waitUntil(
     fetch(CAPTURE_URL, {
