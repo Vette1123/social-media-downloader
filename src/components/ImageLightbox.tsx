@@ -1,5 +1,6 @@
 'use client'
 
+import { beginDownload } from '@/lib/analytics'
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, type PanInfo } from 'motion/react'
@@ -198,6 +199,11 @@ export function ImageLightbox({
     if (downloading) return
     setDownloading(true)
     setDownloadError('')
+    const transfer = beginDownload('lightbox_image', {
+      platform,
+      content_title: title,
+      content_author: author,
+    })
     try {
       const res = await fetch(current.url)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -220,8 +226,10 @@ export function ImageLightbox({
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(blobUrl)
+      transfer.completed({ size_bytes: blob.size })
     } catch (err) {
       console.error('Single slide download failed:', err)
+      transfer.failed(err)
       setDownloadError('That file would not download. Try again.')
     } finally {
       setDownloading(false)

@@ -65,7 +65,7 @@ export function SiteFooter() {
           {/* One link, not the two that used to sit here ("Pro" and a second
               straight at Buy Me a Coffee). /pro is the donation page now, so
               pointing at both was the same destination twice under two names. */}
-          <Link href='/pro' className='transition-colors hover:text-white/80'>
+          <Link href='/pro' data-pro-cta='footer' className='transition-colors hover:text-white/80'>
             Support
           </Link>
           <a

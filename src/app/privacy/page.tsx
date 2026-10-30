@@ -5,11 +5,11 @@ import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy — Social Media Downloader',
-  description: `How ${siteConfig.name} handles your data: anonymous by default, a Google sign-in and nothing else for Pro, no download logs, no cross-site tracking.`,
+  description: `How ${siteConfig.name} handles your data: no sign-up needed, a Google sign-in and nothing else for Pro, usage analytics to improve the site, no cross-site tracking.`,
   alternates: { canonical: '/privacy' },
 }
 
-const UPDATED = '10 August 2026'
+const UPDATED = '30 October 2026'
 
 export default function Privacy() {
   return (
@@ -24,11 +24,9 @@ export default function Privacy() {
           <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>If you never sign in</h2>
             <p>
-              No account, no sign-up, nothing stored — you are fully anonymous.
-              We do not log the links you paste or the files you download. Your
-              Recent list is written to your own browser&rsquo;s local storage
-              and never leaves the device. This is unchanged from before Pro
-              existed, and it stays true whether or not anyone ever subscribes.
+              No account and no sign-up. Your Recent list is written to your
+              own browser&rsquo;s local storage and never leaves the device.
+              Usage is measured as described under Analytics below.
             </p>
           </section>
 
@@ -50,20 +48,23 @@ export default function Privacy() {
               calling our server on every page. Signing out erases that copy.
             </p>
             <p className='mt-2'>
-              No download activity is recorded for anyone, signed in or not.
               We do not store IP addresses. Deleting your account, from{' '}
               <Link href='/account' className='text-cyan-300 hover:text-cyan-200'>/account</Link>,
-              removes your record and every session immediately.
+              removes your record and every session immediately. Analytics
+              events stay, but nothing links them to you any more.
             </p>
           </section>
 
           <section>
             <h2 className='mb-2 text-lg font-semibold text-white'>Analytics</h2>
             <p>
-              When enabled, we use Cloudflare Web Analytics for page-view
-              counts. It sets no cookies, builds no cross-site profile, and
-              does not fingerprint your device. It is the only analytics this
-              site ever runs.
+              We use PostHog to see how the site is used and to catch and fix
+              errors. That covers the pages and buttons used and what is
+              downloaded: the platform, link, title and author. A small sample
+              of visits is recorded as a session replay, with typed text
+              hidden. Events carry a random ID, or your account ID if you are
+              signed in, and never your name or email. It sets no cookies. We
+              also use Cloudflare Web Analytics for page-view counts.
             </p>
           </section>
 

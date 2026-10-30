@@ -1,5 +1,15 @@
 'use client'
 
+import {
+  beginDownload,
+  trackBatchCanceled,
+  trackBatchFinished,
+  trackBatchStarted,
+  trackCaughtError,
+  trackFeatureUsed,
+  trackPlaylistImported,
+  trackRetryClicked,
+} from '@/lib/analytics'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Surface } from '@/components/Surface'
 import {
@@ -359,6 +369,17 @@ export function BatchPanel() {
     return parts.join(' · ')
   }, [])
 
+  /** Counted from the rows themselves, so a retry reports the whole queue. */
+  const reportBatchEnd = useCallback(() => {
+    const rows = itemsRef.current
+    trackBatchFinished({
+      surface: 'batch_panel',
+      count: rows.length,
+      ok: rows.filter((row) => row.status === 'done').length,
+      failed: rows.filter((row) => row.status === 'failed').length,
+    })
+  }, [])
+
   const handleStart = useCallback(async () => {
     if (isRunning || parsedUrls.length === 0) return
     const controller = new AbortController()
@@ -371,10 +392,16 @@ export function BatchPanel() {
     const fresh: BatchItem[] = parsedUrls.map((url) => ({ url, status: 'queued' }))
     itemsRef.current = fresh
     setItems(fresh)
+    trackBatchStarted({
+      surface: 'batch_panel',
+      count: parsedUrls.length,
+      format,
+      lanes,
+    })
     try {
       await runBatch(
         parsedUrls,
-        (url, signal) => resolve(url, { format, proToken, signal }),
+        (url, signal) => resolve(url, { format, proToken, signal, source: 'batch' }),
         handleUpdate,
         controller.signal,
         lanes,
@@ -382,11 +409,21 @@ export function BatchPanel() {
       setNote(
         [summarizeRun(), 'Videos save as they finish.'].filter(Boolean).join(' — '),
       )
+      reportBatchEnd()
     } finally {
       setIsRunning(false)
       abortRef.current = null
     }
-  }, [format, handleUpdate, isRunning, lanes, parsedUrls, proToken, summarizeRun])
+  }, [
+    format,
+    handleUpdate,
+    isRunning,
+    lanes,
+    parsedUrls,
+    proToken,
+    reportBatchEnd,
+    summarizeRun,
+  ])
 
   /**
    * Re-run only the failed rows. Cancelled ones are deliberately excluded —
@@ -404,6 +441,14 @@ export function BatchPanel() {
 
   const handleRetryFailed = useCallback(async () => {
     if (isRunning || failedUrls.length === 0) return
+    trackRetryClicked({ surface: 'batch_failed' })
+    trackBatchStarted({
+      surface: 'batch_panel',
+      count: failedUrls.length,
+      format,
+      lanes,
+      is_retry: true,
+    })
     const controller = new AbortController()
     abortRef.current = controller
     setNote('')
@@ -413,19 +458,21 @@ export function BatchPanel() {
     try {
       await runBatch(
         failedUrls,
-        (url, signal) => resolve(url, { format, proToken, signal }),
+        (url, signal) => resolve(url, { format, proToken, signal, source: 'batch' }),
         (next) => publish(next, true),
         controller.signal,
         lanes,
       )
       setNote(summarizeRun() ?? `Retried ${failedUrls.length} link(s).`)
+      reportBatchEnd()
     } finally {
       setIsRunning(false)
       abortRef.current = null
     }
-  }, [failedUrls, format, isRunning, lanes, proToken, publish, summarizeRun])
+  }, [failedUrls, format, isRunning, lanes, proToken, publish, reportBatchEnd, summarizeRun])
 
   const handleCancel = useCallback(() => {
+    trackBatchCanceled({ count: itemsRef.current.length })
     abortRef.current?.abort()
   }, [])
 
@@ -453,9 +500,11 @@ export function BatchPanel() {
         | { success: boolean; error?: string; videos?: Array<{ url: string }> }
         | null
       if (!response.ok || !data?.success) {
+        trackPlaylistImported({ count: 0, ok: false })
         setNote(data?.error || 'Could not expand that playlist.')
         return
       }
+      trackPlaylistImported({ count: data.videos?.length ?? 0, ok: true })
       const existing = new Set(parsedUrls)
       const fresh = (data.videos ?? [])
         .map((v) => v.url)
@@ -479,7 +528,8 @@ export function BatchPanel() {
         `Imported ${accepted.length} video${accepted.length === 1 ? '' : 's'}.` +
           (leftOut > 0 ? ` ${leftOut} more than the ${MAX_BATCH_URLS}-link limit were left out.` : ''),
       )
-    } catch {
+    } catch (error) {
+      trackCaughtError('playlist_import', error)
       setNote('Network error while importing the playlist.')
     } finally {
       setIsImporting(false)
@@ -493,6 +543,8 @@ export function BatchPanel() {
     if (zipCandidates.length === 0 || isZipping) return
     setIsZipping(true)
     setNote('')
+    trackFeatureUsed('batch_save_all', { count: zipCandidates.length })
+    const transfer = beginDownload('batch_zip', {}, { count: zipCandidates.length })
     try {
       const blob = await buildBatchZip(zipCandidates, filenameTemplate)
       saveBlob(
@@ -504,7 +556,9 @@ export function BatchPanel() {
         }),
       )
       setNote(`${zipCandidates.length} photo/audio item(s) saved as a ZIP.`)
-    } catch {
+      transfer.completed({ size_bytes: blob.size, delivery: 'zip' })
+    } catch (error) {
+      transfer.failed(error)
       setNote('Could not build the ZIP — try again.')
     } finally {
       setIsZipping(false)
@@ -634,7 +688,10 @@ export function BatchPanel() {
             <button
               key={n}
               type='button'
-              onClick={() => chooseLanes(n)}
+              onClick={() => {
+                trackFeatureUsed('batch_lanes', { count: n })
+                chooseLanes(n)
+              }}
               disabled={isRunning}
               aria-pressed={lanes === n}
               title={`${n} lane${n === 1 ? '' : 's'}`}

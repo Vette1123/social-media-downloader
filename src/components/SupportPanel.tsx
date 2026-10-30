@@ -54,6 +54,7 @@ export function SupportPanel({ variant = 'full' }: { variant?: 'full' | 'compact
         </div>
         <Link
           href='/pro'
+          data-pro-cta='support_panel'
           className='btn-grad inline-flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold whitespace-nowrap'
         >
           <CoffeeIcon className='h-4 w-4' />
@@ -82,6 +83,7 @@ export function SupportPanel({ variant = 'full' }: { variant?: 'full' | 'compact
         <div className='mt-6 flex flex-wrap items-center gap-4'>
           <Link
             href='/pro'
+            data-pro-cta='support_monthly'
             className='btn-grad inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold whitespace-nowrap'
           >
             <CoffeeIcon className='h-4 w-4' />
@@ -89,6 +91,7 @@ export function SupportPanel({ variant = 'full' }: { variant?: 'full' | 'compact
           </Link>
           <Link
             href='/pro'
+            data-pro-cta='support_lifetime'
             className='text-sm text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline'
           >
             Or ${SUPPORT_PRICES.lifetime} once, forever

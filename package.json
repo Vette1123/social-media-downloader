@@ -22,7 +22,11 @@
     "cf:smoke": "node scripts/cf-smoke.mjs",
     "cf:setup": "node scripts/cf-setup.mjs",
     "cf:waf": "node scripts/cf-setup.mjs waf",
-    "cf:health": "node scripts/cf-setup.mjs health"
+    "cf:health": "node scripts/cf-setup.mjs health",
+    "posthog:query": "node scripts/posthog-query.mjs",
+    "posthog:issues": "node scripts/posthog-issues.mjs",
+    "posthog:usage": "node scripts/posthog-usage.mjs",
+    "posthog:setup": "node scripts/posthog-setup.mjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
@@ -32,6 +36,7 @@
     "jszip": "^3.10.1",
     "motion": "^12.43.0",
     "next": "16.3.0",
+    "posthog-js": "^1.442.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "youtube-dl-exec": "^3.1.12"

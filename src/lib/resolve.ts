@@ -9,6 +9,14 @@
  * loads in the Vitest node environment, which has no path-alias plugin.
  */
 
+import {
+  contentProps,
+  trackLinkSubmitted,
+  trackResolveFailed,
+  trackResolveSucceeded,
+  type LinkSource,
+} from './analytics'
+import { errorMessage } from './analyticsErrors'
 import type { VideoMetadata } from './appReducer'
 import { isTransientError, withRetry } from './retry'
 import { resolveTikTokInBrowser } from './tikwmClient'
@@ -27,6 +35,8 @@ export interface ResolveOptions {
   /** Task 15: sent as X-Pro-Token so the Worker can prefer the fast resolver. */
   proToken?: string | null
   signal?: AbortSignal
+  /** Where the link came from, for the funnel. */
+  source?: LinkSource
 }
 
 export interface ResolveResult {
@@ -53,10 +63,54 @@ const after = (ms: number) =>
 /**
  * Resolve one link against the API. Returns the parsed response, or throws on
  * network failure — the caller owns the error copy.
+ *
+ * Analytics sits here because every surface comes through: the paste box, the
+ * batch queue, a re-pick, a retry. No caller can forget to report.
  */
 export async function resolve(
   url: string,
   opts: ResolveOptions = {},
+): Promise<ResolveResult> {
+  const platform = detectPlatform(url)
+  const format = opts.format ?? 'auto'
+  const quality = opts.quality ?? 'hd'
+  const startedAt = Date.now()
+  const elapsed = () => Date.now() - startedAt
+  trackLinkSubmitted({ platform, source: opts.source ?? 'typed', format, quality })
+  try {
+    const result = await resolveLink(url, opts)
+    if (result.success) {
+      trackResolveSucceeded(contentProps(result.metadata, url), {
+        duration_ms: elapsed(),
+        format,
+        quality,
+      })
+    } else {
+      trackResolveFailed({
+        platform,
+        message: result.error,
+        duration_ms: elapsed(),
+        format,
+      })
+    }
+    return result
+  } catch (error) {
+    // A cancelled paste is a decision, not a failure.
+    if (!opts.signal?.aborted) {
+      trackResolveFailed({
+        platform,
+        message: errorMessage(error),
+        duration_ms: elapsed(),
+        format,
+      })
+    }
+    throw error
+  }
+}
+
+async function resolveLink(
+  url: string,
+  opts: ResolveOptions,
 ): Promise<ResolveResult> {
   const wantType = opts.type ?? 'video'
   const wantQuality = opts.quality ?? 'hd'

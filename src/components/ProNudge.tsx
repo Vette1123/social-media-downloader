@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { Surface } from '@/components/Surface'
 import { CloseIcon } from '@/components/icons'
+import { useEffect } from 'react'
+import { trackFeatureUsed, trackProNudgeShown } from '@/lib/analytics'
 import { useTier } from '@/lib/entitlements'
 import { dismissNudge, useProSignals } from '@/lib/proSignals'
 
@@ -47,6 +49,11 @@ export function ProNudge({
 }: ProNudgeProps) {
   const tier = useTier()
   const { dismissed } = useProSignals()
+  const visible = tier !== 'pro' && !(dismissible && dismissed.includes(id))
+
+  useEffect(() => {
+    if (visible) trackProNudgeShown({ nudge: id })
+  }, [id, visible])
 
   // Self-hiding, so no call site needs a conditional — the same contract
   // BatchPanel already has. Someone who already supports this must never be
@@ -77,6 +84,7 @@ export function ProNudge({
 
       <Link
         href={href}
+        data-pro-cta={`nudge_${id}`}
         className='btn-grad btn-press shrink-0 self-start rounded-xl px-4 py-2 text-sm font-semibold whitespace-nowrap sm:self-auto'
       >
         {action}
@@ -90,7 +98,10 @@ export function ProNudge({
       {dismissible && (
         <button
           type='button'
-          onClick={() => dismissNudge(id)}
+          onClick={() => {
+            trackFeatureUsed('nudge_dismiss', { action: id })
+            dismissNudge(id)
+          }}
           aria-label='Dismiss'
           className='absolute top-1 right-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80 sm:static'
         >
@@ -121,6 +132,7 @@ export function ProHeroLine() {
       Free, no account, no limits.{' '}
       <Link
         href='/pro'
+        data-pro-cta='hero_line'
         className='font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
       >
         Support the project →

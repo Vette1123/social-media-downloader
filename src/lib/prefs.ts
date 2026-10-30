@@ -19,6 +19,7 @@
  * the Worker validates a POSTed body with the same code without loading React.
  */
 
+import { trackCaughtError, trackPrefChanged } from './analytics'
 import { useSyncExternalStore } from 'react'
 import {
   DEFAULTS,
@@ -92,7 +93,28 @@ function write(key: string, value: string): void {
   }
 }
 
+/**
+ * What changed, as enums. The filename template is somebody's own text, so only
+ * whether one is set leaves the browser.
+ */
+export function prefChanges(prev: Prefs, next: Prefs): { key: string; value: string }[] {
+  const out: { key: string; value: string }[] = []
+  for (const key of Object.keys({ ...prev, ...next }) as (keyof Prefs)[]) {
+    if (prev[key] === next[key]) continue
+    const value = key === 'filenameTemplate' && next[key] ? 'custom' : String(next[key] ?? 'default')
+    out.push({ key, value })
+  }
+  return out
+}
+
+// True while the account's stored prefs are applied: those are not choices
+// somebody just made, and every sign-in would read as a settings change.
+let adopting = false
+
 function commit(next: Prefs): void {
+  if (!adopting) {
+    for (const change of prefChanges(getSnapshot(), next)) trackPrefChanged(change)
+  }
   cache = next
   for (const listener of listeners) listener()
 }
@@ -203,6 +225,7 @@ export function adoptServerPrefs(raw: unknown): void {
     return
   }
 
+  adopting = true
   if (merged.quality !== getSnapshot().quality) setQuality(merged.quality)
   if (merged.format !== getSnapshot().format) setFormat(merged.format)
   if (merged.subtitleLang !== getSnapshot().subtitleLang) {
@@ -217,6 +240,7 @@ export function adoptServerPrefs(raw: unknown): void {
   if (merged.clipboardWatch !== getSnapshot().clipboardWatch) {
     setClipboardWatch(merged.clipboardWatch === true)
   }
+  adopting = false
 }
 
 /** Write the current preferences to the account, if there is one. */
@@ -227,7 +251,8 @@ export async function persistPrefs(prefs: Prefs): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prefs }),
     })
-  } catch {
+  } catch (error) {
     // Local storage already has the value; the next change retries.
+    trackCaughtError('prefs_sync', error)
   }
 }
