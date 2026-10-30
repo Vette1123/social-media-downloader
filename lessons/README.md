@@ -87,3 +87,4 @@ the index for exactly that.
 | 2026-10-21 | [The SoundCloud extractor I built for a format SoundCloud deleted](2026-10-21-soundcloud-progressive-gone.md) | SoundCloud serves HLS only since the 2026-08-12 API release (progressive mp3 removed) - the progressive extractor was correct but inert, and was deleted because inert still cost two fetches per link; the honest 422 is the intended outcome. Verify a platform's current streaming format from live egress before building to a third-party recipe. |
 
 | 2026-10-26 | [Batch finished rows sink](2026-10-26-batch-finished-rows-sink.md) | Parallel lanes finish out of order; order the list in the one publish path |
+| 2026-10-30 | [PostHog to the Reely standard, plus the Worker](2026-10-30-posthog-standard.md) | Every action, error and download is tracked through one typed layer and three dashboards; a privacy page is a spec, so what the code records and what the page says change in the same commit |

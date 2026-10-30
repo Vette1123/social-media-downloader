@@ -1,3 +1,4 @@
+import { trackPrefChanged } from './analytics'
 import {
   isLocale,
   isRtl,
@@ -68,6 +69,7 @@ export function setLocale(next: Locale): void {
     // storage disabled — the choice lives for this session only.
   }
   mirrorDocument(next)
+  trackPrefChanged({ key: 'language', value: next })
   for (const listener of listeners) listener()
 }
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { trackFeatureUsed } from '@/lib/analytics'
 import { useId, useMemo } from 'react'
 import { Surface } from '@/components/Surface'
 import { OFFERS, type OfferPlacement } from '@/config/offers'
@@ -142,6 +143,7 @@ export function PromoSlot({
           <Surface
             as='a'
             href={offerHref(offer, placement, platform)}
+            onClick={() => trackFeatureUsed('promo_click', { action: placement })}
             target='_blank'
             rel='sponsored nofollow noopener noreferrer'
             elevation='raised'

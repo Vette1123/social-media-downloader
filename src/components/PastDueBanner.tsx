@@ -30,6 +30,7 @@ export function PastDueBanner() {
       </p>
       <a
         href='/api/billing/portal'
+        data-pro-cta='past_due_portal'
         className='shrink-0 rounded-lg bg-amber-400/20 px-3 py-1.5 font-semibold text-amber-50 transition-colors hover:bg-amber-400/30'
       >
         Update payment method

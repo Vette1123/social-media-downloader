@@ -21,6 +21,7 @@
  */
 
 import { API_ROUTES } from '../src/lib/apiRoutes'
+import { reportServerFailure } from '../src/lib/serverAnalytics'
 
 /**
  * There is deliberately no 404 handling here.
@@ -111,7 +112,19 @@ const worker = {
       //
       // `env` carries the D1 binding. Handlers that do not need it ignore the
       // extra argument, exactly as they already do with `ctx`.
-      return route.handler(request, ctx, env)
+      //
+      // Failures are reported past the response, so a report can never slow or
+      // change what the visitor gets.
+      try {
+        const response = await route.handler(request, ctx, env)
+        if (response.status >= 500) {
+          reportServerFailure(request, env, ctx, { route: url.pathname, status: response.status })
+        }
+        return response
+      } catch (error) {
+        reportServerFailure(request, env, ctx, { route: url.pathname, status: 500, error })
+        throw error
+      }
     }
 
     // An /api/* path with no handler — the only thing that reaches here, since

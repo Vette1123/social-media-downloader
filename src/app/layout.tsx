@@ -6,6 +6,7 @@ import { versionedIcon } from '@/lib/appIcon'
 import { globalStructuredData } from '@/lib/structuredData'
 import { SPLASH_DEVICES, splashMedia, splashPath } from '@/lib/splashDevices'
 import { AccountControl } from '@/components/AccountControl'
+import { AnalyticsContext } from '@/components/AnalyticsProvider'
 import { HomeControl } from '@/components/HomeControl'
 
 const geistSans = Geist({
@@ -286,6 +287,7 @@ export default function RootLayout({
         className={`${geistSans.variable} antialiased`}
         style={{ backgroundColor: '#08080a' }}
       >
+        <AnalyticsContext />
         <HomeControl />
         <AccountControl />
         {children}

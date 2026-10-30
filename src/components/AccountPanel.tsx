@@ -14,6 +14,13 @@
  *  - `signedIn === true` renders the three sections below.
  */
 
+import {
+  trackAccountDeleted,
+  trackCaughtError,
+  trackError,
+  trackPlanCanceled,
+  trackSignedOut,
+} from '@/lib/analytics'
 import { type ReactNode, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Surface } from '@/components/Surface'
@@ -287,7 +294,7 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
 function SupportLink() {
   return (
     <div className='flex flex-col gap-2'>
-      <a href='/pro' className={`${ACTION_BUTTON_CLASS} w-fit items-center gap-2`}>
+      <a href='/pro' data-pro-cta='account_upgrade' className={`${ACTION_BUTTON_CLASS} w-fit items-center gap-2`}>
         <CoffeeIcon className='h-4 w-4' />
         Support this project
       </a>
@@ -328,6 +335,7 @@ function CancelPlanButton({ plan }: { plan: PlanState | null }) {
     setSubmitting(true)
     setError(null)
     const ok = await cancelPlan()
+    if (ok) trackPlanCanceled()
     // On success the forced refresh has already landed and this whole branch of
     // the card is replaced by the cancelled state, so there is no success
     // message to show and nothing to reset. Only the failure path stays here.
@@ -764,6 +772,7 @@ function AutoSaveSection() {
           </p>
           <Link
             href='/pro'
+            data-pro-cta='account_prefs'
             className='mt-4 inline-flex text-sm font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
           >
             See what supporting gets you →
@@ -865,6 +874,7 @@ function FilenamesSection() {
       {!isPro && (
         <Link
           href='/pro'
+          data-pro-cta='account_filename'
           className='mt-4 inline-flex text-sm font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
         >
           See what supporting gets you →
@@ -925,6 +935,7 @@ function AccountSection({
    * deleting an account already used.
    */
   async function signOutAndGoHome(all = false): Promise<void> {
+    trackSignedOut({ all_devices: all })
     await signOut(all)
     hardNavigateHome()
   }
@@ -940,13 +951,20 @@ function AccountSection({
         body: JSON.stringify({ delete: true }),
       })
       if (!response.ok) {
+        trackError({
+          source: 'account_delete',
+          message: 'delete refused',
+          status: response.status,
+        })
         setDeleteError(await deleteFailureMessage(response))
         setDeleting(false)
         return
       }
+      trackAccountDeleted()
       await signOut()
       hardNavigateHome()
-    } catch {
+    } catch (error) {
+      trackCaughtError('account_delete', error)
       setDeleteError(DELETE_FAILED)
       setDeleting(false)
     }

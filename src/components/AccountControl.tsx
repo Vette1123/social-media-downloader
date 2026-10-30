@@ -25,6 +25,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useRef, useState } from 'react'
+import { trackFeatureUsed } from '@/lib/analytics'
 import { Avatar } from '@/components/Avatar'
 import { CoffeeIcon, PinIcon, PinOffIcon } from '@/components/icons'
 import {
@@ -101,6 +102,7 @@ export function AccountControl() {
     const next = !pinned
     setPinned(next)
     writePinned(next)
+    trackFeatureUsed('pin_account', { action: next ? 'pin' : 'unpin' })
   }
 
   return (
@@ -174,6 +176,7 @@ function ProPill({
     // accent ring is the shared language for one (see globals.css).
     <Link
       href='/pro'
+      data-pro-cta='account_control'
       title='Support this project'
       className='icon-lift pointer-events-auto flex items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-400/10 py-1.5 pr-3 pl-2.5 text-xs font-semibold whitespace-nowrap text-cyan-200 backdrop-blur'
     >
@@ -242,6 +245,7 @@ function Control({
       // error notice about the attempt that just worked.
       <a
         href={signInHref(pathname)}
+        onClick={() => trackFeatureUsed('sign_in_link')}
         className='btn-grad btn-press pointer-events-auto rounded-full px-4 py-2 text-xs font-semibold sm:py-1.5'
       >
         Sign in
@@ -256,6 +260,7 @@ function Control({
   return (
     <Link
       href='/account'
+      onClick={() => trackFeatureUsed('account_menu')}
       title={profile?.email ?? 'Your account'}
       aria-label={profile?.email ? `Account: ${profile.email}` : 'Your account'}
       className='btn-press pointer-events-auto group flex items-center gap-2 rounded-full border border-white/10 bg-black/50 p-1.5 backdrop-blur hover:border-white/25 sm:p-1 sm:pl-3'

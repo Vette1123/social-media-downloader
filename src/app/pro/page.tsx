@@ -63,6 +63,7 @@ export default function Support() {
           <div className='grid gap-3 sm:grid-cols-2'>
             <a
               href={siteConfig.links.membership}
+              data-pro-cta='pro_membership'
               target='_blank'
               rel='noopener noreferrer'
               className='btn-grad btn-press flex flex-col items-center gap-0.5 rounded-xl px-6 py-3.5'
@@ -76,6 +77,7 @@ export default function Support() {
             </a>
             <a
               href={siteConfig.links.membership}
+              data-pro-cta='pro_lifetime'
               target='_blank'
               rel='noopener noreferrer'
               className='btn-press flex flex-col items-center gap-0.5 rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 transition-colors hover:bg-white/10'
@@ -117,6 +119,7 @@ export default function Support() {
               <a
                 className='text-cyan-300 hover:text-cyan-200'
                 href={siteConfig.links.sponsor}
+                data-pro-cta='pro_coffee'
                 target='_blank'
                 rel='noopener noreferrer'
               >

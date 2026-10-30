@@ -1,5 +1,6 @@
 'use client'
 
+import { trackFeatureUsed } from '@/lib/analytics'
 import { useEffect, useRef, useState } from 'react'
 import { AppsIcon, ChevronDownIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
@@ -46,7 +47,10 @@ export function PlayAppsMenu() {
     <div ref={rootRef} className='relative'>
       <button
         type='button'
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
+        onClick={() => {
+          trackFeatureUsed('apps_menu', { action: open ? 'close' : 'open' })
+          setOpen((wasOpen) => !wasOpen)
+        }}
         aria-expanded={open}
         aria-haspopup='menu'
         className='inline-flex items-center gap-1.5 whitespace-nowrap text-white/70 transition-colors hover:text-white'
@@ -84,6 +88,7 @@ export function PlayAppsMenu() {
                 onClick={(e) => {
                   e.preventDefault()
                   setOpen(false)
+                  trackFeatureUsed('app_store', { action: app.androidPackage })
                   openStoreListing(app)
                 }}
                 // .card-hover, not a translucent white film: rows in a panel are

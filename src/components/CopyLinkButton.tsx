@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { trackShared } from '@/lib/analytics'
 
 /**
  * Copy the original post link. The smallest possible "take it with you" —
@@ -12,10 +13,12 @@ export function CopyLinkButton({ url }: { url: string }) {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(url)
+      trackShared({ surface: 'result', method: 'clipboard', outcome: 'done' })
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
       // clipboard permission denied — nothing useful to say; the URL is on screen.
+      trackShared({ surface: 'result', method: 'clipboard', outcome: 'failed' })
     }
   }
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { trackShared } from '@/lib/analytics'
 
 /**
  * Native share for a resolved result, where the platform supports it
@@ -25,8 +26,10 @@ export function ShareButton({
   const handleShare = async () => {
     try {
       await navigator.share({ title, url })
+      trackShared({ surface: 'result', method: 'web_share', outcome: 'done' })
     } catch {
       // A dismissed sheet throws too — only mark real failures visible.
+      trackShared({ surface: 'result', method: 'web_share', outcome: 'failed' })
       setFailed(true)
     }
   }

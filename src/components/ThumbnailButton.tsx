@@ -1,5 +1,6 @@
 'use client'
 
+import { beginDownload } from '@/lib/analytics'
 import { useState } from 'react'
 import { buildDownloadFilename } from '@/lib/filename'
 import { useFilenameTemplate } from '@/lib/entitlements'
@@ -38,10 +39,12 @@ export function ThumbnailButton({
     if (busy) return
     setBusy(true)
     setFailed(false)
+    const transfer = beginDownload('thumbnail', { content_title: title })
     try {
       const response = await fetch(url)
       if (!response.ok) {
         setFailed(true)
+        transfer.failed(`HTTP ${response.status}`)
         return
       }
       const type = response.headers.get('Content-Type') ?? 'image/jpeg'
@@ -53,7 +56,9 @@ export function ThumbnailButton({
           template: filenameTemplate,
         }),
       )
-    } catch {
+      transfer.completed()
+    } catch (error) {
+      transfer.failed(error)
       setFailed(true)
     } finally {
       setBusy(false)

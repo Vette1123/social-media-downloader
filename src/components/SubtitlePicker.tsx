@@ -1,5 +1,6 @@
 'use client'
 
+import { beginDownload, trackCaughtError } from '@/lib/analytics'
 import { useCallback, useState } from 'react'
 import { saveBlob } from '@/lib/blobSaver'
 import { usePrefs, setSubtitleLang } from '@/lib/prefs'
@@ -96,6 +97,11 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
       setBusyKey(key)
       setError('')
       try {
+        const transfer = beginDownload('subtitle', {}, {
+          language: track.languageCode,
+          auto: track.auto,
+          subtitle_format: format,
+        })
         const response = await fetch('/api/subtitles', {
           method: 'POST',
           headers: {
@@ -114,6 +120,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
             error?: string
           } | null
           setError(data?.error || 'Could not fetch that subtitle track.')
+          transfer.failed(data?.error ?? `HTTP ${response.status}`)
           return
         }
         const content = await response.text()
@@ -123,7 +130,9 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
         // Remember it: next time this language leads the list (and syncs to
         // the account through prefs).
         setSubtitleLang(track.languageCode)
-      } catch {
+        transfer.completed({ size_bytes: content.length })
+      } catch (error) {
+        trackCaughtError('subtitle_download', error)
         setError('Network error while fetching the track.')
       } finally {
         setBusyKey(null)

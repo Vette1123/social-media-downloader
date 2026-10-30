@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { NotFoundTracker } from '@/components/NotFoundTracker'
 import { Surface } from '@/components/Surface'
 import { siteConfig } from '@/config/site'
 import { platforms } from '@/lib/platforms'
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <div className='app-bg relative flex min-h-[100dvh] items-center justify-center overflow-clip px-4 py-6'>
+      <NotFoundTracker />
       <div
         aria-hidden
         className='bg-blob pointer-events-none absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-cyan-500/12 blur-3xl'

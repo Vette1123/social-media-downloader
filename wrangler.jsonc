@@ -107,6 +107,9 @@
     // Signals to the extractors that native-binary paths (yt-dlp/ffmpeg) are
     // unavailable in this runtime, so they short-circuit instead of failing
     // slowly. See src/lib/nativeMedia.ts.
-    "DEPLOY_TARGET": "cloudflare"
+    "DEPLOY_TARGET": "cloudflare",
+    // PostHog's public project token, which ships in the browser bundle anyway.
+    // The Worker reports its own failures with it. See src/lib/serverAnalytics.ts.
+    "POSTHOG_PROJECT_KEY": "phc_xXRMkwEcag6BgdMj83dadkuPsyoYCGLKu7B3WF9hKU3L"
   }
 }

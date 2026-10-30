@@ -1,5 +1,6 @@
 'use client'
 
+import { trackPwaInstallable, trackPwaPrompted } from '@/lib/analytics'
 import { useEffect, useState } from 'react'
 import { CloseIcon, DownloadIcon, ExternalLinkIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
@@ -39,6 +40,7 @@ export function InstallPrompt() {
     const onPrompt = (e: Event) => {
       e.preventDefault()
       setDeferred(e as BeforeInstallPromptEvent)
+      trackPwaInstallable()
     }
     const onInstalled = () => setClosed(true)
     window.addEventListener('beforeinstallprompt', onPrompt)
@@ -59,12 +61,14 @@ export function InstallPrompt() {
   const install = async () => {
     if (!deferred) return
     await deferred.prompt()
-    await deferred.userChoice
+    const { outcome } = await deferred.userChoice
+    trackPwaPrompted({ outcome })
     setDeferred(null)
     setClosed(true)
   }
 
   const dismiss = () => {
+    trackPwaPrompted({ outcome: isIOS ? 'ios_hint_closed' : 'closed' })
     setClosed(true)
     try {
       window.localStorage.setItem(INSTALL_DISMISS_KEY, '1')

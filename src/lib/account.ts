@@ -13,6 +13,7 @@
  * and the hydration mismatch that a mount effect would cause.
  */
 
+import { trackCaughtError } from './analytics'
 import { useSyncExternalStore } from 'react'
 import { HINT_COOKIE } from './auth/cookies'
 
@@ -284,7 +285,8 @@ export async function cancelPlan(): Promise<boolean> {
     if (!response.ok || data?.success !== true) return false
     await refreshAccount({ force: true })
     return true
-  } catch {
+  } catch (error) {
+    trackCaughtError('plan_cancel', error)
     return false
   }
 }
@@ -292,8 +294,9 @@ export async function cancelPlan(): Promise<boolean> {
 export async function signOut(all = false): Promise<void> {
   try {
     await fetch(`/api/auth/logout${all ? '?all=1' : ''}`, { method: 'POST' })
-  } catch {
+  } catch (error) {
     // The cookies are cleared server-side; a failure here just means retrying.
+    trackCaughtError('sign_out', error)
   }
   settleSignedOut()
 }

@@ -83,6 +83,18 @@ import {
   type FormatMap,
 } from '@/lib/platformFormat'
 import { detectPlatform, type SupportedPlatform } from '@/lib/validator'
+import {
+  beginDownload,
+  contentProps,
+  trackBatchFinished,
+  trackBatchStarted,
+  trackCaughtError,
+  trackFeatureUsed,
+  trackLinkRejected,
+  trackRetryClicked,
+  trackShared,
+  type LinkSource,
+} from '@/lib/analytics'
 import { resolveNarration } from '@/lib/resolveNarration'
 import {
   MISSES_SHOWN,
@@ -498,6 +510,7 @@ function UnsavedRow({
       ) : (
         <Link
           href='/pro'
+          data-pro-cta='result_card'
           className='rounded-md px-1.5 py-0.5 text-[11px] text-cyan-300/80 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
         >
           Supporters queue these →
@@ -530,6 +543,7 @@ function CollectionAction({
     return (
       <Link
         href='/pro'
+        data-pro-cta='home'
         className='card-hover shrink-0 self-start rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-medium text-cyan-200 sm:self-auto'
       >
         Supporters can queue it →
@@ -1048,10 +1062,15 @@ export function DownloaderApp() {
   // queue can run it without importing this component.
   const resolveOne = (
     target: string,
-    opts?: { quality?: 'hd' | 'sd'; format?: 'video' | 'audio' },
+    opts?: {
+      quality?: 'hd' | 'sd'
+      format?: 'video' | 'audio'
+      source?: LinkSource
+    },
   ) =>
     resolve(target, {
       type: state.downloadType,
+      source: opts?.source,
       // An explicit re-pick wins; otherwise a platform's remembered choice
       // (set by an earlier re-pick on that platform's result); otherwise the
       // global pref. Same three-step rule for both knobs — see
@@ -1116,6 +1135,11 @@ export function DownloaderApp() {
       const data = await resolveOne(target, {
         quality: nextQuality,
         format: nextFormat,
+        source: 'repick',
+      })
+      trackFeatureUsed('quality_repick', {
+        action: nextFormat === 'audio' ? 'audio' : nextQuality,
+        outcome: data.success ? 'ok' : 'failed',
       })
       if (data.success) {
         dispatch({
@@ -1162,7 +1186,10 @@ export function DownloaderApp() {
   // `overrideUrl` lets the paste button, the PWA share target, and the recent
   // list kick off a resolve without waiting for a state round-trip through the
   // input. When omitted we use whatever's in the field.
-  const handleProcess = async (overrideUrl?: string) => {
+  const handleProcess = async (
+    overrideUrl?: string,
+    source: LinkSource = 'typed',
+  ) => {
     const target = (overrideUrl ?? state.url).trim()
     if (!target) {
       setUrlError(
@@ -1195,6 +1222,7 @@ export function DownloaderApp() {
     // underneath saying yes.
     const advice = linkAdvice(target)
     if (advice) {
+      trackLinkRejected({ platform: detectPlatform(target), reason: 'not_a_post' })
       setPasteAdvice(advice)
       dispatch({ type: 'SET_URL', payload: target })
       return
@@ -1206,6 +1234,7 @@ export function DownloaderApp() {
     // visitor less, later — and the guess it eventually produced was usually
     // about the post rather than about the wifi.
     if (browserIsOffline()) {
+      trackLinkRejected({ platform: detectPlatform(target), reason: 'offline' })
       resetResult()
       dispatch({ type: 'SET_URL', payload: target })
       dispatch({
@@ -1219,7 +1248,7 @@ export function DownloaderApp() {
     resetResult()
 
     try {
-      const data = await resolveOne(target)
+      const data = await resolveOne(target, { source })
 
       if (data.success) {
         dispatch({
@@ -1276,6 +1305,7 @@ export function DownloaderApp() {
     resetResult()
     dispatch({ type: 'SET_LOADING', payload: true })
     setBatch({ done: 0, total: urls.length, saved: 0 })
+    trackBatchStarted({ surface: 'multi_paste', count: urls.length })
 
     let saved = 0
     let last: { data: unknown; target: string } | null = null
@@ -1288,7 +1318,7 @@ export function DownloaderApp() {
     for (let i = 0; i < urls.length; i++) {
       setBatch({ done: i, total: urls.length, saved })
       try {
-        const data = await resolveOne(urls[i])
+        const data = await resolveOne(urls[i], { source: 'multi_paste' })
         if (data.success) {
           saved++
           await rememberInHistory(urls[i], data.metadata)
@@ -1304,6 +1334,12 @@ export function DownloaderApp() {
 
     setBatch(null)
     setBatchMisses(missed)
+    trackBatchFinished({
+      surface: 'multi_paste',
+      count: urls.length,
+      ok: saved,
+      failed: missed.length,
+    })
     dispatch({ type: 'SET_LOADING', payload: false })
 
     if (last) {
@@ -1348,8 +1384,10 @@ export function DownloaderApp() {
       const text = await navigator.clipboard.readText()
       const found = extractFirstUrl(text)
       if (found) {
-        handleProcess(found)
+        trackFeatureUsed('paste_chip', { outcome: 'link' })
+        handleProcess(found, 'paste_chip')
       } else if (text.trim()) {
+        trackFeatureUsed('paste_chip', { outcome: 'not_a_link' })
         dispatch({ type: 'SET_URL', payload: text.trim() })
         inputRef.current?.focus()
         setUrlError('That doesn’t look like a link — paste a post URL.')
@@ -1357,12 +1395,14 @@ export function DownloaderApp() {
         inputRef.current?.focus()
       }
     } catch {
+      trackFeatureUsed('paste_chip', { outcome: 'denied' })
       inputRef.current?.focus()
       setUrlError('Couldn’t read the clipboard — paste the link manually.')
     }
   }
 
   const handleClearHistory = () => {
+    trackFeatureUsed('history_clear', { count: history.length })
     clearHistory()
   }
 
@@ -1370,6 +1410,7 @@ export function DownloaderApp() {
   // import are how it moves between a phone and a laptop. Export writes the
   // exact stored JSON; import merges (newest wins) and the store notifies.
   const handleExportHistory = () => {
+    trackFeatureUsed('history_export', { count: history.length })
     saveBlob(
       new Blob([exportHistory()], { type: 'application/json' }),
       'social-downloader-history.json',
@@ -1400,15 +1441,18 @@ export function DownloaderApp() {
     try {
       const result = importHistory(await file.text())
       if (result === null) {
+        trackFeatureUsed('history_import', { outcome: 'bad_file' })
         showHistoryNote(t('importBadFile'))
         return
       }
+      trackFeatureUsed('history_import', { outcome: 'ok', count: result.added })
       showHistoryNote(
         result.added > 0
           ? t('importedLinks', { n: result.added })
           : t('importNothingNew'),
       )
-    } catch {
+    } catch (error) {
+      trackCaughtError('history_import', error)
       showHistoryNote(t('importUnreadable'))
     }
   }
@@ -1431,7 +1475,7 @@ export function DownloaderApp() {
         // cascade into a second one before the first has committed. A microtask
         // runs it after commit, so the empty state paints and then flips to
         // loading — which is also what a share-target hand-off should look like.
-        void Promise.resolve().then(() => handleProcess(found))
+        void Promise.resolve().then(() => handleProcess(found, 'share_target'))
       }
     } catch {
       // no-op — malformed query, just show the normal empty state.
@@ -1455,7 +1499,8 @@ export function DownloaderApp() {
       const found = extractFirstUrl(event.clipboardData?.getData('text') ?? '')
       if (!found) return
       event.preventDefault()
-      handleProcess(found)
+      trackFeatureUsed('paste_anywhere')
+      handleProcess(found, 'paste_anywhere')
     }
     document.addEventListener('paste', onPaste)
     return () => document.removeEventListener('paste', onPaste)
@@ -1503,7 +1548,10 @@ export function DownloaderApp() {
         busy: isResolvingOrDownloading(state),
       })
       lastClipboard.current = decision.seen
-      if (decision.resolve) handleProcess(decision.resolve)
+      if (decision.resolve) {
+        trackFeatureUsed('clipboard_watch')
+        handleProcess(decision.resolve, 'clipboard_watch')
+      }
     }
 
     window.addEventListener('focus', check)
@@ -1645,7 +1693,7 @@ export function DownloaderApp() {
     const found = droppedLink(event.dataTransfer)
     if (!found) return
     event.preventDefault()
-    handleProcess(found)
+    handleProcess(found, 'dropped')
   }
 
   /**
@@ -1726,10 +1774,18 @@ export function DownloaderApp() {
     const file = lastSaved.file
     if (!file) return
     const outcome = await shareFile(file, shareTitle)
+    trackShared({
+      surface: 'send_to_app',
+      method: 'file_share',
+      outcome: outcome === 'shared' ? 'done' : outcome,
+    })
     // A dismissal is a decision, not a fault — only a real failure gets said
     // out loud, and it stays said until the next save replaces the file.
     if (outcome === 'failed') noteShareFailed()
   }
+
+  /** What is on the result card, as the download events record it. */
+  const content = () => contentProps(state.videoMetadata, state.originalUrl)
 
   const handleVideoDownload = async () => {
     if (!state.downloadUrl) return
@@ -1745,6 +1801,7 @@ export function DownloaderApp() {
         payload: { kind: 'info', text: t('downloadCanceled') },
       })
     cancelRef.current = new AbortController()
+    const transfer = beginDownload('video', content())
     if (direct) {
       const filename = nameFile('mp4')
       // The instance resolves server-side before the first byte, so nothing
@@ -1770,9 +1827,11 @@ export function DownloaderApp() {
         dispatch({ type: 'SET_DOWNLOADING', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         canceledNote()
+        transfer.canceled()
         return
       }
       if (outcome === 'saved') {
+        transfer.completed({ delivery: 'direct' })
         dispatch({ type: 'SET_DOWNLOADING', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({
@@ -1793,6 +1852,7 @@ export function DownloaderApp() {
         // file in a tab. The navigation is opaque to us, so release after a
         // short beat with a confirmation rather than a completion.
         triggerDirectDownload(handoff, filename)
+        transfer.completed({ delivery: 'browser' })
         window.setTimeout(() => {
           dispatch({ type: 'SET_DOWNLOADING', payload: false })
           dispatch({ type: 'SET_PROGRESS', payload: null })
@@ -1817,6 +1877,7 @@ export function DownloaderApp() {
         cancelRef.current.signal,
       )
       await deliver(blob, nameFile('mp4'))
+      transfer.completed({ size_bytes: blob.size, delivery: 'proxy' })
 
       dispatch({
         type: 'SET_MESSAGE',
@@ -1826,8 +1887,10 @@ export function DownloaderApp() {
     } catch (error) {
       console.error('Download failed:', error)
       if (isAbortError(error)) {
+        transfer.canceled()
         canceledNote()
       } else {
+        transfer.failed(error)
         dispatch({
           type: 'SET_MESSAGE',
           payload: { kind: 'error', text: 'Failed to download video file' },
@@ -1845,6 +1908,7 @@ export function DownloaderApp() {
     if (!images || images.length === 0) return
 
     cancelRef.current = new AbortController()
+    const transfer = beginDownload('slideshow', content())
     dispatch({ type: 'SET_DOWNLOADING', payload: true })
     dispatch({
       type: 'SET_MESSAGE',
@@ -1875,6 +1939,7 @@ export function DownloaderApp() {
         dispatch({ type: 'SET_PROGRESS', payload: p }),
       )
       await deliver(blob, nameFile('mp4'))
+      transfer.completed({ size_bytes: blob.size, delivery: 'proxy' })
 
       dispatch({
         type: 'SET_MESSAGE',
@@ -1884,11 +1949,13 @@ export function DownloaderApp() {
     } catch (error) {
       console.error('Slideshow render failed:', error)
       if (isAbortError(error)) {
+        transfer.canceled()
         dispatch({
           type: 'SET_MESSAGE',
           payload: { kind: 'info', text: t('downloadCanceled') },
         })
       } else {
+        transfer.failed(error)
         dispatch({
           type: 'SET_MESSAGE',
           payload: {
@@ -1920,6 +1987,7 @@ export function DownloaderApp() {
         payload: { kind: 'info', text: t('downloadCanceled') },
       })
     cancelRef.current = new AbortController()
+    const transfer = beginDownload('audio', content())
     if (direct) {
       // Same as the video path: stream it so the bar is real, and fall back to
       // the browser's download manager when the stream can't be read.
@@ -1941,9 +2009,11 @@ export function DownloaderApp() {
         dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         canceledNote()
+        transfer.canceled()
         return
       }
       if (outcome === 'saved') {
+        transfer.completed({ delivery: 'direct' })
         dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({
@@ -1961,6 +2031,7 @@ export function DownloaderApp() {
       )
       if (handoff) {
         triggerDirectDownload(handoff, filename)
+        transfer.completed({ delivery: 'browser' })
         window.setTimeout(() => {
           dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: false })
           dispatch({ type: 'SET_PROGRESS', payload: null })
@@ -1983,6 +2054,7 @@ export function DownloaderApp() {
         cancelRef.current.signal,
       )
       await deliverAudio(blob, nameFile('mp3'))
+      transfer.completed({ size_bytes: blob.size, delivery: 'proxy' })
 
       dispatch({
         type: 'SET_MESSAGE',
@@ -1992,8 +2064,10 @@ export function DownloaderApp() {
     } catch (error) {
       console.error('Audio download failed:', error)
       if (isAbortError(error)) {
+        transfer.canceled()
         canceledNote()
       } else {
+        transfer.failed(error)
         dispatch({
           type: 'SET_MESSAGE',
           payload: { kind: 'error', text: 'Failed to download audio file' },
@@ -2064,6 +2138,11 @@ export function DownloaderApp() {
 
     dispatch({ type: 'SET_DOWNLOADING_IMAGES', payload: true })
     cancelRef.current = new AbortController()
+    const transfer = beginDownload(
+      state.downloadImagesAsZip ? 'zip' : 'images',
+      content(),
+      { selected: selectedImages.length },
+    )
 
     try {
       // Kind travels with the URL: the route names a clip `.mp4` and sends it
@@ -2132,6 +2211,7 @@ export function DownloaderApp() {
               // "-failed.txt" note inside a file the visitor just stopped.
               if (isAbortError(error)) throw error
               console.error(`Failed to fetch ${entry.filename}:`, error)
+              trackCaughtError('download:zip_item', error)
               // Mirror the previous behaviour: a failed image leaves a note in
               // the archive rather than silently shrinking it.
               zip.file(
@@ -2157,6 +2237,7 @@ export function DownloaderApp() {
             }),
         )
         await deliver(blob, nameFile('zip'))
+        transfer.completed({ size_bytes: blob.size, delivery: 'zip' })
 
         dispatch({
           type: 'SET_MESSAGE',
@@ -2187,7 +2268,10 @@ export function DownloaderApp() {
 
         const totalImages = data.images.length
         for (let i = 0; i < data.images.length; i++) {
-          if (cancelRef.current.signal.aborted) return
+          if (cancelRef.current.signal.aborted) {
+            transfer.canceled()
+            return
+          }
           const imageData = data.images[i]
           try {
             const imageResponse = await fetch(imageData.url, {
@@ -2213,11 +2297,19 @@ export function DownloaderApp() {
           } catch (error) {
             // The save loop's per-item tolerance stops at a cancel: carrying on
             // would keep writing files after the visitor asked it to stop.
-            if (isAbortError(error)) return
+            if (isAbortError(error)) {
+              transfer.canceled()
+              return
+            }
             console.error('Failed to download individual image:', error)
+            trackCaughtError('download:image_item', error)
           }
         }
-        if (cancelRef.current.signal.aborted) return
+        if (cancelRef.current.signal.aborted) {
+          transfer.canceled()
+          return
+        }
+        transfer.completed({ delivery: 'images' })
         dispatch({
           type: 'SET_MESSAGE',
           payload: { kind: 'saved', text: t('msgImagesDone', { n: selectedImages.length }) },
@@ -2227,11 +2319,13 @@ export function DownloaderApp() {
     } catch (error) {
       console.error('Image download failed:', error)
       if (isAbortError(error)) {
+        transfer.canceled()
         dispatch({
           type: 'SET_MESSAGE',
           payload: { kind: 'info', text: t('downloadCanceled') },
         })
       } else {
+        transfer.failed(error)
         dispatch({
           type: 'SET_MESSAGE',
           payload: {
@@ -2279,6 +2373,7 @@ export function DownloaderApp() {
    * origin anyway, so the wall-clock saving would be nil.
    */
   const handleSaveBoth = async () => {
+    trackFeatureUsed('save_both')
     await handleVideoDownload()
     await handleAudioDownload()
   }
@@ -2291,8 +2386,9 @@ export function DownloaderApp() {
    * batch summary would only be able to say "Saved 0 of 1".
    */
   const retryMisses = () => {
+    trackRetryClicked({ surface: 'batch_misses' })
     const links = batchMisses
-    if (links.length === 1) void handleProcess(links[0])
+    if (links.length === 1) void handleProcess(links[0], 'retry')
     else void processBatch(links)
   }
 
@@ -2784,7 +2880,10 @@ export function DownloaderApp() {
               <li key={h.url} className='relative'>
                 <button
                   type='button'
-                  onClick={() => handleProcess(h.url)}
+                  onClick={() => {
+                    trackFeatureUsed('history_reopen')
+                    handleProcess(h.url, 'history')
+                  }}
                   className='card-hover group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pr-9 pl-2 text-left'
                 >
                   {/* Branded tile sits underneath; the snapshot (a self-contained
@@ -2830,7 +2929,10 @@ export function DownloaderApp() {
                 </button>
                 <button
                   type='button'
-                  onClick={() => removeHistory(h.url)}
+                  onClick={() => {
+                    trackFeatureUsed('history_remove')
+                    removeHistory(h.url)
+                  }}
                   aria-label={`Remove ${h.title} from recent`}
                   className='absolute top-1/2 right-1.5 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
                 >
@@ -2845,7 +2947,12 @@ export function DownloaderApp() {
           {history.length > 5 && (
             <button
               type='button'
-              onClick={() => setShowAllHistory((v) => !v)}
+              onClick={() => {
+                trackFeatureUsed('history_show_all', {
+                  action: showAllHistory ? 'collapse' : 'expand',
+                })
+                setShowAllHistory((v) => !v)
+              }}
               className='card-hover mt-2 w-full rounded-lg border border-white/[0.06] py-1.5 text-center text-[11px] font-medium text-white/50 hover:text-white/80'
             >
               {showAllHistory ? t('showLess') : t('viewAll', { n: history.length })}
@@ -2865,7 +2972,7 @@ export function DownloaderApp() {
           collapsing address bar overlays that strip and eats the card header
           ("top disappears"). scroll-margin-top leaves ~6rem so the header always
           clears the browser chrome. */}
-      <div className='results-section mt-6 space-y-4 scroll-mt-24'>
+      <div className='results-section ph-no-capture mt-6 space-y-4 scroll-mt-24'>
         {(() => {
           // Plain conditional + CSS reveal. key={message.text} remounts on new
           // text so the entrance re-fires as state feedback. No height
@@ -2908,7 +3015,10 @@ export function DownloaderApp() {
                 // to restart itself.
                 <button
                   type='button'
-                  onClick={() => void handleProcess(retryLink)}
+                  onClick={() => {
+                    trackRetryClicked({ surface: 'resolve_error' })
+                    void handleProcess(retryLink, 'retry')
+                  }}
                   className='btn-press mx-auto mt-2 block rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold transition-colors hover:bg-white/10'
                 >
                   {t('tryAgain')}
@@ -3153,7 +3263,12 @@ export function DownloaderApp() {
               {/* Preview Toggle (downloadable video or embed-only fallback) */}
               {(state.downloadUrl || state.videoMetadata?.embedUrl) && (
                 <button
-                  onClick={togglePreview}
+                  onClick={() => {
+                    trackFeatureUsed('preview', {
+                      action: state.showPreview ? 'hide' : 'show',
+                    })
+                    togglePreview()
+                  }}
                   className='btn-ghost btn-press w-full py-2.5 px-4 font-semibold rounded-xl flex items-center justify-center text-sm md:text-base'
                 >
                   <span className='relative'>
@@ -3256,7 +3371,12 @@ export function DownloaderApp() {
                 state.videoMetadata.images.length > 0 && (
                   <div className='space-y-3'>
                     <button
-                      onClick={toggleImageGallery}
+                      onClick={() => {
+                        trackFeatureUsed('gallery', {
+                          action: state.showImageGallery ? 'hide' : 'show',
+                        })
+                        toggleImageGallery()
+                      }}
                       className='btn-ghost btn-press w-full py-2.5 px-4 font-semibold rounded-xl flex items-center justify-center text-sm md:text-base'
                     >
                       <span className='relative'>
@@ -3279,13 +3399,19 @@ export function DownloaderApp() {
                           </span>
                           <div className='flex space-x-2'>
                             <button
-                              onClick={() => selectAllImages(true)}
+                              onClick={() => {
+                                trackFeatureUsed('gallery_select_all', { action: 'all' })
+                                selectAllImages(true)
+                              }}
                               className='btn-grad px-3 py-1 text-xs font-semibold rounded-md transition-[box-shadow] duration-200'
                             >
                               All
                             </button>
                             <button
-                              onClick={() => selectAllImages(false)}
+                              onClick={() => {
+                                trackFeatureUsed('gallery_select_all', { action: 'none' })
+                                selectAllImages(false)
+                              }}
                               className='btn-ghost px-3 py-1 text-xs font-medium rounded-md transition-colors'
                             >
                               None
@@ -3311,7 +3437,10 @@ export function DownloaderApp() {
                             <div key={image.id} className='group relative'>
                               <button
                                 type='button'
-                                onClick={() => setLightboxIndex(index)}
+                                onClick={() => {
+                                  trackFeatureUsed('lightbox')
+                                  setLightboxIndex(index)
+                                }}
                                 className={`flex aspect-square w-full items-center justify-center overflow-hidden rounded-xl bg-black/30 ring-inset transition duration-200 ${
                                   image.kind === 'video'
                                     ? 'cursor-pointer'
