@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { CheckIcon, CoffeeIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
 import { PRO_BENEFITS } from '@/config/pro'

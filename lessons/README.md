@@ -88,3 +88,4 @@ the index for exactly that.
 
 | 2026-10-26 | [Batch finished rows sink](2026-10-26-batch-finished-rows-sink.md) | Parallel lanes finish out of order; order the list in the one publish path |
 | 2026-10-30 | [PostHog to the Reely standard, plus the Worker](2026-10-30-posthog-standard.md) | Every action, error and download is tracked through one typed layer and three dashboards; a privacy page is a spec, so what the code records and what the page says change in the same commit |
+| 2026-10-31 | [The 100 that hid 607 KiB](2026-10-31-the-100-that-hid-607-kib.md) | Lighthouse said 100 while viewport prefetch was the heaviest thing on the page; read the request list, not the score |

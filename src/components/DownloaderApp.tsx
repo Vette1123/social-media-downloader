@@ -36,7 +36,6 @@ import {
   TwitterXIcon,
   YouTubeIcon,
 } from '@/components/icons'
-import { BatchPanel } from '@/components/BatchPanel'
 import { InstallPrompt } from '@/components/InstallPrompt'
 import { PastDueBanner } from '@/components/PastDueBanner'
 import { PromoSlot } from '@/components/PromoSlot'
@@ -53,7 +52,6 @@ import {
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { buildDownloadFilename, formatBytes } from '@/lib/filename'
 import { parseYouTubeId } from '@/lib/validator'
-import { SubtitlePicker } from '@/components/SubtitlePicker'
 import { ThumbnailButton } from '@/components/ThumbnailButton'
 import { ShareButton } from '@/components/ShareButton'
 import { AudioPreview } from '@/components/AudioPreview'
@@ -62,7 +60,7 @@ import {
   shouldOfferAudioPreview,
 } from '@/lib/audioPreview'
 import { namedAuthor } from '@/lib/byline'
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { friendlyError } from '@/lib/errorMessages'
 import { useLocale, useT } from '@/lib/i18nStore'
@@ -786,6 +784,25 @@ const ImageLightbox = dynamic(
     ssr: false,
     loading: () => null,
   },
+)
+
+// Supporters only, and the largest thing this file imports, so nobody else
+// downloads it. The tier check lives here rather than leaning on the panel's own
+// self-hiding, because that check only runs once the chunk has already arrived.
+const BatchPanel = dynamic(
+  () => import('@/components/BatchPanel').then((m) => m.BatchPanel),
+  { ssr: false, loading: () => null },
+)
+
+function ProBatchPanel() {
+  const tier = useTier()
+  return tier === 'pro' ? <BatchPanel /> : null
+}
+
+// YouTube results only; everything else never renders it.
+const SubtitlePicker = dynamic(
+  () => import('@/components/SubtitlePicker').then((m) => m.SubtitlePicker),
+  { ssr: false, loading: () => null },
 )
 
 // Shown the instant "Process URL" is hit, filling the results column with a
@@ -2806,7 +2823,7 @@ export function DownloaderApp() {
 
       {/* Pro-only batch queue — self-hides for free users, so no conditional
           is needed at the call site. */}
-      <BatchPanel />
+      <ProBatchPanel />
 
       {/* Recent — locally-stored links (never leaves the device). Stays on
           screen alongside a result: it is the way back to an earlier link, and

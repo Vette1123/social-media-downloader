@@ -549,6 +549,14 @@ summary {
   }
 }
 
+/* Skips layout and paint for a whole band until it nears the viewport, which is
+   most of the work a phone does on these long pages. The height is a guess for
+   the scrollbar only: `auto` swaps in the real one once a band has rendered. */
+.defer-render {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 560px;
+}
+
 /* SSR-friendly entrance animations — content stays visible the whole time */
 @keyframes card-enter {
   from {

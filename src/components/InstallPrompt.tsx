@@ -2,10 +2,12 @@
 
 import { trackPwaInstallable, trackPwaPrompted } from '@/lib/analytics'
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { CloseIcon, DownloadIcon, ExternalLinkIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
 import {
   INSTALL_DISMISS_KEY,
+  INSTALL_SLOT_ID,
   useInstallOfferable,
   useIsIOSSafari,
 } from '@/lib/clientEnv'
@@ -25,6 +27,14 @@ interface BeforeInstallPromptEvent extends Event {
 // iOS Safari: no beforeinstallprompt and no share-target support, so we show the
 // manual "Add to Home Screen" hint (the home-screen icon + one-tap Paste is the
 // iOS flow). Hidden entirely once installed (standalone) or dismissed.
+//
+// Portalled to the end of the hero, because this arrives after first paint:
+// Chrome fires beforeinstallprompt around hydration, and under the paste bar the
+// card pushed everything down 112px. There it is below the fold on a phone, so
+// nothing visible moves. It must not float on a phone: on a short screen a fixed
+// card sits on top of the paste bar. From `sm` it floats bottom-left, because the
+// hero's end is on screen there. The wrapper holds the positioning since .surface
+// is unlayered CSS and its `position: relative` beats a utility.
 export function InstallPrompt() {
   // "Can we offer an install here at all" and "is this iOS Safari" are fixed
   // properties of the browser, read without an effect — see lib/clientEnv.
@@ -77,47 +87,50 @@ export function InstallPrompt() {
     }
   }
 
-  return (
-    <Surface
-      tone='accent'
-      className='animate-section-in mt-4 flex items-center gap-3 p-3 pr-9'
-    >
-      <span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#17171d] to-[#0a0a0c] ring-1 ring-cyan-400/40'>
-        <DownloadIcon className='h-5 w-5 text-cyan-300' />
-      </span>
-
-      <div className='min-w-0 flex-1'>
-        <p className='text-sm font-medium text-white'>Install the app</p>
-        <p className='mt-0.5 text-xs text-white/60'>
-          {isIOS
-            ? 'Tap Share, then “Add to Home Screen”.'
-            : 'Share videos straight from TikTok. No browser, no paste.'}
-        </p>
-      </div>
-
-      {isIOS ? (
-        <span className='flex shrink-0 items-center gap-1 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-xs font-medium text-white/70'>
-          <ExternalLinkIcon className='h-3.5 w-3.5' />
-          Share
+  return createPortal(
+    <div className='animate-section-in mt-6 sm:fixed sm:bottom-4 sm:left-4 sm:z-40 sm:mt-0 sm:w-96'>
+      <Surface
+        tone='accent'
+        className='grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 p-3 pr-9 shadow-2xl sm:flex'
+      >
+        <span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#17171d] to-[#0a0a0c] ring-1 ring-cyan-400/40'>
+          <DownloadIcon className='h-5 w-5 text-cyan-300' />
         </span>
-      ) : (
+
+        <div className='min-w-0 flex-1'>
+          <p className='text-sm font-medium text-white'>Install the app</p>
+          <p className='mt-0.5 text-xs text-white/60'>
+            {isIOS
+              ? 'Tap Share, then “Add to Home Screen”.'
+              : 'Share videos straight from TikTok. No browser, no paste.'}
+          </p>
+        </div>
+
+        {isIOS ? (
+          <span className='col-span-2 flex shrink-0 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-xs font-medium text-white/70'>
+            <ExternalLinkIcon className='h-3.5 w-3.5' />
+            Share
+          </span>
+        ) : (
+          <button
+            type='button'
+            onClick={install}
+            className='btn-grad btn-press col-span-2 shrink-0 rounded-xl px-4 py-2 text-sm font-semibold'
+          >
+            Install
+          </button>
+        )}
+
         <button
           type='button'
-          onClick={install}
-          className='btn-grad btn-press shrink-0 rounded-xl px-4 py-2 text-sm font-semibold'
+          onClick={dismiss}
+          aria-label='Dismiss install prompt'
+          className='absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
         >
-          Install
+          <CloseIcon className='h-3.5 w-3.5' />
         </button>
-      )}
-
-      <button
-        type='button'
-        onClick={dismiss}
-        aria-label='Dismiss install prompt'
-        className='absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
-      >
-        <CloseIcon className='h-3.5 w-3.5' />
-      </button>
-    </Surface>
+      </Surface>
+    </div>,
+    document.getElementById(INSTALL_SLOT_ID) ?? document.body,
   )
 }

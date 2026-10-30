@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { SiteFooter } from '@/components/SiteFooter'
 import { siteConfig } from '@/config/site'
 
@@ -15,6 +15,7 @@ export default function Terms() {
   return (
     <div className='app-bg relative min-h-[100dvh] overflow-clip'>
       <div className='relative z-10 mx-auto max-w-3xl px-4 py-10 sm:py-16'>
+        <main>
         <h1 className='text-3xl font-bold tracking-tight text-white sm:text-4xl'>
           Terms of Service
         </h1>
@@ -91,7 +92,7 @@ export default function Terms() {
               on our servers, so there is nothing here to take down. If you
               believe this service is being used to infringe your rights, email{' '}
               <a
-                className='text-cyan-300 hover:text-cyan-200'
+                className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
                 href={`mailto:${siteConfig.supportEmail}`}
               >
                 {siteConfig.supportEmail}
@@ -129,7 +130,7 @@ export default function Terms() {
               If you want a donation reversed, that is between you and Buy Me a
               Coffee, though emailing{' '}
               <a
-                className='text-cyan-300 hover:text-cyan-200'
+                className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
                 href={`mailto:${siteConfig.supportEmail}`}
               >
                 {siteConfig.supportEmail}
@@ -151,14 +152,14 @@ export default function Terms() {
             <p>
               Support requests and takedown notices both go to{' '}
               <a
-                className='text-cyan-300 hover:text-cyan-200'
+                className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
                 href={`mailto:${siteConfig.supportEmail}`}
               >
                 {siteConfig.supportEmail}
               </a>
               , read by{' '}
               <a
-                className='text-cyan-300 hover:text-cyan-200'
+                className='text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
                 href={siteConfig.author.url}
               >
                 {siteConfig.author.name}
@@ -171,6 +172,8 @@ export default function Terms() {
         <Link href='/' className='mt-10 inline-block text-sm text-cyan-300 hover:text-cyan-200'>
           ← Back to the downloader
         </Link>
+
+        </main>
 
         <SiteFooter />
       </div>

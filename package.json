@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "verify": "pnpm typecheck && pnpm lint && pnpm test",
+    "perf": "node scripts/perf-audit.mjs",
     "cf:build": "cross-env DEPLOY_TARGET=cloudflare next build && node scripts/cf-postbuild.mjs",
     "preview": "pnpm cf:build && wrangler dev",
     "deploy": "pnpm cf:build && wrangler deploy && node scripts/indexnow.mjs --force",

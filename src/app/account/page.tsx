@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import Link from '@/components/IntentLink'
 import { AccountPanel } from '@/components/AccountPanel'
 import { SiteFooter } from '@/components/SiteFooter'
 
@@ -12,6 +12,7 @@ export default function Account() {
   return (
     <div className='app-bg relative min-h-[100dvh] overflow-clip'>
       <div className='relative z-10 mx-auto max-w-3xl px-4 py-10 sm:py-16'>
+        <main>
         <div className='text-center'>
           <span className='btn-grad inline-flex rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase'>
             Account
@@ -25,13 +26,18 @@ export default function Account() {
           </p>
         </div>
 
-        <div className='mt-8'>
+        {/* The prerender paints AccountPanel's skeleton, and hydration swaps it for
+            a card that can be far shorter. Holding the skeleton's 480px means the
+            swap moves nothing below it. */}
+        <div className='mt-8 min-h-120'>
           <AccountPanel />
         </div>
 
         <Link href='/' className='mt-10 inline-block text-sm text-cyan-300 hover:text-cyan-200'>
           Back to the downloader
         </Link>
+
+        </main>
 
         <SiteFooter />
       </div>
