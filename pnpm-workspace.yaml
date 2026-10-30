@@ -26,6 +26,8 @@ allowBuilds:
   '@ffmpeg-installer/win32-x64': true
   '@ffmpeg-installer/darwin-x64': true
   '@ffmpeg-installer/darwin-arm64': true
+  # posthog-js dependency. Its postinstall only prints a funding banner.
+  core-js: false
 onlyBuiltDependencies:
   - sharp
   - unrs-resolver
