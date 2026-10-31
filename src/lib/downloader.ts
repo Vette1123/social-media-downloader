@@ -514,13 +514,13 @@ function facebookStory(
   for (let at = html.indexOf(key); at !== -1; at = html.indexOf(key, at + 1)) {
     // The nearest owner: the previous reel's can sit inside the same span.
     const owners = html
-      .slice(Math.max(0, at - FB_STORY_SPAN), at)
+      .slice(Math.max(0, at - FB_OWNER_SPAN), at)
       .matchAll(/"owner":\{"__typename":"\w+"[^{}]*?"name":"((?:[^"\\]|\\.)*)"/g)
     const raw = [...owners].at(-1)?.[1]
     if (!raw) continue
     const author = JSON.parse(`"${raw}"`) as string
     const caption = facebookField(
-      html.slice(at, at + FB_STORY_SPAN),
+      html.slice(at, at + FB_CAPTION_SPAN),
       /"message":\{"text":"((?:[^"\\]|\\.)*)"/,
     )
     return { author, caption }
