@@ -170,7 +170,16 @@ for (const route of routes) {
     const reports = []
     for (let run = 0; run < runs; run += 1) {
       const outFile = join(scratch, `${formFactor}-${run}.json`)
-      reports.push(await lighthouse(`${origin}${route}`, formFactor, outFile))
+      const report = await lighthouse(`${origin}${route}`, formFactor, outFile)
+      // A run can end with no trace (a timeout, an edge challenge). It has no
+      // numbers to take a median of, so it is dropped and said out loud.
+      const usable = report.audits['cumulative-layout-shift']?.numericValue !== undefined
+      if (usable) reports.push(report)
+      else console.log(`  run ${run + 1} of ${route} ${formFactor} returned no metrics, dropped`)
+    }
+    if (reports.length === 0) {
+      problems.push(`${route} ${formFactor}: every one of ${runs} runs returned no metrics`)
+      continue
     }
     const s = summarize(reports)
     console.log(
