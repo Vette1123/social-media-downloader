@@ -56,6 +56,10 @@ cookies omitted, so the session is only needed to find them.
   HTML a server gets. In the raw page they sit past every list. Test a parser on
   `fetch()` of the page, not the DOM after it ran.
 
+- `d04cf3d` went to main with a half-applied edit and failing types, because one long shell
+  line kept going after the edit script threw. CI refused the deploy, so production never
+  saw it. Chain commit and push behind `set -e` and the checks.
+
 ## What worked
 
 - Headless Chrome with an empty `--user-data-dir` and `--screenshot`. It is a private
