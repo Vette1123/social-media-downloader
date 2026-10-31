@@ -97,7 +97,7 @@
   // build time, so a Worker var would be read far too late — it is set as build
   // env in the deploy workflow instead.
   //
-  // Secrets (COBALT_API_KEY, IG_SESSIONID, UPSTASH_REDIS_REST_URL,
+  // Secrets (COBALT_API_KEY, IG_SESSIONID, FB_COOKIE, UPSTASH_REDIS_REST_URL,
   // UPSTASH_REDIS_REST_TOKEN, REGISTRY_KEY, COBALT_API_URL, PRO_TOKEN_SECRET,
   // GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, CREEM_API_KEY,
   // CREEM_WEBHOOK_SECRET, SCRAPE_UNLOCKER_URL) must NOT be listed here

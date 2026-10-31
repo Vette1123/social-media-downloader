@@ -31,7 +31,7 @@ export interface BillingRow {
  * A capability granted by hand rather than bought.
  *
  * `pro` is what a supporter gets; `ig` attaches the operator's own Instagram
- * session to that account's resolves and is deliberately not something anyone
+ * and Facebook sessions to that account's resolves and is deliberately not something anyone
  * can obtain by paying — see the migration for why that distinction is load
  * bearing rather than bookkeeping.
  */

@@ -212,6 +212,7 @@ value is set once rather than kept in step across three files. Do not add a
 | `NEXT_PUBLIC_SITE_URL`| Canonical site URL used for metadata, sitemap, and OG images.                    |
 | `COBALT_API_URL`      | Self-hosted [Cobalt](https://github.com/imputnet/cobalt) instance to harden the extraction fallback chain. |
 | `IG_SESSIONID`        | Instagram session cookie from a burner account. Public posts resolve without it. Setting it is **not** sufficient on its own: a request also needs the `ig` grant on its user row, so an unlisted visitor never carries the cookie. Never sold, never bundled with the supporter grant — see below. |
+| `FB_COOKIE`           | Whole `Cookie` header of a logged-in Facebook session, burner account preferred. Sent only for accounts with the `ig` grant, and only after every anonymous route fails. |
 | `NEXT_PUBLIC_CF_BEACON_TOKEN` | Enables Cloudflare Web Analytics by injecting the beacon script at build time. Build-time only, like `NEXT_PUBLIC_SITE_URL` — set it as build env, not a Worker var. If Web Analytics is already enabled at the zone level in the Cloudflare dashboard, Cloudflare injects the beacon at the edge automatically; setting this too would load it twice and double-count page views. Pick one mechanism. |
 | `PRO_TOKEN_SECRET`    | HMAC key (WebCrypto HMAC-SHA256) for signing Pro access tokens and session-cookie values. Generate 32+ random bytes yourself. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client used for sign-in. Created in Google Cloud console; both the dev and production redirect URIs must be registered on it. Replacing the client with one from a *different* Google Cloud project changes every existing user's `sub`, since a `sub` identifies a person within a project rather than globally — `handleAuthCallback` re-keys the row by verified email so accounts survive the move, and the consent screen on the new project must be published (a project left in Testing admits only its listed test users). |
@@ -256,7 +257,7 @@ Two names are defined, and keeping them separate is the point:
 | Grant | What it does |
 | ----- | ------------ |
 | `pro` | The batch queue, ZIP bundling, priority resolve, no sponsor card. What a supporter gets. |
-| `ig`  | Attaches `IG_SESSIONID` to that account's Instagram resolves. Operator only. |
+| `ig`  | Attaches `IG_SESSIONID` and `FB_COOKIE` to that account's resolves. Operator only. |
 
 **What a grant is allowed to be.** `pro` is every entitlement that is a property
 of *this site* — resolver ordering, queueing, how results are packaged. None of

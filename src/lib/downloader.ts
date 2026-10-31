@@ -487,6 +487,31 @@ const FB_POSTER_URL = /https:\/\/[^"'\\\s]+\/t15\.[^"'\\\s]+/
  * it out of the markup is what keeps a reel's card from rendering an empty
  * poster box. A page with neither yields '', which the card already handles.
  */
+/** How far past a `progressive_urls` list the id of its reel may sit. */
+const FB_REEL_ID_SPAN = 20_000
+
+/**
+ * The muxed MP4 of one reel, from the page a logged-in session sees: HD, else
+ * the first quality listed. That page has no `browser_native_*` keys, and it
+ * also carries the reels queued after this one, so each list is matched on the
+ * first `"id"` after it. The URLs are signed and work without a cookie.
+ */
+export function facebookProgressiveUrl(html: string, videoId: string): string {
+  for (const list of html.matchAll(/"progressive_urls":\[(.*?)\]/g)) {
+    const end = list.index + list[0].length
+    const owner = html.slice(end, end + FB_REEL_ID_SPAN).match(/"id":"(\d+)"/)
+    if (owner?.[1] !== videoId) continue
+    const sources = [
+      ...list[1].matchAll(
+        /"progressive_url":"([^"]+)"[^{}]*"metadata":\{"quality":"(\w+)"/g,
+      ),
+    ]
+    const best = sources.find((source) => source[2] === 'HD') ?? sources[0]
+    if (best) return JSON.parse(`"${best[1]}"`) as string
+  }
+  return ''
+}
+
 function facebookPoster(html: string): string {
   const og = metaContent(html, 'og:image')
   if (og) return og
@@ -2231,6 +2256,8 @@ export class Downloader {
         ? [() => this.tryFacebookScrape(resolvedUrl, url)]
         : []),
       () => this.tryCobaltInstances(resolvedUrl),
+      // After every anonymous route, so a public reel never spends the session.
+      () => this.tryFacebookSession(resolvedUrl, url),
       // Last, and only for a link that names a photo: every page here publishes
       // an `og:image`, so running this any earlier — or on any other link —
       // would answer a private *video* with its poster frame and call that a
@@ -3660,6 +3687,59 @@ export class Downloader {
     })
     const html = typeof response.data === 'string' ? response.data : ''
     return this.parseFacebookHtml(html, originalUrl)
+  }
+
+  /**
+   * A reel Facebook walls for logged-out visitors, read as the operator's
+   * session. Same gate as Instagram: only an instance built `credentialed`,
+   * which means an `ig` grant, and the result bypasses both cache tiers. Never
+   * sellable; see `instagramSessionId`.
+   *
+   * The page URL is rebuilt from the id, so the cookie can only ever go to
+   * www.facebook.com, whatever host the link arrived on.
+   */
+  private async tryFacebookSession(
+    resolvedUrl: string,
+    originalUrl: string,
+  ): Promise<VideoData | null> {
+    const cookie = this.credentialed ? process.env.FB_COOKIE?.trim() : ''
+    const videoId = parseVideoId(resolvedUrl)
+    if (!cookie || !videoId || !/^\d+$/.test(videoId)) return null
+
+    const response = await http.get(
+      `https://www.facebook.com/reel/${videoId}/`,
+      {
+        headers: {
+          'User-Agent': this.userAgent,
+          Cookie: cookie,
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+        },
+        timeout: 20000,
+      },
+    )
+    const html = typeof response.data === 'string' ? response.data : ''
+    const downloadUrl = facebookProgressiveUrl(html, videoId)
+    if (!downloadUrl) {
+      // A dead or checkpointed session looks exactly like a missing reel.
+      console.warn(
+        `facebook session: no source for ${videoId} (page ${html.length} bytes, login form: ${html.includes('login_form')})`,
+      )
+      return null
+    }
+    return {
+      id: videoId,
+      title: 'Facebook Video',
+      url: originalUrl,
+      thumbnail: facebookPoster(html),
+      duration: 0,
+      author: 'Facebook',
+      description: '',
+      downloadUrl,
+    }
   }
 
   /**
