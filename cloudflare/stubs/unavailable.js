@@ -1,5 +1,5 @@
 /**
- * Stub for native-binary packages (youtube-dl-exec, fluent-ffmpeg,
+ * Stub for native-binary packages (youtube-dl-exec,
  * @ffmpeg-installer/ffmpeg) on Cloudflare Workers.
  *
  * workerd has no subprocesses and no writable filesystem, so these packages can

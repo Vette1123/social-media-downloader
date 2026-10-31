@@ -62,7 +62,6 @@ const STATIC_PAGE_EXTENSIONS = ['tsx']
  * that the API handlers are compiled by esbuild rather than by Next.
  */
 const NATIVE_MEDIA_PACKAGES = [
-  'fluent-ffmpeg',
   '@ffmpeg-installer/ffmpeg',
   'youtube-dl-exec',
 ]
