@@ -88,7 +88,6 @@
   // binaries and their dependency trees out of the Worker bundle.
   "alias": {
     "youtube-dl-exec": "./cloudflare/stubs/unavailable.js",
-    "fluent-ffmpeg": "./cloudflare/stubs/unavailable.js",
     "@ffmpeg-installer/ffmpeg": "./cloudflare/stubs/unavailable.js"
   },
 

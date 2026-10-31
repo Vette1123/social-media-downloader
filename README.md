@@ -163,7 +163,7 @@ see [the support page](https://www.socialdownloader.space/pro).
 | HTTP             | Native `fetch` (`src/lib/httpClient.ts`) |
 | HTML scraping    | Regex extractors (`src/lib/htmlExtract.ts`) |
 | ZIP bundling     | JSZip, lazily imported **in the browser** |
-| Slideshow video  | fluent-ffmpeg + @ffmpeg-installer *(Node hosts only)* |
+| Slideshow video  | ffmpeg via @ffmpeg-installer *(Node hosts only)* |
 | YouTube fallback | youtube-dl-exec *(Node hosts only)* |
 | Dynamic OG       | `next/og`, prerendered to PNG at build time |
 | App shell        | PWA manifest + Share Target + shortcuts |

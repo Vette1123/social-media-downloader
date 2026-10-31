@@ -4,19 +4,20 @@ import { createReadStream, type ReadStream } from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { randomUUID } from 'node:crypto'
-import ffmpeg from 'fluent-ffmpeg'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import {
   nativeMediaAvailable,
   nativeMediaUnavailable,
 } from '../../../lib/nativeMedia'
+import {
+  slideshowFfmpegArgs,
+  type SlideshowArgsParams,
+} from '../../../lib/slideshowArgs'
 
-// Node runtime — fluent-ffmpeg spawns a child process and needs fs access
+// Node runtime — rendering spawns ffmpeg and needs fs access
 export const runtime = 'nodejs'
 // Rendering a slideshow can take 15–60s depending on length
 export const maxDuration = 300
-
-ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
 const UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -45,73 +46,26 @@ async function downloadTo(url: string, dest: string): Promise<void> {
   await fs.writeFile(dest, buf)
 }
 
-interface RenderParams {
-  imagePaths: string[]
-  audioPath: string | null
-  outputPath: string
-  perImageSeconds: number
-  width: number
-  height: number
-}
-
 /**
- * Renders a slideshow of images with optional audio into an MP4.
- *
- * Each image is shown for `perImageSeconds` seconds; frames are scaled and
- * padded so heterogeneous photo ratios all fit into the output canvas on a
- * black background. When an audio track is provided, the final clip is
- * trimmed to match the audio length (or the image reel length, whichever
- * is shorter) and uses `-shortest` so playback terminates cleanly.
+ * Renders a slideshow of images with optional audio into an MP4. The stderr
+ * tail lands in the error, since ffmpeg writes its reason there. child_process
+ * loads here so the Worker bundle, which has no subprocesses, never imports it.
  */
-function renderSlideshow({
-  imagePaths,
-  audioPath,
-  outputPath,
-  perImageSeconds,
-  width,
-  height,
-}: RenderParams): Promise<void> {
+async function renderSlideshow(params: SlideshowArgsParams): Promise<void> {
+  const { spawn } = await import('node:child_process')
   return new Promise((resolve, reject) => {
-    const cmd = ffmpeg()
-
-    for (const img of imagePaths) {
-      cmd.input(img).inputOptions(['-loop', '1', '-t', String(perImageSeconds)])
-    }
-    if (audioPath) cmd.input(audioPath)
-
-    // Build a filter graph: each image scaled+padded to a common canvas, then concat.
-    const scaleFilters = imagePaths
-      .map(
-        (_, i) =>
-          `[${i}:v]scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,fps=30[v${i}]`,
-      )
-      .join(';')
-    const concatInputs = imagePaths.map((_, i) => `[v${i}]`).join('')
-    const filter = `${scaleFilters};${concatInputs}concat=n=${imagePaths.length}:v=1:a=0[outv]`
-
-    cmd.complexFilter(filter)
-    cmd.outputOptions([
-      '-map',
-      '[outv]',
-      ...(audioPath ? ['-map', `${imagePaths.length}:a`] : []),
-      '-c:v',
-      'libx264',
-      '-preset',
-      'veryfast',
-      '-pix_fmt',
-      'yuv420p',
-      '-profile:v',
-      'high',
-      '-movflags',
-      '+faststart',
-      ...(audioPath ? ['-c:a', 'aac', '-b:a', '128k', '-shortest'] : []),
-    ])
-
-    cmd
-      .on('start', (line) => console.log('[slideshow] ffmpeg:', line))
-      .on('error', (err) => reject(err))
-      .on('end', () => resolve())
-      .save(outputPath)
+    const child = spawn(ffmpegInstaller.path, slideshowFfmpegArgs(params), {
+      stdio: ['ignore', 'ignore', 'pipe'],
+    })
+    let stderr = ''
+    child.stderr.on('data', (chunk) => {
+      stderr = (stderr + chunk).slice(-2000)
+    })
+    child.on('error', reject)
+    child.on('close', (code) => {
+      if (code === 0) resolve()
+      else reject(new Error(`ffmpeg exited with ${code}: ${stderr}`))
+    })
   })
 }
 
