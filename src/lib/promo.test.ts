@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { offerHref, selectOffer } from './promo'
+import { hashToSeed, offerHref, selectOffer } from './promo'
 import { OFFERS } from '../config/offers'
 import type { Offer } from '@/config/offers'
 
@@ -12,6 +12,26 @@ const offer = (over: Partial<Offer> & { id: string }): Offer => ({
   platforms: 'all',
   placements: ['post-result'],
   ...over,
+})
+
+describe('our own apps in the offer slot', () => {
+  const platforms = ['tiktok', 'instagram', 'facebook', 'twitter', 'youtube', 'reddit', 'vimeo', 'pinterest']
+
+  it('shows both Masareef and Rafiq across platforms in each placement', () => {
+    for (const placement of ['post-result', 'in-content'] as const) {
+      const shown = new Set(
+        platforms.map(
+          (platform) =>
+            selectOffer(OFFERS, {
+              placement,
+              platform,
+              seed: hashToSeed(`:r1:${placement}:${platform}`),
+            })?.id,
+        ),
+      )
+      expect([...shown].sort()).toEqual(['masareef', 'rafiq'])
+    }
+  })
 })
 
 describe('selectOffer', () => {

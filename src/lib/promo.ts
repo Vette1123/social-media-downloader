@@ -34,6 +34,20 @@ function candidatesFor(
  * Weighted pick, deterministic in `seed` so a re-render cannot swap the card
  * out from under a user mid-read (and so the tests are not flaky).
  */
+/**
+ * djb2, truncated to a positive 31-bit int. Cheap, deterministic, and — the
+ * only property that matters here — a pure function of its input, so it
+ * produces the same seed on the server-rendered HTML and on the client during
+ * hydration as long as `id` is the same string on both.
+ */
+export function hashToSeed(id: string): number {
+  let hash = 5381
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 33 + id.charCodeAt(i)) | 0
+  }
+  return hash & 0x7fffffff
+}
+
 export function selectOffer(
   offers: readonly Offer[],
   opts: { placement: OfferPlacement; platform?: string; seed: number },

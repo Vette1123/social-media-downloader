@@ -6,21 +6,22 @@ import { Surface } from '@/components/Surface'
 import { OFFERS, type OfferPlacement } from '@/config/offers'
 import { useHydrated } from '@/lib/clientEnv'
 import { useTier } from '@/lib/entitlements'
+import type { TKey } from '@/lib/i18n'
 import { useLocale, useT } from '@/lib/i18nStore'
-import { offerHref, selectOffer } from '@/lib/promo'
+import { hashToSeed, offerHref, selectOffer } from '@/lib/promo'
 
-/**
- * djb2, truncated to a positive 31-bit int. Cheap, deterministic, and — the
- * only property that matters here — a pure function of its input, so it
- * produces the same seed on the server-rendered HTML and on the client during
- * hydration as long as `id` is the same string on both.
- */
-function hashToSeed(id: string): number {
-  let hash = 5381
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 33 + id.charCodeAt(i)) | 0
-  }
-  return hash & 0x7fffffff
+/** Our own apps are translated: a sponsor's words are the sponsor's. */
+const OWN_APP_COPY: Record<string, { headline: TKey; body: TKey; cta: TKey }> = {
+  masareef: {
+    headline: 'offerMasareefHeadline',
+    body: 'offerMasareefBody',
+    cta: 'offerMasareefCta',
+  },
+  rafiq: {
+    headline: 'offerRafiqHeadline',
+    body: 'offerRafiqBody',
+    cta: 'offerRafiqCta',
+  },
 }
 
 /**
@@ -92,14 +93,18 @@ export function PromoSlot({
   // on a different candidate the instant two offers share a pool — a content
   // swap right after hydration, and a hydration-mismatch warning to go with
   // it. Also stable across a parent re-render, same as the seed it replaces.
+  // The platform is what shares the slot between offers: useId alone never
+  // changes, so one of two equal offers would simply never show.
   const reactId = useId()
-  const seed = useMemo(() => hashToSeed(reactId), [reactId])
+  const seed = useMemo(
+    () => hashToSeed(`${reactId}:${placement}:${platform ?? ''}`),
+    [reactId, placement, platform],
+  )
   const offer = useMemo(
     () => selectOffer(OFFERS, { placement, platform, seed }),
     [placement, platform, seed],
   )
-  // Only our own app is translated: a sponsor's words are the sponsor's.
-  const translated = locale !== 'en' && offer?.id === 'masareef'
+  const copy = locale !== 'en' && offer ? OWN_APP_COPY[offer.id] : undefined
 
   const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === '1'
   const shownOffer = hydrated && tier !== 'pro' ? offer?.id : undefined
@@ -140,10 +145,10 @@ export function PromoSlot({
             )}
             <div className='min-w-0'>
               <p className='text-sm font-semibold text-white'>
-                {translated ? t('offerMasareefHeadline') : offer.headline}
+                {copy ? t(copy.headline) : offer.headline}
               </p>
               <p className='mt-1 text-xs leading-relaxed text-white/60 md:text-sm'>
-                {translated ? t('offerMasareefBody') : offer.body}
+                {copy ? t(copy.body) : offer.body}
               </p>
             </div>
           </div>
@@ -163,9 +168,9 @@ export function PromoSlot({
             radius='xl'
             className='whitespace-nowrap px-3 py-2 text-sm font-medium text-white/80 hover:text-white'
           >
-            {translated ? t('offerMasareefCta') : offer.cta}
+            {copy ? t(copy.cta) : offer.cta}
           </Surface>
-          <span className='text-[11px] text-white/50'>{translated ? t('offerMasareefLabel') : (offer.label ?? 'Sponsored')}</span>
+          <span className='text-[11px] text-white/50'>{copy ? t('offerMasareefLabel') : (offer.label ?? 'Sponsored')}</span>
         </div>
       )}
     </Surface>

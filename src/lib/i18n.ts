@@ -154,6 +154,9 @@ export type TKey =
   | 'offerMasareefBody'
   | 'offerMasareefCta'
   | 'offerMasareefLabel'
+  | 'offerRafiqHeadline'
+  | 'offerRafiqBody'
+  | 'offerRafiqCta'
   | 'iosSaveHint'
 
 export type Dictionary = Partial<Record<TKey, string>>
@@ -273,6 +276,9 @@ const en: Record<TKey, string> = {
   offerMasareefBody: 'Masareef is an offline-first, multi-currency spending tracker, from the people behind this site.',
   offerMasareefCta: 'Get Masareef',
   offerMasareefLabel: 'Our app',
+  offerRafiqHeadline: 'Prayer, Qur’an and adhkar in one place',
+  offerRafiqBody: 'Rafiq is a private companion for prayer, Qur’an, adhkar and qibla, from the people behind this site.',
+  offerRafiqCta: 'Get Rafiq',
   iosSaveHint: 'On iPhone it saves to Files. To add it to Photos, open the file, tap Share, then Save Video.',
 }
 
