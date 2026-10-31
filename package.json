@@ -26,6 +26,7 @@
     "cf:setup": "node scripts/cf-setup.mjs",
     "cf:waf": "node scripts/cf-setup.mjs waf",
     "cf:health": "node scripts/cf-setup.mjs health",
+    "fb:secret": "node scripts/fb-secret.mjs",
     "posthog:query": "node scripts/posthog-query.mjs",
     "posthog:issues": "node scripts/posthog-issues.mjs",
     "posthog:usage": "node scripts/posthog-usage.mjs",
