@@ -39,6 +39,14 @@ cookies omitted, so the session is only needed to find them.
 - DASH tracks looked like the answer and implied a merge a Worker cannot do. Listing every
   delivery key found `progressive_urls`, muxed H.264 and AAC, one page away.
 
+- The cookie parser's error listed "names", and a table paste made the whole paste one
+  name, so live login values landed in the session log. A second check then printed the
+  account id. The owner had to log out to kill that session. An error about a secret
+  reports counts and names that pass a strict pattern, and a check around one prints
+  only yes or no.
+- The parser was written for one paste format. The owner's select-all gave the DevTools
+  table, the most obvious way to copy cookies.
+
 ## What worked
 
 - Headless Chrome with an empty `--user-data-dir` and `--screenshot`. It is a private
@@ -50,6 +58,9 @@ cookies omitted, so the session is only needed to find them.
 
 ## Rules
 
+- Verified live on a granted account: 18 s, 576x1024, H.264 and AAC through `/api/video`.
+  The same link stays 422 for anonymous visitors, and the `facebook session:` line stayed
+  quiet. `pnpm fb:secret` rotates the cookie.
 - `FB_COOKIE` follows the `ig` gate: credentialed only, last of the anonymous routes,
   never cached, and the page URL is rebuilt from the id so the cookie stays on Facebook.
 - A session failure and a missing reel look alike. Read the `facebook session:` log line.
