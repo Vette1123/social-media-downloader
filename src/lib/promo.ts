@@ -30,40 +30,17 @@ function candidatesFor(
   return eligible.filter((o) => o.platforms === 'all')
 }
 
-/**
- * Weighted pick, deterministic in `seed` so a re-render cannot swap the card
- * out from under a user mid-read (and so the tests are not flaky).
- */
-/**
- * djb2, truncated to a positive 31-bit int. Cheap, deterministic, and — the
- * only property that matters here — a pure function of its input, so it
- * produces the same seed on the server-rendered HTML and on the client during
- * hydration as long as `id` is the same string on both.
- */
-export function hashToSeed(id: string): number {
-  let hash = 5381
-  for (let i = 0; i < id.length; i++) {
-    hash = (hash * 33 + id.charCodeAt(i)) | 0
-  }
-  return hash & 0x7fffffff
-}
+/** The slot's two cards. A third would squeeze both on a phone. */
+export const MAX_OFFERS = 2
 
-export function selectOffer(
+/** Every offer the slot shows, heaviest first. A tie keeps catalogue order. */
+export function selectOffers(
   offers: readonly Offer[],
-  opts: { placement: OfferPlacement; platform?: string; seed: number },
-): Offer | null {
-  const pool = candidatesFor(offers, opts.placement, opts.platform)
-  if (pool.length === 0) return null
-
-  const total = pool.reduce((sum, o) => sum + o.weight, 0)
-  if (total <= 0) return null
-
-  let cursor = Math.abs(opts.seed) % total
-  for (const candidate of pool) {
-    cursor -= candidate.weight
-    if (cursor < 0) return candidate
-  }
-  return pool[pool.length - 1]
+  opts: { placement: OfferPlacement; platform?: string },
+): Offer[] {
+  return candidatesFor(offers, opts.placement, opts.platform)
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, MAX_OFFERS)
 }
 
 /**

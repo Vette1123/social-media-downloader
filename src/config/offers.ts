@@ -5,10 +5,10 @@
  *
  * `platforms` drives intent matching: a user who just pulled a TikTok is a
  * different buyer from one who just pulled a Vimeo lecture. A platform-specific
- * offer always beats an 'all' offer for that platform (see selectOffer).
+ * offer always beats an 'all' offer for that platform (see selectOffers).
  *
- * `weight` is relative within the matched set. Set it to 0 to bench an offer
- * without deleting its config.
+ * `weight` ranks the matched set, and the slot shows the top two together. Set
+ * it to 0 to bench an offer without deleting its config.
  *
  * Attribution is via the `subid` query parameter appended by offerHref(), read
  * back in each affiliate network's own dashboard. Shown and clicked counts per
@@ -91,7 +91,8 @@ export const OFFERS: readonly Offer[] = [
     // Redirects to pcloud.com/lifetime. 20% of a $199-399 lifetime plan, and
     // the subid survives the redirect chain through to landing.pcloud.com, so
     // placement attribution works off this one link.
-    // Benched for our own apps. Set to 1 and those to 0 to swap back.
+    // Benched for our own apps, which hold both of the slot's cards. Set to 1 and
+    // one of those to 0 to swap back.
     href: 'https://partner.pcloud.com/r/156822',
     weight: 0,
     platforms: 'all',

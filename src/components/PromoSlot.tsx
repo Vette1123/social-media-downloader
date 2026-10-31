@@ -1,14 +1,14 @@
 'use client'
 
 import { trackFeatureUsed } from '@/lib/analytics'
-import { useEffect, useId, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Surface } from '@/components/Surface'
-import { OFFERS, type OfferPlacement } from '@/config/offers'
+import { OFFERS, type Offer, type OfferPlacement } from '@/config/offers'
 import { useHydrated } from '@/lib/clientEnv'
 import { useTier } from '@/lib/entitlements'
 import type { TKey } from '@/lib/i18n'
 import { useLocale, useT } from '@/lib/i18nStore'
-import { hashToSeed, offerHref, selectOffer } from '@/lib/promo'
+import { offerHref, selectOffers } from '@/lib/promo'
 
 /** Our own apps are translated: a sponsor's words are the sponsor's. */
 const OWN_APP_COPY: Record<string, { headline: TKey; body: TKey; cta: TKey }> = {
@@ -59,6 +59,65 @@ function AdUnit() {
   )
 }
 
+/** One app: the icon and pitch first, the tag and button on a shared baseline. */
+function OfferCard({
+  offer,
+  placement,
+  platform,
+}: {
+  offer: Offer
+  placement: OfferPlacement
+  platform?: string
+}) {
+  const t = useT()
+  const locale = useLocale()
+  const copy = locale !== 'en' ? OWN_APP_COPY[offer.id] : undefined
+
+  // Only mounts for a visitor who can see it, so this counts real impressions.
+  useEffect(() => {
+    trackFeatureUsed('promo_shown', { action: offer.id, outcome: placement })
+  }, [offer.id, placement])
+
+  return (
+    <Surface className='animate-section-in group flex min-w-0 flex-col gap-4 overflow-hidden p-4 sm:p-5'>
+      <div className='flex min-w-0 items-start gap-3.5'>
+        {offer.image && (
+          <img
+            src={offer.image}
+            alt={offer.headline}
+            width={56}
+            height={56}
+            className='h-14 w-14 shrink-0 rounded-2xl object-cover'
+          />
+        )}
+        <div className='min-w-0'>
+          <p className='text-base font-semibold leading-snug text-white'>
+            {copy ? t(copy.headline) : offer.headline}
+          </p>
+          <p className='mt-1.5 text-sm leading-relaxed text-white/65'>
+            {copy ? t(copy.body) : offer.body}
+          </p>
+        </div>
+      </div>
+
+      <div className='mt-auto flex items-center justify-between gap-3'>
+        <span className='text-xs text-white/50'>
+          {copy ? t('offerMasareefLabel') : (offer.label ?? 'Sponsored')}
+        </span>
+        <a
+          href={offerHref(offer, placement, platform)}
+          onClick={() => trackFeatureUsed('promo_click', { action: offer.id, outcome: placement })}
+          target='_blank'
+          rel='sponsored nofollow noopener noreferrer'
+          className='btn-grad btn-press whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold'
+        >
+          {copy ? t(copy.cta) : offer.cta}
+        </a>
+      </div>
+    </Surface>
+  )
+}
+
 /**
  * The one surface on this site that carries commercial content, and therefore
  * the one place the rules live:
@@ -84,38 +143,16 @@ export function PromoSlot({
 }) {
   const hydrated = useHydrated()
   const tier = useTier()
-  const t = useT()
-  const locale = useLocale()
-
-  // useId() returns the same string during the static (server) render and
-  // during client hydration, so hashing it into the seed guarantees the same
-  // offer is chosen both times. A random seed here would let selectOffer land
-  // on a different candidate the instant two offers share a pool — a content
-  // swap right after hydration, and a hydration-mismatch warning to go with
-  // it. Also stable across a parent re-render, same as the seed it replaces.
-  // The platform is what shares the slot between offers: useId alone never
-  // changes, so one of two equal offers would simply never show.
-  const reactId = useId()
-  const seed = useMemo(
-    () => hashToSeed(`${reactId}:${placement}:${platform ?? ''}`),
-    [reactId, placement, platform],
+  const offers = useMemo(
+    () => selectOffers(OFFERS, { placement, platform }),
+    [placement, platform],
   )
-  const offer = useMemo(
-    () => selectOffer(OFFERS, { placement, platform, seed }),
-    [placement, platform, seed],
-  )
-  const copy = locale !== 'en' && offer ? OWN_APP_COPY[offer.id] : undefined
 
   const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === '1'
-  const shownOffer = hydrated && tier !== 'pro' ? offer?.id : undefined
-
-  useEffect(() => {
-    if (shownOffer) trackFeatureUsed('promo_shown', { action: shownOffer, outcome: placement })
-  }, [shownOffer, placement])
 
   // When ads are disabled, an offer is required to render anything. When ads
   // are enabled, the slot renders on its own terms without a live offer.
-  if (!offer && !adsEnabled) return null
+  if (offers.length === 0 && !adsEnabled) return null
 
   // Content only ever renders once `hydrated` is true, i.e. once the client
   // has actually resolved the tier from real localStorage — not the
@@ -128,59 +165,25 @@ export function PromoSlot({
   const showContent = hydrated && tier !== 'pro'
 
   const cardContent = showContent && (
-    <Surface className='animate-section-in group flex flex-col gap-3 overflow-hidden p-4 sm:flex-row sm:items-center sm:justify-between'>
-      {adsEnabled ? (
+    adsEnabled ? (
+      <Surface className='animate-section-in overflow-hidden p-4'>
         <AdUnit />
-      ) : (
-        offer && (
-          <div className='flex min-w-0 items-start gap-3'>
-            {offer.image && (
-              <img
-                src={offer.image}
-                alt={offer.headline}
-                width={48}
-                height={48}
-                className='h-12 w-12 shrink-0 rounded-xl object-cover'
-              />
-            )}
-            <div className='min-w-0'>
-              <p className='text-sm font-semibold text-white'>
-                {copy ? t(copy.headline) : offer.headline}
-              </p>
-              <p className='mt-1 text-xs leading-relaxed text-white/60 md:text-sm'>
-                {copy ? t(copy.body) : offer.body}
-              </p>
-            </div>
-          </div>
-        )
-      )}
-
-      {!adsEnabled && offer && (
-        <div className='flex shrink-0 items-center justify-between gap-3 sm:flex-row-reverse'>
-          <Surface
-            as='a'
-            href={offerHref(offer, placement, platform)}
-            onClick={() => trackFeatureUsed('promo_click', { action: offer.id, outcome: placement })}
-            target='_blank'
-            rel='sponsored nofollow noopener noreferrer'
-            elevation='raised'
-            interaction='lift'
-            radius='xl'
-            className='whitespace-nowrap px-3 py-2 text-sm font-medium text-white/80 hover:text-white'
-          >
-            {copy ? t(copy.cta) : offer.cta}
-          </Surface>
-          <span className='text-[11px] text-white/50'>{copy ? t('offerMasareefLabel') : (offer.label ?? 'Sponsored')}</span>
-        </div>
-      )}
-    </Surface>
+      </Surface>
+    ) : (
+      <div className='grid gap-3 sm:grid-cols-2'>
+        {offers.map((offer) => (
+          <OfferCard key={offer.id} offer={offer} placement={placement} platform={platform} />
+        ))}
+      </div>
+    )
   )
 
   // `in-content` reserves its box unconditionally — the height must be held
   // through the pre-hydration window and stay held after, even while
-  // suppressed, so the SEO/FAQ section below it never shifts.
+  // suppressed, so the SEO/FAQ section below it never shifts. Measured with both
+  // cards across all five languages; the Spanish and Portuguese copy sets it.
   if (reservesHeight(placement)) {
-    return <div className='mt-4 min-h-[188px] sm:min-h-[98px]'>{cardContent}</div>
+    return <div className='mt-4 min-h-[440px] sm:min-h-[264px] md:min-h-[219px] lg:min-h-[196px] xl:min-h-[174px]'>{cardContent}</div>
   }
 
   // `post-result` reserves nothing: with no in-flow content of its own after
