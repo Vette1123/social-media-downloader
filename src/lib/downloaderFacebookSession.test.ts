@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Downloader, facebookProgressiveUrl } from './downloader'
+import { Downloader, facebookReelFromPage } from './downloader'
 
 /**
  * Some public reels are walled for logged-out visitors, so the plugin, the
@@ -13,31 +13,61 @@ const REEL = '2582177208918717'
 const NEXT_REEL = '1739775020461063'
 const CDN = 'https:\\/\\/video.example.fbcdn.net\\/o1\\/v\\/t2'
 
+const details = (tag: string) =>
+  `"preferred_thumbnail":{"image":{"uri":"https:\\/\\/scontent.example.fbcdn.net\\/v\\/t15.5256-10\\/${tag}.jpg?a=1"}},` +
+  `"playable_duration_in_ms":17853,"owner":{"__typename":"User","id":"615"},` +
+  `"owner":{"__typename":"User","__isActor":"User","id":"615","name":"${tag} owner","is_verified":false},` +
+  `"message":{"text":"${tag} caption \\ud83d\\udda4","ranges":[]}`
+
 const block = (id: string, tag: string) =>
   `"progressive_urls":[` +
   `{"progressive_url":"${CDN}\\/${tag}-sd.mp4?a=1&b=2","failure_reason":null,"metadata":{"quality":"SD"}},` +
   `{"progressive_url":"${CDN}\\/${tag}-hd.mp4?a=1&b=2","failure_reason":null,"metadata":{"quality":"HD"}}` +
-  `],"hls_playlist_urls":[]}},"id":"${id}","owner":{"id":"61589208197179"}`
+  `],"hls_playlist_urls":[]}},"id":"${id}","owner":{"id":"61589208197179"},${details(tag)}`
 
 const PAGE = `<html><title>Facebook</title>${block(NEXT_REEL, 'next')}${block(REEL, 'wanted')}</html>`
 
-describe('facebookProgressiveUrl', () => {
+describe('facebookReelFromPage', () => {
   it('returns the HD file of the requested reel, not the next one in the feed', () => {
-    expect(facebookProgressiveUrl(PAGE, REEL)).toBe(
+    expect(facebookReelFromPage(PAGE, REEL)?.downloadUrl).toBe(
       'https://video.example.fbcdn.net/o1/v/t2/wanted-hd.mp4?a=1&b=2',
     )
   })
 
+  it('reads the poster, caption, owner and length of that reel only', () => {
+    expect(facebookReelFromPage(PAGE, REEL)).toMatchObject({
+      thumbnail: 'https://scontent.example.fbcdn.net/v/t15.5256-10/wanted.jpg?a=1',
+      caption: 'wanted caption 🖤',
+      author: 'wanted owner',
+      duration: 18,
+    })
+    expect(facebookReelFromPage(PAGE, NEXT_REEL)).toMatchObject({
+      thumbnail: 'https://scontent.example.fbcdn.net/v/t15.5256-10/next.jpg?a=1',
+      caption: 'next caption 🖤',
+    })
+  })
+
+  it('still returns the file when the details are missing', () => {
+    const page = `"progressive_urls":[{"progressive_url":"${CDN}\\/bare.mp4","metadata":{"quality":"HD"}}],"id":"${REEL}"`
+    expect(facebookReelFromPage(page, REEL)).toEqual({
+      downloadUrl: 'https://video.example.fbcdn.net/o1/v/t2/bare.mp4',
+      thumbnail: '',
+      caption: '',
+      author: '',
+      duration: 0,
+    })
+  })
+
   it('falls back to SD when HD is missing', () => {
     const page = `"progressive_urls":[{"progressive_url":"${CDN}\\/only-sd.mp4","failure_reason":null,"metadata":{"quality":"SD"}}],"id":"${REEL}"`
-    expect(facebookProgressiveUrl(page, REEL)).toBe(
+    expect(facebookReelFromPage(page, REEL)?.downloadUrl).toBe(
       'https://video.example.fbcdn.net/o1/v/t2/only-sd.mp4',
     )
   })
 
   it('returns nothing when the page does not hold that reel', () => {
-    expect(facebookProgressiveUrl(PAGE, '999')).toBe('')
-    expect(facebookProgressiveUrl('<html>login</html>', REEL)).toBe('')
+    expect(facebookReelFromPage(PAGE, '999')).toBeNull()
+    expect(facebookReelFromPage('<html>login</html>', REEL)).toBeNull()
   })
 })
 
@@ -46,7 +76,14 @@ describe('the Facebook session route', () => {
     tryFacebookSession(
       resolvedUrl: string,
       originalUrl: string,
-    ): Promise<{ downloadUrl?: string; id: string } | null>
+    ): Promise<{
+      downloadUrl?: string
+      id: string
+      title: string
+      author: string
+      thumbnail: string
+      duration: number
+    } | null>
   }
   const session = (d: Downloader) => d as unknown as WithSession
   const resolved = `https://www.facebook.com/reel/${REEL}/?rdid=abc&share_url=x`
@@ -73,6 +110,12 @@ describe('the Facebook session route', () => {
     )
     const headers = spy.mock.calls[0][1]?.headers as Record<string, string>
     expect(headers.Cookie).toBe('c_user=1; xs=2')
+    expect(result).toMatchObject({
+      title: 'wanted caption 🖤',
+      author: 'wanted owner',
+      duration: 18,
+    })
+    expect(result?.thumbnail).toContain('wanted.jpg')
     expect(result?.downloadUrl).toContain('wanted-hd.mp4')
   })
 

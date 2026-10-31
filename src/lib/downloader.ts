@@ -489,27 +489,64 @@ const FB_POSTER_URL = /https:\/\/[^"'\\\s]+\/t15\.[^"'\\\s]+/
  */
 /** How far past a `progressive_urls` list the id of its reel may sit. */
 const FB_REEL_ID_SPAN = 20_000
+/** A reel's details end by here; the live page has them within 55 KB. */
+const FB_REEL_SECTION_SPAN = 100_000
+
+/** The first capture of `pattern`, undone from JSON-string escaping. */
+function facebookField(section: string, pattern: RegExp): string {
+  const raw = section.match(pattern)?.[1]
+  return raw ? (JSON.parse(`"${raw}"`) as string) : ''
+}
 
 /**
- * The muxed MP4 of one reel, from the page a logged-in session sees: HD, else
- * the first quality listed. That page has no `browser_native_*` keys, and it
- * also carries the reels queued after this one, so each list is matched on the
- * first `"id"` after it. The URLs are signed and work without a cookie.
+ * One reel from the page a logged-in session sees: its muxed MP4, HD else the
+ * first quality listed, and the details the result card shows. That page has no
+ * `browser_native_*` keys and also carries the reels queued after this one, so
+ * each list is matched on the first `"id"` after it, and the details are read
+ * only up to the next list. The URLs are signed and work without a cookie.
  */
-export function facebookProgressiveUrl(html: string, videoId: string): string {
-  for (const list of html.matchAll(/"progressive_urls":\[(.*?)\]/g)) {
+export function facebookReelFromPage(
+  html: string,
+  videoId: string,
+): {
+  downloadUrl: string
+  thumbnail: string
+  caption: string
+  author: string
+  duration: number
+} | null {
+  const lists = [...html.matchAll(/"progressive_urls":\[(.*?)\]/g)]
+  for (const [index, list] of lists.entries()) {
     const end = list.index + list[0].length
-    const owner = html.slice(end, end + FB_REEL_ID_SPAN).match(/"id":"(\d+)"/)
-    if (owner?.[1] !== videoId) continue
+    const id = html.slice(end, end + FB_REEL_ID_SPAN).match(/"id":"(\d+)"/)
+    if (id?.[1] !== videoId) continue
     const sources = [
       ...list[1].matchAll(
         /"progressive_url":"([^"]+)"[^{}]*"metadata":\{"quality":"(\w+)"/g,
       ),
     ]
     const best = sources.find((source) => source[2] === 'HD') ?? sources[0]
-    if (best) return JSON.parse(`"${best[1]}"`) as string
+    if (!best) continue
+    const section = html.slice(
+      end,
+      lists[index + 1]?.index ?? end + FB_REEL_SECTION_SPAN,
+    )
+    const ms = Number(section.match(/"playable_duration_in_ms":(\d+)/)?.[1] ?? 0)
+    return {
+      downloadUrl: JSON.parse(`"${best[1]}"`) as string,
+      thumbnail: facebookField(
+        section,
+        /"preferred_thumbnail":\{"image":\{"uri":"([^"]+)"/,
+      ),
+      caption: facebookField(section, /"message":\{"text":"((?:[^"\\]|\\.)*)"/),
+      author: facebookField(
+        section,
+        /"owner":\{"__typename":"\w+"[^{}]*?"name":"((?:[^"\\]|\\.)*)"/,
+      ),
+      duration: Math.round(ms / 1000),
+    }
   }
-  return ''
+  return null
 }
 
 function facebookPoster(html: string): string {
@@ -3722,23 +3759,24 @@ export class Downloader {
       },
     )
     const html = typeof response.data === 'string' ? response.data : ''
-    const downloadUrl = facebookProgressiveUrl(html, videoId)
-    if (!downloadUrl) {
+    const reel = facebookReelFromPage(html, videoId)
+    if (!reel) {
       // A dead or checkpointed session looks exactly like a missing reel.
       console.warn(
         `facebook session: no source for ${videoId} (page ${html.length} bytes, login form: ${html.includes('login_form')})`,
       )
       return null
     }
+    const caption = reel.caption.replace(/\s+/g, ' ').trim()
     return {
       id: videoId,
-      title: 'Facebook Video',
+      title: caption.slice(0, 100) || 'Facebook Video',
       url: originalUrl,
-      thumbnail: facebookPoster(html),
-      duration: 0,
-      author: 'Facebook',
-      description: '',
-      downloadUrl,
+      thumbnail: reel.thumbnail,
+      duration: reel.duration,
+      author: reel.author || 'Facebook',
+      description: caption,
+      downloadUrl: reel.downloadUrl,
     }
   }
 

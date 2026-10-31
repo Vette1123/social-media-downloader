@@ -47,6 +47,11 @@ cookies omitted, so the session is only needed to find them.
 - The parser was written for one paste format. The owner's select-all gave the DevTools
   table, the most obvious way to copy cookies.
 
+- The first live pass was called good on bytes alone, with a black player, "Facebook Video"
+  and "by Facebook" on the card. The owner saw it at once. `FB_POSTER_URL` cannot match
+  this page's escaped URLs, so the reused helper returned nothing. Look at the card, and
+  read a reused helper against the new page's shape.
+
 ## What worked
 
 - Headless Chrome with an empty `--user-data-dir` and `--screenshot`. It is a private
