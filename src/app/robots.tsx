@@ -15,20 +15,26 @@ const ALLOWED = [
   ...crawlers.robotsOnlyTokens,
 ]
 
+// URLs with nothing to index. /account is noindex, so a crawl of it (five
+// locales) yields nothing; /splash/ is iOS startup images, linked from every
+// page's <head>. /_next/ and the opengraph images stay open: search needs the
+// first to render a page, and the sitemap lists the second.
+const NOT_FOR_SEARCH = ['/api/', '/account', '/*/account', '/splash/']
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/'],
+        disallow: NOT_FOR_SEARCH,
       },
       {
         // Search-aware AI crawlers and the search engines proper — named so the
         // allowance survives a future tightening of the wildcard rule above.
         userAgent: ALLOWED,
         allow: '/',
-        disallow: ['/api/'],
+        disallow: NOT_FOR_SEARCH,
       },
       {
         // Aggressive scrapers and backlink-audit crawlers: no visitors, no

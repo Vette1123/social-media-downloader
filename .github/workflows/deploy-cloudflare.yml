@@ -88,6 +88,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # What is live before this deploy, so the ping below can send only the
+      # pages this deploy moved.
+      - name: Snapshot the live sitemap
+        if: github.event_name != 'pull_request'
+        run: node scripts/indexnow.mjs --snapshot .sitemap-before.xml
+
       - name: Deploy
         if: github.event_name != 'pull_request'
         run: pnpm exec wrangler deploy
@@ -95,12 +101,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # Runs after the deploy is live, because it reads the deployed sitemap to
-      # collect the URL set. The script swallows its own failures — a flaky
-      # search-engine endpoint must never fail a deploy.
+      # Runs after the deploy is live, because it tells engines to fetch these
+      # pages now. The script swallows its own failures — a flaky search-engine
+      # endpoint must never fail a deploy.
       - name: Ping IndexNow
         if: github.event_name != 'pull_request'
-        run: node scripts/indexnow.mjs
+        run: node scripts/indexnow.mjs --since .sitemap-before.xml
 
   # The deploy is not the verification. This is: 148 assertions against the
   # live origin — every API route, the static-asset headers that prove pages are
