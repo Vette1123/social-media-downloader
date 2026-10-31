@@ -1,4 +1,4 @@
-# A Facebook reel that was never public
+# A Facebook reel behind the login wall
 
 ## What
 
@@ -9,6 +9,13 @@ Open Graph tags and no video URL, and Cobalt answers `error.api.fetch.empty`. Th
 reel in `cf-smoke` returns 200 KB from the plugin with `hd_src` and `sd_src`, a real title
 and tags from the crawler, and resolves on production. No code changed. The 422 message
 already says what happened.
+
+Opened in the owner's logged-in Chrome, with their approval for this one reel, it plays,
+and a `privacy_scope` field on the page reads "Public". So the gate is on logged-out
+viewers, not the audience setting. That page holds the tracks in
+`extensions.all_video_dash_prefetch_representations`: separate video and audio
+`base_url`s, no `browser_native_*`, signed for about four days. They return 206 with
+cookies omitted, so the session is only needed to find them.
 
 ## Mistakes
 
@@ -21,6 +28,11 @@ already says what happened.
   side-by-side against Facebook itself is what proved the plugin route still works.
 - Grepping for `representations` matched player config flags, not video data. Count
   `.mp4` and `base_url` before believing a key name.
+
+- This lesson was first titled "never public" and the report said the reel was restricted.
+  An anonymous wall shows what logged-out visitors get, not the audience setting.
+- `hd` and `sd` counted zero in the logged-in page, and the search nearly stopped there.
+  The sources were under a different key. Count `base_url` before calling a page empty.
 
 ## What worked
 
