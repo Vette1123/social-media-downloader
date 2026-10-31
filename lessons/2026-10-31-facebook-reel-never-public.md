@@ -24,6 +24,10 @@ already says what happened.
 
 ## What worked
 
+- Headless Chrome with an empty `--user-data-dir` and `--screenshot`. It is a private
+  window without spending an account, and it showed the "See more on Facebook" login
+  wall where the control reel had a `<video>`. Eight more anonymous routes came back
+  empty too.
 - Comparing the same four signals for both reels: size, title, Open Graph tags, source keys.
 - Spaced requests, tens at most, after earlier ones timed out.
 
