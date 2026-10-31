@@ -7,11 +7,15 @@ import {
   type TKey,
   type Locale,
 } from './i18n'
+import { localeFromPath } from './localeRoutes'
+import { usePathname } from 'next/navigation'
 import { useSyncExternalStore, useCallback } from 'react'
 
 /**
- * The locale as an external store — the codebase's sanctioned shape for
- * "localStorage-backed value read by React" (see proSignals/history): the
+ * A language in the URL always wins: that page is static HTML in that language.
+ *
+ * Otherwise the locale is an external store — the codebase's sanctioned shape
+ * for "localStorage-backed value read by React" (see proSignals/history): the
  * server snapshot is always 'en', so prerender and hydration agree, and
  * useSyncExternalStore re-renders with the stored choice after mount without
  * a setState-in-effect anywhere.
@@ -25,7 +29,7 @@ const LOCALE_KEY = 'smd:lang'
 let current: Locale = 'en'
 const listeners = new Set<() => void>()
 
-function mirrorDocument(locale: Locale): void {
+export function mirrorDocument(locale: Locale): void {
   if (typeof document === 'undefined') return
   document.documentElement.lang = locale
   document.documentElement.dir = isRtl(locale) ? 'rtl' : 'ltr'
@@ -48,7 +52,7 @@ async function adopt(next: Locale): Promise<void> {
 
 // Hydrate once at first client import. Module init is outside rendering, so
 // this is a store load rather than a state update during render.
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && !localeFromPath(window.location.pathname)) {
   try {
     const stored = window.localStorage.getItem(LOCALE_KEY)
     if (isLocale(stored) && stored !== 'en') {
@@ -78,15 +82,30 @@ export function subscribeLocale(listener: () => void): () => void {
 }
 
 export function setLocale(next: Locale): void {
-  if (next === current) return
+  // Before the bail-out: on a localized URL `current` never adopted the stored
+  // language, so choosing English there still has to overwrite it.
   try {
     window.localStorage.setItem(LOCALE_KEY, next)
   } catch {
     // storage disabled — the choice lives for this session only.
   }
+  if (next === current) return
   mirrorDocument(next)
   trackPrefChanged({ key: 'language', value: next })
   void adopt(next)
+}
+
+/**
+ * The language in effect, for the places that need it as a value rather than as
+ * a lookup: `Intl` formatters, which do their own wording and only want a tag.
+ */
+export function useLocale(): Locale {
+  const stored = useSyncExternalStore(
+    subscribeLocale,
+    getLocaleSnapshot,
+    getLocaleServerSnapshot,
+  )
+  return localeFromPath(usePathname()) ?? stored
 }
 
 /**
@@ -94,18 +113,6 @@ export function setLocale(next: Locale): void {
  * the locale changes; falls back per-key to English for anything a dictionary
  * has not caught up with yet.
  */
-/**
- * The chosen language, for the places that need it as a value rather than as a
- * lookup: `Intl` formatters, which do their own wording and only want a tag.
- */
-export function useLocale(): Locale {
-  return useSyncExternalStore(
-    subscribeLocale,
-    getLocaleSnapshot,
-    getLocaleServerSnapshot,
-  )
-}
-
 export function useT(): (
   key: TKey,
   vars?: Record<string, string | number>,

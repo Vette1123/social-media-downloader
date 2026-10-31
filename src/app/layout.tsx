@@ -7,6 +7,7 @@ import { globalStructuredData } from '@/lib/structuredData'
 import { SPLASH_DEVICES, splashMedia, splashPath } from '@/lib/splashDevices'
 import { AccountControl } from '@/components/AccountControl'
 import { AnalyticsContext } from '@/components/AnalyticsProvider'
+import { DocumentLocale, EnglishRouteOnly } from '@/components/RouteLocale'
 import { HomeControl } from '@/components/HomeControl'
 
 const geistSans = Geist({
@@ -288,8 +289,11 @@ export default function RootLayout({
         style={{ backgroundColor: '#08080a' }}
       >
         <AnalyticsContext />
-        <HomeControl />
-        <AccountControl />
+        <DocumentLocale />
+        <EnglishRouteOnly>
+          <HomeControl />
+          <AccountControl />
+        </EnglishRouteOnly>
         {children}
         {process.env.NEXT_PUBLIC_CF_BEACON_TOKEN ? (
           <script

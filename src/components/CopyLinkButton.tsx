@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useT } from '@/lib/i18nStore'
 import { trackShared } from '@/lib/analytics'
 
 /**
@@ -8,6 +9,7 @@ import { trackShared } from '@/lib/analytics'
  * pairs with Share where that exists, stands in for it where it doesn't.
  */
 export function CopyLinkButton({ url }: { url: string }) {
+  const t = useT()
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -28,7 +30,7 @@ export function CopyLinkButton({ url }: { url: string }) {
       onClick={() => void handleCopy()}
       className='rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition-colors hover:text-white'
     >
-      {copied ? 'Copied ✓' : 'Copy link'}
+      {copied ? t('copied') : t('copyLink')}
     </button>
   )
 }

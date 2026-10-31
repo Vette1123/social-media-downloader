@@ -2,10 +2,15 @@ import type { Metadata } from 'next'
 import Link from '@/components/IntentLink'
 import { SiteFooter } from '@/components/SiteFooter'
 import { siteConfig } from '@/config/site'
+import { staticOpenGraph } from '@/lib/pageMetadata'
+
+const title = 'Terms of Service — Social Media Downloader'
+const description = `The terms for using ${siteConfig.name}: as-is service, your responsibility for content rights, and what supporting the project does and does not buy.`
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — Social Media Downloader',
-  description: `The terms for using ${siteConfig.name}: as-is service, your responsibility for content rights, and what supporting the project does and does not buy.`,
+  title,
+  description,
+  openGraph: staticOpenGraph('/terms', title, description),
   alternates: { canonical: '/terms' },
 }
 

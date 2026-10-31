@@ -959,3 +959,8 @@ body > div:not([class]) {
 #bmc-close-btn svg path {
   fill: #fff !important;
 }
+
+/* Arabic is a joined script: tracking pulls the letters of a word apart. */
+:lang(ar) [class*='tracking-'] {
+  letter-spacing: 0;
+}

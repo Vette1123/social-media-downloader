@@ -1,8 +1,10 @@
 import { contentDay } from '@/config/build'
 import { siteConfig } from '@/config/site'
-import { homepageFaqs } from '@/lib/homepageFaqs'
+import { fill, LOCALES, type Locale } from '@/lib/i18n'
+import { contentFor, platformFor } from '@/lib/localeContent'
+import { localePath } from '@/lib/localeRoutes'
+import type { PageCopy } from '@/lib/pageCopy'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
-import { platformsBySlug, platformUrl } from '@/lib/platforms'
 
 const ogImage = siteConfig.ogImage
 const datePublished = `${siteConfig.foundingYear}-01-01`
@@ -52,7 +54,7 @@ const websiteNode = {
   name: siteConfig.name,
   alternateName: siteConfig.shortName,
   description: siteConfig.description,
-  inLanguage: 'en',
+  inLanguage: LOCALES,
   publisher: { '@id': `${siteConfig.url}/#organization` },
   potentialAction: {
     '@type': 'SearchAction',
@@ -79,7 +81,7 @@ const webApplicationNode = {
   datePublished,
   dateModified,
   isAccessibleForFree: true,
-  inLanguage: 'en',
+  inLanguage: LOCALES,
   offers: {
     '@type': 'Offer',
     price: '0',
@@ -120,11 +122,15 @@ export const globalStructuredData = {
   '@graph': [websiteNode, personNode, organizationNode, webApplicationNode],
 }
 
-function faqPageNode(id: string, faqs: Array<{ q: string; a: string }>) {
+function faqPageNode(
+  id: string,
+  faqs: Array<{ q: string; a: string }>,
+  locale: Locale,
+) {
   return {
     '@type': 'FAQPage',
     '@id': id,
-    inLanguage: 'en',
+    inLanguage: locale,
     mainEntity: faqs.map((f) => ({
       '@type': 'Question',
       name: f.q,
@@ -154,7 +160,9 @@ function webPageNode({
   name,
   description,
   isPartOfId,
+  locale,
 }: {
+  locale: Locale
   url: string
   name: string
   description: string
@@ -166,7 +174,7 @@ function webPageNode({
     url,
     name,
     description,
-    inLanguage: 'en',
+    inLanguage: locale,
     isPartOf: { '@id': isPartOfId },
     primaryImageOfPage: ogImage,
     publisher: { '@id': `${siteConfig.url}/#organization` },
@@ -174,130 +182,119 @@ function webPageNode({
   }
 }
 
-const homepageHowToNode = {
-  '@type': 'HowTo',
-  '@id': `${siteConfig.url}/#howto`,
-  name: 'How to download a public TikTok, X, Instagram, Facebook or YouTube video',
-  description:
-    'Save any public TikTok, Twitter/X, Instagram, Facebook, or YouTube video, MP3 audio, or carousel image in three steps — no login, no install.',
-  totalTime: 'PT30S',
-  image: ogImage,
-  inLanguage: 'en',
-  estimatedCost: {
-    '@type': 'MonetaryAmount',
-    currency: 'USD',
-    value: '0',
-  },
-  supply: [
-    {
-      '@type': 'HowToSupply',
-      name: 'TikTok, Twitter/X, Instagram, Facebook or YouTube post URL',
-    },
-  ],
-  tool: [
-    { '@type': 'HowToTool', name: 'Any modern web browser' },
-    {
-      '@type': 'HowToTool',
-      name: 'A TikTok, Twitter/X, Instagram, Facebook or YouTube URL',
-    },
-  ],
-  step: [
-    {
-      '@type': 'HowToStep',
-      position: 1,
-      name: 'Copy the link',
-      text: 'Open the TikTok, Twitter/X, Instagram, Facebook or YouTube post and copy the share URL.',
-      url: `${siteConfig.url}/#step-1`,
-    },
-    {
-      '@type': 'HowToStep',
-      position: 2,
-      name: 'Paste and process',
-      text: 'Paste the URL into the input on this page and click Process URL to fetch the media.',
-      url: `${siteConfig.url}/#step-2`,
-    },
-    {
-      '@type': 'HowToStep',
-      position: 3,
-      name: 'Download',
-      text: 'Preview, then download the full-quality video, MP3 audio, or carousel images individually or as a ZIP.',
-      url: `${siteConfig.url}/#step-3`,
-    },
-  ],
+function localizedUrl(locale: Locale, path: string): string {
+  const localized = localePath(locale, path)
+  return localized === '/' ? siteConfig.url : `${siteConfig.url}${localized}`
 }
 
-export function homepageStructuredData() {
-  const url = siteConfig.url
-  return {
-    '@context': 'https://schema.org',
-    '@graph': [
-      webPageNode({
-        url,
-        name: `${siteConfig.name} — ${siteConfig.tagline}`,
-        description: siteConfig.description,
-        isPartOfId: `${siteConfig.url}/#website`,
-      }),
-      breadcrumbNode(`${url}#breadcrumb`, [{ name: 'Home', url }]),
-      homepageHowToNode,
-      faqPageNode(`${url}#faq`, homepageFaqs),
-    ],
-  }
-}
-
-function platformHowToNode(p: Platform) {
-  const url = platformUrl(p.slug)
+/** The three steps every page tells, differing only in the words. */
+function howToNode({
+  url,
+  locale,
+  name,
+  description,
+  supply,
+  tool,
+  steps,
+  howTo,
+}: {
+  url: string
+  locale: Locale
+  name: string
+  description: string
+  supply: string
+  tool: string
+  steps: [string, string, string]
+  howTo: PageCopy['howTo']
+}) {
+  const stepNames = [howTo.step1Name, howTo.step2Name, howTo.step3Name]
+  // The home page's anchors sit on the bare origin, a platform's on its own URL.
+  const anchor = url === siteConfig.url ? `${url}/` : url
   return {
     '@type': 'HowTo',
-    '@id': `${url}#howto`,
-    name: `How to download from ${p.name}`,
-    description: `Save any public ${p.name} video, photo, or MP3 in three steps — no login, no install.`,
+    '@id': `${anchor}#howto`,
+    name,
+    description,
     totalTime: 'PT30S',
     image: ogImage,
-    inLanguage: 'en',
+    inLanguage: locale,
     estimatedCost: {
       '@type': 'MonetaryAmount',
       currency: 'USD',
       value: '0',
     },
-    supply: [
-      {
-        '@type': 'HowToSupply',
-        name: `A public ${p.name} post URL`,
-      },
-    ],
+    supply: [{ '@type': 'HowToSupply', name: supply }],
     tool: [
-      { '@type': 'HowToTool', name: 'Any modern web browser' },
-      { '@type': 'HowToTool', name: `A ${p.name} post URL` },
+      { '@type': 'HowToTool', name: howTo.browserTool },
+      { '@type': 'HowToTool', name: tool },
     ],
-    step: [
-      {
-        '@type': 'HowToStep',
-        position: 1,
-        name: 'Copy the link',
-        text: `Open the ${p.name} post and copy the share URL.`,
-        url: `${url}#step-1`,
-      },
-      {
-        '@type': 'HowToStep',
-        position: 2,
-        name: 'Paste and process',
-        text: 'Paste the URL into the input on this page and click Process URL.',
-        url: `${url}#step-2`,
-      },
-      {
-        '@type': 'HowToStep',
-        position: 3,
-        name: 'Download',
-        text: 'Preview, then save the full-quality video, MP3, or images.',
-        url: `${url}#step-3`,
-      },
+    step: steps.map((text, i) => ({
+      '@type': 'HowToStep',
+      position: i + 1,
+      name: stepNames[i],
+      text,
+      url: `${anchor}#step-${i + 1}`,
+    })),
+  }
+}
+
+export function homepageStructuredData(locale: Locale = 'en') {
+  const url = localizedUrl(locale, '/')
+  const { copy, homeFaqs } = contentFor(locale)
+  const { howTo, home, nav } = copy
+  const english = locale === 'en'
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      webPageNode({
+        url,
+        name: english ? `${siteConfig.name} — ${siteConfig.tagline}` : home.metaTitle,
+        description: english ? siteConfig.description : home.metaDescription,
+        isPartOfId: `${siteConfig.url}/#website`,
+        locale,
+      }),
+      breadcrumbNode(`${url}#breadcrumb`, [{ name: nav.home, url }]),
+      howToNode({
+        url,
+        locale,
+        name: howTo.homeName,
+        description: howTo.homeDescription,
+        supply: howTo.homeSupply,
+        tool: howTo.homeTool,
+        steps: [howTo.homeStep1, howTo.homeStep2, howTo.homeStep3],
+        howTo,
+      }),
+      faqPageNode(`${url}#faq`, homeFaqs, locale),
     ],
   }
 }
 
-export function platformStructuredData(slug: PlatformSlug) {
-  const p = platformsBySlug[slug]
-  const url = platformUrl(slug)
+function platformHowToNode(p: Platform, url: string, locale: Locale) {
+  const { howTo } = contentFor(locale).copy
+  const vars = { name: p.name }
+  return howToNode({
+    url,
+    locale,
+    name: fill(howTo.platformName, vars),
+    description: fill(howTo.platformDescription, vars),
+    supply: fill(howTo.platformSupply, vars),
+    tool: fill(howTo.platformTool, vars),
+    steps: [
+      fill(howTo.platformStep1, vars),
+      howTo.platformStep2,
+      howTo.platformStep3,
+    ],
+    howTo,
+  })
+}
+
+export function platformStructuredData(
+  slug: PlatformSlug,
+  locale: Locale = 'en',
+) {
+  const p = platformFor(locale, slug)
+  const url = localizedUrl(locale, `/${slug}`)
+  const { nav } = contentFor(locale).copy
   return {
     '@context': 'https://schema.org',
     '@graph': [
@@ -306,15 +303,17 @@ export function platformStructuredData(slug: PlatformSlug) {
         name: p.metaTitle,
         description: p.metaDescription,
         isPartOfId: `${siteConfig.url}/#website`,
+        locale,
       }),
       breadcrumbNode(`${url}#breadcrumb`, [
-        { name: 'Home', url: siteConfig.url },
+        { name: nav.home, url: localizedUrl(locale, '/') },
         { name: p.brandLabel, url },
       ]),
-      platformHowToNode(p),
+      platformHowToNode(p, url, locale),
       faqPageNode(
         `${url}#faq`,
         p.faqs.map((f) => ({ q: f.q, a: f.a })),
+        locale,
       ),
     ],
   }

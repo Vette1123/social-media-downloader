@@ -1,0 +1,889 @@
+{
+  "copy": {
+    "nav": {
+      "home": "Beranda",
+      "breadcrumb": "Jejak navigasi",
+      "otherDownloaders": "Downloader lainnya",
+      "perPlatform": "Downloader per platform",
+      "currentPage": "(halaman saat ini)",
+      "allPlatforms": "← Semua platform"
+    },
+    "chips": {
+      "free": "Gratis selamanya",
+      "noLoginToDownload": "Tanpa login untuk mengunduh",
+      "noLoginRequired": "Tanpa perlu login",
+      "noLimits": "Tanpa batas unduhan",
+      "hd": "Kualitas HD",
+      "anyLink": "Link publik apa saja"
+    },
+    "home": {
+      "metaTitle": "Download Video Sosmed — Simpan Video Publik Apa Saja HD",
+      "metaDescription": "Unduh video publik dari TikTok, X, Instagram, Facebook, YouTube dan lainnya. Video HD, audio MP3 dan galeri foto, gratis tanpa login.",
+      "heroLabels": {
+        "tiktok-downloader": "Download video TikTok",
+        "twitter-video-downloader": "Download video Twitter/X",
+        "instagram-downloader": "Download reels & foto Instagram",
+        "facebook-downloader": "Download video & reels Facebook",
+        "youtube-downloader": "Download video YouTube & Shorts"
+      },
+      "h1Lead": "Download video publik apa saja,",
+      "h1Accent": "dalam kualitas asli",
+      "intro": "Simpan video, ekstrak audio MP3, atau ambil galeri gambar lengkap dari postingan publik di TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch & Vimeo.",
+      "featuresTitle": "Semua dari satu link",
+      "featuresSub": "Sekali tempel, empat cara menyimpan. Tanpa aplikasi, tanpa akun, tidak ada yang perlu dipasang.",
+      "features": {
+        "video": {
+          "label": "Video HD",
+          "sub": "File MP4 sumber dengan kualitas penuh, bukan rekaman layar — bisa digeser maju dan mundur."
+        },
+        "audio": {
+          "label": "Audio MP3",
+          "sub": "Ambil soundtrack-nya — cocok untuk suara yang lagi tren."
+        },
+        "gallery": {
+          "label": "Galeri foto",
+          "sub": "Carousel datang dalam resolusi penuh dan bisa kamu pilih sendiri."
+        },
+        "zip": {
+          "label": "ZIP sekaligus",
+          "sub": "Ambil semua gambar dalam slideshow sebagai satu unduhan."
+        }
+      },
+      "stepsTitle": "Tiga langkah, beberapa detik",
+      "stepsSub": "Tanpa tutorial. Tanpa pengaturan. Tempel lalu unduh.",
+      "steps": [
+        {
+          "title": "Salin URL video",
+          "sub": "TikTok, X, Instagram, YouTube — atau link video publik apa saja."
+        },
+        {
+          "title": "Tempel & unduh",
+          "sub": "Kami memproses medianya dalam hitungan detik — langsung di browser kamu."
+        },
+        {
+          "title": "Simpan",
+          "sub": "Video, MP3, atau galeri gambar lengkap. Selesai."
+        }
+      ],
+      "jumpTitle": "Langsung ke downloader khusus",
+      "jumpSub": "Lebih suka halaman yang dibuat untuk satu platform? Pilih punyamu.",
+      "whyEyebrow": "Kenapa ini berhasil",
+      "seoTitle": "Download Video TikTok, X, Instagram, Facebook & YouTube Gratis",
+      "seoParagraphs": [
+        "Simpan postingan publik TikTok, Twitter/X, Instagram, Facebook, atau YouTube dengan beberapa klik saja. Tempel link, lihat pratinjau kontennya, lalu unduh video berkualitas penuh, soundtrack MP3 aslinya, atau semua gambar dari carousel foto.",
+        "Semuanya berjalan di browser kamu — tanpa aplikasi, tanpa daftar, dan tanpa batas jumlah yang kamu simpan. Hanya postingan yang terlihat publik yang bisa diakses, dan kamu bertanggung jawab atas hak untuk apa pun yang kamu unduh."
+      ],
+      "formatsEyebrow": "Format link yang didukung",
+      "faqTitle": "Pertanyaan yang sering diajukan",
+      "whatsNewTitle": "Baru ditambahkan",
+      "whatsNewSub": "Alat ini terus dikembangkan — ini yang berubah belakangan ini."
+    },
+    "landing": {
+      "featuresTitle": "Dengan downloader {name} ini kamu bisa",
+      "othersTitle": "Coba juga downloader kami yang lain",
+      "othersSub": "Satu alat per platform — pilih yang kamu butuhkan.",
+      "whyEyebrow": "Kenapa ini berhasil",
+      "seoTitle": "{brand} gratis — {tagline}",
+      "formatsEyebrow": "Format URL {name} yang didukung",
+      "faqTitle": "Downloader {name} — Pertanyaan yang sering diajukan"
+    },
+    "support": {
+      "compactTitle": "Situs ini gratis dan tanpa batas.",
+      "compactBody": "Menjaga resolver tetap hidup butuh biaya. ${monthly} sebulan menutup sebagian biayanya dan mengaktifkan antrean batch.",
+      "coffee": "Traktir saya kopi",
+      "title": "Gratis selamanya. Tapi menjalankannya tidak gratis.",
+      "body": "Setiap unduhan di sini gratis, tanpa akun dan tanpa batas, dan itu tidak akan berubah. Keanggotaan menutup sebagian biaya menjaga resolver tetap hidup — dan mengaktifkan keempat fitur ini untukmu.",
+      "monthly": "Dukung — ${monthly}/bulan",
+      "lifetime": "Atau ${lifetime} sekali bayar, selamanya",
+      "note": "Berhenti kapan saja, lewat Buy Me a Coffee. Traktiran kopi sekali saja dengan jumlah berapa pun juga boleh.",
+      "benefits": [
+        {
+          "title": "Antrean batch",
+          "body": "Tempel hingga 20 link dan biarkan diproses bergantian — video tersimpan sendiri begitu masing-masing selesai."
+        },
+        {
+          "title": "Impor koleksi sekali tempel",
+          "body": "Playlist YouTube, subreddit atau profil Reddit, board Pinterest, atau channel Vimeo langsung jadi baris antrean — tanpa duplikat, dengan batas per proses."
+        },
+        {
+          "title": "Kecepatan batch yang bisa diatur",
+          "body": "Jalankan 1–3 jalur paralel. Cepat saat kamu terburu-buru; turunkan saat sebuah sumber mulai menolak lalu lintas."
+        },
+        {
+          "title": "Subtitle yang diingat",
+          "body": "Simpan track caption YouTube mana pun sebagai SRT atau VTT — termasuk yang dibuat otomatis — dan bahasa pilihanmu muncul paling atas di daftar berikutnya, tersinkron dengan akunmu."
+        },
+        {
+          "title": "Pemrosesan prioritas",
+          "body": "Link kamu ditanyakan lebih dulu ke resolver kami sendiri: tanpa pembatasan laju, tidak dibagi dengan internet publik."
+        },
+        {
+          "title": "Paket ZIP sekali ketuk",
+          "body": "Satu proses batch penuh dikumpulkan jadi satu arsip — dua puluh link masuk, satu file keluar — bukan dua puluh penyimpanan terpisah."
+        },
+        {
+          "title": "Menyimpan tanpa bertanya",
+          "body": "Aktifkan, dan link yang ditempel mulai terunduh begitu selesai diproses. Carousel tetap menunggu kamu memilih."
+        },
+        {
+          "title": "MP3 yang tahu jati dirinya",
+          "body": "Audio hasil ekstrak datang dengan tag — judul lagu, artis, album, dan sampul tertanam, sehingga perpustakaan musikmu menyusunnya, bukan menampilkan nama file."
+        },
+        {
+          "title": "Dua file, satu ketukan",
+          "body": "Jika sebuah postingan punya video dan soundtrack terpisah, simpan MP4 dan MP3 sekaligus, tanpa memprosesnya dua kali."
+        },
+        {
+          "title": "Memantau clipboard-mu",
+          "body": "Salin link di mana saja, kembali ke tab ini, dan link itu sudah diproses. Dengan pengaturan di atas, filenya sudah tersimpan."
+        },
+        {
+          "title": "Nama file sesuai maumu",
+          "body": "Atur polanya sekali — {date}, {platform}, {author}, {title}, {index} — dan setiap unduhan masuk dengan nama sesuai perpustakaan yang kamu kelola, di semua perangkat tempat kamu masuk."
+        },
+        {
+          "title": "Tanpa kartu sponsor",
+          "body": "Di seluruh situs, langsung aktif, di setiap halaman."
+        }
+      ]
+    },
+    "footer": {
+      "builtBy": "Dibuat oleh",
+      "portfolio": "Portofolio",
+      "privacy": "Kebijakan Privasi",
+      "terms": "Ketentuan",
+      "support": "Dukungan",
+      "languages": "Bahasa",
+      "questions": "Pertanyaan atau pemberitahuan penghapusan:",
+      "disclaimer": "Hanya postingan publik. {site} adalah alat independen, tidak berafiliasi dengan atau didukung oleh TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch atau Vimeo; nama dan logo mereka milik pemiliknya masing-masing dan menunjukkan link mana yang diterima alat ini."
+    },
+    "howTo": {
+      "homeName": "Cara mengunduh video publik TikTok, X, Instagram, Facebook atau YouTube",
+      "homeDescription": "Simpan video publik, audio MP3, atau gambar carousel dari TikTok, Twitter/X, Instagram, Facebook, atau YouTube dalam tiga langkah — tanpa login, tanpa instal.",
+      "homeSupply": "URL postingan TikTok, Twitter/X, Instagram, Facebook atau YouTube",
+      "homeTool": "URL TikTok, Twitter/X, Instagram, Facebook atau YouTube",
+      "browserTool": "Browser modern apa saja",
+      "step1Name": "Salin link",
+      "homeStep1": "Buka postingan TikTok, Twitter/X, Instagram, Facebook atau YouTube dan salin URL berbaginya.",
+      "step2Name": "Tempel dan proses",
+      "homeStep2": "Tempel URL ke kolom di halaman ini lalu klik Unduh untuk mengambil medianya.",
+      "step3Name": "Unduh",
+      "homeStep3": "Lihat pratinjau, lalu unduh video berkualitas penuh, audio MP3, atau gambar carousel satu per satu atau sebagai ZIP.",
+      "platformName": "Cara mengunduh dari {name}",
+      "platformDescription": "Simpan video, foto, atau MP3 publik {name} dalam tiga langkah — tanpa login, tanpa instal.",
+      "platformSupply": "URL postingan publik {name}",
+      "platformTool": "URL postingan {name}",
+      "platformStep1": "Buka postingan {name} dan salin URL berbaginya.",
+      "platformStep2": "Tempel URL ke kolom di halaman ini lalu klik Unduh.",
+      "platformStep3": "Lihat pratinjau, lalu simpan video berkualitas penuh, MP3, atau gambarnya."
+    }
+  },
+  "homeFaqs": [
+    {
+      "q": "Apakah downloader TikTok ini gratis?",
+      "a": "Ya. Alat ini sepenuhnya gratis, tidak perlu daftar atau akun, dan tidak ada batas unduhan harian."
+    },
+    {
+      "q": "Apa kualitas video TikTok yang diunduh?",
+      "a": "File sumber seperti yang disajikan TikTok untuk postingan publik — hingga HD 1080p, bukan hasil encode ulang atau rekaman layar."
+    },
+    {
+      "q": "Bisakah saya mengunduh carousel foto (slideshow) TikTok?",
+      "a": "Bisa. Tempel URL slideshow dan aplikasi menampilkan setiap gambar beserta musik latar aslinya — unduh satu per satu, sebagai arsip ZIP, atau simpan audionya sebagai MP3."
+    },
+    {
+      "q": "Apakah mendukung video Twitter/X?",
+      "a": "Ya. Tempel URL status twitter.com atau x.com apa saja dan alat ini akan mengekstrak videonya untuk pratinjau dan unduhan — termasuk video GIF dalam HD."
+    },
+    {
+      "q": "Bisakah saya mengunduh reels dan foto Instagram?",
+      "a": "Bisa. Tempel URL postingan, reel, atau carousel Instagram yang publik (instagram.com/p/… atau instagram.com/reel/…) dan alat ini mengekstrak videonya, foto tunggalnya, atau semua gambar dalam carousel — tanpa login. Akun yang dikunci dan story tidak didukung."
+    },
+    {
+      "q": "Bisakah saya mengunduh video dan Shorts YouTube?",
+      "a": "Bisa. Tempel link youtube.com/watch?v=…, youtu.be/…, atau /shorts/… apa saja dan alat ini memproses streamnya agar kamu bisa melihat pratinjau, mengunduh MP4 dalam HD, atau mengekstrak audionya sebagai MP3. Video dengan batasan usia, video yang dikunci, dan video khusus anggota tidak didukung."
+    },
+    {
+      "q": "Apakah mendukung video dan reels Facebook?",
+      "a": "Ya. Tempel URL video, watch, atau reel Facebook yang publik (facebook.com/…/videos/…, fb.watch/…, atau facebook.com/reel/…) dan alat ini mengekstrak stream HD untuk pratinjau dan unduhan. Postingan yang dikunci dan video dari grup yang dikunci tidak didukung."
+    },
+    {
+      "q": "Apakah bisa dipakai di iPhone, iPad, dan Android?",
+      "a": "Ya. Berjalan sepenuhnya di browser pada perangkat modern apa saja — iPhone, iPad, ponsel Android, tablet, Mac, Windows atau Linux. Tidak perlu instal aplikasi."
+    },
+    {
+      "q": "Apakah bisa dipakai untuk situs selain sebelas platform itu?",
+      "a": "Ya — tempel link video publik apa saja dan aplikasi akan mencoba memprosesnya. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch dan Vimeo; di luar itu, ekstraktor membaca media apa pun yang dipublikasikan halaman, jadi link dari situs hosting video kecil, blog, dan situs berita biasanya juga bisa diproses. Situs yang mewajibkan login atau menyembunyikan medianya tidak bisa diambil."
+    },
+    {
+      "q": "Bisakah saya mengimpor seluruh playlist atau koleksi sekaligus?",
+      "a": "Bisa. Pendukung dapat menempelkan playlist YouTube, subreddit atau halaman pengguna Reddit, board Pinterest, atau channel Vimeo ke antrean batch dan otomatis diurai menjadi link satu per satu — tanpa duplikat dan dengan batas per proses — lalu diproses sebagai antrean. Antrean batch itu sendiri adalah salah satu fitur tambahan untuk pendukung; mengunduh link satu per satu tetap gratis, tanpa batas, dan tanpa akun."
+    },
+    {
+      "q": "Bisakah saya menyimpan subtitle bersama video?",
+      "a": "Track subtitle YouTube — termasuk yang dibuat otomatis — bisa disimpan sebagai file SRT atau WebVTT standar yang bisa diputar di VLC atau dimuat ke editor. Itu bagian dari fitur tambahan untuk pendukung; unduhan video dan audionya sendiri tetap gratis dalam kondisi apa pun."
+    },
+    {
+      "q": "Unduhan tersedia dalam format dan kualitas apa?",
+      "a": "Video diunduh sebagai MP4 dalam HD (biasanya 1080p jika sumbernya mendukung). Audio dikirim sebagai MP3. Gambar carousel disimpan sebagai JPG atau PNG, satu per satu atau dalam arsip ZIP."
+    },
+    {
+      "q": "Apakah video yang saya unduh disimpan di server kalian?",
+      "a": "Tidak. Alat ini mengambil media sesuai permintaan dan mengalirkannya langsung ke perangkatmu. Tidak ada yang disimpan di server kami dan tidak perlu akun."
+    },
+    {
+      "q": "Apakah legal mengunduh video TikTok, Twitter/X, Instagram, Facebook atau YouTube?",
+      "a": "Mengunduh video publik untuk penggunaan pribadi non-komersial umumnya diperbolehkan, tetapi kamu harus menghormati hak pembuat aslinya dan ketentuan layanan platform. Jangan mendistribusikan ulang atau memonetisasi konten yang bukan milikmu."
+    },
+    {
+      "q": "Kenapa link TikTok saya gagal diproses?",
+      "a": "Pastikan postingannya publik dan URL-nya adalah link berbagi (tiktok.com/@user/video/... atau vm.tiktok.com/...). Postingan yang dikunci, dihapus, dibatasi wilayah, atau dibatasi usia tidak bisa diambil."
+    }
+  ],
+  "platforms": {
+    "video-downloader": {
+      "brandLabel": "Downloader video apa saja",
+      "metaTitle": "Download Video dari Situs Apa Saja — MP4 HD & MP3",
+      "metaDescription": "Tempel link dari situs apa saja dan simpan videonya dalam HD, ekstrak audio MP3, atau ambil media tersemat — gratis, tanpa login, tanpa instal.",
+      "h1": "Download Video dari Situs Apa Saja — Tempel Link",
+      "tagline": "Satu kolom tempel untuk semua situs: ambil video, audio, atau gambar dari link publik apa saja.",
+      "intro": "Tempel link video publik apa saja — dari sebelas platform khusus atau dari mana pun. Ekstraktor membaca apa yang dipublikasikan halaman itu sendiri (og:video, JSON-LD, konfigurasi player, file langsung) dan memastikan link itu benar-benar menyajikan media sebelum menawarkannya, jadi yang kamu dapat adalah file yang bisa diputar, bukan halaman error yang namanya diganti jadi .mp4. Jika sebuah halaman menyajikan videonya ke publik, biasanya ini bisa memprosesnya. Tanpa login, tidak ada yang dipasang.",
+      "cards": [
+        {
+          "title": "🌐 Di luar sebelas platform besar",
+          "body": "Situs hosting video kecil, blog, situs berita, forum — jika halamannya mempublikasikan medianya, ekstraktor umum menemukan versi terbaiknya dan menyerahkan filenya."
+        },
+        {
+          "title": "🛡️ Diverifikasi sebelum ditawarkan",
+          "body": "Setiap URL yang ditemukan diperiksa dulu: harus menyajikan byte media sungguhan, bukan halaman error HTML. Apa yang masuk ke folder unduhanmu pasti bisa diputar."
+        },
+        {
+          "title": "🎵 MP3 dari link apa saja yang berhasil diproses",
+          "body": "Di mana pun videonya berhasil diproses, soundtrack-nya ikut — ekstrak audio sebagai MP3 bahkan di platform yang tidak punya downloader khusus."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Apakah ini bisa dipakai di situs apa saja?",
+          "a": "Bisa selama halamannya menyajikan medianya secara publik. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch dan Vimeo; di luar itu, ekstraktor membaca apa pun yang dipublikasikan halaman, yang cukup untuk sebagian besar situs hosting video kecil, blog, dan halaman berita."
+        },
+        {
+          "q": "Bagaimana jika sebuah situs memblokir akses otomatis?",
+          "a": "Sebagian situs menyajikan halaman blokir, bukan markup aslinya, ke IP datacenter. Link seperti itu dicoba lagi lewat alamat yang dijawab situs tersebut — halaman embed atau player biasanya tetap terbuka saat halaman tontonnya tidak — dan jika keduanya gagal, pesan error menyebutkan bahwa situs itu memblokir kami, bukan menebak penyebab lain."
+        },
+        {
+          "q": "Bisakah mengunduh dari situs yang mewajibkan login?",
+          "a": "Tidak. Hanya yang sudah bisa dilihat pengunjung tanpa login yang bisa dijangkau — akun yang dikunci, paywall, dan stream DRM sengaja berada di luar jangkauan."
+        },
+        {
+          "q": "Bagaimana mendapat kualitas terbaik dari situs acak?",
+          "a": "Biarkan kualitas di HD. Saat halaman menawarkan beberapa versi, ekstraktor mengurutkannya berdasarkan resolusi dan memilih yang tertinggi yang sudah terverifikasi, bukan memercayai URL mana pun yang muncul pertama."
+        },
+        {
+          "q": "Kenapa link saya gagal?",
+          "a": "Tiga penyebab yang umum: medianya dikunci di balik login, halamannya tidak pernah menampilkan file langsung (disalurkan lewat player yang dikaburkan), atau situsnya memblokir pengambilan otomatis sama sekali. Pesan error memberi tahu yang mana."
+        }
+      ],
+      "featureList": [
+        "Unduh video dari halaman web publik mana pun, bukan hanya platform besar",
+        "Membaca og:video, contentUrl JSON-LD, sumber <video>, dan konfigurasi player",
+        "Mengurutkan beberapa versi berdasarkan resolusi dan memilih yang terbaik yang sudah terverifikasi",
+        "Ekstraksi MP3 pada setiap link yang berhasil diproses sebagai video",
+        "Resep khusus per situs yang membaca halaman embed saat halaman tontonnya terblokir"
+      ]
+    },
+    "tiktok-downloader": {
+      "brandLabel": "Download video TikTok",
+      "metaTitle": "Download Video TikTok — MP4 HD, MP3 & Slideshow",
+      "metaDescription": "Unduh video TikTok publik dalam HD, ekstrak soundtrack sebagai MP3, atau simpan semua gambar dari carousel foto — gratis, tanpa login, tanpa instal aplikasi.",
+      "h1": "Download Video TikTok — HD, MP3 & Slideshow",
+      "tagline": "Simpan video TikTok dalam 1080p, ekstrak audio MP3, dan unduh carousel foto beserta musik aslinya.",
+      "intro": "Tempel link tiktok.com atau vm.tiktok.com yang publik untuk mengunduh video dalam kualitas aslinya, mengambil soundtrack sebagai MP3, atau menyimpan semua gambar dari carousel foto TikTok — satu per satu atau dalam satu ZIP. Semuanya berjalan di browser kamu, tanpa aplikasi dan tanpa daftar.",
+      "cards": [
+        {
+          "title": "🎬 Video HD, kualitas asli",
+          "body": "Dapatkan klip TikTok publik dalam kualitas sumber 1080p — MP4 aslinya, bukan rekaman layar, jadi tetap tajam saat kamu arsipkan atau tonton ulang."
+        },
+        {
+          "title": "🎵 MP3 dari TikTok apa saja",
+          "body": "Ambil soundtrack dari video atau slideshow apa saja sebagai MP3. Suara yang lagi tren? Ambil dalam hitungan detik tanpa rekam layar."
+        },
+        {
+          "title": "🖼️ Carousel foto",
+          "body": "Slideshow TikTok kembali sebagai galeri lengkap. Lihat tiap gambar, pilih favoritmu, lalu simpan satu per satu atau sebagai ZIP — musik aslinya ikut."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Apakah downloader TikTok ini gratis?",
+          "a": "Ya — sepenuhnya gratis, tanpa daftar dan tanpa batas unduhan harian."
+        },
+        {
+          "q": "Apa kualitas video TikTok yang diunduh?",
+          "a": "File sumber yang disajikan TikTok untuk postingan publik — hingga HD 1080p, bukan hasil encode ulang atau rekaman layar."
+        },
+        {
+          "q": "Bisakah saya mengunduh carousel foto (slideshow) TikTok?",
+          "a": "Bisa. Tempel URL slideshow dan aplikasi menampilkan setiap gambar, trek latar, dan — jika TikTok menyediakannya — video slideshow yang sudah dirender, jadi kamu bisa mengambil foto, MP3, atau MP4 dalam satu alur."
+        },
+        {
+          "q": "Bagaimana cara mengekstrak audio MP3 dari video TikTok?",
+          "a": "Tempel URL TikTok, klik Unduh, lalu pakai tombol Ekstrak audio. MP3 langsung dikirim ke perangkatmu — tanpa rekam layar."
+        },
+        {
+          "q": "Kenapa link TikTok saya gagal diproses?",
+          "a": "Pastikan postingannya publik dan URL-nya adalah link berbagi (tiktok.com/@user/video/… atau vm.tiktok.com/…). Postingan yang dikunci, dihapus, dibatasi wilayah, atau dibatasi usia tidak bisa diambil."
+        }
+      ],
+      "featureList": [
+        "Unduh video TikTok publik dalam kualitas HD aslinya",
+        "Ekstrak audio MP3 dari video atau slideshow TikTok apa saja",
+        "Simpan carousel foto TikTok — satu per satu atau sebagai ZIP",
+        "Lihat pratinjau video dan audio sebelum mengunduh",
+        "Tanpa login, tanpa instal aplikasi, tanpa batas unduhan harian"
+      ]
+    },
+    "twitter-video-downloader": {
+      "brandLabel": "Download video Twitter/X",
+      "metaTitle": "Download Video Twitter / X — Simpan Video & GIF HD",
+      "metaDescription": "Simpan video Twitter atau X dalam HD, termasuk video GIF dan postingan panjang. Tempel URL status twitter.com atau x.com dan unduh MP4-nya, tanpa login.",
+      "h1": "Download Video Twitter / X — MP4 HD & GIF",
+      "tagline": "Simpan video Twitter, klip X, dan tweet GIF sebagai MP4 dalam kualitas aslinya.",
+      "intro": "Tempel URL status twitter.com atau x.com apa saja dan alat ini memproses media di baliknya — video HD, GIF, atau thread dengan banyak lampiran — sehingga kamu bisa melihat pratinjau dan mengunduh MP4 langsung ke perangkatmu. Tanpa login, tanpa ekstensi, tidak ada yang dipasang.",
+      "cards": [
+        {
+          "title": "🎬 Unduhan MP4 HD",
+          "body": "Dapatkan bitrate tertinggi yang tersedia dari video tweet apa saja — termasuk postingan berdurasi panjang dan klip dari akun X Premium."
+        },
+        {
+          "title": "🌀 Tweet GIF → MP4",
+          "body": "\"GIF\" Twitter sebenarnya adalah MP4 H.264. Alat ini mengekstraknya sebagai MP4 bersih yang bisa kamu putar ulang, edit, atau konversi."
+        },
+        {
+          "title": "🔁 twitter.com & x.com",
+          "body": "URL twitter.com yang lama dan URL x.com yang baru sama-sama didukung. Tempel yang mana saja — yang penting adalah ID statusnya."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Apakah ini bisa dipakai untuk twitter.com dan x.com?",
+          "a": "Ya. Alat ini mengambil ID status dari kedua domain, jadi link twitter.com yang lama dan link x.com yang baru sama-sama berfungsi."
+        },
+        {
+          "q": "Bisakah saya mengunduh GIF Twitter sebagai video?",
+          "a": "Bisa. GIF Twitter disimpan sebagai MP4 H.264 — alat ini mengunduhnya sebagai file MP4 bersih dalam kualitas aslinya."
+        },
+        {
+          "q": "Apa kualitas video Twitter yang diunduh?",
+          "a": "Kamu mendapat bitrate tertinggi yang ditawarkan postingan aslinya — biasanya 720p atau 1080p untuk klip HD, dan sesuai kualitas sumber untuk postingan X Premium yang lebih panjang."
+        },
+        {
+          "q": "Apakah saya perlu login atau mengikuti akunnya?",
+          "a": "Tidak. Alat ini hanya mengambil apa yang terbuka untuk publik pada postingan. Jika postingannya dari akun yang diproteksi, postingan itu tidak bisa diunduh."
+        },
+        {
+          "q": "Kenapa link Twitter saya gagal diproses?",
+          "a": "Pastikan tweet-nya publik dan URL-nya adalah link status (twitter.com/user/status/… atau x.com/user/status/…). Postingan yang dihapus, diproteksi, atau dibatasi wilayah tidak bisa diambil."
+        }
+      ],
+      "featureList": [
+        "Unduh video Twitter dan X dalam HD",
+        "Simpan tweet GIF sebagai file MP4 bersih",
+        "Bisa dipakai dengan URL twitter.com maupun x.com",
+        "Tanpa login, tanpa kunci API Twitter, tanpa instal",
+        "Lihat pratinjau video sebelum mengunduh"
+      ]
+    },
+    "instagram-downloader": {
+      "brandLabel": "Download reels & foto Instagram",
+      "metaTitle": "Download Reels & Foto Instagram — Gratis, Tanpa Login",
+      "metaDescription": "Unduh reels Instagram dalam HD, simpan foto tunggal, atau ambil semua gambar dari carousel — tanpa login Instagram dan tanpa aplikasi. Gratis, tanpa batas.",
+      "h1": "Download Reels & Foto Instagram — Gratis, Tanpa Login",
+      "tagline": "Simpan reels, foto, dan postingan carousel Instagram dalam resolusi aslinya.",
+      "intro": "Tempel URL Instagram yang publik — reel, foto tunggal, atau carousel — dan alat ini mengekstrak medianya dalam resolusi aslinya. Carousel kembali dengan setiap gambar terpisah, jadi kamu bisa memilih yang kamu mau atau menyimpan semuanya sebagai ZIP. Tanpa login Instagram.",
+      "cards": [
+        {
+          "title": "🎬 Reels dalam HD",
+          "body": "Simpan reels Instagram publik dalam resolusi sumber penuh — vertikal, persegi, atau lanskap — sebagai MP4 aslinya, bukan hasil encode ulang."
+        },
+        {
+          "title": "🖼️ Foto tunggal",
+          "body": "Postingan foto Instagram publik kembali dalam ukuran penuh — tanpa kompresi thumbnail, tanpa perlu screenshot."
+        },
+        {
+          "title": "🗂️ Carousel foto",
+          "body": "Postingan carousel datang sebagai galeri. Pilih gambar yang kamu mau lalu simpan satu per satu, atau unduh seluruhnya sebagai ZIP."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh reels Instagram dalam HD?",
+          "a": "Bisa — reels disimpan dalam resolusi sumbernya dan rasio aspek aslinya dipertahankan."
+        },
+        {
+          "q": "Apakah bisa dipakai untuk carousel foto Instagram?",
+          "a": "Ya. Tempel URL /p/ yang berisi beberapa foto dan setiap gambar didaftar terpisah — unduh semuanya sebagai ZIP atau hanya yang kamu mau."
+        },
+        {
+          "q": "Apakah saya perlu login ke Instagram?",
+          "a": "Tidak. Alat ini hanya mengakses postingan yang terlihat publik. Akun yang dikunci, story, dan DM berada di luar cakupan."
+        },
+        {
+          "q": "Bisakah saya mengunduh story Instagram?",
+          "a": "Tidak. Story di luar cakupan — hanya postingan feed publik, reels, IGTV, dan carousel yang didukung."
+        },
+        {
+          "q": "Apakah Instagram melihat siapa yang mengunduh sebuah postingan?",
+          "a": "Tidak. Tidak ada sinyal \"diunduh oleh\" yang ditampilkan ke pembuatnya. Meski begitu, hormati pembuat aslinya dan ketentuan Instagram saat memakai ulang konten."
+        }
+      ],
+      "featureList": [
+        "Unduh reels Instagram dalam HD",
+        "Simpan foto Instagram tunggal dalam resolusi penuh",
+        "Ambil semua gambar dari carousel — satu per satu atau sebagai ZIP",
+        "Tanpa login Instagram",
+        "Hanya postingan publik — akun yang dikunci dan story tidak didukung"
+      ]
+    },
+    "youtube-downloader": {
+      "brandLabel": "Download video YouTube & Shorts",
+      "metaTitle": "Download Video YouTube & Shorts — MP4 HD & Audio MP3",
+      "metaDescription": "Unduh video dan Shorts YouTube dalam HD sebagai MP4, atau ekstrak audionya sebagai MP3. Tempel link youtube.com/watch, youtu.be, atau /shorts/ — tanpa instal.",
+      "h1": "Download Video YouTube & Shorts — MP4 HD & MP3",
+      "tagline": "Simpan video dan Shorts YouTube sebagai MP4 HD atau ekstrak audio MP3 yang bersih.",
+      "intro": "Tempel link youtube.com/watch?v=…, youtu.be/…, atau /shorts/… apa saja. Alat ini memproses streamnya agar kamu bisa melihat pratinjau, menyimpan MP4 dalam HD, atau mengambil soundtrack sebagai MP3 — berguna untuk podcast, kuliah, atau audio yang lagi tren. Video dengan batasan usia, video yang dikunci, dan video khusus anggota tidak didukung.",
+      "cards": [
+        {
+          "title": "🎬 Video MP4 HD",
+          "body": "Dapatkan kualitas MP4 tertinggi yang tersedia — hingga 1080p jika sumbernya mendukung — tanpa ekstensi browser atau aplikasi yang dipasang."
+        },
+        {
+          "title": "🎵 Ekstrak audio MP3",
+          "body": "Ambil soundtrack-nya saja sebagai MP3 yang bersih. Cocok untuk musik, kuliah, podcast, dan klip belajar bahasa."
+        },
+        {
+          "title": "⚡ Siap untuk Shorts",
+          "body": "YouTube Shorts vertikal (/shorts/…) diperlakukan sebagai yang utama — disimpan dalam rasio asli 9:16 pada resolusi sumber."
+        },
+        {
+          "title": "📚 Satu playlist utuh, sekali tempel",
+          "body": "Pendukung bisa menempelkan link playlist?list=… dan otomatis diurai jadi video satu per satu — tanpa duplikat dan diantrekan berurutan."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh YouTube Shorts?",
+          "a": "Bisa — tempel link youtube.com/shorts/… apa saja dan alat ini memproses streamnya agar kamu bisa melihat pratinjau, mengunduh MP4, atau mengekstrak MP3."
+        },
+        {
+          "q": "Bisakah saya mengekstrak audio MP3-nya saja?",
+          "a": "Bisa. Klik Ekstrak audio setelah diproses untuk mengunduh MP3 yang bersih sebagai pengganti (atau bersama) videonya."
+        },
+        {
+          "q": "Berapa kualitas maksimumnya?",
+          "a": "Hingga MP4 1080p jika sumbernya mendukung. Sebagian video maksimal hanya 720p, tergantung unggahan aslinya."
+        },
+        {
+          "q": "Apakah bisa untuk video dengan batasan usia atau khusus anggota?",
+          "a": "Tidak. Video dengan batasan usia, yang dikunci, khusus anggota, dan yang diblokir per wilayah tidak bisa diambil."
+        },
+        {
+          "q": "Kenapa video saya hanya dimuat sebagai pratinjau?",
+          "a": "Sebagian video YouTube membatasi ekstraksi gratis. Dalam kasus itu alat ini beralih ke pratinjau tersemat agar kamu tetap bisa menontonnya di tempat."
+        },
+        {
+          "q": "Bisakah saya mengimpor seluruh playlist YouTube?",
+          "a": "Bisa. Pendukung menempelkan link playlist sekali; setiap video menjadi barisnya sendiri di antrean unduhan dengan judul asli, dengan batas per proses. Antrean itu adalah salah satu fitur tambahan pendukung — mengunduh video satu link per satu gratis dan tanpa batas untuk semua orang."
+        }
+      ],
+      "featureList": [
+        "Unduh video YouTube sebagai MP4 HD",
+        "Simpan YouTube Shorts dalam format vertikal aslinya",
+        "Ekstrak audio MP3 dari video apa saja",
+        "Lihat pratinjau sebelum mengunduh",
+        "Tanpa ekstensi browser, tanpa instal"
+      ]
+    },
+    "facebook-downloader": {
+      "brandLabel": "Download video & reels Facebook",
+      "metaTitle": "Download Video & Reels Facebook — HD, Tanpa Login",
+      "metaDescription": "Simpan video, klip watch, atau reel Facebook publik dalam HD. Tempel URL facebook.com/.../videos/, fb.watch, atau /reel/ — tanpa login atau ekstensi.",
+      "h1": "Download Video & Reels Facebook — HD, Tanpa Login",
+      "tagline": "Unduh video, klip watch, dan reels Facebook dalam HD langsung ke perangkatmu.",
+      "intro": "Tempel URL video, klip watch, atau reel Facebook yang publik — facebook.com/…/videos/…, fb.watch/…, atau facebook.com/reel/… — dan alat ini mengekstrak stream HD untuk pratinjau dan unduhan. Tanpa login Facebook, tanpa ekstensi, tanpa aplikasi. Postingan yang dikunci dan video dari grup yang dikunci tidak bisa diambil.",
+      "cards": [
+        {
+          "title": "🎬 Video HD & klip watch",
+          "body": "Video Facebook publik dan klip Watch datang dalam resolusi sumber saat diunggah — biasanya 720p atau 1080p."
+        },
+        {
+          "title": "🎞️ Reels — vertikal asli",
+          "body": "Facebook Reels disimpan dalam format vertikal asli 9:16, siap dibagikan ulang atau diarsipkan."
+        },
+        {
+          "title": "🔗 Link pendek fb.watch",
+          "body": "URL pendek fb.watch bekerja sama seperti URL facebook.com lengkap — alat ini otomatis menguraikan link pendek ke video di baliknya."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Apakah ini bisa dipakai untuk Facebook Reels?",
+          "a": "Ya — tempel URL facebook.com/reel/… dan alat ini mengekstrak videonya dalam format vertikal aslinya."
+        },
+        {
+          "q": "Bisakah saya mengunduh video dari Facebook Watch?",
+          "a": "Bisa. Klip Watch (facebook.com/watch/?v=…) dan video tersemat di postingan sama-sama didukung."
+        },
+        {
+          "q": "Apakah video Facebook yang dikunci bisa diunduh?",
+          "a": "Tidak. Hanya postingan publik, reels publik, dan klip Watch publik yang bisa diunduh. Postingan yang dikunci dan video dari grup yang dikunci di luar cakupan."
+        },
+        {
+          "q": "Format URL apa yang didukung?",
+          "a": "facebook.com/.../videos/…, fb.watch/…, facebook.com/reel/…, dan facebook.com/watch/?v=… semuanya berfungsi — tempel yang mana saja."
+        },
+        {
+          "q": "Apakah pengunggah aslinya akan tahu saya mengunduh videonya?",
+          "a": "Tidak — tidak ada notifikasi \"diunduh oleh\". Hormati pembuatnya dan ketentuan Facebook saat memakai ulang kontennya."
+        }
+      ],
+      "featureList": [
+        "Unduh video Facebook dalam HD",
+        "Simpan Facebook Reels dalam format vertikal aslinya",
+        "Bisa dipakai dengan link pendek fb.watch",
+        "Hanya postingan publik — tanpa login, tanpa ekstensi",
+        "Lihat pratinjau video sebelum mengunduh"
+      ]
+    },
+    "pinterest-downloader": {
+      "brandLabel": "Download video & gambar Pinterest",
+      "metaTitle": "Download Video & Gambar Pinterest — Simpan Pin, Tanpa Login",
+      "metaDescription": "Unduh video dan gambar pin Pinterest dalam kualitas penuh. Tempel link pinterest.com/pin/ atau pin.it dan simpan medianya — gratis, tanpa login, tanpa aplikasi.",
+      "h1": "Download Video & Gambar Pinterest — Gratis, Tanpa Login",
+      "tagline": "Simpan pin video dan gambar resolusi penuh dari Pinterest langsung ke perangkatmu.",
+      "intro": "Tempel link pinterest.com/pin/… atau pin.it/… apa saja dan alat ini memproses media di baliknya — video idea pin atau gambar ukuran penuh — sehingga kamu bisa melihat pratinjau dan mengunduhnya langsung. Tanpa login Pinterest, tanpa ekstensi browser, tidak ada yang dipasang. Board yang dikunci dan pin rahasia tidak bisa diambil.",
+      "cards": [
+        {
+          "title": "🎬 Pin video dalam HD",
+          "body": "Video idea pin Pinterest disimpan dalam kualitas sumber sebagai MP4 bersih — tanpa rekam layar, tanpa encode ulang."
+        },
+        {
+          "title": "🖼️ Gambar resolusi penuh",
+          "body": "Pin gambar diunduh dalam ukuran penuh, bukan thumbnail terkompresi yang ditampilkan aplikasi — ideal untuk moodboard dan referensi."
+        },
+        {
+          "title": "🔗 Link pendek pin.it",
+          "body": "URL pendek pin.it bekerja sama seperti link pinterest.com lengkap — alat ini otomatis menguraikan link pendek ke pin di baliknya."
+        },
+        {
+          "title": "📚 Unduh seluruh board",
+          "body": "Link board diurai menjadi pin-pinnya lewat feed publik board — setiap pin menjadi satu baris yang bisa kamu proses sekaligus."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh video Pinterest?",
+          "a": "Bisa — tempel URL pin video dan alat ini memproses MP4-nya agar kamu bisa melihat pratinjau dan menyimpannya langsung ke perangkatmu."
+        },
+        {
+          "q": "Apakah gambar Pinterest disimpan dalam ukuran penuh?",
+          "a": "Ya. Pin gambar diunduh dalam resolusi sumbernya, bukan pratinjau terkompresi yang tampil di feed."
+        },
+        {
+          "q": "Apakah link pendek pin.it berfungsi?",
+          "a": "Ya. Alat ini mengikuti pengalihan pin.it ke pin pinterest.com di baliknya, jadi kedua format berfungsi."
+        },
+        {
+          "q": "Apakah saya perlu akun Pinterest?",
+          "a": "Tidak. Hanya pin yang terlihat publik yang diakses — tanpa login, tanpa ekstensi. Board yang dikunci dan pin rahasia di luar cakupan."
+        },
+        {
+          "q": "Kenapa link Pinterest saya gagal diproses?",
+          "a": "Pastikan pin-nya publik dan URL-nya adalah link pin (pinterest.com/pin/… atau pin.it/…). Sebagian pin hanya mengarah ke situs eksternal dan tidak punya media yang bisa diunduh."
+        },
+        {
+          "q": "Bisakah saya mencadangkan seluruh board Pinterest?",
+          "a": "Bisa. Pendukung menempelkan link board dan setiap pin menjadi baris antreannya sendiri lewat feed RSS publik board, jadi gambar dan video diproses bersamaan tanpa menyalin link satu per satu."
+        }
+      ],
+      "featureList": [
+        "Unduh pin video Pinterest dalam HD",
+        "Simpan gambar Pinterest dalam resolusi penuh",
+        "Bisa dipakai dengan link pendek pin.it",
+        "Tanpa login Pinterest, tanpa ekstensi, tanpa instal",
+        "Lihat pratinjau media sebelum mengunduh"
+      ]
+    },
+    "reddit-video-downloader": {
+      "brandLabel": "Download video Reddit",
+      "metaTitle": "Download Video Reddit — Simpan Video v.redd.it dengan Suara",
+      "metaDescription": "Unduh video Reddit dalam HD lengkap dengan suara. Reddit menyimpan video dan audio terpisah — alat ini menggabungkannya. Tempel link reddit.com atau v.redd.it.",
+      "h1": "Download Video Reddit — HD, dengan Suara",
+      "tagline": "Simpan video Reddit dengan trek audio yang sudah digabung kembali — seperti seharusnya.",
+      "intro": "Reddit menyimpan video dan audio sebuah postingan sebagai dua stream terpisah, itulah sebabnya \"simpan video\" biasa menghasilkan klip tanpa suara. Tempel link reddit.com/r/…/comments/… atau v.redd.it/… apa saja dan alat ini memproses kedua stream lalu menggabungkannya agar kamu mendapat video dengan suara. Tanpa login, tanpa ekstensi, tidak ada yang dipasang.",
+      "cards": [
+        {
+          "title": "🔊 Video dengan suara",
+          "body": "Reddit memisahkan video dan audio ke file berbeda. Alat ini mengambil keduanya lalu menggabungkannya, jadi unduhanmu bukan klip tanpa suara."
+        },
+        {
+          "title": "🎬 Kualitas HD",
+          "body": "Klip disimpan dalam resolusi tertinggi yang ditawarkan postingan aslinya — hingga 1080p untuk video v.redd.it yang di-host Reddit."
+        },
+        {
+          "title": "🔗 Semua jenis link Reddit",
+          "body": "Permalink komentar lengkap, link berbagi /s/, dan URL pendek v.redd.it / redd.it semuanya didukung — tempel yang mana saja."
+        },
+        {
+          "title": "📚 Impor seluruh subreddit",
+          "body": "Tempel halaman subreddit atau pengguna dan postingan bermedia menjadi baris antrean — hanya video dan gambar, postingan sematan moderator dilewati."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Kenapa video Reddit terunduh tanpa suara di tempat lain?",
+          "a": "Reddit menyimpan video dan audio sebagai dua stream terpisah. \"Simpan\" biasa hanya mengambil videonya. Alat ini mengambil keduanya lalu menggabungkannya agar unduhan punya suara."
+        },
+        {
+          "q": "Format URL Reddit apa yang berfungsi?",
+          "a": "Permalink komentar lengkap (reddit.com/r/…/comments/…), link berbagi /s/ gaya baru, dan URL pendek v.redd.it / redd.it semuanya berfungsi."
+        },
+        {
+          "q": "Bisakah saya mengunduh video dari subreddit mana pun?",
+          "a": "Postingan publik apa saja bisa. Video di komunitas yang dikunci atau dikarantina, atau postingan NSFW yang dibatasi usia, mungkin tidak bisa diakses."
+        },
+        {
+          "q": "Apakah bisa untuk GIF dan crosspost?",
+          "a": "Ya — GIF yang di-host Reddit datang sebagai MP4, dan crosspost diproses sampai ke video aslinya yang di-host."
+        },
+        {
+          "q": "Apakah saya perlu login ke Reddit?",
+          "a": "Tidak. Hanya postingan yang terlihat publik yang diakses — tanpa login, tanpa aplikasi, tanpa ekstensi."
+        },
+        {
+          "q": "Bisakah saya menyimpan semua postingan dari sebuah subreddit atau pengguna?",
+          "a": "Bisa — pendukung menempelkan link subreddit atau profil dan diurai menjadi link postingan satu per satu (hanya postingan bermedia), lalu diproses sebagai antrean. Postingan yang hanya berisi teks disaring, bukan gagal satu per satu."
+        }
+      ],
+      "featureList": [
+        "Unduh video Reddit dengan audio yang sudah digabung",
+        "Simpan klip v.redd.it dalam HD",
+        "Bisa dipakai dengan permalink, link berbagi /s/, dan redd.it",
+        "GIF yang di-host Reddit disimpan sebagai MP4",
+        "Tanpa login, tanpa aplikasi, tanpa ekstensi"
+      ]
+    },
+    "threads-video-downloader": {
+      "brandLabel": "Download video & foto Threads",
+      "metaTitle": "Download Video & Foto Threads — Simpan Post, Tanpa Login",
+      "metaDescription": "Unduh video dan foto dari Threads (threads.net) dalam kualitas penuh. Tempel link threads.net/@user/post dan simpan medianya — gratis, tanpa login.",
+      "h1": "Download Video & Foto Threads — Gratis, Tanpa Login",
+      "tagline": "Simpan video dan foto dari postingan Threads dalam kualitas aslinya.",
+      "intro": "Tempel URL postingan threads.net (atau threads.com) apa saja — threads.net/@username/post/… — dan alat ini memproses media yang dilampirkan agar kamu bisa melihat pratinjau dan mengunduh video atau fotonya langsung. Tanpa login Threads atau Instagram, tanpa ekstensi, tidak ada yang dipasang. Profil yang dikunci tidak bisa diambil.",
+      "cards": [
+        {
+          "title": "🎬 Video dalam HD",
+          "body": "Postingan video Threads disimpan dalam resolusi sumber sebagai MP4 bersih — tanpa encode ulang, tanpa penurunan kualitas."
+        },
+        {
+          "title": "🖼️ Foto ukuran penuh",
+          "body": "Foto tunggal dan postingan gambar diunduh dalam resolusi penuh, bukan pratinjau terkompresi di feed."
+        },
+        {
+          "title": "🧵 threads.net & threads.com",
+          "body": "Domain threads.net maupun threads.com yang lebih baru sama-sama berfungsi, begitu juga link pendek /t/ — tempel yang kamu salin."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh video dari Threads?",
+          "a": "Bisa — tempel URL postingan Threads yang publik dan alat ini memproses videonya agar kamu bisa melihat pratinjau dan mengunduh MP4-nya."
+        },
+        {
+          "q": "Apakah bisa untuk postingan foto?",
+          "a": "Ya. Foto tunggal dan postingan gambar disimpan dalam resolusi penuh."
+        },
+        {
+          "q": "Apakah saya perlu login Threads atau Instagram?",
+          "a": "Tidak. Hanya postingan yang terlihat publik yang diakses. Postingan dari profil yang dikunci tidak bisa diunduh."
+        },
+        {
+          "q": "Format URL Threads apa yang didukung?",
+          "a": "threads.net/@user/post/…, threads.com/@user/post/…, dan link pendek threads.net/t/… semuanya berfungsi."
+        },
+        {
+          "q": "Kenapa link Threads saya gagal diproses?",
+          "a": "Pastikan postingannya publik dan URL-nya mengarah ke satu postingan. Profil yang dikunci, postingan yang dihapus, dan postingan teks saja (tanpa media) tidak bisa diambil."
+        }
+      ],
+      "featureList": [
+        "Unduh video Threads dalam HD",
+        "Simpan foto Threads dalam resolusi penuh",
+        "Bisa dipakai dengan URL threads.net dan threads.com",
+        "Tanpa login Threads atau Instagram",
+        "Lihat pratinjau media sebelum mengunduh"
+      ]
+    },
+    "snapchat-downloader": {
+      "brandLabel": "Download video Snapchat Spotlight",
+      "metaTitle": "Download Video Snapchat Spotlight — Tanpa Login",
+      "metaDescription": "Unduh video Snapchat Spotlight publik dalam HD. Tempel link snapchat.com/spotlight atau story.snapchat.com dan simpan MP4-nya — gratis, tanpa login.",
+      "h1": "Download Video Snapchat Spotlight — HD, Tanpa Login",
+      "tagline": "Simpan klip Snapchat Spotlight publik dan story publik langsung ke perangkatmu.",
+      "intro": "Tempel link Snapchat yang publik — snapchat.com/spotlight/… atau story.snapchat.com/… — dan alat ini memproses kliknya agar kamu bisa melihat pratinjau dan mengunduh MP4-nya. Tanpa login Snapchat, tanpa aplikasi, tanpa ekstensi. Snap yang dikunci dan pesan yang menghilang tidak bisa diakses — hanya konten yang dipublikasikan Snapchat secara publik.",
+      "cards": [
+        {
+          "title": "🎬 Spotlight dalam HD",
+          "body": "Klip Snapchat Spotlight publik disimpan dalam resolusi sumber sebagai MP4 vertikal yang bersih — siap dibagikan ulang atau diarsipkan."
+        },
+        {
+          "title": "📖 Story publik",
+          "body": "Story profil publik di story.snapchat.com diproses dengan cara yang sama — lihat pratinjau kliknya, lalu unduh."
+        },
+        {
+          "title": "🔒 Hanya konten publik",
+          "body": "Hanya konten yang dipublikasikan Snapchat secara publik yang bisa diambil. Snap yang dikunci, obrolan, dan pesan yang menghilang tidak pernah bisa diakses."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh video Snapchat Spotlight?",
+          "a": "Bisa — tempel link snapchat.com/spotlight/… dan alat ini memproses MP4-nya agar kamu bisa melihat pratinjau dan menyimpannya."
+        },
+        {
+          "q": "Bisakah saya mengunduh snap atau obrolan yang dikunci milik seseorang?",
+          "a": "Tidak. Hanya konten yang dipublikasikan secara publik (Spotlight dan story profil publik) yang bisa diakses. Snap dan pesan yang dikunci tidak pernah masuk cakupan."
+        },
+        {
+          "q": "Apakah orang itu akan tahu saya menyimpan klip Spotlight-nya?",
+          "a": "Tidak ada notifikasi \"diunduh oleh\" untuk konten Spotlight publik. Hormati pembuatnya dan ketentuan Snapchat saat memakainya ulang."
+        },
+        {
+          "q": "Format URL Snapchat apa yang didukung?",
+          "a": "snapchat.com/spotlight/…, story.snapchat.com/…, dan link pendek snapchat.com/t/… paling cocok."
+        },
+        {
+          "q": "Kenapa link Snapchat saya gagal diproses?",
+          "a": "Pastikan itu link Spotlight publik atau story publik. Snap yang dikunci, story yang sudah kedaluwarsa, dan link profil tanpa media publik tidak bisa diambil."
+        }
+      ],
+      "featureList": [
+        "Unduh klip Snapchat Spotlight publik dalam HD",
+        "Simpan story profil publik sebagai MP4",
+        "Format vertikal asli tetap terjaga",
+        "Tanpa login Snapchat, tanpa aplikasi, tanpa ekstensi",
+        "Hanya konten publik — snap yang dikunci tidak pernah diakses"
+      ]
+    },
+    "twitch-clip-downloader": {
+      "brandLabel": "Download klip & VOD Twitch",
+      "metaTitle": "Download Klip Twitch — Simpan Klip & VOD dalam HD",
+      "metaDescription": "Unduh klip dan VOD Twitch dalam HD sebagai MP4. Tempel link clips.twitch.tv, twitch.tv/…/clip/, atau twitch.tv/videos/ dan simpan — gratis, tanpa login.",
+      "h1": "Download Klip & VOD Twitch — MP4 HD",
+      "tagline": "Simpan klip Twitch dan siaran lampau (VOD) sebagai MP4 dalam kualitas aslinya.",
+      "intro": "Tempel link klip atau VOD Twitch — clips.twitch.tv/…, twitch.tv/<channel>/clip/…, atau twitch.tv/videos/… — dan alat ini memproses streamnya agar kamu bisa melihat pratinjau dan mengunduh MP4-nya. Tanpa login Twitch, tanpa ekstensi, tidak ada yang dipasang. VOD khusus subscriber dan konten di balik paywall tidak bisa diambil.",
+      "cards": [
+        {
+          "title": "🎬 Klip dalam HD",
+          "body": "Klip Twitch disimpan dalam resolusi sumber sebagai MP4 bersih — pas untuk kompilasi, reaksi, atau dibagikan ulang di luar platform."
+        },
+        {
+          "title": "📼 Unduh VOD",
+          "body": "Siaran lampau (twitch.tv/videos/…) diproses dengan cara yang sama, jadi kamu bisa mengarsipkan sebuah siaran sebelum kedaluwarsa dari channel."
+        },
+        {
+          "title": "🔗 Link klip & channel",
+          "body": "Link pendek clips.twitch.tv maupun URL lengkap twitch.tv/<channel>/clip/… sama-sama didukung — tempel yang kamu salin."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh klip Twitch?",
+          "a": "Bisa — tempel link clips.twitch.tv atau twitch.tv/<channel>/clip/… dan alat ini memproses MP4-nya agar kamu bisa melihat pratinjau dan menyimpannya."
+        },
+        {
+          "q": "Bisakah saya mengunduh VOD Twitch utuh?",
+          "a": "Bisa, siaran lampau yang publik (twitch.tv/videos/…) bisa diunduh. VOD yang sangat panjang butuh waktu lebih lama untuk diproses."
+        },
+        {
+          "q": "Apakah VOD khusus subscriber bisa?",
+          "a": "Tidak. VOD khusus subscriber dan konten apa pun di balik paywall atau login tidak bisa diambil — hanya klip dan VOD yang bisa ditonton publik."
+        },
+        {
+          "q": "Apa kualitas klip yang diunduh?",
+          "a": "Kamu mendapat resolusi tertinggi yang ditawarkan sumbernya — biasanya hingga 1080p60 untuk klip yang direkam dari siaran HD."
+        },
+        {
+          "q": "Kenapa link Twitch saya gagal diproses?",
+          "a": "Pastikan itu link klip atau VOD yang publik. Konten khusus subscriber, yang dihapus, atau yang dibatasi wilayah tidak bisa diunduh."
+        }
+      ],
+      "featureList": [
+        "Unduh klip Twitch dalam MP4 HD",
+        "Simpan VOD publik (siaran lampau)",
+        "Bisa dipakai dengan clips.twitch.tv dan link klip channel",
+        "Tanpa login Twitch, tanpa ekstensi, tanpa instal",
+        "Lihat pratinjau klip sebelum mengunduh"
+      ]
+    },
+    "vimeo-downloader": {
+      "brandLabel": "Download video Vimeo",
+      "metaTitle": "Download Video Vimeo — Simpan Video HD MP4, Tanpa Login",
+      "metaDescription": "Unduh video Vimeo publik dalam HD sebagai MP4. Tempel link vimeo.com dan simpan file video progresif — gratis, tanpa login, tanpa instal aplikasi.",
+      "h1": "Download Video Vimeo — MP4 HD, Tanpa Login",
+      "tagline": "Simpan video Vimeo publik sebagai MP4 dalam kualitas tertinggi yang ditawarkan sumbernya.",
+      "intro": "Tempel link vimeo.com/… yang publik dan alat ini memproses video lewat konfigurasi player Vimeo sendiri, lalu mengembalikan MP4 progresif langsung yang bisa kamu lihat pratinjaunya dan unduh. Tanpa login Vimeo, tanpa ekstensi, tidak ada yang dipasang. Video yang diproteksi kata sandi, dikunci, dan dibatasi domain tidak bisa diambil.",
+      "cards": [
+        {
+          "title": "🎬 Unduhan MP4 HD",
+          "body": "Video Vimeo publik disimpan dalam versi progresif tertinggi yang tersedia — umumnya hingga 1080p — sebagai MP4 bersih."
+        },
+        {
+          "title": "⚡ Langsung dari Vimeo",
+          "body": "Video diproses lewat konfigurasi player Vimeo sendiri, jadi kamu mendapat file progresif sungguhan — bukan rekaman layar atau hasil encode ulang."
+        },
+        {
+          "title": "🎚️ Peka kualitas",
+          "body": "Pilih HD untuk versi terbaik atau Data saver untuk file yang lebih ringan — alat ini memilih sumber progresif yang sesuai."
+        },
+        {
+          "title": "📚 Channel & pengguna sekali proses",
+          "body": "Link channel atau pengguna Vimeo diurai menjadi video publiknya lewat feed — antrekan semuanya, tidak perlu menempel satu per satu."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh video Vimeo apa saja?",
+          "a": "Video publik yang menyediakan MP4 progresif (non-DASH) bisa diunduh. Video yang diproteksi kata sandi, dikunci, dan dikunci per domain tidak bisa diambil."
+        },
+        {
+          "q": "Kualitas apa yang saya dapat?",
+          "a": "Versi progresif tertinggi yang ditawarkan videonya — sering kali hingga 1080p. Pakai opsi Data saver untuk file yang lebih kecil."
+        },
+        {
+          "q": "Apakah saya perlu akun Vimeo?",
+          "a": "Tidak. Hanya video yang bisa ditonton publik yang diakses — tanpa login, tanpa ekstensi, tanpa instal."
+        },
+        {
+          "q": "Kenapa video Vimeo hanya bisa di-stream dan tidak bisa diunduh?",
+          "a": "Sebagian video Vimeo hanya disajikan sebagai DASH adaptif tanpa MP4 progresif. Video seperti itu tidak bisa disimpan sebagai satu file."
+        },
+        {
+          "q": "Kenapa link Vimeo saya gagal diproses?",
+          "a": "Pastikan videonya publik dan URL-nya adalah link vimeo.com/<id>. Video yang dikunci, diproteksi kata sandi, atau tidak terdaftar dengan pembatasan tidak bisa diambil."
+        },
+        {
+          "q": "Bisakah saya mengambil semua video dari sebuah channel Vimeo?",
+          "a": "Bisa — pendukung menempelkan link channel atau pengguna, feed video publik diurai menjadi baris, dan antrean batch memproses masing-masing dalam kualitas yang kamu pilih."
+        }
+      ],
+      "featureList": [
+        "Unduh video Vimeo publik sebagai MP4 HD",
+        "File progresif langsung lewat konfigurasi player Vimeo",
+        "Pilihan kualitas HD atau Data saver",
+        "Tanpa login Vimeo, tanpa ekstensi, tanpa instal",
+        "Lihat pratinjau video sebelum mengunduh"
+      ]
+    }
+  }
+}

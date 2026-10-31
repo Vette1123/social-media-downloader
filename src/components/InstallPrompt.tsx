@@ -2,6 +2,7 @@
 
 import { trackPwaInstallable, trackPwaPrompted } from '@/lib/analytics'
 import { useEffect, useState } from 'react'
+import { useT } from '@/lib/i18nStore'
 import { createPortal } from 'react-dom'
 import { CloseIcon, DownloadIcon, ExternalLinkIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
@@ -36,6 +37,7 @@ interface BeforeInstallPromptEvent extends Event {
 // hero's end is on screen there. The wrapper holds the positioning since .surface
 // is unlayered CSS and its `position: relative` beats a utility.
 export function InstallPrompt() {
+  const t = useT()
   // "Can we offer an install here at all" and "is this iOS Safari" are fixed
   // properties of the browser, read without an effect — see lib/clientEnv.
   const offerable = useInstallOfferable()
@@ -98,18 +100,18 @@ export function InstallPrompt() {
         </span>
 
         <div className='min-w-0 flex-1'>
-          <p className='text-sm font-medium text-white'>Install the app</p>
+          <p className='text-sm font-medium text-white'>{t('installTitle')}</p>
           <p className='mt-0.5 text-xs text-white/60'>
             {isIOS
-              ? 'Tap Share, then “Add to Home Screen”.'
-              : 'Share videos straight from TikTok. No browser, no paste.'}
+              ? t('installIos')
+              : t('installAndroid')}
           </p>
         </div>
 
         {isIOS ? (
           <span className='col-span-2 flex shrink-0 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-xs font-medium text-white/70'>
             <ExternalLinkIcon className='h-3.5 w-3.5' />
-            Share
+            {t('installShare')}
           </span>
         ) : (
           <button
@@ -117,14 +119,14 @@ export function InstallPrompt() {
             onClick={install}
             className='btn-grad btn-press col-span-2 shrink-0 rounded-xl px-4 py-2 text-sm font-semibold'
           >
-            Install
+            {t('installAction')}
           </button>
         )}
 
         <button
           type='button'
           onClick={dismiss}
-          aria-label='Dismiss install prompt'
+          aria-label={t('installDismiss')}
           className='absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
         >
           <CloseIcon className='h-3.5 w-3.5' />

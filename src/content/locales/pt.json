@@ -1,0 +1,889 @@
+{
+  "copy": {
+    "nav": {
+      "home": "Início",
+      "breadcrumb": "Trilha de navegação",
+      "otherDownloaders": "Outros downloaders",
+      "perPlatform": "Downloaders por plataforma",
+      "currentPage": "(página atual)",
+      "allPlatforms": "← Todas as plataformas"
+    },
+    "chips": {
+      "free": "Grátis para sempre",
+      "noLoginToDownload": "Sem login para baixar",
+      "noLoginRequired": "Sem necessidade de login",
+      "noLimits": "Sem limite de downloads",
+      "hd": "Qualidade HD",
+      "anyLink": "Qualquer link público"
+    },
+    "home": {
+      "metaTitle": "Baixar vídeos de redes sociais — qualquer vídeo em HD",
+      "metaDescription": "Baixe vídeos públicos do TikTok, X, Instagram, Facebook, YouTube e mais. Vídeo em HD, áudio MP3 e galerias de fotos, grátis e sem login.",
+      "heroLabels": {
+        "tiktok-downloader": "Baixar vídeo do TikTok",
+        "twitter-video-downloader": "Baixar vídeo do Twitter/X",
+        "instagram-downloader": "Baixar reels e fotos do Instagram",
+        "facebook-downloader": "Baixar vídeos e reels do Facebook",
+        "youtube-downloader": "Baixar vídeos e Shorts do YouTube"
+      },
+      "h1Lead": "Baixe qualquer vídeo público,",
+      "h1Accent": "na qualidade original",
+      "intro": "Salve o vídeo, extraia o áudio em MP3 ou pegue galerias de imagens completas de posts públicos do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch e Vimeo.",
+      "featuresTitle": "Tudo a partir de um único link",
+      "featuresSub": "Um só colar, quatro formas de salvar. Sem app, sem conta, nada para instalar.",
+      "features": {
+        "video": {
+          "label": "Vídeo em HD",
+          "sub": "O MP4 original em qualidade máxima, não uma gravação de tela — dá para avançar e voltar."
+        },
+        "audio": {
+          "label": "Áudio MP3",
+          "sub": "Extraia a trilha sonora — perfeito para os sons do momento."
+        },
+        "gallery": {
+          "label": "Galerias de fotos",
+          "sub": "Os carrosséis chegam em resolução total para você escolher."
+        },
+        "zip": {
+          "label": "ZIP em lote",
+          "sub": "Leve todas as imagens de um slideshow em um único download."
+        }
+      },
+      "stepsTitle": "Três passos, poucos segundos",
+      "stepsSub": "Sem tutoriais. Sem configurações. É só colar e baixar.",
+      "steps": [
+        {
+          "title": "Copie o link do vídeo",
+          "sub": "TikTok, X, Instagram, YouTube — ou qualquer link de vídeo público."
+        },
+        {
+          "title": "Cole e baixe",
+          "sub": "Encontramos a mídia em segundos — direto no seu navegador."
+        },
+        {
+          "title": "Salve",
+          "sub": "Vídeo, MP3 ou a galeria completa de imagens. Pronto."
+        }
+      ],
+      "jumpTitle": "Vá para um downloader específico",
+      "jumpSub": "Prefere uma página feita para uma só plataforma? Escolha a sua.",
+      "whyEyebrow": "Por que funciona",
+      "seoTitle": "Baixar vídeos do TikTok, X, Instagram, Facebook e YouTube grátis",
+      "seoParagraphs": [
+        "Salve qualquer post público do TikTok, Twitter/X, Instagram, Facebook ou YouTube em poucos cliques. Cole o link, veja o conteúdo e baixe o vídeo em qualidade total, a trilha original em MP3 ou todas as imagens de um carrossel de fotos.",
+        "Tudo acontece no seu navegador — sem app, sem cadastro e sem limite do quanto você salva. Só posts visíveis publicamente podem ser acessados, e você é responsável por ter os direitos sobre tudo o que baixar."
+      ],
+      "formatsEyebrow": "Formatos de link aceitos",
+      "faqTitle": "Perguntas frequentes",
+      "whatsNewTitle": "Adicionado recentemente",
+      "whatsNewSub": "A ferramenta está em desenvolvimento ativo — veja o que mudou recentemente."
+    },
+    "landing": {
+      "featuresTitle": "Com este downloader de {name} você pode",
+      "othersTitle": "Experimente também nossos outros downloaders",
+      "othersSub": "Uma ferramenta por plataforma — escolha a que você precisa.",
+      "whyEyebrow": "Por que funciona",
+      "seoTitle": "{brand} grátis — {tagline}",
+      "formatsEyebrow": "Formatos de URL do {name} aceitos",
+      "faqTitle": "Downloader de {name} — Perguntas frequentes"
+    },
+    "support": {
+      "compactTitle": "Este site é grátis e não tem limites.",
+      "compactBody": "Manter os resolvedores no ar custa dinheiro. ${monthly} por mês cobre uma parte disso e ativa a fila em lote.",
+      "coffee": "Me pague um café",
+      "title": "Grátis para sempre. Mas não é de graça para manter.",
+      "body": "Todo download aqui é grátis, sem conta e sem limites, e isso não vai mudar. A assinatura cobre uma parte do custo de manter os resolvedores no ar — e ativa estes quatro recursos para você.",
+      "monthly": "Apoie — ${monthly}/mês",
+      "lifetime": "Ou ${lifetime} uma única vez, para sempre",
+      "note": "Cancele quando quiser, pelo Buy Me a Coffee. Um café avulso de qualquer valor também vale.",
+      "benefits": [
+        {
+          "title": "A fila em lote",
+          "body": "Cole até 20 links e deixe que sejam resolvidos em sequência — os vídeos são salvos sozinhos conforme cada um termina."
+        },
+        {
+          "title": "Importação de coleção com um só colar",
+          "body": "Uma playlist do YouTube, um subreddit ou perfil do Reddit, um quadro do Pinterest ou um canal do Vimeo viram linhas na fila na hora — sem duplicados e com limite por execução."
+        },
+        {
+          "title": "Velocidade do lote ajustável",
+          "body": "Rode de 1 a 3 faixas em paralelo. Rápido quando você está com pressa; diminua quando uma fonte começar a recusar tráfego."
+        },
+        {
+          "title": "Legendas, lembradas",
+          "body": "Salve qualquer faixa de legenda do YouTube como SRT ou VTT — inclusive as geradas automaticamente — e seu idioma preferido aparece no topo da lista na próxima vez, sincronizado com sua conta."
+        },
+        {
+          "title": "Resolução prioritária",
+          "body": "Seus links são consultados primeiro pelos nossos próprios resolvedores: sem limite de requisições, sem dividir com a internet pública."
+        },
+        {
+          "title": "Pacotes ZIP com um toque",
+          "body": "Um lote inteiro é reunido em um único arquivo — vinte links entrando, um arquivo saindo — em vez de vinte downloads separados."
+        },
+        {
+          "title": "Salva sem perguntar",
+          "body": "Ative e um link colado começa a baixar assim que é resolvido. Carrosséis continuam esperando você escolher."
+        },
+        {
+          "title": "MP3 que sabem o que são",
+          "body": "O áudio extraído chega com tags — faixa, artista, álbum e capa gravados no arquivo, para sua biblioteca de música organizá-lo em vez de mostrar um nome de arquivo."
+        },
+        {
+          "title": "Os dois arquivos, um toque",
+          "body": "Quando um post tem vídeo e uma trilha separada, salve o MP4 e o MP3 juntos em vez de resolver duas vezes."
+        },
+        {
+          "title": "Fica de olho na área de transferência",
+          "body": "Copie um link em qualquer lugar, volte para a aba e ele já está sendo resolvido. Com a configuração acima, o arquivo já está sendo salvo."
+        },
+        {
+          "title": "Nomes de arquivo do seu jeito",
+          "body": "Defina o formato uma vez — {date}, {platform}, {author}, {title}, {index} — e cada download chega com o nome da biblioteca que você mantém, em todo dispositivo em que você entrar."
+        },
+        {
+          "title": "Sem card de patrocinador",
+          "body": "No site todo, imediatamente, em todas as páginas."
+        }
+      ]
+    },
+    "footer": {
+      "builtBy": "Criado por",
+      "portfolio": "Portfólio",
+      "privacy": "Privacidade",
+      "terms": "Termos",
+      "support": "Apoio",
+      "languages": "Idiomas",
+      "questions": "Dúvidas ou avisos de remoção:",
+      "disclaimer": "Somente posts públicos. {site} é uma ferramenta independente, sem afiliação nem aprovação do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch ou Vimeo; os nomes e logotipos pertencem aos seus donos e indicam quais links esta ferramenta aceita."
+    },
+    "howTo": {
+      "homeName": "Como baixar um vídeo público do TikTok, X, Instagram, Facebook ou YouTube",
+      "homeDescription": "Salve qualquer vídeo público, áudio MP3 ou imagem de carrossel do TikTok, Twitter/X, Instagram, Facebook ou YouTube em três passos — sem login, sem instalar nada.",
+      "homeSupply": "URL de um post do TikTok, Twitter/X, Instagram, Facebook ou YouTube",
+      "homeTool": "Uma URL do TikTok, Twitter/X, Instagram, Facebook ou YouTube",
+      "browserTool": "Qualquer navegador moderno",
+      "step1Name": "Copie o link",
+      "homeStep1": "Abra o post do TikTok, Twitter/X, Instagram, Facebook ou YouTube e copie a URL de compartilhamento.",
+      "step2Name": "Cole e processe",
+      "homeStep2": "Cole a URL no campo desta página e clique em Baixar para buscar a mídia.",
+      "step3Name": "Baixe",
+      "homeStep3": "Veja a prévia e baixe o vídeo em qualidade total, o áudio MP3 ou as imagens do carrossel, uma a uma ou em um ZIP.",
+      "platformName": "Como baixar do {name}",
+      "platformDescription": "Salve qualquer vídeo, foto ou MP3 público do {name} em três passos — sem login, sem instalar nada.",
+      "platformSupply": "A URL de um post público do {name}",
+      "platformTool": "Uma URL de post do {name}",
+      "platformStep1": "Abra o post do {name} e copie a URL de compartilhamento.",
+      "platformStep2": "Cole a URL no campo desta página e clique em Baixar.",
+      "platformStep3": "Veja a prévia e salve o vídeo em qualidade total, o MP3 ou as imagens."
+    }
+  },
+  "homeFaqs": [
+    {
+      "q": "Este downloader de TikTok é grátis?",
+      "a": "Sim. A ferramenta é totalmente grátis, não exige cadastro nem conta e não tem limite diário de downloads."
+    },
+    {
+      "q": "Qual a qualidade dos vídeos do TikTok baixados?",
+      "a": "O arquivo original, como o TikTok o entrega para um post público — até 1080p HD, sem recompressão e sem gravação de tela."
+    },
+    {
+      "q": "Dá para baixar um carrossel de fotos (slideshow) do TikTok?",
+      "a": "Sim. Cole a URL do slideshow e o app mostra todas as imagens e a música de fundo original — baixe uma a uma, em um arquivo ZIP, ou salve o áudio como MP3."
+    },
+    {
+      "q": "Funciona com vídeos do Twitter/X?",
+      "a": "Sim. Cole qualquer URL de status do twitter.com ou x.com e a ferramenta extrai o vídeo para prévia e download — inclusive GIFs em vídeo, em HD."
+    },
+    {
+      "q": "Dá para baixar reels e fotos do Instagram?",
+      "a": "Sim. Cole a URL de um post, reel ou carrossel público do Instagram (instagram.com/p/… ou instagram.com/reel/…) e a ferramenta extrai o vídeo, a foto única ou todas as imagens do carrossel — sem login. Contas privadas e stories não são compatíveis."
+    },
+    {
+      "q": "Dá para baixar vídeos e Shorts do YouTube?",
+      "a": "Sim. Cole qualquer link youtube.com/watch?v=…, youtu.be/… ou /shorts/… e a ferramenta resolve o stream para você ver a prévia, baixar o MP4 em HD ou extrair o áudio como MP3. Vídeos com restrição de idade, privados e exclusivos para membros não são compatíveis."
+    },
+    {
+      "q": "Funciona com vídeos e reels do Facebook?",
+      "a": "Sim. Cole a URL de um vídeo, watch ou reel público do Facebook (facebook.com/…/videos/…, fb.watch/… ou facebook.com/reel/…) e a ferramenta extrai o stream em HD para prévia e download. Posts privados e vídeos de grupos privados não são compatíveis."
+    },
+    {
+      "q": "Funciona no iPhone, no iPad e no Android?",
+      "a": "Sim. Roda inteiramente no navegador, em qualquer dispositivo moderno — iPhone, iPad, celular ou tablet Android, Mac, Windows ou Linux. Não precisa instalar app."
+    },
+    {
+      "q": "Funciona com sites além das onze plataformas?",
+      "a": "Sim — cole qualquer link de vídeo público e o app tenta resolvê-lo. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch e Vimeo; fora dessas, o extrator lê a mídia que a página publica, então links de hospedagens de vídeo menores, blogs e sites de notícias costumam funcionar também. Sites que exigem login ou escondem a mídia não podem ser acessados."
+    },
+    {
+      "q": "Posso importar uma playlist ou coleção inteira de uma vez?",
+      "a": "Sim. Apoiadores podem colar na fila em lote uma playlist do YouTube, um subreddit ou página de usuário do Reddit, um quadro do Pinterest ou um canal do Vimeo, e ela se expande em links individuais automaticamente — sem duplicados e com limite por execução — e depois é resolvida como uma fila. A fila em lote em si é um dos extras para apoiadores; baixar links um de cada vez continua grátis, ilimitado e sem conta."
+    },
+    {
+      "q": "Posso salvar legendas junto com um vídeo?",
+      "a": "As faixas de legenda do YouTube — inclusive as geradas automaticamente — podem ser salvas como arquivos SRT ou WebVTT padrão, que abrem no VLC ou em editores. Isso faz parte dos extras para apoiadores; os downloads de vídeo e áudio continuam grátis de qualquer forma."
+    },
+    {
+      "q": "Em quais formatos e qualidades os downloads estão disponíveis?",
+      "a": "Os vídeos são baixados em MP4 em HD (normalmente 1080p, quando a fonte permite). O áudio vem em MP3. As imagens de carrossel são salvas em JPG ou PNG, uma a uma ou em um arquivo ZIP."
+    },
+    {
+      "q": "Vocês armazenam os vídeos que eu baixo?",
+      "a": "Não. A ferramenta busca a mídia sob demanda e a envia direto para o seu dispositivo. Nada fica armazenado em nossos servidores e não é preciso ter conta."
+    },
+    {
+      "q": "É legal baixar vídeos do TikTok, Twitter/X, Instagram, Facebook ou YouTube?",
+      "a": "Baixar vídeos públicos para uso pessoal e não comercial geralmente é permitido, mas você deve respeitar os direitos do criador original e os termos de serviço da plataforma. Não redistribua nem monetize conteúdo que não é seu."
+    },
+    {
+      "q": "Por que o link do meu TikTok não é processado?",
+      "a": "Confirme que o post é público e que a URL é o link de compartilhamento (tiktok.com/@user/video/... ou vm.tiktok.com/...). Posts privados, apagados, bloqueados na sua região ou com restrição de idade não podem ser acessados."
+    }
+  ],
+  "platforms": {
+    "video-downloader": {
+      "brandLabel": "Baixar qualquer vídeo",
+      "metaTitle": "Baixar vídeo de qualquer site — cole o link, MP4 HD e MP3",
+      "metaDescription": "Cole o link de qualquer site e salve o vídeo em HD, extraia o áudio em MP3 ou pegue a mídia incorporada — grátis, sem login, sem instalar nada.",
+      "h1": "Baixar vídeo de qualquer site — cole qualquer link",
+      "tagline": "Um só campo para todos os sites: obtenha o vídeo, o áudio ou as imagens de qualquer link público.",
+      "intro": "Cole qualquer link de vídeo público — das onze plataformas dedicadas ou de qualquer outro lugar. O extrator lê o que a própria página publica (og:video, JSON-LD, configurações de player, arquivos diretos) e verifica se ela entrega mídia de verdade antes de oferecer, então você recebe um arquivo que toca, e não uma página de erro renomeada para .mp4. Se uma página entrega o vídeo ao público, em geral isso resolve. Sem login, sem instalar nada.",
+      "cards": [
+        {
+          "title": "🌐 Além das onze grandes",
+          "body": "Hospedagens de vídeo pequenas, blogs, sites de notícias, fóruns — se a página publica a mídia, o extrator genérico encontra a melhor versão e entrega o arquivo."
+        },
+        {
+          "title": "🛡️ Verificado antes de oferecer",
+          "body": "Cada URL encontrada é testada antes: ela precisa entregar bytes de mídia de verdade, não uma página de erro em HTML. O que chega à sua pasta de downloads toca."
+        },
+        {
+          "title": "🎵 MP3 de qualquer link resolvido",
+          "body": "Onde o vídeo for resolvido, a trilha sonora vem junto — extraia o áudio em MP3 mesmo em plataformas sem downloader dedicado."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Funciona com qualquer site?",
+          "a": "Funciona onde quer que uma página entregue sua mídia publicamente. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch e Vimeo; fora dessas, o extrator lê o que a página publica, o que resolve a maioria das hospedagens de vídeo menores, blogs e páginas de notícias."
+        },
+        {
+          "q": "E se um site bloquear o acesso automatizado?",
+          "a": "Alguns sites entregam uma página de bloqueio, em vez do conteúdo real, para IPs de datacenter. Esses links são tentados de novo por um endereço que o site atende — uma página de embed ou de player costuma continuar aberta quando a página de exibição não está — e, quando nenhum dos dois funciona, o erro diz que o site nos bloqueou, em vez de chutar outra causa."
+        },
+        {
+          "q": "Posso baixar de sites que exigem login?",
+          "a": "Não. Só é possível acessar o que um visitante sem login já consegue ver — contas privadas, paywalls e streams com DRM ficam fora do alcance por princípio."
+        },
+        {
+          "q": "Como conseguir a melhor qualidade de um site qualquer?",
+          "a": "Deixe a qualidade em HD. Quando uma página oferece várias versões, o extrator as ordena por resolução e escolhe a mais alta já verificada, em vez de confiar na primeira URL que aparecer."
+        },
+        {
+          "q": "Por que meu link falhou?",
+          "a": "Os três motivos mais comuns: a mídia exige login, a página nunca expõe um arquivo direto (ela transmite por um player ofuscado) ou o site bloqueia buscas automatizadas por completo. A mensagem de erro diz qual foi."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos de qualquer página pública da web, não só das grandes plataformas",
+        "Lê og:video, contentUrl do JSON-LD, fontes de <video> e configurações de player",
+        "Ordena várias versões por resolução e escolhe a melhor já verificada",
+        "Extração de MP3 em todo link resolvido como vídeo",
+        "Receitas específicas por site que leem a página de embed quando a página de exibição está bloqueada"
+      ]
+    },
+    "tiktok-downloader": {
+      "brandLabel": "Baixar vídeo do TikTok",
+      "metaTitle": "Baixar vídeo do TikTok — MP4 HD, MP3 e slideshow",
+      "metaDescription": "Baixe vídeos públicos do TikTok em HD, extraia a trilha em MP3 ou salve todas as imagens de um carrossel de fotos — grátis, sem login, sem instalar app.",
+      "h1": "Baixar vídeo do TikTok — HD, MP3 e slideshow",
+      "tagline": "Salve vídeos do TikTok em 1080p, extraia áudio MP3 e baixe carrosséis de fotos com a música original.",
+      "intro": "Cole qualquer link público de tiktok.com ou vm.tiktok.com para baixar o vídeo na qualidade original, extrair a trilha em MP3 ou salvar todas as imagens de um carrossel de fotos do TikTok — uma a uma ou em um único ZIP. Tudo acontece no seu navegador, sem app para instalar e sem cadastro.",
+      "cards": [
+        {
+          "title": "🎬 Vídeo em HD, qualidade original",
+          "body": "Baixe clipes públicos do TikTok na qualidade original de 1080p — o MP4 de verdade, não uma gravação de tela, para continuar nítido quando você arquivar ou rever."
+        },
+        {
+          "title": "🎵 MP3 de qualquer TikTok",
+          "body": "Extraia a trilha de qualquer vídeo ou slideshow como MP3. Som do momento? Pegue em segundos, sem gravar a tela."
+        },
+        {
+          "title": "🖼️ Carrosséis de fotos",
+          "body": "Os slideshows do TikTok voltam como uma galeria completa. Veja cada imagem, escolha as favoritas e salve uma a uma ou em um ZIP — com a música original."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Este downloader de TikTok é grátis?",
+          "a": "Sim — totalmente grátis, sem cadastro e sem limite diário de downloads."
+        },
+        {
+          "q": "Qual a qualidade dos vídeos do TikTok baixados?",
+          "a": "O arquivo original que o TikTok entrega para um post público — até 1080p HD, sem recompressão e sem gravação de tela."
+        },
+        {
+          "q": "Dá para baixar um carrossel de fotos (slideshow) do TikTok?",
+          "a": "Sim. Cole a URL do slideshow e o app lista todas as imagens, a trilha de fundo e — quando o TikTok fornece — o vídeo do slideshow já renderizado, para você pegar as fotos, o MP3 ou o MP4 em um só fluxo."
+        },
+        {
+          "q": "Como extrair o áudio MP3 de um vídeo do TikTok?",
+          "a": "Cole a URL do TikTok, clique em Baixar e use o botão Extrair áudio. O MP3 chega direto ao seu dispositivo — sem gravar a tela."
+        },
+        {
+          "q": "Por que o link do meu TikTok não é processado?",
+          "a": "Confirme que o post é público e que a URL é o link de compartilhamento (tiktok.com/@user/video/… ou vm.tiktok.com/…). Posts privados, apagados, bloqueados na sua região ou com restrição de idade não podem ser acessados."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos públicos do TikTok na qualidade HD original",
+        "Extraia áudio MP3 de qualquer vídeo ou slideshow do TikTok",
+        "Salve carrosséis de fotos do TikTok — uma a uma ou em um ZIP",
+        "Veja a prévia do vídeo e do áudio antes de baixar",
+        "Sem login, sem instalar app, sem limite diário de downloads"
+      ]
+    },
+    "twitter-video-downloader": {
+      "brandLabel": "Baixar vídeo do Twitter/X",
+      "metaTitle": "Baixar vídeo do Twitter / X — vídeos e GIFs em HD",
+      "metaDescription": "Salve qualquer vídeo do Twitter ou X em HD, inclusive GIFs e posts mais longos. Cole uma URL de status do twitter.com ou x.com e baixe o MP4 na hora, sem login.",
+      "h1": "Baixar vídeo do Twitter / X — MP4 HD e GIF",
+      "tagline": "Salve vídeos do Twitter, clipes do X e tweets com GIF em MP4, na qualidade original.",
+      "intro": "Cole qualquer URL de status do twitter.com ou x.com e a ferramenta encontra a mídia — vídeo em HD, GIF ou thread com vários anexos — para você ver a prévia e baixar o MP4 direto no seu dispositivo. Sem login, sem extensões, nada para instalar.",
+      "cards": [
+        {
+          "title": "🎬 Downloads em MP4 HD",
+          "body": "Pegue o maior bitrate disponível de qualquer vídeo de tweet — inclusive posts mais longos e clipes de contas X Premium."
+        },
+        {
+          "title": "🌀 Tweets com GIF → MP4",
+          "body": "Os \"GIFs\" do Twitter são, na verdade, MP4 em H.264. A ferramenta os extrai como um MP4 limpo que você pode rever, editar ou converter."
+        },
+        {
+          "title": "🔁 twitter.com e x.com",
+          "body": "Tanto as URLs antigas do twitter.com quanto as novas do x.com são aceitas. Cole qualquer uma — o que importa é o ID do status."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Funciona tanto com twitter.com quanto com x.com?",
+          "a": "Sim. A ferramenta extrai o ID do status de qualquer um dos domínios, então links antigos do twitter.com e novos do x.com funcionam."
+        },
+        {
+          "q": "Dá para baixar um GIF do Twitter como vídeo?",
+          "a": "Sim. Os GIFs do Twitter são guardados como MP4 em H.264 — a ferramenta os baixa como arquivos MP4 limpos, na qualidade original."
+        },
+        {
+          "q": "Qual a qualidade dos vídeos do Twitter baixados?",
+          "a": "Você recebe o maior bitrate que o post original oferece — normalmente 720p ou 1080p para clipes em HD, e até a qualidade da fonte para posts mais longos do X Premium."
+        },
+        {
+          "q": "Preciso fazer login ou seguir a conta?",
+          "a": "Não. A ferramenta busca apenas o que o post expõe publicamente. Se o post for de uma conta protegida, não dá para baixá-lo."
+        },
+        {
+          "q": "Por que o link do meu Twitter não é processado?",
+          "a": "Confirme que o tweet é público e que a URL é um link de status (twitter.com/user/status/… ou x.com/user/status/…). Posts apagados, protegidos ou restritos por região não podem ser acessados."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos do Twitter e do X em HD",
+        "Salve tweets com GIF como arquivos MP4 limpos",
+        "Funciona com URLs do twitter.com e do x.com",
+        "Sem login, sem chave da API do Twitter, sem instalar nada",
+        "Veja a prévia do vídeo antes de baixar"
+      ]
+    },
+    "instagram-downloader": {
+      "brandLabel": "Baixar reels e fotos do Instagram",
+      "metaTitle": "Baixar reels e fotos do Instagram — grátis, sem login",
+      "metaDescription": "Baixe reels do Instagram em HD, salve fotos avulsas ou pegue todas as imagens de um carrossel — sem login e sem app. Grátis, sem limite diário.",
+      "h1": "Baixar reels e fotos do Instagram — grátis, sem login",
+      "tagline": "Salve reels, fotos e carrosséis do Instagram na resolução original.",
+      "intro": "Cole uma URL pública do Instagram — um reel, uma foto avulsa ou um carrossel — e a ferramenta extrai a mídia na resolução original. Os carrosséis voltam com cada imagem separada, para você escolher as que quer ou salvar todas em um ZIP. Sem login no Instagram.",
+      "cards": [
+        {
+          "title": "🎬 Reels em HD",
+          "body": "Salve reels públicos do Instagram na resolução original completa — vertical, quadrado ou horizontal — como o MP4 original, sem recompressão."
+        },
+        {
+          "title": "🖼️ Fotos avulsas",
+          "body": "Posts de foto públicos do Instagram chegam em tamanho total — sem compressão de miniatura, sem precisar de captura de tela."
+        },
+        {
+          "title": "🗂️ Carrosséis de fotos",
+          "body": "Os posts em carrossel chegam como galeria. Escolha as imagens que quer e salve uma a uma, ou baixe o conjunto inteiro em um ZIP."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Dá para baixar reels do Instagram em HD?",
+          "a": "Sim — os reels são salvos na resolução original e a proporção original é mantida."
+        },
+        {
+          "q": "Funciona com carrosséis de fotos do Instagram?",
+          "a": "Sim. Cole uma URL /p/ com várias fotos e cada imagem aparece separada — baixe todas em um ZIP ou só as que quiser."
+        },
+        {
+          "q": "Preciso entrar na minha conta do Instagram?",
+          "a": "Não. A ferramenta acessa apenas posts visíveis publicamente. Contas privadas, stories e mensagens diretas ficam de fora."
+        },
+        {
+          "q": "Dá para baixar stories do Instagram?",
+          "a": "Não. Stories estão fora do escopo — só posts públicos do feed, reels, IGTV e carrosséis são compatíveis."
+        },
+        {
+          "q": "O Instagram mostra quem baixou um post?",
+          "a": "Não. Não existe nenhum aviso de \"baixado por\" para os criadores. Mesmo assim, respeite o criador original e os termos do Instagram ao reutilizar conteúdo."
+        }
+      ],
+      "featureList": [
+        "Baixe reels do Instagram em HD",
+        "Salve fotos avulsas do Instagram em resolução total",
+        "Pegue todas as imagens de um carrossel — uma a uma ou em ZIP",
+        "Sem login no Instagram",
+        "Somente posts públicos — contas privadas e stories não são compatíveis"
+      ]
+    },
+    "youtube-downloader": {
+      "brandLabel": "Baixar vídeos e Shorts do YouTube",
+      "metaTitle": "Baixar vídeo do YouTube e Shorts — MP4 HD e MP3",
+      "metaDescription": "Baixe vídeos e Shorts do YouTube em HD como MP4 ou extraia o áudio em MP3. Cole links youtube.com/watch, youtu.be ou /shorts/ — sem instalar nada.",
+      "h1": "Baixar vídeo do YouTube e Shorts — MP4 HD e MP3",
+      "tagline": "Salve vídeos e Shorts do YouTube em MP4 HD ou extraia áudio MP3 limpo.",
+      "intro": "Cole qualquer link youtube.com/watch?v=…, youtu.be/… ou /shorts/…. A ferramenta resolve o stream para você ver a prévia, salvar o MP4 em HD ou extrair a trilha como MP3 — útil para podcasts, aulas ou áudios do momento. Vídeos com restrição de idade, privados e exclusivos para membros não são compatíveis.",
+      "cards": [
+        {
+          "title": "🎬 Vídeo MP4 em HD",
+          "body": "Pegue a maior qualidade de MP4 disponível — até 1080p, quando a fonte permite — sem extensão de navegador nem app instalado."
+        },
+        {
+          "title": "🎵 Extração de áudio MP3",
+          "body": "Extraia só a trilha como um MP3 limpo. Perfeito para música, aulas, podcasts e trechos para aprender idiomas."
+        },
+        {
+          "title": "⚡ Pronto para Shorts",
+          "body": "Os Shorts verticais do YouTube (/shorts/…) são tratados como prioridade — salvos na proporção nativa 9:16 e na resolução original."
+        },
+        {
+          "title": "📚 Playlists inteiras, um só colar",
+          "body": "Apoiadores podem colar um link playlist?list=… e ele se expande em vídeos individuais automaticamente — sem duplicados e na fila, em ordem."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Dá para baixar Shorts do YouTube?",
+          "a": "Sim — cole qualquer link youtube.com/shorts/… e a ferramenta resolve o stream para você ver a prévia, baixar o MP4 ou extrair o MP3."
+        },
+        {
+          "q": "Posso extrair só o áudio em MP3?",
+          "a": "Sim. Clique em Extrair áudio depois de processar para baixar um MP3 limpo no lugar do vídeo (ou junto com ele)."
+        },
+        {
+          "q": "Qual é a qualidade máxima?",
+          "a": "Até MP4 em 1080p, quando a fonte permite. Alguns vídeos chegam no máximo a 720p, dependendo do envio original."
+        },
+        {
+          "q": "Funciona com vídeos com restrição de idade ou exclusivos para membros?",
+          "a": "Não. Vídeos com restrição de idade, privados, exclusivos para membros e bloqueados por região não podem ser acessados."
+        },
+        {
+          "q": "Por que meu vídeo só carrega como prévia?",
+          "a": "Alguns vídeos do YouTube restringem a extração gratuita. Nesse caso, a ferramenta recorre a uma prévia incorporada, para você ainda poder assistir ali mesmo."
+        },
+        {
+          "q": "Posso importar uma playlist inteira do YouTube?",
+          "a": "Sim. Os apoiadores colam o link da playlist uma vez; cada vídeo vira uma linha na fila de downloads, com os títulos reais e limite por execução. A fila é um dos extras para apoiadores — baixar vídeos um link por vez é grátis e ilimitado para todos."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos do YouTube em MP4 HD",
+        "Salve Shorts do YouTube no formato vertical nativo",
+        "Extraia áudio MP3 de qualquer vídeo",
+        "Veja a prévia antes de baixar",
+        "Sem extensão de navegador, sem instalar nada"
+      ]
+    },
+    "facebook-downloader": {
+      "brandLabel": "Baixar vídeos e reels do Facebook",
+      "metaTitle": "Baixar vídeo do Facebook e Reels — HD, sem login",
+      "metaDescription": "Salve qualquer vídeo, clipe do Watch ou reel público do Facebook em HD. Cole uma URL facebook.com/.../videos/, fb.watch ou /reel/ — sem login nem extensão.",
+      "h1": "Baixar vídeo do Facebook e Reels — HD, sem login",
+      "tagline": "Baixe vídeos, clipes do Watch e reels do Facebook em HD direto no seu dispositivo.",
+      "intro": "Cole qualquer URL pública de vídeo, clipe do Watch ou reel do Facebook — facebook.com/…/videos/…, fb.watch/… ou facebook.com/reel/… — e a ferramenta extrai o stream em HD para prévia e download. Sem login no Facebook, sem extensão, sem app. Posts privados e vídeos de grupos privados não podem ser acessados.",
+      "cards": [
+        {
+          "title": "🎬 Vídeos em HD e clipes do Watch",
+          "body": "Vídeos públicos e clipes do Watch do Facebook chegam na resolução original do envio — normalmente 720p ou 1080p."
+        },
+        {
+          "title": "🎞️ Reels — vertical nativo",
+          "body": "Os Reels do Facebook são salvos no formato vertical nativo 9:16, prontos para recompartilhar ou arquivar."
+        },
+        {
+          "title": "🔗 Links curtos fb.watch",
+          "body": "URLs curtas fb.watch funcionam como as URLs completas do facebook.com — a ferramenta resolve o link curto até o vídeo automaticamente."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Funciona com Reels do Facebook?",
+          "a": "Sim — cole uma URL facebook.com/reel/… e a ferramenta extrai o vídeo no formato vertical nativo."
+        },
+        {
+          "q": "Dá para baixar vídeos do Facebook Watch?",
+          "a": "Sim. Clipes do Watch (facebook.com/watch/?v=…) e vídeos incorporados em posts são compatíveis."
+        },
+        {
+          "q": "Vídeos privados do Facebook funcionam?",
+          "a": "Não. Só posts públicos, reels públicos e clipes públicos do Watch podem ser baixados. Posts privados e vídeos de grupos privados ficam fora do escopo."
+        },
+        {
+          "q": "Quais formatos de URL são aceitos?",
+          "a": "facebook.com/.../videos/…, fb.watch/…, facebook.com/reel/… e facebook.com/watch/?v=… funcionam — cole qualquer um deles."
+        },
+        {
+          "q": "Quem postou o vídeo original vai saber que eu baixei?",
+          "a": "Não — não existe notificação de \"baixado por\". Respeite o criador e os termos do Facebook ao reutilizar o conteúdo."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos do Facebook em HD",
+        "Salve Reels do Facebook no formato vertical nativo",
+        "Funciona com links curtos fb.watch",
+        "Somente posts públicos — sem login, sem extensão",
+        "Veja a prévia do vídeo antes de baixar"
+      ]
+    },
+    "pinterest-downloader": {
+      "brandLabel": "Baixar vídeos e imagens do Pinterest",
+      "metaTitle": "Baixar vídeo e imagem do Pinterest — salve pins sem login",
+      "metaDescription": "Baixe vídeos e imagens de pins do Pinterest em qualidade total. Cole um link pinterest.com/pin/ ou pin.it e salve na hora — grátis, sem login, sem app.",
+      "h1": "Baixar vídeo e imagem do Pinterest — grátis, sem login",
+      "tagline": "Salve pins de vídeo e imagens em resolução total do Pinterest direto no seu dispositivo.",
+      "intro": "Cole qualquer link pinterest.com/pin/… ou pin.it/… e a ferramenta encontra a mídia — um vídeo de idea pin ou uma imagem em tamanho total — para você ver a prévia e baixar direto. Sem login no Pinterest, sem extensão de navegador, nada para instalar. Quadros privados e pins secretos não podem ser acessados.",
+      "cards": [
+        {
+          "title": "🎬 Pins de vídeo em HD",
+          "body": "Os vídeos de idea pins do Pinterest são salvos na qualidade original como um MP4 limpo — sem gravação de tela, sem recompressão."
+        },
+        {
+          "title": "🖼️ Imagens em resolução total",
+          "body": "Os pins de imagem são baixados em tamanho total, e não na miniatura comprimida que o app mostra — ideal para moodboards e referências."
+        },
+        {
+          "title": "🔗 Links curtos pin.it",
+          "body": "URLs curtas pin.it funcionam como os links completos do pinterest.com — a ferramenta resolve o link curto até o pin automaticamente."
+        },
+        {
+          "title": "📚 Baixe um quadro inteiro",
+          "body": "O link de um quadro se expande nos seus pins pelo feed público do quadro — cada pin vira uma linha que você resolve de uma só vez."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Dá para baixar vídeos do Pinterest?",
+          "a": "Sim — cole a URL de um pin de vídeo e a ferramenta resolve o MP4 para você ver a prévia e salvar direto no seu dispositivo."
+        },
+        {
+          "q": "Ele salva imagens do Pinterest em tamanho total?",
+          "a": "Sim. Os pins de imagem são baixados na resolução original, e não na prévia comprimida mostrada no feed."
+        },
+        {
+          "q": "Os links curtos pin.it funcionam?",
+          "a": "Sim. A ferramenta segue o redirecionamento do pin.it até o pin do pinterest.com, então os dois formatos funcionam."
+        },
+        {
+          "q": "Preciso de uma conta no Pinterest?",
+          "a": "Não. Só pins visíveis publicamente são acessados — sem login, sem extensão. Quadros privados e pins secretos ficam fora do escopo."
+        },
+        {
+          "q": "Por que o link do meu Pinterest não é processado?",
+          "a": "Confirme que o pin é público e que a URL é um link de pin (pinterest.com/pin/… ou pin.it/…). Alguns pins só apontam para um site externo e não têm mídia para baixar."
+        },
+        {
+          "q": "Dá para fazer backup de um quadro inteiro do Pinterest?",
+          "a": "Sim. Os apoiadores colam o link do quadro e cada pin vira uma linha da fila pelo feed RSS público do quadro, então imagens e vídeos são resolvidos juntos, sem copiar um link de cada vez."
+        }
+      ],
+      "featureList": [
+        "Baixe pins de vídeo do Pinterest em HD",
+        "Salve imagens do Pinterest em resolução total",
+        "Funciona com links curtos pin.it",
+        "Sem login no Pinterest, sem extensão, sem instalar nada",
+        "Veja a prévia da mídia antes de baixar"
+      ]
+    },
+    "reddit-video-downloader": {
+      "brandLabel": "Baixar vídeo do Reddit",
+      "metaTitle": "Baixar vídeo do Reddit — vídeos v.redd.it com áudio",
+      "metaDescription": "Baixe vídeos do Reddit em HD com som. O Reddit guarda vídeo e áudio separados — esta ferramenta os junta. Cole um link reddit.com ou v.redd.it, sem login.",
+      "h1": "Baixar vídeo do Reddit — HD, com som",
+      "tagline": "Salve vídeos do Reddit com a faixa de áudio de volta — do jeito que deveriam baixar.",
+      "intro": "O Reddit hospeda o vídeo de um post e o áudio como dois streams separados, e é por isso que um “salvar vídeo” comum pega um clipe mudo. Cole qualquer link reddit.com/r/…/comments/… ou v.redd.it/… e a ferramenta resolve os dois streams e os junta, para você receber o vídeo com som. Sem login, sem extensão, nada para instalar.",
+      "cards": [
+        {
+          "title": "🔊 Vídeo com som",
+          "body": "O Reddit separa vídeo e áudio em arquivos diferentes. A ferramenta busca os dois e os junta, para o seu download não ser um clipe mudo."
+        },
+        {
+          "title": "🎬 Qualidade HD",
+          "body": "Os clipes são salvos na maior resolução que o post original oferece — até 1080p em vídeos v.redd.it hospedados."
+        },
+        {
+          "title": "🔗 Todo tipo de link do Reddit",
+          "body": "Permalinks completos de comentários, links de compartilhamento /s/ e URLs curtas v.redd.it / redd.it são aceitos — cole qualquer um."
+        },
+        {
+          "title": "📚 Importe subreddits inteiros",
+          "body": "Cole a página de um subreddit ou usuário e os posts com mídia viram linhas da fila — só vídeos e imagens, sem os posts fixados da moderação."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Por que os vídeos do Reddit baixam sem som em outros lugares?",
+          "a": "O Reddit guarda o vídeo e o áudio como dois streams separados. Um “salvar” comum pega só o vídeo. Esta ferramenta busca os dois e os junta para o download ter som."
+        },
+        {
+          "q": "Quais formatos de URL do Reddit funcionam?",
+          "a": "Permalinks completos de comentários (reddit.com/r/…/comments/…), links de compartilhamento /s/ do formato novo e URLs curtas v.redd.it / redd.it funcionam."
+        },
+        {
+          "q": "Posso baixar vídeos de qualquer subreddit?",
+          "a": "Qualquer post público funciona. Vídeos de comunidades privadas ou em quarentena, ou posts NSFW atrás de verificação de idade, podem não estar acessíveis."
+        },
+        {
+          "q": "Funciona com GIFs e crossposts?",
+          "a": "Sim — os GIFs hospedados no Reddit chegam como MP4, e os crossposts são resolvidos até o vídeo hospedado original."
+        },
+        {
+          "q": "Preciso fazer login no Reddit?",
+          "a": "Não. Só posts visíveis publicamente são acessados — sem login, sem app, sem extensão."
+        },
+        {
+          "q": "Dá para salvar todos os posts de um subreddit ou usuário?",
+          "a": "Sim — os apoiadores colam o link do subreddit ou do perfil e ele se expande em links de posts individuais (só posts com mídia), depois é resolvido como uma fila. Posts só de texto são filtrados, em vez de falhar um por um."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos do Reddit com o áudio já junto",
+        "Salve clipes v.redd.it em HD",
+        "Funciona com permalinks, links de compartilhamento /s/ e redd.it",
+        "GIFs hospedados no Reddit salvos como MP4",
+        "Sem login, sem app, sem extensão"
+      ]
+    },
+    "threads-video-downloader": {
+      "brandLabel": "Baixar vídeos e fotos do Threads",
+      "metaTitle": "Baixar vídeo e foto do Threads — salve posts sem login",
+      "metaDescription": "Baixe vídeos e fotos do Threads (threads.net) em qualidade total. Cole um link threads.net/@user/post e salve a mídia na hora — grátis, sem login.",
+      "h1": "Baixar vídeo e foto do Threads — grátis, sem login",
+      "tagline": "Salve vídeos e fotos de posts do Threads na qualidade original.",
+      "intro": "Cole qualquer URL de post do threads.net (ou threads.com) — threads.net/@username/post/… — e a ferramenta encontra a mídia anexada para você ver a prévia e baixar o vídeo ou a foto direto. Sem login no Threads nem no Instagram, sem extensão, nada para instalar. Perfis privados não podem ser acessados.",
+      "cards": [
+        {
+          "title": "🎬 Vídeos em HD",
+          "body": "Os posts de vídeo do Threads são salvos na resolução original como um MP4 limpo — sem recompressão, sem perda de qualidade."
+        },
+        {
+          "title": "🖼️ Fotos em tamanho total",
+          "body": "Fotos avulsas e posts de imagem são baixados em resolução total, e não na prévia comprimida do feed."
+        },
+        {
+          "title": "🧵 threads.net e threads.com",
+          "body": "Os domínios threads.net e o mais novo threads.com funcionam, assim como os links curtos /t/ — cole o que você copiou."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Dá para baixar vídeos do Threads?",
+          "a": "Sim — cole a URL de um post público do Threads e a ferramenta resolve o vídeo para você ver a prévia e baixar o MP4."
+        },
+        {
+          "q": "Funciona com posts de foto?",
+          "a": "Sim. Fotos avulsas e posts de imagem são salvos em resolução total."
+        },
+        {
+          "q": "Preciso de login no Threads ou no Instagram?",
+          "a": "Não. Só posts visíveis publicamente são acessados. Posts de perfis privados não podem ser baixados."
+        },
+        {
+          "q": "Quais formatos de URL do Threads são aceitos?",
+          "a": "threads.net/@user/post/…, threads.com/@user/post/… e links curtos threads.net/t/… funcionam."
+        },
+        {
+          "q": "Por que o link do meu Threads não é processado?",
+          "a": "Confirme que o post é público e que a URL aponta para um único post. Perfis privados, posts apagados e posts só de texto (sem mídia) não podem ser acessados."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos do Threads em HD",
+        "Salve fotos do Threads em resolução total",
+        "Funciona com URLs do threads.net e do threads.com",
+        "Sem login no Threads nem no Instagram",
+        "Veja a prévia da mídia antes de baixar"
+      ]
+    },
+    "snapchat-downloader": {
+      "brandLabel": "Baixar vídeos do Snapchat Spotlight",
+      "metaTitle": "Baixar vídeo do Snapchat Spotlight — sem login",
+      "metaDescription": "Baixe vídeos públicos do Snapchat Spotlight em HD. Cole um link snapchat.com/spotlight ou story.snapchat.com e salve o MP4 na hora — grátis, sem login, sem app.",
+      "h1": "Baixar vídeo do Snapchat Spotlight — HD, sem login",
+      "tagline": "Salve clipes públicos do Snapchat Spotlight e stories públicos direto no seu dispositivo.",
+      "intro": "Cole um link público do Snapchat — snapchat.com/spotlight/… ou story.snapchat.com/… — e a ferramenta resolve o clipe para você ver a prévia e baixar o MP4. Sem login no Snapchat, sem app, sem extensão. Snaps privados e mensagens temporárias não são acessíveis — só o conteúdo que o Snapchat publica publicamente.",
+      "cards": [
+        {
+          "title": "🎬 Spotlight em HD",
+          "body": "Os clipes públicos do Snapchat Spotlight são salvos na resolução original como um MP4 vertical e limpo — pronto para recompartilhar ou arquivar."
+        },
+        {
+          "title": "📖 Stories públicos",
+          "body": "Os stories de perfis públicos em story.snapchat.com são resolvidos do mesmo jeito — veja a prévia do clipe e depois baixe."
+        },
+        {
+          "title": "🔒 Somente conteúdo público",
+          "body": "Só o conteúdo que o Snapchat publica publicamente pode ser acessado. Snaps privados, conversas e mensagens temporárias nunca são acessíveis."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Dá para baixar vídeos do Snapchat Spotlight?",
+          "a": "Sim — cole um link snapchat.com/spotlight/… e a ferramenta resolve o MP4 para você ver a prévia e salvar."
+        },
+        {
+          "q": "Posso baixar snaps privados ou conversas de alguém?",
+          "a": "Não. Só o conteúdo publicado publicamente (Spotlight e stories de perfis públicos) pode ser acessado. Snaps e mensagens privados nunca entram no escopo."
+        },
+        {
+          "q": "A outra pessoa vai saber que eu salvei o clipe do Spotlight dela?",
+          "a": "Não existe notificação de \"baixado por\" para conteúdo público do Spotlight. Respeite o criador e os termos do Snapchat ao reutilizá-lo."
+        },
+        {
+          "q": "Quais formatos de URL do Snapchat são aceitos?",
+          "a": "snapchat.com/spotlight/…, story.snapchat.com/… e links curtos snapchat.com/t/… funcionam melhor."
+        },
+        {
+          "q": "Por que o link do meu Snapchat não é processado?",
+          "a": "Confirme que é um link público do Spotlight ou de um story público. Snaps privados, stories expirados e links de perfil sem mídia pública não podem ser acessados."
+        }
+      ],
+      "featureList": [
+        "Baixe clipes públicos do Snapchat Spotlight em HD",
+        "Salve stories de perfis públicos como MP4",
+        "Formato vertical nativo preservado",
+        "Sem login no Snapchat, sem app, sem extensão",
+        "Somente conteúdo público — snaps privados nunca são acessados"
+      ]
+    },
+    "twitch-clip-downloader": {
+      "brandLabel": "Baixar clipes e VODs da Twitch",
+      "metaTitle": "Baixar clipe da Twitch — salve clipes e VODs em HD",
+      "metaDescription": "Baixe clipes e VODs da Twitch em HD como MP4. Cole um link clips.twitch.tv, twitch.tv/…/clip/ ou twitch.tv/videos/ e salve na hora — grátis, sem login.",
+      "h1": "Baixar clipe e VOD da Twitch — MP4 HD",
+      "tagline": "Salve clipes e transmissões passadas (VODs) da Twitch em MP4, na qualidade original.",
+      "intro": "Cole um link de clipe ou VOD da Twitch — clips.twitch.tv/…, twitch.tv/<canal>/clip/… ou twitch.tv/videos/… — e a ferramenta resolve o stream para você ver a prévia e baixar o MP4. Sem login na Twitch, sem extensão, nada para instalar. VODs exclusivos para inscritos e conteúdo atrás de paywall não podem ser acessados.",
+      "cards": [
+        {
+          "title": "🎬 Clipes em HD",
+          "body": "Os clipes da Twitch são salvos na resolução original como um MP4 limpo — perfeito para compilações, reações ou recompartilhar fora da plataforma."
+        },
+        {
+          "title": "📼 Download de VODs",
+          "body": "As transmissões passadas (twitch.tv/videos/…) são resolvidas do mesmo jeito, para você arquivar uma live antes que ela expire no canal."
+        },
+        {
+          "title": "🔗 Links de clipes e de canais",
+          "body": "Tanto os links curtos clips.twitch.tv quanto as URLs completas twitch.tv/<canal>/clip/… são aceitos — cole o que você copiou."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Dá para baixar clipes da Twitch?",
+          "a": "Sim — cole um link clips.twitch.tv ou twitch.tv/<canal>/clip/… e a ferramenta resolve o MP4 para você ver a prévia e salvar."
+        },
+        {
+          "q": "Dá para baixar um VOD completo da Twitch?",
+          "a": "Sim, transmissões passadas públicas (twitch.tv/videos/…) podem ser baixadas. VODs muito longos demoram mais para processar."
+        },
+        {
+          "q": "VODs exclusivos para inscritos funcionam?",
+          "a": "Não. VODs só para inscritos e qualquer conteúdo atrás de paywall ou login não podem ser acessados — só clipes e VODs de visualização pública."
+        },
+        {
+          "q": "Qual a qualidade dos clipes baixados?",
+          "a": "Você recebe a maior resolução que a fonte oferece — normalmente até 1080p60 para clipes capturados de transmissões em HD."
+        },
+        {
+          "q": "Por que o link da minha Twitch não é processado?",
+          "a": "Confirme que é um link público de clipe ou VOD. Conteúdo só para inscritos, apagado ou restrito por região não pode ser baixado."
+        }
+      ],
+      "featureList": [
+        "Baixe clipes da Twitch em MP4 HD",
+        "Salve VODs públicos (transmissões passadas)",
+        "Funciona com clips.twitch.tv e links de clipes de canais",
+        "Sem login na Twitch, sem extensão, sem instalar nada",
+        "Veja a prévia do clipe antes de baixar"
+      ]
+    },
+    "vimeo-downloader": {
+      "brandLabel": "Baixar vídeos do Vimeo",
+      "metaTitle": "Baixar vídeo do Vimeo — salve vídeos HD em MP4, sem login",
+      "metaDescription": "Baixe vídeos públicos do Vimeo em HD como MP4. Cole um link vimeo.com e salve o arquivo de vídeo progressivo na hora — grátis, sem login, sem instalar app.",
+      "h1": "Baixar vídeo do Vimeo — MP4 HD, sem login",
+      "tagline": "Salve vídeos públicos do Vimeo em MP4, na maior qualidade que a fonte oferece.",
+      "intro": "Cole qualquer link público vimeo.com/… e a ferramenta resolve o vídeo pela própria configuração do player do Vimeo, devolvendo um MP4 progressivo direto que você pode ver na prévia e baixar. Sem login no Vimeo, sem extensão, nada para instalar. Vídeos protegidos por senha, privados e restritos a domínios não podem ser acessados.",
+      "cards": [
+        {
+          "title": "🎬 Downloads em MP4 HD",
+          "body": "Os vídeos públicos do Vimeo são salvos na maior versão progressiva disponível — em geral até 1080p — como um MP4 limpo."
+        },
+        {
+          "title": "⚡ Direto do Vimeo",
+          "body": "O vídeo é resolvido pela própria configuração do player do Vimeo, então você recebe um arquivo progressivo de verdade — não uma gravação de tela nem uma recompressão."
+        },
+        {
+          "title": "🎚️ Atento à qualidade",
+          "body": "Escolha HD para a melhor versão ou Data saver para um arquivo mais leve — a ferramenta seleciona a fonte progressiva correspondente."
+        },
+        {
+          "title": "📚 Canais e usuários de uma vez",
+          "body": "O link de um canal ou usuário do Vimeo se expande nos vídeos públicos dele pelo feed — coloque todos na fila em vez de colar um por um."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Dá para baixar qualquer vídeo do Vimeo?",
+          "a": "Vídeos públicos que expõem um MP4 progressivo (não DASH) podem ser baixados. Vídeos protegidos por senha, privados e bloqueados por domínio não podem ser acessados."
+        },
+        {
+          "q": "Que qualidade eu recebo?",
+          "a": "A maior versão progressiva que o vídeo oferece — muitas vezes até 1080p. Use a opção Data saver para um arquivo menor."
+        },
+        {
+          "q": "Preciso de uma conta no Vimeo?",
+          "a": "Não. Só vídeos de visualização pública são acessados — sem login, sem extensão, sem instalar nada."
+        },
+        {
+          "q": "Por que um vídeo do Vimeo só faz streaming e não baixa?",
+          "a": "Alguns vídeos do Vimeo são entregues apenas em DASH adaptativo, sem MP4 progressivo. Esses não podem ser salvos como um único arquivo."
+        },
+        {
+          "q": "Por que o link do meu Vimeo não é processado?",
+          "a": "Confirme que o vídeo é público e que a URL é um link vimeo.com/<id>. Vídeos privados, protegidos por senha ou não listados com restrições não podem ser acessados."
+        },
+        {
+          "q": "Dá para pegar tudo de um canal do Vimeo?",
+          "a": "Sim — os apoiadores colam o link do canal ou do usuário, o feed de vídeos públicos se expande em linhas e a fila em lote resolve cada um na qualidade que você preferir."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos públicos do Vimeo em MP4 HD",
+        "Arquivo progressivo direto pela configuração do player do Vimeo",
+        "Escolha de qualidade HD ou Data saver",
+        "Sem login no Vimeo, sem extensão, sem instalar nada",
+        "Veja a prévia do vídeo antes de baixar"
+      ]
+    }
+  }
+}

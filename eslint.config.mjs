@@ -26,6 +26,10 @@ const eslintConfig = [
   ...nextTypescript,
   {
     rules: {
+      // Reads `[lang]/[slug]` as matching any two-part path, so it flags the
+      // plain <a> that /api/* and full-load links must be on a static export.
+      // Links are guarded by src/lib/intentLink.test.ts instead.
+      '@next/next/no-html-link-for-pages': 'off',
       // The proxy routes drop a header by destructuring it into a discard
       // binding (`const { Range: _omit, ...rest } = headers`). Leading
       // underscore is the standard opt-out for a deliberately unused binding.

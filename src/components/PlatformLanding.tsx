@@ -21,8 +21,12 @@ import { SupportPanel } from '@/components/SupportPanel'
 import { PromoSlot } from '@/components/PromoSlot'
 import { DevAppLinks } from '@/components/DevAppLinks'
 import { SiteFooter } from '@/components/SiteFooter'
+import { fill, type Locale } from '@/lib/i18n'
+import { contentFor, platformFor } from '@/lib/localeContent'
+import { localePath } from '@/lib/localeRoutes'
+import type { PageCopy } from '@/lib/pageCopy'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
-import { platforms } from '@/lib/platforms'
+import { platformStructuredData } from '@/lib/structuredData'
 import type { SupportedPlatform } from '@/lib/validator'
 
 /**
@@ -47,13 +51,6 @@ const OFFER_PLATFORM_BY_SLUG: Record<PlatformSlug, SupportedPlatform> = {
   'twitch-clip-downloader': 'twitch',
   'vimeo-downloader': 'vimeo',
 }
-
-const heroChips = [
-  'Free forever',
-  'No login required',
-  'No download limits',
-  'HD quality',
-] as const
 
 const platformIcons: Record<PlatformSlug, { Icon: React.ComponentType<{ className?: string }>; tile: string }> = {
   'video-downloader': {
@@ -136,7 +133,17 @@ function CheckMark({ className }: { className?: string }) {
   )
 }
 
-function PlatformIconRow({ activeSlug }: { activeSlug: PlatformSlug }) {
+function PlatformIconRow({
+  activeSlug,
+  platforms,
+  locale,
+  currentPage,
+}: {
+  activeSlug: PlatformSlug
+  platforms: Platform[]
+  locale: Locale
+  currentPage: string
+}) {
   return (
     <div className='mb-4 flex justify-center'>
       <div className='flex max-w-md flex-wrap items-center justify-center gap-2 md:max-w-xl md:gap-2.5'>
@@ -152,8 +159,8 @@ function PlatformIconRow({ activeSlug }: { activeSlug: PlatformSlug }) {
           return (
             <Link
               key={p.slug}
-              href={`/${p.slug}`}
-              aria-label={`${p.brandLabel}${isActive ? ' (current page)' : ''}`}
+              href={localePath(locale, `/${p.slug}`)}
+              aria-label={isActive ? `${p.brandLabel} ${currentPage}` : p.brandLabel}
               aria-current={isActive ? 'page' : undefined}
               className='block'
             >
@@ -174,21 +181,31 @@ function PlatformIconRow({ activeSlug }: { activeSlug: PlatformSlug }) {
   )
 }
 
-function CrossLinkNav({ activeSlug }: { activeSlug: PlatformSlug }) {
+function CrossLinkNav({
+  activeSlug,
+  platforms,
+  locale,
+  nav,
+}: {
+  activeSlug: PlatformSlug
+  platforms: Platform[]
+  locale: Locale
+  nav: PageCopy['nav']
+}) {
   const others = platforms.filter((p) => p.slug !== activeSlug)
   return (
     <nav
-      aria-label='Other downloaders'
+      aria-label={nav.otherDownloaders}
       className='flex flex-wrap justify-center gap-2.5'
     >
       <Surface
         as={Link}
-        href='/'
+        href={localePath(locale, '/')}
         interaction='lift'
         radius='xl'
         className='inline-flex items-center gap-1.5 px-4 py-2.5 text-sm text-white/80 hover:text-white'
       >
-        ← All platforms
+        {nav.allPlatforms}
       </Surface>
       {others.map((p) => {
         const { Icon, tile } = platformIcons[p.slug]
@@ -197,7 +214,7 @@ function CrossLinkNav({ activeSlug }: { activeSlug: PlatformSlug }) {
           <Surface
             key={p.slug}
             as={Link}
-            href={`/${p.slug}`}
+            href={localePath(locale, `/${p.slug}`)}
             interaction='lift'
             radius='xl'
             className='inline-flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/80 hover:text-white'
@@ -219,16 +236,27 @@ function CrossLinkNav({ activeSlug }: { activeSlug: PlatformSlug }) {
   )
 }
 
-function Breadcrumb({ platform }: { platform: Platform }) {
+function Breadcrumb({
+  platform,
+  locale,
+  nav,
+}: {
+  platform: Platform
+  locale: Locale
+  nav: PageCopy['nav']
+}) {
   return (
     <nav
-      aria-label='Breadcrumb'
+      aria-label={nav.breadcrumb}
       className='mb-3 flex justify-center text-[11px] text-white/55 md:text-xs'
     >
       <ol className='flex items-center gap-1.5'>
         <li>
-          <Link href='/' className='transition-colors hover:text-white/85'>
-            Home
+          <Link
+            href={localePath(locale, '/')}
+            className='transition-colors hover:text-white/85'
+          >
+            {nav.home}
           </Link>
         </li>
         <li aria-hidden className='text-white/30'>
@@ -242,8 +270,25 @@ function Breadcrumb({ platform }: { platform: Platform }) {
   )
 }
 
-export function PlatformLanding({ platform }: { platform: Platform }) {
+export function PlatformLanding({
+  slug,
+  locale = 'en',
+}: {
+  slug: PlatformSlug
+  locale?: Locale
+}) {
+  const { copy, platforms } = contentFor(locale)
+  const platform = platformFor(locale, slug)
+  const { nav, chips, landing } = copy
+  const heroChips = [chips.free, chips.noLoginRequired, chips.noLimits, chips.hd]
   return (
+    <>
+    <script
+      type='application/ld+json'
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify(platformStructuredData(slug, locale)),
+      }}
+    />
     <div className='app-bg relative min-h-[100dvh] overflow-clip'>
       {/* Fixed so the interactive grid + spotlight track the viewport across
           the full scroll length of the page. */}
@@ -260,8 +305,13 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           className='mx-auto w-full max-w-3xl p-5 shadow-2xl sm:p-8 md:p-10'
         >
           <div className='text-center'>
-            <PlatformIconRow activeSlug={platform.slug} />
-            <Breadcrumb platform={platform} />
+            <PlatformIconRow
+              activeSlug={slug}
+              platforms={platforms}
+              locale={locale}
+              currentPage={nav.currentPage}
+            />
+            <Breadcrumb platform={platform} locale={locale} nav={nav} />
             <h1 className='mb-3 text-2xl font-extrabold tracking-tight text-white text-balance sm:text-3xl md:text-4xl'>
               {platform.h1}
             </h1>
@@ -287,12 +337,12 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           </div>
 
           {/* Dev / companion-app links */}
-          <DevAppLinks />
+          <DevAppLinks locale={locale} />
         </Surface>
 
         {/* WHAT YOU CAN DO — platform feature list */}
         <section className='defer-render mt-16 sm:mt-24'>
-          <SectionHead title={`With this ${platform.name} downloader you can`} />
+          <SectionHead title={fill(landing.featuresTitle, { name: platform.name })} />
           <ul className='mx-auto grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2'>
             {platform.featureList.map((f) => (
               <Surface
@@ -327,10 +377,15 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
         {/* CROSS-LINKS */}
         <section className='defer-render mt-16 sm:mt-24'>
           <SectionHead
-            title='Also try our other downloaders'
-            sub='One tool per platform — pick whichever you need.'
+            title={landing.othersTitle}
+            sub={landing.othersSub}
           />
-          <CrossLinkNav activeSlug={platform.slug} />
+          <CrossLinkNav
+            activeSlug={slug}
+            platforms={platforms}
+            locale={locale}
+            nav={nav}
+          />
         </section>
 
         {/* Compact, because these pages arrive from search with one link in
@@ -338,7 +393,7 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
             already browsing; here it is a single line that names the one thing
             worth paying for and gets out of the way. */}
         <section className='defer-render mt-16 sm:mt-24'>
-          <SupportPanel variant='compact' />
+          <SupportPanel variant='compact' locale={locale} />
         </section>
 
         <section className='defer-render mt-16 sm:mt-24'>
@@ -354,19 +409,22 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
           className='mt-16 grid gap-10 sm:mt-24 lg:grid-cols-2 lg:gap-14'
         >
           <div>
-            <Eyebrow>Why it works</Eyebrow>
+            <Eyebrow>{landing.whyEyebrow}</Eyebrow>
             <h2
               id='seo-heading'
               className='mb-4 text-2xl font-bold tracking-tight text-white text-balance md:text-3xl'
             >
-              Free {platform.brandLabel} — {platform.tagline}
+              {fill(landing.seoTitle, {
+                brand: platform.brandLabel,
+                tagline: platform.tagline,
+              })}
             </h2>
             <p className='mb-8 max-w-[60ch] text-sm leading-relaxed text-white/80 md:text-base'>
               {platform.intro}
             </p>
 
-            <Eyebrow>Supported {platform.name} URL formats</Eyebrow>
-            <ul className='grid grid-cols-1 gap-x-6 gap-y-1.5 font-mono text-[11px] text-white/55 sm:grid-cols-2 md:text-xs'>
+            <Eyebrow>{fill(landing.formatsEyebrow, { name: platform.name })}</Eyebrow>
+            <ul dir='ltr' className='grid grid-cols-1 gap-x-6 gap-y-1.5 font-mono text-[11px] text-white/55 sm:grid-cols-2 md:text-xs'>
               {platform.urlExamples.map((u) => (
                 <li key={u} className='truncate'>
                   {u}
@@ -377,15 +435,16 @@ export function PlatformLanding({ platform }: { platform: Platform }) {
 
           <div>
             <h2 className='mb-5 text-2xl font-bold tracking-tight text-white md:text-3xl'>
-              {platform.name} downloader — Frequently asked questions
+              {fill(landing.faqTitle, { name: platform.name })}
             </h2>
             <LazyFAQ items={platform.faqs} />
           </div>
         </section>
         </main>
 
-        <SiteFooter />
+        <SiteFooter locale={locale} path={`/${slug}`} />
       </div>
     </div>
+    </>
   )
 }

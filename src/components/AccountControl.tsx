@@ -24,6 +24,7 @@
 
 import Link from '@/components/IntentLink'
 import { usePathname } from 'next/navigation'
+import { useT } from '@/lib/i18nStore'
 import { useRef, useState } from 'react'
 import { trackFeatureUsed } from '@/lib/analytics'
 import { Avatar } from '@/components/Avatar'
@@ -158,6 +159,7 @@ function ProPill({
   pathname: string
 }) {
   const { today } = useProSignals()
+  const t = useT()
 
   // Mirrors Control: a settled answer wins, the cache answers for the common
   // page view that never called the Worker. Anyone who might be Pro is left
@@ -177,14 +179,14 @@ function ProPill({
     <Link
       href='/pro'
       data-pro-cta='account_control'
-      title='Support this project'
+      title={t('supportProject')}
       className='icon-lift pointer-events-auto flex items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-400/10 py-1.5 pr-3 pl-2.5 text-xs font-semibold whitespace-nowrap text-cyan-200 backdrop-blur'
     >
       <CoffeeIcon className='h-3.5 w-3.5' />
-      <span>Support</span>
+      <span>{t('supportShort')}</span>
       {earned && (
         <span className='hidden font-medium text-cyan-100/80 sm:inline'>
-          · {today} today — batch them for ${SUPPORT_PRICES.monthly}?
+          · {t('supportEarned', { n: today, price: SUPPORT_PRICES.monthly })}
         </span>
       )}
     </Link>
@@ -198,13 +200,15 @@ function ProPill({
  */
 function PinToggle({ pinned, onToggle }: { pinned: boolean; onToggle: () => void }) {
   const Icon = pinned ? PinIcon : PinOffIcon
+  const t = useT()
+  const label = pinned ? t('pinOff') : t('pinOn')
   return (
     <button
       type='button'
       onClick={onToggle}
       aria-pressed={pinned}
-      aria-label={pinned ? 'Unpin the account button' : 'Keep the account button on screen'}
-      title={pinned ? 'Unpin the account button' : 'Keep the account button on screen'}
+      aria-label={label}
+      title={label}
       className={`btn-press pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full border backdrop-blur sm:hidden ${
         pinned
           ? 'border-cyan-300/40 bg-cyan-400/15 text-cyan-200'
@@ -225,6 +229,7 @@ function Control({
   cached: CachedProfile | null
   pathname: string
 }) {
+  const t = useT()
   // A settled `signedIn` always wins; the hint cookie answers for the common
   // case where nothing on this page has called the Worker at all.
   const signedIn = live.signedIn ?? hasAccountHint()
@@ -248,7 +253,7 @@ function Control({
         onClick={() => trackFeatureUsed('sign_in_link')}
         className='btn-grad btn-press pointer-events-auto rounded-full px-4 py-2 text-xs font-semibold sm:py-1.5'
       >
-        Sign in
+        {t('signIn')}
       </a>
     )
   }
@@ -261,8 +266,8 @@ function Control({
     <Link
       href='/account'
       onClick={() => trackFeatureUsed('account_menu')}
-      title={profile?.email ?? 'Your account'}
-      aria-label={profile?.email ? `Account: ${profile.email}` : 'Your account'}
+      title={profile?.email ?? t('yourAccount')}
+      aria-label={profile?.email ? `Account: ${profile.email}` : t('yourAccount')}
       className='btn-press pointer-events-auto group flex items-center gap-2 rounded-full border border-white/10 bg-black/50 p-1.5 backdrop-blur hover:border-white/25 sm:p-1 sm:pl-3'
     >
       <span className='hidden max-w-[8rem] truncate text-xs font-medium text-white/70 transition-colors group-hover:text-white sm:block'>

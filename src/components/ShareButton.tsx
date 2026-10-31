@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useT } from '@/lib/i18nStore'
 import { trackShared } from '@/lib/analytics'
 
 /**
@@ -19,6 +20,7 @@ export function ShareButton({
   const [available] = useState(
     () => typeof navigator !== 'undefined' && typeof navigator.share === 'function',
   )
+  const t = useT()
   const [failed, setFailed] = useState(false)
 
   if (!available) return null
@@ -44,7 +46,7 @@ export function ShareButton({
           hands over the actual file — a bare "Share" on the card is one of two
           buttons with the same verb and different objects, and the one that
           sends a URL when somebody wanted the video is the worse surprise. */}
-      {failed ? 'Could not share' : 'Share link'}
+      {failed ? t('shareFailed') : t('shareLink')}
     </button>
   )
 }

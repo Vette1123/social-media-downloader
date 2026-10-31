@@ -3,6 +3,9 @@ import { FilmIcon, GitHubIcon, PortfolioIcon } from '@/components/icons'
 import { LanguagePicker } from '@/components/LanguagePicker'
 import { PlayAppsMenu } from '@/components/PlayAppsMenu'
 import { siteConfig } from '@/config/site'
+import { fill, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n'
+import { contentFor } from '@/lib/localeContent'
+import { isLocalizedPath, localePath } from '@/lib/localeRoutes'
 
 /**
  * The one footer, shared by the home page and every platform landing page.
@@ -13,8 +16,20 @@ import { siteConfig } from '@/config/site'
  * in the payment account is the single most common review rejection. Support
  * email, legal links and the affiliation disclaimer now land in one place, on
  * every page a reviewer can open.
+ *
+ * The language links are plain text links on purpose: the picker is a <select>,
+ * which a crawler cannot follow, and each page has to link to its own languages.
  */
-export function SiteFooter() {
+export function SiteFooter({
+  locale = 'en',
+  path = '/',
+}: {
+  locale?: Locale
+  /** The page this sits on, as its English path. */
+  path?: string
+}) {
+  const { footer } = contentFor(locale).copy
+  const languagesPath = isLocalizedPath(path) ? path : '/'
   return (
     <footer className='mt-16 border-t border-white/[0.08] pt-8 text-sm text-white/60 sm:mt-24 lg:-mx-16'>
       {/* Two groups, not one nine-item dot-separated row. At the 3xl page width
@@ -24,7 +39,7 @@ export function SiteFooter() {
       <div className='flex flex-col items-center gap-x-8 gap-y-4 sm:flex-row sm:justify-between'>
         <div className='flex flex-wrap items-center justify-center gap-x-5 gap-y-2'>
           <span className='whitespace-nowrap'>
-            Built by{' '}
+            {footer.builtBy}{' '}
             <a
               href={siteConfig.author.url}
               target='_blank'
@@ -41,7 +56,7 @@ export function SiteFooter() {
             className='inline-flex items-center gap-1.5 whitespace-nowrap text-white/70 transition-colors hover:text-white'
           >
             <PortfolioIcon className='h-4 w-4' />
-            Portfolio
+            {footer.portfolio}
           </a>
           <a
             href={siteConfig.links.github}
@@ -57,16 +72,16 @@ export function SiteFooter() {
 
         <div className='flex flex-wrap items-center justify-center gap-x-5 gap-y-2'>
           <Link href='/privacy' className='transition-colors hover:text-white/80'>
-            Privacy
+            {footer.privacy}
           </Link>
           <Link href='/terms' className='transition-colors hover:text-white/80'>
-            Terms
+            {footer.terms}
           </Link>
           {/* One link, not the two that used to sit here ("Pro" and a second
               straight at Buy Me a Coffee). /pro is the donation page now, so
               pointing at both was the same destination twice under two names. */}
           <Link href='/pro' data-pro-cta='footer' className='transition-colors hover:text-white/80'>
-            Support
+            {footer.support}
           </Link>
           <a
             href={siteConfig.links.reely}
@@ -81,6 +96,24 @@ export function SiteFooter() {
         </div>
       </div>
 
+      <nav
+        aria-label={footer.languages}
+        className='mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs'
+      >
+        {LOCALES.map((target) => (
+          <a
+            key={target}
+            href={localePath(target, languagesPath)}
+            lang={target}
+            hrefLang={target}
+            aria-current={target === locale ? 'true' : undefined}
+            className='text-white/60 underline underline-offset-2 transition-colors hover:text-white/80 aria-[current]:text-white aria-[current]:no-underline'
+          >
+            {LOCALE_LABELS[target]}
+          </a>
+        ))}
+      </nav>
+
       {/* Both lines stay: the address has to be readable as text (not only
           behind a link), and the disclaimer has to sit on the page carrying the
           platform logos, not only in /terms. The merchant-of-record sentence
@@ -89,7 +122,7 @@ export function SiteFooter() {
           handles our payments is exactly the kind of stale claim a reviewer
           reads as false information. */}
       <p className='mx-auto mt-6 max-w-2xl text-center text-xs leading-relaxed text-white/45'>
-        Questions or takedown notices:{' '}
+        {footer.questions}{' '}
         <a
           href={`mailto:${siteConfig.supportEmail}`}
           className='text-white/60 underline underline-offset-2 transition-colors hover:text-white/80'
@@ -99,10 +132,7 @@ export function SiteFooter() {
         .
       </p>
       <p className='mx-auto mt-2 max-w-2xl text-center text-xs leading-relaxed text-white/45'>
-        Public posts only. {siteConfig.name} is an independent tool, not
-        affiliated with or endorsed by TikTok, X, Instagram, Facebook, YouTube,
-        Pinterest, Reddit, Threads, Snapchat, Twitch or Vimeo; their names and
-        logos belong to their owners and identify which links this tool accepts.
+        {fill(footer.disclaimer, { site: siteConfig.name })}
       </p>
     </footer>
   )

@@ -10,9 +10,15 @@
  * the storage glue at the bottom is the only part that touches the browser.
  */
 
-/** Pages are all static slugs here, so only the trailing slash needs folding. */
+import { stripLocale } from '@/lib/localeRoutes'
+
+/**
+ * Pages are all static slugs here, so only the trailing slash and the language
+ * need folding: /es/tiktok-downloader is the same screen as /tiktok-downloader,
+ * and the `locale` property says which one it was.
+ */
 export function routeTemplate(pathname: string): string {
-  const path = pathname.split('?')[0].replace(/\/+$/, '')
+  const path = stripLocale(pathname.split('?')[0].replace(/\/+$/, ''))
   return path || '/'
 }
 
