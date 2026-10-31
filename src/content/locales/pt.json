@@ -76,7 +76,29 @@
       "formatsEyebrow": "Formatos de link aceitos",
       "faqTitle": "Perguntas frequentes",
       "whatsNewTitle": "Adicionado recentemente",
-      "whatsNewSub": "A ferramenta está em desenvolvimento ativo — veja o que mudou recentemente."
+      "whatsNewSub": "A ferramenta está em desenvolvimento ativo — veja o que mudou recentemente.",
+      "whatsNew": [
+        {
+          "date": "24 ago",
+          "title": "Cole qualquer link",
+          "detail": "Além das onze plataformas: o downloader agora resolve vídeos públicos de qualquer site cuja página os exiba — hospedagens menores, blogs, páginas de notícias."
+        },
+        {
+          "date": "24 ago",
+          "title": "Importação de coleção com um só colar",
+          "detail": "Uma playlist do YouTube, um subreddit ou perfil do Reddit, um quadro do Pinterest ou um canal do Vimeo viram linhas da fila em lote automaticamente."
+        },
+        {
+          "date": "24 ago",
+          "title": "Legendas em SRT ou VTT",
+          "detail": "Todas as faixas de legenda de um vídeo do YouTube, inclusive as geradas automaticamente, com o seu idioma preferido lembrado."
+        },
+        {
+          "date": "24 ago",
+          "title": "O app fala a sua língua",
+          "detail": "Espanhol, português, indonésio e árabe (da direita para a esquerda) se juntaram ao inglês em todo o fluxo de download — escolha no rodapé."
+        }
+      ]
     },
     "landing": {
       "featuresTitle": "Com este downloader de {name} você pode",
@@ -103,7 +125,7 @@
         },
         {
           "title": "Importação de coleção com um só colar",
-          "body": "Uma playlist do YouTube, um subreddit ou perfil do Reddit, um quadro do Pinterest ou um canal do Vimeo viram linhas na fila na hora — sem duplicados e com limite por execução."
+          "body": "Uma playlist do YouTube, um subreddit ou perfil do Reddit, um quadro do Pinterest ou um canal do Vimeo viram linhas na fila na hora — sem duplicados e com limite por lote."
         },
         {
           "title": "Velocidade do lote ajustável",
@@ -176,6 +198,166 @@
       "platformStep1": "Abra o post do {name} e copie a URL de compartilhamento.",
       "platformStep2": "Cole a URL no campo desta página e clique em Baixar.",
       "platformStep3": "Veja a prévia e salve o vídeo em qualidade total, o MP3 ou as imagens."
+    },
+    "legal": {
+      "shared": {
+        "back": "Voltar ao downloader",
+        "backArrow": "← Voltar ao downloader",
+        "lastUpdated": "Última atualização: {date}",
+        "translationNote": "Esta página é uma tradução para a sua conveniência. Se ela diferir da {english}, vale a versão em inglês.",
+        "englishVersion": "versão em inglês"
+      },
+      "pro": {
+        "metaTitle": "Apoie o Social Media Downloader",
+        "metaDescription": "Este downloader é grátis e continuará grátis. Quem apoia também recebe a fila em lote, importação de playlists, legendas, pacotes ZIP e resolução prioritária.",
+        "badge": "Apoio",
+        "h1Lead": "Grátis para sempre.",
+        "h1Accent": "Mas não é de graça para manter.",
+        "intro": "Todo download neste site é grátis, sem conta e sem limites, e isso não vai mudar. A assinatura cobre uma parte do custo de manter os resolvedores no ar — e ativa alguns recursos que poupam você de ficar acompanhando tudo de perto.",
+        "membership": "Torne-se apoiador",
+        "membershipPrice": "${monthly}/mês · ${yearly}/ano",
+        "lifetime": "Vitalício",
+        "lifetimePrice": "${lifetime} uma única vez · nunca renova",
+        "howItSwitches": "Qualquer um dos dois ativa os extras sozinho, para o e-mail com o qual você paga — não precisa de conta aqui para pagar, e não há nada para me enviar.",
+        "extrasTitle": "Apoiadores recebem os extras",
+        "levels": "Os dois níveis são {membership} e {lifetime}. Entre aqui com o mesmo e-mail com que você pagou e os extras já estarão ativos, normalmente em poucos minutos. O mensal cobre este downloader; o vitalício cobre todos os projetos que eu criar, inclusive os que ainda não existem.",
+        "oneOff": "Prefere {coffee} de qualquer valor? Esse é um simples agradecimento e não ativa nada sozinho. O mesmo vale se você entrou com outro e-mail — escreva para {email} a partir do e-mail que aparece no seu recibo e eu resolvo à mão, normalmente no mesmo dia.",
+        "oneOffLink": "um café avulso",
+        "directTitle": "E uma linha direta comigo.",
+        "directBody": "Apoiadores recebem meu número — me escreva quando quiser, sobre qualquer assunto. Peça um recurso e eu o construo se for possível construir. A lista é curta, então isso é uma promessa de verdade, e não uma frase bonita.",
+        "closing": "Tudo o que está acima é sobre fazer o mesmo trabalho sem ficar em cima: uma fila em vez de um link por vez, um lote inteiro em um único arquivo em vez de vinte, uma playlist em vez de vinte colagens, e downloads que chegam com o nome que você usa para organizar as coisas. Nenhum deles alcança algo que um visitante sem eles já não possa baixar, e nenhum deles envolve este site entrar em algum lugar em seu nome. Tudo o que hoje é grátis continua grátis, quer alguém apoie isto ou não.",
+        "tip": "Apoiar isto é uma gorjeta, não uma compra: não há nota fiscal nossa nem política de reembolso, porque nada está sendo vendido. Pagamentos, assinaturas e o cancelamento delas são tratados inteiramente pelo Buy Me a Coffee, sob os termos próprios deles. Dúvidas: {email}, respondidas por {author}."
+      },
+      "privacy": {
+        "metaTitle": "Política de Privacidade — Social Media Downloader",
+        "metaDescription": "Como o {site} trata seus dados: sem cadastro, login com Google só para o Pro, análise de uso e nenhum rastreamento entre sites.",
+        "title": "Política de Privacidade",
+        "sections": [
+          {
+            "heading": "Se você nunca entra na conta",
+            "paragraphs": [
+              "Sem conta e sem cadastro. Sua lista de Recentes é gravada no armazenamento local do seu próprio navegador e nunca sai do dispositivo. O uso é medido como descrito abaixo, em Análises."
+            ]
+          },
+          {
+            "heading": "Se você entra para usar o Pro",
+            "paragraphs": [
+              "Entrar com o Google cria uma conta. Guardamos seu endereço de e-mail, o ID da sua conta do Google, seu nome de exibição e o link da sua foto de perfil do Google, além de uma lista das sessões (dispositivos ou navegadores) com login ativo no momento. Essa lista é o que permite sair de um dispositivo a partir de outro e o que aplica o limite de 5 dispositivos. O nome e a foto só são usados para mostrar com qual conta você está logado. Não guardamos senha; o Google cuida da autenticação e nós nunca vemos uma.",
+              "Seu nome, e-mail e o link da foto também ficam no armazenamento do seu próprio navegador, para que o botão da conta apareça sem chamar nosso servidor a cada página. Sair da conta apaga essa cópia.",
+              "Não guardamos endereços IP. Excluir sua conta, em {account}, remove na hora o seu registro e todas as sessões. Os eventos de análise permanecem, mas nada mais os liga a você."
+            ]
+          },
+          {
+            "heading": "Análises",
+            "paragraphs": [
+              "Usamos o PostHog para ver como o site é usado e para detectar e corrigir erros. Isso abrange as páginas e os botões usados e o que é baixado: a plataforma, o link, o título e o autor. Uma pequena amostra das visitas é gravada como reprodução de sessão, com o texto digitado oculto. Os eventos carregam um ID aleatório, ou o ID da sua conta se você estiver logado, e nunca o seu nome ou e-mail. Não define cookies. Também usamos o Cloudflare Web Analytics para contar as visualizações de página."
+            ]
+          },
+          {
+            "heading": "Links de patrocinadores",
+            "paragraphs": [
+              "Depois de um download bem-sucedido, podemos mostrar um card de patrocinador. Se você clicar, será levado ao site da própria empresa e podemos ganhar uma comissão sobre uma compra, sem custo extra para você. Só vemos que um clique aconteceu, informado de forma agregada pelo anunciante. Nunca vendemos seus dados e não usamos pop-ups, pop-unders nem redirecionamentos."
+            ]
+          },
+          {
+            "heading": "Pagamentos",
+            "paragraphs": [
+              "Nada é vendido neste site, então não recebemos pagamentos nem guardamos dados de cobrança. Se você apoia o projeto, isso acontece inteiramente no Buy Me a Coffee, sob a política de privacidade deles — nunca vemos os dados do seu cartão, e a única coisa que chega até nós é o que você escrever no e-mail pedindo para ativar os extras."
+            ]
+          },
+          {
+            "heading": "Tratamento dos arquivos",
+            "paragraphs": [
+              "Os links são resolvidos sob demanda e nada do que você baixa é guardado em nossos servidores. Quando um arquivo passa por proxy, ele é transmitido e descartado."
+            ]
+          },
+          {
+            "heading": "Sua área de transferência",
+            "paragraphs": [
+              "O botão Colar lê sua área de transferência uma única vez, quando você o pressiona. Apoiadores também podem ativar uma configuração que a lê quando você volta para a aba, para que um link copiado em outro lugar seja resolvido sozinho. Ela fica desligada, a menos que você a ligue, seu navegador pede permissão antes da primeira leitura e a leitura acontece no seu navegador: se a área de transferência tiver um link, esse link é enviado ao nosso resolvedor exatamente como se você o tivesse colado, e se tiver qualquer outra coisa, o texto é descartado na hora e nunca enviado a lugar nenhum. Nada é lido enquanto a aba está em segundo plano — os navegadores não permitem, e nós também não faríamos isso."
+            ]
+          },
+          {
+            "heading": "Contato",
+            "paragraphs": [
+              "Dúvidas sobre privacidade, ou um pedido para excluir os dados que temos, vão para {email}, lido por {author}. Você também pode excluir sua conta e todas as sessões por conta própria, a qualquer momento, em {account}."
+            ]
+          }
+        ]
+      },
+      "terms": {
+        "metaTitle": "Termos de Serviço — Social Media Downloader",
+        "metaDescription": "Os termos de uso do {site}: serviço no estado em que se encontra, sua responsabilidade pelos direitos do conteúdo e o que apoiar o projeto inclui e não inclui.",
+        "title": "Termos de Serviço",
+        "notAffiliated": "não é afiliada, endossada nem patrocinada por",
+        "sections": [
+          {
+            "heading": "Fornecido no estado em que se encontra",
+            "paragraphs": [
+              "O {site} é fornecido “no estado em que se encontra”, sem garantia de qualquer tipo, expressa ou implícita. Não garantimos acesso ininterrupto, que todos os links sejam resolvidos nem que determinada plataforma continue funcionando."
+            ]
+          },
+          {
+            "heading": "Sua responsabilidade",
+            "paragraphs": [
+              "Você é responsável por ter o direito de baixar qualquer conteúdo que processar por este site — seus próprios uploads, conteúdo que você tem permissão para salvar ou material que, de outra forma, é legalmente seu para baixar. Não hospedamos nem analisamos a mídia para a qual você cria links."
+            ]
+          },
+          {
+            "heading": "Sem redistribuição comercial",
+            "paragraphs": [
+              "A mídia baixada é para uso pessoal. Você não pode revender, republicar com fins lucrativos nem redistribuir comercialmente, de qualquer outra forma, conteúdo que você não criou nem licenciou."
+            ]
+          },
+          {
+            "heading": "O que este site não fará",
+            "paragraphs": [
+              "O {site} alcança apenas o que já é de acesso público. Ele não contorna DRM, não burla um paywall, não entra em contas em seu nome nem alcança contas privadas, posts exclusivos para assinantes ou qualquer outra coisa que uma plataforma só entregue a quem está logado. Apoiar o projeto não muda isso: o que os apoiadores recebem afeta como o trabalho entra na fila e como os resultados são empacotados, nunca o que um link consegue alcançar.",
+              "Usar este site para infringir direitos autorais, ou para acessar material ao qual você não tem direito, é uma violação destes termos. Podemos recusar o serviço ou encerrar uma conta por isso."
+            ]
+          },
+          {
+            "heading": "Marcas e afiliação",
+            "paragraphs": [
+              "O {site} é uma ferramenta independente e {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo ou qualquer outra plataforma citada neste site. Esses nomes e logotipos pertencem aos seus respectivos donos e são usados apenas para descrever quais links esta ferramenta aceita."
+            ]
+          },
+          {
+            "heading": "Titulares de direitos",
+            "paragraphs": [
+              "Não hospedamos, armazenamos nem indexamos mídia. Os arquivos são buscados na plataforma de origem no momento em que você os pede e nunca ficam guardados em nossos servidores, então não há nada aqui para remover. Se você acredita que este serviço está sendo usado para infringir seus direitos, escreva para {email} e responderemos."
+            ]
+          },
+          {
+            "heading": "Apoiar este projeto",
+            "paragraphs": [
+              "Nada no {site} está à venda. Não há assinatura, nem plano, nem cobrança de nenhum tipo — se algum dia você for cobrado por algo que diga ser este site, não somos nós, e gostaríamos de saber.",
+              "Você pode apoiar o projeto voluntariamente pelo Buy Me a Coffee. Isso é uma doação, tratada inteiramente por eles sob os termos próprios: é pontual, não renova e não há nada aqui para cancelar. Como agradecimento, ativamos algumas facilidades na sua conta — uma fila em lote, pacote ZIP para um lote, resolução prioritária, nomes de arquivo personalizados e nenhum card de patrocinador — à mão, depois que você nos escrever.",
+              "Essas facilidades são um presente e não um direito adquirido por compra. Podemos alterá-las ou retirá-las a qualquer momento e, como não há venda, não há nada a reembolsar. Nenhuma delas muda o que um link consegue alcançar; veja acima.",
+              "Se você quiser reverter uma doação, isso é entre você e o Buy Me a Coffee, embora escrever antes para {email} costume ser mais rápido."
+            ]
+          },
+          {
+            "heading": "Mudanças no serviço",
+            "paragraphs": [
+              "O serviço pode mudar, ser limitado ou ser descontinuado a qualquer momento, sem aviso prévio."
+            ]
+          },
+          {
+            "heading": "Contato",
+            "paragraphs": [
+              "Pedidos de suporte e avisos de remoção vão para {email}, lido por {author}."
+            ]
+          }
+        ]
+      },
+      "account": {
+        "metaTitle": "Sua conta — Social Media Downloader",
+        "badge": "Conta",
+        "h1Lead": "Seu plano.",
+        "h1Accent": "Sua decisão.",
+        "intro": "Gerencie sua assinatura, suas preferências de download e os dispositivos com login ativo nesta conta."
+      }
     }
   },
   "homeFaqs": [

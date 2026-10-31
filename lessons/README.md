@@ -91,3 +91,4 @@ the index for exactly that.
 | 2026-10-31 | [The 100 that hid 607 KiB](2026-10-31-the-100-that-hid-607-kib.md) | Lighthouse said 100 while viewport prefetch was the heaviest thing on the page; read the request list, not the score |
 | 2026-10-31 | [What first load still carried](2026-10-31-what-first-load-still-carried.md) | Translations, an accordion and marketing copy shipped to everyone; lastmod moved on every deploy without the content changing |
 | 2026-10-31 | [The site in five languages](2026-10-31-the-site-in-five-languages.md) | Anything above `{children}` in a root layout cannot see a provider below it |
+| 2026-10-31 | [Every word in every language](2026-10-31-every-word-in-every-language.md) | A plain `d()` plus a subscribe-only hook beats threading a translator, and a screen that is first paint waits for its language instead of swapping it in. |

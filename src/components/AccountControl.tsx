@@ -24,7 +24,8 @@
 
 import Link from '@/components/IntentLink'
 import { usePathname } from 'next/navigation'
-import { useT } from '@/lib/i18nStore'
+import { useLocalePath, useT } from '@/lib/i18nStore'
+import { stripLocale } from '@/lib/localeRoutes'
 import { useRef, useState } from 'react'
 import { trackFeatureUsed } from '@/lib/analytics'
 import { Avatar } from '@/components/Avatar'
@@ -160,6 +161,7 @@ function ProPill({
 }) {
   const { today } = useProSignals()
   const t = useT()
+  const to = useLocalePath()
 
   // Mirrors Control: a settled answer wins, the cache answers for the common
   // page view that never called the Worker. Anyone who might be Pro is left
@@ -169,7 +171,7 @@ function ProPill({
   if (pro) return null
   // A link to the page you are reading is furniture, and on /pro it would sit
   // directly above the donate button it points at.
-  if (pathname === '/pro') return null
+  if (stripLocale(pathname) === '/pro') return null
 
   const earned = today >= HABIT_THRESHOLD
 
@@ -177,7 +179,7 @@ function ProPill({
     // `.icon-lift` rather than an ad-hoc cyan hover: this is a chip, and the
     // accent ring is the shared language for one (see globals.css).
     <Link
-      href='/pro'
+      href={to('/pro')}
       data-pro-cta='account_control'
       title={t('supportProject')}
       className='icon-lift pointer-events-auto flex items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-400/10 py-1.5 pr-3 pl-2.5 text-xs font-semibold whitespace-nowrap text-cyan-200 backdrop-blur'
@@ -230,6 +232,7 @@ function Control({
   pathname: string
 }) {
   const t = useT()
+  const to = useLocalePath()
   // A settled `signedIn` always wins; the hint cookie answers for the common
   // case where nothing on this page has called the Worker at all.
   const signedIn = live.signedIn ?? hasAccountHint()
@@ -264,7 +267,7 @@ function Control({
 
   return (
     <Link
-      href='/account'
+      href={to('/account')}
       onClick={() => trackFeatureUsed('account_menu')}
       title={profile?.email ?? t('yourAccount')}
       aria-label={profile?.email ? `Account: ${profile.email}` : t('yourAccount')}

@@ -116,8 +116,8 @@ function localizeHtml(files) {
     writeFileSync(file, html.replace(opening, `<html lang="${locale}" dir="${dir}"`))
     rewritten++
   }
-  // 4 languages × (home + 12 platforms).
-  if (rewritten !== 52) fail(`expected 52 localized pages, found ${rewritten}.`)
+  // 4 languages × (home + 12 platforms + pro, privacy, terms, account).
+  if (rewritten !== 68) fail(`expected 68 localized pages, found ${rewritten}.`)
   console.log(`  localized <html> on ${rewritten} pages`)
 }
 

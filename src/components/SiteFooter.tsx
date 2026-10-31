@@ -71,16 +71,16 @@ export function SiteFooter({
         </div>
 
         <div className='flex flex-wrap items-center justify-center gap-x-5 gap-y-2'>
-          <Link href='/privacy' className='transition-colors hover:text-white/80'>
+          <Link href={localePath(locale, '/privacy')} className='transition-colors hover:text-white/80'>
             {footer.privacy}
           </Link>
-          <Link href='/terms' className='transition-colors hover:text-white/80'>
+          <Link href={localePath(locale, '/terms')} className='transition-colors hover:text-white/80'>
             {footer.terms}
           </Link>
           {/* One link, not the two that used to sit here ("Pro" and a second
               straight at Buy Me a Coffee). /pro is the donation page now, so
               pointing at both was the same destination twice under two names. */}
-          <Link href='/pro' data-pro-cta='footer' className='transition-colors hover:text-white/80'>
+          <Link href={localePath(locale, '/pro')} data-pro-cta='footer' className='transition-colors hover:text-white/80'>
             {footer.support}
           </Link>
           <a

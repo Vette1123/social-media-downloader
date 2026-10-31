@@ -6,7 +6,7 @@ import { CloseIcon } from '@/components/icons'
 import { useEffect } from 'react'
 import { trackFeatureUsed, trackProNudgeShown } from '@/lib/analytics'
 import { useTier } from '@/lib/entitlements'
-import { useT } from '@/lib/i18nStore'
+import { useLocalePath, useT } from '@/lib/i18nStore'
 import { dismissNudge, useProSignals } from '@/lib/proSignals'
 
 /**
@@ -44,12 +44,14 @@ export function ProNudge({
   id,
   lede,
   action,
-  href = '/pro',
+  href,
   tone = 'inline',
   dismissible = true,
 }: ProNudgeProps) {
   const tier = useTier()
   const { dismissed } = useProSignals()
+  const to = useLocalePath()
+  const t = useT()
   const visible = tier !== 'pro' && !(dismissible && dismissed.includes(id))
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export function ProNudge({
       </p>
 
       <Link
-        href={href}
+        href={href ?? to('/pro')}
         data-pro-cta={`nudge_${id}`}
         className='btn-grad btn-press shrink-0 self-start rounded-xl px-4 py-2 text-sm font-semibold whitespace-nowrap sm:self-auto'
       >
@@ -103,7 +105,7 @@ export function ProNudge({
             trackFeatureUsed('nudge_dismiss', { action: id })
             dismissNudge(id)
           }}
-          aria-label='Dismiss'
+          aria-label={t('dismiss')}
           className='absolute top-1 right-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80 sm:static'
         >
           <CloseIcon className='h-4 w-4' />
@@ -127,13 +129,14 @@ export function ProNudge({
 export function ProHeroLine() {
   const tier = useTier()
   const t = useT()
+  const to = useLocalePath()
   if (tier === 'pro') return null
 
   return (
     <p className='mb-7 text-xs text-white/50 md:text-sm'>
       {t('proHeroFree')}{' '}
       <Link
-        href='/pro'
+        href={to('/pro')}
         data-pro-cta='hero_line'
         className='font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
       >

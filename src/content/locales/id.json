@@ -76,7 +76,29 @@
       "formatsEyebrow": "Format link yang didukung",
       "faqTitle": "Pertanyaan yang sering diajukan",
       "whatsNewTitle": "Baru ditambahkan",
-      "whatsNewSub": "Alat ini terus dikembangkan — ini yang berubah belakangan ini."
+      "whatsNewSub": "Alat ini terus dikembangkan — ini yang berubah belakangan ini.",
+      "whatsNew": [
+        {
+          "date": "24 Agu",
+          "title": "Tempel link apa saja",
+          "detail": "Di luar sebelas platform: downloader kini memproses video publik dari situs mana pun yang halamannya menyajikannya — host kecil, blog, halaman berita."
+        },
+        {
+          "date": "24 Agu",
+          "title": "Impor koleksi sekali tempel",
+          "detail": "Playlist YouTube, subreddit atau profil Reddit, board Pinterest, atau channel Vimeo otomatis diurai menjadi baris batch."
+        },
+        {
+          "date": "24 Agu",
+          "title": "Subtitle sebagai SRT atau VTT",
+          "detail": "Setiap trek caption pada video YouTube, termasuk yang dibuat otomatis, dengan bahasa pilihanmu diingat."
+        },
+        {
+          "date": "24 Agu",
+          "title": "Aplikasinya berbicara bahasamu",
+          "detail": "Spanyol, Portugis, Indonesia, dan Arab (RTL) bergabung dengan Inggris di seluruh alur unduhan — pilih dari footer."
+        }
+      ]
     },
     "landing": {
       "featuresTitle": "Dengan downloader {name} ini kamu bisa",
@@ -103,7 +125,7 @@
         },
         {
           "title": "Impor koleksi sekali tempel",
-          "body": "Playlist YouTube, subreddit atau profil Reddit, board Pinterest, atau channel Vimeo langsung jadi baris antrean — tanpa duplikat, dengan batas per proses."
+          "body": "Playlist YouTube, subreddit atau profil Reddit, board Pinterest, atau channel Vimeo langsung jadi baris antrean — tanpa duplikat, dengan batas per batch."
         },
         {
           "title": "Kecepatan batch yang bisa diatur",
@@ -115,11 +137,11 @@
         },
         {
           "title": "Pemrosesan prioritas",
-          "body": "Link kamu ditanyakan lebih dulu ke resolver kami sendiri: tanpa pembatasan laju, tidak dibagi dengan internet publik."
+          "body": "Link kamu diproses lebih dulu oleh resolver kami sendiri: tanpa pembatasan laju, tidak dibagi dengan internet publik."
         },
         {
           "title": "Paket ZIP sekali ketuk",
-          "body": "Satu proses batch penuh dikumpulkan jadi satu arsip — dua puluh link masuk, satu file keluar — bukan dua puluh penyimpanan terpisah."
+          "body": "Satu batch penuh dikumpulkan jadi satu arsip — dua puluh link masuk, satu file keluar — bukan dua puluh penyimpanan terpisah."
         },
         {
           "title": "Menyimpan tanpa bertanya",
@@ -176,6 +198,166 @@
       "platformStep1": "Buka postingan {name} dan salin URL berbaginya.",
       "platformStep2": "Tempel URL ke kolom di halaman ini lalu klik Unduh.",
       "platformStep3": "Lihat pratinjau, lalu simpan video berkualitas penuh, MP3, atau gambarnya."
+    },
+    "legal": {
+      "shared": {
+        "back": "Kembali ke downloader",
+        "backArrow": "← Kembali ke downloader",
+        "lastUpdated": "Terakhir diperbarui {date}",
+        "translationNote": "Halaman ini adalah terjemahan untuk kemudahan Anda. Jika berbeda dengan {english}, yang berlaku adalah versi bahasa Inggris.",
+        "englishVersion": "versi bahasa Inggris"
+      },
+      "pro": {
+        "metaTitle": "Dukung Social Media Downloader",
+        "metaDescription": "Downloader ini gratis dan tetap gratis. Pendukung juga mendapat antrean batch, impor playlist, unduhan subtitle, paket ZIP, dan pemrosesan prioritas.",
+        "badge": "Dukungan",
+        "h1Lead": "Gratis selamanya.",
+        "h1Accent": "Menjalankannya tidak gratis.",
+        "intro": "Setiap unduhan di situs ini gratis, tanpa akun dan tanpa batas, dan itu tidak akan berubah. Keanggotaan menutup sebagian biaya menjaga resolver tetap hidup — dan mengaktifkan beberapa fitur yang menghemat tenagamu agar tidak perlu menungguinya.",
+        "membership": "Jadi pendukung",
+        "membershipPrice": "${monthly}/bulan · ${yearly}/tahun",
+        "lifetime": "Seumur hidup",
+        "lifetimePrice": "${lifetime} sekali bayar · tidak diperpanjang",
+        "howItSwitches": "Keduanya mengaktifkan fitur tambahan dengan sendirinya, untuk alamat email yang kamu pakai membayar — tidak perlu akun di sini untuk membayar, dan tidak ada yang perlu dikirim kepada saya.",
+        "extrasTitle": "Pendukung mendapat fitur tambahan",
+        "levels": "Ada dua tingkat: {membership} dan {lifetime}. Masuk di sini dengan alamat email yang sama dengan yang kamu pakai membayar, dan fitur tambahan sudah aktif, biasanya dalam beberapa menit. Paket bulanan menopang downloader ini; paket seumur hidup menopang setiap proyek yang saya buat, termasuk yang belum ada.",
+        "oneOff": "Lebih suka {coffee} dengan jumlah berapa pun? Itu murni ucapan terima kasih dan tidak mengaktifkan apa pun dengan sendirinya. Begitu juga jika kamu masuk dengan alamat yang berbeda — kirim email ke {email} dari alamat yang tertera di strukmu dan saya akan mengurusnya secara manual, biasanya di hari yang sama.",
+        "oneOffLink": "traktiran kopi sekali saja",
+        "directTitle": "Dan jalur langsung ke saya.",
+        "directBody": "Pendukung mendapat nomor saya — kirim pesan kapan saja, soal apa saja. Minta sebuah fitur dan saya akan membuatnya jika memang bisa dibuat. Daftarnya pendek, jadi ini janji sungguhan, bukan sekadar kalimat manis.",
+        "closing": "Semua di atas intinya mengerjakan hal yang sama tanpa harus menungguinya — sebuah antrean, bukan satu link sekali jalan; satu batch penuh dalam satu arsip, bukan dua puluh file; satu playlist, bukan dua puluh kali tempel; dan unduhan yang masuk dengan nama sesuai caramu menyimpan. Tak satu pun menjangkau sesuatu yang tidak bisa diunduh pengunjung tanpa fitur itu, dan tak satu pun membuat situs ini masuk ke mana pun atas namamu. Semua yang gratis hari ini tetap gratis, entah ada yang mendukung ini atau tidak.",
+        "tip": "Mendukung ini adalah tip, bukan pembelian: tidak ada faktur dari kami dan tidak ada kebijakan pengembalian dana, karena tidak ada yang dijual. Pembayaran, keanggotaan, dan pembatalannya sepenuhnya ditangani Buy Me a Coffee berdasarkan ketentuan mereka sendiri. Pertanyaan: {email}, dijawab oleh {author}."
+      },
+      "privacy": {
+        "metaTitle": "Kebijakan Privasi — Social Media Downloader",
+        "metaDescription": "Cara {site} menangani data Anda: tanpa perlu daftar, masuk dengan Google hanya untuk Pro, analitik penggunaan, tanpa pelacakan lintas situs.",
+        "title": "Kebijakan Privasi",
+        "sections": [
+          {
+            "heading": "Jika Anda tidak pernah masuk",
+            "paragraphs": [
+              "Tanpa akun dan tanpa pendaftaran. Daftar Terbaru Anda ditulis ke penyimpanan lokal browser Anda sendiri dan tidak pernah meninggalkan perangkat. Penggunaan diukur seperti dijelaskan di bagian Analitik di bawah."
+            ]
+          },
+          {
+            "heading": "Jika Anda masuk untuk Pro",
+            "paragraphs": [
+              "Masuk dengan Google membuat sebuah akun. Kami menyimpan alamat email Anda, ID akun Google Anda, nama tampilan Anda, tautan ke foto profil Google Anda, dan daftar sesi (perangkat/browser) yang sedang masuk — daftar itulah yang memungkinkan Anda keluar dari satu perangkat lewat perangkat lain, dan yang menegakkan batas 5 perangkat. Nama dan foto hanya dipakai untuk menunjukkan Anda masuk sebagai siapa. Kami tidak menyimpan kata sandi; Google yang menangani autentikasi dan kami tidak pernah melihatnya.",
+              "Nama, email, dan tautan foto Anda juga disimpan di penyimpanan browser Anda sendiri, agar tombol akun bisa tampil tanpa memanggil server kami di setiap halaman. Keluar akan menghapus salinan itu.",
+              "Kami tidak menyimpan alamat IP. Menghapus akun Anda, dari {account}, langsung menghapus catatan Anda dan semua sesi. Peristiwa analitik tetap ada, tetapi tidak ada lagi yang mengaitkannya dengan Anda."
+            ]
+          },
+          {
+            "heading": "Analitik",
+            "paragraphs": [
+              "Kami memakai PostHog untuk melihat bagaimana situs digunakan serta menemukan dan memperbaiki error. Itu mencakup halaman dan tombol yang dipakai serta apa yang diunduh: platform, link, judul, dan pembuatnya. Sebagian kecil kunjungan direkam sebagai pemutaran ulang sesi, dengan teks yang diketik disembunyikan. Peristiwa membawa ID acak, atau ID akun Anda jika Anda masuk, dan tidak pernah nama atau email Anda. Tidak ada cookie yang dipasang. Kami juga memakai Cloudflare Web Analytics untuk jumlah tampilan halaman."
+            ]
+          },
+          {
+            "heading": "Link sponsor",
+            "paragraphs": [
+              "Setelah unduhan berhasil, kami mungkin menampilkan satu kartu sponsor. Jika Anda mengkliknya, Anda dibawa ke situs milik perusahaan itu dan kami mungkin mendapat komisi atas pembelian, tanpa biaya tambahan bagi Anda. Kami hanya melihat bahwa sebuah klik terjadi, dilaporkan secara agregat oleh pengiklan. Kami tidak pernah menjual data Anda, dan kami tidak memasang popup, popunder, atau pengalihan."
+            ]
+          },
+          {
+            "heading": "Pembayaran",
+            "paragraphs": [
+              "Tidak ada yang dijual di situs ini, jadi kami tidak menerima pembayaran dan tidak menyimpan data penagihan. Jika Anda mendukung proyek ini, itu terjadi sepenuhnya di Buy Me a Coffee berdasarkan kebijakan privasi mereka — kami tidak pernah melihat detail kartu Anda, dan satu-satunya yang sampai kepada kami adalah apa pun yang Anda tulis di email yang meminta fitur tambahan diaktifkan."
+            ]
+          },
+          {
+            "heading": "Penanganan media",
+            "paragraphs": [
+              "Link diproses saat diminta dan tidak ada yang Anda unduh disimpan di server kami. Jika sebuah file dilewatkan lewat proxy, file itu dialirkan lalu dibuang."
+            ]
+          },
+          {
+            "heading": "Clipboard Anda",
+            "paragraphs": [
+              "Tombol Tempel membaca clipboard Anda satu kali, saat Anda menekannya. Pendukung juga bisa mengaktifkan pengaturan yang membacanya saat Anda kembali ke tab, sehingga link yang disalin di tempat lain diproses sendiri. Pengaturan itu mati kecuali Anda menyalakannya, browser Anda meminta izin sebelum pembacaan pertama, dan pembacaan terjadi di browser Anda: jika clipboard berisi link, link itu dikirim ke resolver kami persis seperti jika Anda menempelkannya, dan jika berisi hal lain, teksnya langsung dibuang dan tidak pernah dikirim ke mana pun. Tidak ada yang dibaca saat tab berada di latar belakang — browser tidak mengizinkannya, dan kami pun tidak akan melakukannya."
+            ]
+          },
+          {
+            "heading": "Kontak",
+            "paragraphs": [
+              "Pertanyaan soal privasi, atau permintaan menghapus data yang kami simpan, kirim ke {email}, dibaca oleh {author}. Anda juga bisa menghapus akun dan semua sesi sendiri, kapan saja, dari {account}."
+            ]
+          }
+        ]
+      },
+      "terms": {
+        "metaTitle": "Ketentuan Layanan — Social Media Downloader",
+        "metaDescription": "Ketentuan memakai {site}: layanan apa adanya, tanggung jawab Anda atas hak konten, dan apa yang didapat dan tidak didapat dari mendukung proyek ini.",
+        "title": "Ketentuan Layanan",
+        "notAffiliated": "tidak berafiliasi dengan, tidak didukung oleh, dan tidak disponsori oleh",
+        "sections": [
+          {
+            "heading": "Disediakan apa adanya",
+            "paragraphs": [
+              "{site} disediakan “apa adanya” tanpa jaminan apa pun, tersurat maupun tersirat. Kami tidak menjamin akses tanpa gangguan, bahwa setiap link akan berhasil diproses, atau bahwa platform tertentu akan terus berfungsi."
+            ]
+          },
+          {
+            "heading": "Tanggung jawab Anda",
+            "paragraphs": [
+              "Anda bertanggung jawab memiliki hak untuk mengunduh konten apa pun yang Anda proses lewat situs ini — unggahan Anda sendiri, konten yang Anda punya izin untuk disimpan, atau materi yang secara hukum memang sah Anda unduh. Kami tidak menampung maupun menyaring media yang Anda tautkan."
+            ]
+          },
+          {
+            "heading": "Tidak boleh didistribusikan kembali secara komersial",
+            "paragraphs": [
+              "Media yang diunduh hanya untuk penggunaan pribadi. Anda tidak boleh menjual kembali, mengunggah ulang untuk keuntungan, atau mendistribusikan secara komersial konten yang tidak Anda buat atau lisensikan."
+            ]
+          },
+          {
+            "heading": "Yang tidak akan dilakukan situs ini",
+            "paragraphs": [
+              "{site} hanya menjangkau apa yang sudah dapat diakses publik. Situs ini tidak melewati DRM, tidak menembus paywall, tidak masuk atas nama Anda, dan tidak menjangkau akun privat, postingan khusus pelanggan, atau apa pun yang oleh platform hanya disajikan kepada penonton yang sudah login. Mendukung proyek ini tidak mengubah hal itu: apa yang didapat pendukung memengaruhi cara pekerjaan diantrekan dan cara hasil dikemas, tidak pernah apa yang bisa dijangkau sebuah link.",
+              "Memakai situs ini untuk melanggar hak cipta, atau untuk mengakses materi yang tidak berhak Anda akses, merupakan pelanggaran atas ketentuan ini. Kami dapat menolak layanan atau menutup akun karenanya."
+            ]
+          },
+          {
+            "heading": "Merek dagang dan afiliasi",
+            "paragraphs": [
+              "{site} adalah alat independen dan {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, atau platform lain mana pun yang disebut di situs ini. Nama dan logo tersebut milik pemiliknya masing-masing dan hanya dipakai untuk menjelaskan link mana yang diterima alat ini."
+            ]
+          },
+          {
+            "heading": "Pemegang hak",
+            "paragraphs": [
+              "Kami tidak menampung, menyimpan, atau mengindeks media. File diambil dari platform sumber pada saat Anda memintanya dan tidak pernah disimpan di server kami, jadi tidak ada yang bisa diturunkan di sini. Jika Anda yakin layanan ini dipakai untuk melanggar hak Anda, kirim email ke {email} dan kami akan menanggapi."
+            ]
+          },
+          {
+            "heading": "Mendukung proyek ini",
+            "paragraphs": [
+              "Tidak ada apa pun di {site} yang dijual. Tidak ada langganan, tidak ada paket, dan tidak ada biaya dalam bentuk apa pun — jika suatu saat Anda ditagih oleh sesuatu yang mengaku sebagai situs ini, itu bukan kami, dan kami ingin mengetahuinya.",
+              "Anda dapat mendukung proyek ini secara sukarela lewat Buy Me a Coffee. Itu adalah donasi, ditangani sepenuhnya oleh mereka berdasarkan ketentuan mereka sendiri: sifatnya sekali saja, tidak diperpanjang, dan tidak ada yang perlu dibatalkan di sini. Sebagai ucapan terima kasih, kami mengaktifkan beberapa kemudahan untuk akun Anda — antrean batch, paket ZIP untuk satu batch, pemrosesan prioritas, nama file kustom, dan tanpa kartu sponsor — secara manual, setelah Anda mengirim email kepada kami.",
+              "Kemudahan itu adalah hadiah dan bukan hak yang dibeli. Kami dapat mengubah atau mencabutnya kapan saja, dan karena tidak ada penjualan, tidak ada yang perlu dikembalikan. Tak satu pun mengubah apa yang bisa dijangkau sebuah link; lihat di atas.",
+              "Jika Anda ingin donasi dibatalkan, itu urusan antara Anda dan Buy Me a Coffee, meskipun mengirim email ke {email} lebih dulu biasanya lebih cepat."
+            ]
+          },
+          {
+            "heading": "Perubahan pada layanan",
+            "paragraphs": [
+              "Layanan dapat berubah, dibatasi, atau dihentikan kapan saja tanpa pemberitahuan."
+            ]
+          },
+          {
+            "heading": "Kontak",
+            "paragraphs": [
+              "Permintaan dukungan dan pemberitahuan penurunan konten sama-sama dikirim ke {email}, dibaca oleh {author}."
+            ]
+          }
+        ]
+      },
+      "account": {
+        "metaTitle": "Akunmu — Social Media Downloader",
+        "badge": "Akun",
+        "h1Lead": "Paketmu.",
+        "h1Accent": "Keputusanmu.",
+        "intro": "Kelola langgananmu, preferensi unduhan, dan perangkat yang sedang masuk ke akun ini."
+      }
     }
   },
   "homeFaqs": [
@@ -854,7 +1036,7 @@
       "faqs": [
         {
           "q": "Bisakah saya mengunduh video Vimeo apa saja?",
-          "a": "Video publik yang menyediakan MP4 progresif (non-DASH) bisa diunduh. Video yang diproteksi kata sandi, dikunci, dan dikunci per domain tidak bisa diambil."
+          "a": "Video publik yang menyediakan MP4 progresif (non-DASH) bisa diunduh. Video yang diproteksi kata sandi, bersifat pribadi, dan dibatasi per domain tidak bisa diambil."
         },
         {
           "q": "Kualitas apa yang saya dapat?",

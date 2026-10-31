@@ -1,5 +1,6 @@
 'use client'
 
+import { d, useDeepWords } from '@/lib/i18nDeep'
 import { trackFeatureUsed } from '@/lib/analytics'
 import { MusicIcon } from '@/components/icons'
 
@@ -21,6 +22,7 @@ export function AudioPreview({
   title: string
   subtitle?: string
 }) {
+  useDeepWords()
   return (
     <div className='animate-fade-in-up space-y-3 rounded-xl border border-white/[0.1] bg-gradient-to-br from-cyan-500/10 to-sky-500/10 p-4'>
       <div className='flex items-center gap-2 text-white'>
@@ -28,7 +30,7 @@ export function AudioPreview({
         <div className='min-w-0 flex-1'>
           <p className='truncate text-sm font-semibold'>{title}</p>
           {subtitle && (
-            <p className='truncate text-xs text-white/60'>by {subtitle}</p>
+            <p className='truncate text-xs text-white/60'>{d('by {name}', { name: subtitle })}</p>
           )}
         </div>
       </div>
@@ -42,7 +44,7 @@ export function AudioPreview({
         className='w-full'
         onPlay={() => trackFeatureUsed('media_play', { action: 'audio' })}
       >
-        Your browser does not support the audio element.
+        {d('Your browser does not support the audio element.')}
       </audio>
     </div>
   )

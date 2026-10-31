@@ -11,7 +11,7 @@ import {
   localePath,
   stripLocale,
 } from '@/lib/localeRoutes'
-import { languageAlternates, platformMetadata, staticOpenGraph } from '@/lib/pageMetadata'
+import { languageAlternates, infoMetadata, platformMetadata } from '@/lib/pageMetadata'
 
 let pathname = '/'
 vi.mock('next/navigation', () => ({ usePathname: () => pathname }))
@@ -37,7 +37,8 @@ describe('locale URLs', () => {
     expect(equivalentPath('/es/tiktok-downloader', 'ar')).toBe('/ar/tiktok-downloader')
     expect(equivalentPath('/ar/', 'en')).toBe('/')
     expect(equivalentPath('/', 'id')).toBe('/id')
-    expect(equivalentPath('/pro', 'es')).toBeNull()
+    expect(equivalentPath('/es/pro', 'ar')).toBe('/ar/pro')
+    expect(equivalentPath('/not-a-page', 'es')).toBeNull()
   })
 })
 
@@ -58,7 +59,7 @@ describe('page metadata', () => {
   })
 
   it('shares a static page as itself, not as the home page', () => {
-    expect(staticOpenGraph('/pro', 't', 'd')).toMatchObject({
+    expect(infoMetadata('pro').openGraph).toMatchObject({
       url: expect.stringMatching(/\/pro$/),
     })
   })

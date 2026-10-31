@@ -62,8 +62,9 @@ import {
 import { namedAuthor } from '@/lib/byline'
 import Link from '@/components/IntentLink'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
+import { d, dKnown, useDeepWords } from '@/lib/i18nDeep'
 import { friendlyError } from '@/lib/errorMessages'
-import { useLocale, useT } from '@/lib/i18nStore'
+import { useLocale, useT, useLocalePath } from '@/lib/i18nStore'
 import {
   clearPlatformQuality,
   effectiveQuality,
@@ -485,14 +486,16 @@ function UnsavedRow({
   total: number
   urls: string[]
 }) {
+  useDeepWords()
+  const to = useLocalePath()
   const tier = useTier()
   // The queue can only take so many per run; when Recent holds more unsaved
   // links than fit, the button sends the oldest batch and the note says so —
   // a silent drop is exactly what a count would hide.
   const label =
     count < total
-      ? `Queueing the oldest ${count} of ${total}`
-      : `${count} not saved yet`
+      ? d('Queueing the oldest {count} of {total}', { count, total })
+      : d('{count} not saved yet', { count })
 
   return (
     <div className='mb-2 flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-2.5 py-1.5'>
@@ -506,15 +509,15 @@ function UnsavedRow({
           }}
           className='card-hover rounded-md border border-cyan-400/25 bg-cyan-400/10 px-2 py-1 text-[11px] font-medium text-cyan-200'
         >
-          Send them to the queue
+          {d('Send them to the queue')}
         </button>
       ) : (
         <Link
-          href='/pro'
+          href={to('/pro')}
           data-pro-cta='result_card'
           className='rounded-md px-1.5 py-0.5 text-[11px] text-cyan-300/80 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
         >
-          Supporters queue these →
+          {d('Supporters queue these →')}
         </Link>
       )}
     </div>
@@ -538,16 +541,18 @@ function CollectionAction({
   url: string
   onHandOff: () => void
 }) {
+  useDeepWords()
+  const to = useLocalePath()
   const tier = useTier()
 
   if (tier !== 'pro') {
     return (
       <Link
-        href='/pro'
+        href={to('/pro')}
         data-pro-cta='home'
         className='card-hover shrink-0 self-start rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-medium text-cyan-200 sm:self-auto'
       >
-        Supporters can queue it →
+        {d('Supporters can queue it →')}
       </Link>
     )
   }
@@ -562,7 +567,7 @@ function CollectionAction({
       }}
       className='btn-grad btn-press shrink-0 self-start rounded-xl px-3 py-2 text-xs font-semibold sm:self-auto'
     >
-      Send it to the queue
+      {d('Send it to the queue')}
     </button>
   )
 }
@@ -603,7 +608,7 @@ function browserIsOffline(): boolean {
  */
 function explain(raw: string | undefined, url?: string): string {
   const fe = friendlyError(raw, url, { online: !browserIsOffline() })
-  return `${fe.title} — ${fe.hint}`
+  return `${dKnown(fe.title)} — ${dKnown(fe.hint)}`
 }
 
 /**
@@ -618,11 +623,11 @@ function explain(raw: string | undefined, url?: string): string {
  * sitting right underneath.
  */
 function embedCaption(hasVideo: boolean, hasAudio: boolean): string {
-  if (hasVideo) return 'Preview via YouTube — use the buttons below to download.'
+  if (hasVideo) return d('Preview via YouTube — use the buttons below to download.')
   if (hasAudio) {
-    return 'Playing via YouTube. The video itself can’t be saved from here, but the audio can — grab the MP3 below.'
+    return d('Playing via YouTube. The video itself can’t be saved from here, but the audio can — grab the MP3 below.')
   }
-  return 'Playing via YouTube — direct download isn’t available for this video.'
+  return d('Playing via YouTube — direct download isn’t available for this video.')
 }
 
 // Save an already-fetched body under our own filename: shared helper
@@ -908,6 +913,7 @@ function retryThumbnailOnce(kind?: 'image' | 'video') {
 }
 
 export function DownloaderApp() {
+  useDeepWords()
   const [state, dispatch] = useReducer(appReducer, initialState)
   const containerRef = useRef<HTMLDivElement>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -1393,8 +1399,8 @@ export function DownloaderApp() {
         kind: saved > 0 ? 'success' : 'error',
         text:
           saved > 0
-            ? `Saved ${saved} of ${urls.length} links to Recent — tap any to download. 🎉`
-            : `Couldn’t resolve any of those ${urls.length} links. Check they’re public post URLs and try again.`,
+            ? d('Saved {saved} of {total} links to Recent — tap any to download. 🎉', { saved, total: urls.length })
+            : d('Couldn’t resolve any of those {total} links. Check they’re public post URLs and try again.', { total: urls.length }),
       },
     })
   }
@@ -1923,7 +1929,7 @@ export function DownloaderApp() {
         transfer.failed(error)
         dispatch({
           type: 'SET_MESSAGE',
-          payload: { kind: 'error', text: 'Failed to download video file' },
+          payload: { kind: 'error', text: d('Failed to download video file') },
         })
       }
     } finally {
@@ -1944,7 +1950,7 @@ export function DownloaderApp() {
       type: 'SET_MESSAGE',
       payload: {
         kind: 'info',
-        text: 'Rendering slideshow video... this takes ~30 seconds.',
+        text: d('Rendering slideshow video... this takes ~30 seconds.'),
       },
     })
 
@@ -1962,7 +1968,7 @@ export function DownloaderApp() {
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}))
-        throw new Error(err.error || 'Failed to render slideshow')
+        throw new Error(err.error || d('Failed to render slideshow'))
       }
 
       const blob = await streamToBlob(response, (p) =>
@@ -1992,8 +1998,8 @@ export function DownloaderApp() {
             kind: 'error',
             text:
               error instanceof Error
-                ? `Slideshow render failed: ${error.message}`
-                : 'Failed to render slideshow video',
+                ? d('Slideshow render failed: {reason}', { reason: error.message })
+                : d('Failed to render slideshow video'),
           },
         })
       }
@@ -2100,7 +2106,7 @@ export function DownloaderApp() {
         transfer.failed(error)
         dispatch({
           type: 'SET_MESSAGE',
-          payload: { kind: 'error', text: 'Failed to download audio file' },
+          payload: { kind: 'error', text: d('Failed to download audio file') },
         })
       }
     } finally {
@@ -2160,7 +2166,7 @@ export function DownloaderApp() {
         type: 'SET_MESSAGE',
         payload: {
           kind: 'error',
-          text: `Pick at least one of the ${galleryNoun} first`,
+          text: d('Pick at least one of the {noun} first', { noun: galleryNoun }),
         },
       })
       return
@@ -2273,7 +2279,7 @@ export function DownloaderApp() {
           type: 'SET_MESSAGE',
           payload: {
             kind: 'saved',
-            text: `${selectedImages.length} ${galleryNoun} downloaded as ZIP! 🗜️`,
+            text: d('{n} {noun} downloaded as ZIP! 🗜️', { n: selectedImages.length, noun: galleryNoun }),
           },
         })
         dispatch({ type: 'SET_URL', payload: '' })
@@ -2665,9 +2671,9 @@ export function DownloaderApp() {
         >
           <div className='min-w-0 flex-1'>
             <p className='text-sm font-medium text-white/85'>
-              {pasteAdvice.title}
+              {dKnown(pasteAdvice.title)}
             </p>
-            <p className='mt-0.5 text-xs text-white/55'>{pasteAdvice.hint}</p>
+            <p className='mt-0.5 text-xs text-white/55'>{dKnown(pasteAdvice.hint)}</p>
           </div>
           {pasteAdvice.kind === 'collection' && (
             <CollectionAction
@@ -3090,7 +3096,7 @@ export function DownloaderApp() {
               ))}
               {batchMisses.length > MISSES_SHOWN && (
                 <li className='text-white/35'>
-                  and {batchMisses.length - MISSES_SHOWN} more
+                  {d('and {n} more', { n: batchMisses.length - MISSES_SHOWN })}
                 </li>
               )}
             </ul>
@@ -3116,11 +3122,7 @@ export function DownloaderApp() {
             action={t('supportCta', { price: SUPPORT_PRICES.monthly })}
             lede={
               <>
-                Saved you some time? This site is free to use and not free to
-                run — supporters get links that save themselves as soon as they
-                resolve, a clipboard that is watched while they work, the batch
-                queue, downloads named the way they file things, priority on
-                every link and no sponsor card.
+                {d('Saved you some time? This site is free to use and not free to run — supporters get links that save themselves as soon as they resolve, a clipboard that is watched while they work, the batch queue, downloads named the way they file things, priority on every link and no sponsor card.')}
               </>
             }
           />
@@ -3138,10 +3140,12 @@ export function DownloaderApp() {
             <div className='flex items-center justify-between text-sm text-white/80'>
               <span className='flex items-center gap-2'>
                 <SpinnerIcon className='h-4 w-4' />
-                Resolving link {Math.min(batch.done + 1, batch.total)} of{' '}
-                {batch.total}…
+                {d('Resolving link {n} of {total}…', {
+                  n: Math.min(batch.done + 1, batch.total),
+                  total: batch.total,
+                })}
               </span>
-              <span className='text-xs text-white/50'>{batch.saved} saved</span>
+              <span className='text-xs text-white/50'>{d('{n} saved', { n: batch.saved })}</span>
             </div>
             <div className='h-1.5 w-full overflow-hidden rounded-full bg-white/10'>
               <div
@@ -3369,7 +3373,7 @@ export function DownloaderApp() {
                   <div className='relative bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg aspect-video'>
                     <iframe
                       src={state.videoMetadata.embedUrl}
-                      title={state.videoMetadata.title || 'YouTube video'}
+                      title={state.videoMetadata.title || d('YouTube video')}
                       allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
                       allowFullScreen
                       loading='lazy'
@@ -3484,8 +3488,8 @@ export function DownloaderApp() {
                                 }`}
                                 aria-label={
                                   image.kind === 'video'
-                                    ? `Play video ${index + 1}`
-                                    : `Open image ${index + 1} full size`
+                                    ? d('Play video {n}', { n: index + 1 })
+                                    : d('Open image {n} full size', { n: index + 1 })
                                 }
                               >
                                 {/* object-contain shows the whole image (never
@@ -3496,7 +3500,7 @@ export function DownloaderApp() {
                                   src={image.thumbnail || image.url}
                                   alt={
                                     image.kind === 'video'
-                                      ? `Cover frame of video ${index + 1}`
+                                      ? d('Cover frame of video {n}', { n: index + 1 })
                                       : `Slide ${index + 1}`
                                   }
                                   className='h-full w-full object-contain'
@@ -3529,8 +3533,8 @@ export function DownloaderApp() {
                                 aria-pressed={image.selected}
                                 aria-label={
                                   image.selected
-                                    ? `Deselect item ${index + 1}`
-                                    : `Select item ${index + 1}`
+                                    ? d('Deselect item {n}', { n: index + 1 })
+                                    : d('Select item {n}', { n: index + 1 })
                                 }
                                 className={`absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 backdrop-blur-sm transition-all duration-200 ${
                                   image.selected

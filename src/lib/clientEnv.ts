@@ -85,7 +85,9 @@ export function formatDate(at: number): string {
   const date = new Date(at)
   const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long' }
   if (date.getFullYear() !== new Date(nowMs()).getFullYear()) options.year = 'numeric'
-  return date.toLocaleDateString(undefined, options)
+  // English keeps the browser's own order; a translated page keeps its language.
+  const lang = typeof document === 'undefined' ? 'en' : document.documentElement.lang
+  return date.toLocaleDateString(lang === 'en' ? undefined : lang, options)
 }
 
 /** Guards anything that touches `window`/`document` — false until hydrated. */

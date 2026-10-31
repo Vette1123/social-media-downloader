@@ -1,3 +1,4 @@
+import { dn } from '@/lib/i18nDeep'
 /**
  * What to say about a link that is not a post.
  *
@@ -83,40 +84,40 @@ function isHostOf(h: string, domain: string): boolean {
  * because the article is a property of the word, not of its first letter: "an
  * X profile" is right and any rule based on spelling gets it wrong.
  */
-function profileOf(u: URL): string | null {
+function profileTitle(u: URL): string | null {
   const h = host(u)
   const segs = segments(u.pathname)
 
   if (isHostOf(h, 'instagram.com')) {
-    if (segs.length === 1 && !IG_ROUTES.has(segs[0].toLowerCase())) return 'an Instagram'
+    if (segs.length === 1 && !IG_ROUTES.has(segs[0].toLowerCase())) return dn('That is an Instagram profile, not a post')
     return null
   }
   if (isHostOf(h, 'tiktok.com')) {
     // @handle alone. A video is /@handle/video/<id>.
-    if (segs.length === 1 && segs[0].startsWith('@')) return 'a TikTok'
+    if (segs.length === 1 && segs[0].startsWith('@')) return dn('That is a TikTok profile, not a post')
     return null
   }
   if (isHostOf(h, 'youtube.com')) {
-    if (segs.length === 1 && segs[0].startsWith('@')) return 'a YouTube'
-    if (segs.length === 2 && ['c', 'channel', 'user'].includes(segs[0])) return 'a YouTube'
+    if (segs.length === 1 && segs[0].startsWith('@')) return dn('That is a YouTube profile, not a post')
+    if (segs.length === 2 && ['c', 'channel', 'user'].includes(segs[0])) return dn('That is a YouTube profile, not a post')
     return null
   }
   if (isHostOf(h, 'x.com') || isHostOf(h, 'twitter.com')) {
-    if (segs.length === 1 && !X_ROUTES.has(segs[0].toLowerCase())) return 'an X'
+    if (segs.length === 1 && !X_ROUTES.has(segs[0].toLowerCase())) return dn('That is an X profile, not a post')
     return null
   }
   if (isHostOf(h, 'facebook.com')) {
-    if (segs.length === 1 && !segs[0].includes('.php')) return 'a Facebook'
+    if (segs.length === 1 && !segs[0].includes('.php')) return dn('That is a Facebook profile, not a post')
     return null
   }
   if (isHostOf(h, 'pinterest.com') || /(^|\.)pinterest\.[a-z.]+$/.test(h)) {
     // A board is /<user>/<board>/ and the importer handles it; one segment is
     // the person.
-    if (segs.length === 1) return 'a Pinterest'
+    if (segs.length === 1) return dn('That is a Pinterest profile, not a post')
     return null
   }
   if (isHostOf(h, 'threads.net') || isHostOf(h, 'threads.com')) {
-    if (segs.length === 1 && segs[0].startsWith('@')) return 'a Threads'
+    if (segs.length === 1 && segs[0].startsWith('@')) return dn('That is a Threads profile, not a post')
     return null
   }
   return null
@@ -164,16 +165,16 @@ export function linkAdvice(raw: string): LinkAdvice | null {
   if (source) {
     return {
       kind: 'collection',
-      title: `That link is a whole ${COLLECTION_NOUN[source.kind]}, not one post`,
+      title: COLLECTION_TITLE[source.kind],
       hint: 'The batch queue can expand it into rows and work through them. Or open any single post from it and paste that link instead.',
     }
   }
 
-  const platform = profileOf(u)
-  if (platform) {
+  const profile = profileTitle(u)
+  if (profile) {
     return {
       kind: 'profile',
-      title: `That is ${platform} profile, not a post`,
+      title: profile,
       hint: 'Open the video, reel or photo you want and paste the link to that. Profile pages hold no file to download.',
     }
   }
@@ -190,9 +191,9 @@ export function linkAdvice(raw: string): LinkAdvice | null {
   return null
 }
 
-const COLLECTION_NOUN: Record<string, string> = {
-  youtube: 'playlist',
-  reddit: 'feed',
-  pinterest: 'board',
-  vimeo: 'channel',
+const COLLECTION_TITLE: Record<string, string> = {
+  youtube: dn('That link is a whole playlist, not one post'),
+  reddit: dn('That link is a whole feed, not one post'),
+  pinterest: dn('That link is a whole board, not one post'),
+  vimeo: dn('That link is a whole channel, not one post'),
 }

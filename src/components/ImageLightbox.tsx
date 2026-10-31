@@ -4,6 +4,7 @@ import {
   beginDownload,
   trackFeatureUsed,
 } from '@/lib/analytics'
+import { d, useDeepWords } from '@/lib/i18nDeep'
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, type PanInfo } from 'motion/react'
@@ -75,6 +76,7 @@ export function ImageLightbox({
   title,
   filenameTemplate,
 }: ImageLightboxProps) {
+  useDeepWords()
   const current = images[activeIndex]
   const hasMultiple = images.length > 1
   const isVideo = current?.kind === 'video'
@@ -236,7 +238,7 @@ export function ImageLightbox({
     } catch (err) {
       console.error('Single slide download failed:', err)
       transfer.failed(err)
-      setDownloadError('That file would not download. Try again.')
+      setDownloadError(d('That file would not download. Try again.'))
     } finally {
       setDownloading(false)
     }
@@ -254,7 +256,7 @@ export function ImageLightbox({
       onClick={handleBackdropClick}
       role='dialog'
       aria-modal='true'
-      aria-label='Media preview'
+      aria-label={d('Media preview')}
     >
       {/* Top bar: counter + close */}
       <div
@@ -270,7 +272,7 @@ export function ImageLightbox({
             onClose()
           }}
           className='flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/15 transition-colors hover:bg-white/20'
-          aria-label='Close preview'
+          aria-label={d('Close preview')}
         >
           <CloseIcon className='h-5 w-5' />
         </button>
@@ -290,7 +292,7 @@ export function ImageLightbox({
               paginate(-1)
             }}
             className='absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/10 transition-colors hover:bg-white/20 sm:left-4 md:h-12 md:w-12'
-            aria-label='Previous slide'
+            aria-label={d('Previous slide')}
           >
             <ChevronLeftIcon className='h-5 w-5 md:h-6 md:w-6' />
           </button>
@@ -350,7 +352,7 @@ export function ImageLightbox({
               paginate(1)
             }}
             className='absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/10 transition-colors hover:bg-white/20 sm:right-4 md:h-12 md:w-12'
-            aria-label='Next slide'
+            aria-label={d('Next slide')}
           >
             <ChevronRightIcon className='h-5 w-5 md:h-6 md:w-6' />
           </button>
@@ -369,10 +371,10 @@ export function ImageLightbox({
         >
           <DownloadIcon className='h-4 w-4' />
           {downloading
-            ? 'Downloading…'
+            ? d('Downloading…')
             : isVideo
-              ? 'Download video'
-              : 'Download image'}
+              ? d('Download video')
+              : d('Download image')}
         </button>
         {downloadError && (
           <p role='status' className='text-xs text-rose-300'>

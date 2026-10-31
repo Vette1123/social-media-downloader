@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { siteConfig } from '@/config/site'
 import { LOCALES, type Locale } from '@/lib/i18n'
+import { fill } from '@/lib/i18n'
 import { contentFor, platformFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
 import type { PlatformSlug } from '@/lib/platforms'
@@ -22,25 +23,6 @@ export function languageAlternates(
 ): Record<string, string> {
   const entries = LOCALES.map((locale) => [locale, to(localePath(locale, path))])
   return { ...Object.fromEntries(entries), 'x-default': to(path) }
-}
-
-/**
- * A page's `openGraph` replaces the layout's rather than merging with it, so a
- * page that only sets a title shares itself as the home page.
- */
-export function staticOpenGraph(
-  path: string,
-  title: string,
-  description: string,
-): Metadata['openGraph'] {
-  return {
-    title,
-    description,
-    url: `${siteConfig.url}${path}`,
-    siteName: siteConfig.name,
-    locale: OG_LOCALES.en,
-    type: 'website',
-  }
 }
 
 function pageMetadata({
@@ -82,6 +64,26 @@ function pageMetadata({
       ...(images && { images: [{ url: images.twitter, ...OG_SIZE, alt: title }] }),
     },
   }
+}
+
+/** /pro, /privacy and /terms. /pro has its own card; the others share the home one. */
+export function infoMetadata(
+  page: 'pro' | 'privacy' | 'terms',
+  locale: Locale = 'en',
+): Metadata {
+  const doc = contentFor(locale).copy.legal[page]
+  const path = `/${page}`
+  const root = page === 'pro' ? path : ''
+  return pageMetadata({
+    locale,
+    path,
+    title: doc.metaTitle,
+    description: fill(doc.metaDescription, { site: siteConfig.name }),
+    images:
+      locale === 'en' && page === 'pro'
+        ? undefined
+        : { og: `${root}/opengraph-image`, twitter: `${root}/twitter-image` },
+  })
 }
 
 export function homeMetadata(locale: Exclude<Locale, 'en'>): Metadata {

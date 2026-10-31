@@ -7,7 +7,7 @@ import {
   type TKey,
   type Locale,
 } from './i18n'
-import { localeFromPath } from './localeRoutes'
+import { localeFromPath, localePath } from './localeRoutes'
 import { usePathname } from 'next/navigation'
 import { useSyncExternalStore, useCallback } from 'react'
 
@@ -106,6 +106,12 @@ export function useLocale(): Locale {
     getLocaleServerSnapshot,
   )
   return localeFromPath(usePathname()) ?? stored
+}
+
+/** Turns an English path into this page's language, for links in client code. */
+export function useLocalePath(): (path: string) => string {
+  const locale = useLocale()
+  return useCallback((path: string) => localePath(locale, path), [locale])
 }
 
 /**

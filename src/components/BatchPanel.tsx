@@ -11,6 +11,7 @@ import {
   trackPlaylistImported,
   trackRetryClicked,
 } from '@/lib/analytics'
+import { d, useDeepWords } from '@/lib/i18nDeep'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Surface } from '@/components/Surface'
 import {
@@ -244,6 +245,7 @@ function loadLanes(): number {
 }
 
 export function BatchPanel() {
+  useDeepWords()
   const tier = useTier()
   // Batch is supporters-only, so the template always applies here — but it is
   // still read through the same hook, which is the one place that decides.
@@ -370,8 +372,8 @@ export function BatchPanel() {
       (it) => it.status === 'failed' && !isCancelled(it),
     ).length
     const seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000))
-    const parts = [done === 1 ? '1 link saved' : `${done} links saved`]
-    if (failed > 0) parts.push(failed === 1 ? '1 failed' : `${failed} failed`)
+    const parts = [done === 1 ? d('1 link saved') : d('{n} links saved', { n: done })]
+    if (failed > 0) parts.push(failed === 1 ? d('1 failed') : d('{n} failed', { n: failed }))
     parts.push(seconds >= 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`)
     return parts.join(' · ')
   }, [])
@@ -414,7 +416,7 @@ export function BatchPanel() {
         lanes,
       )
       setNote(
-        [summarizeRun(), 'Videos save as they finish.'].filter(Boolean).join(' — '),
+        [summarizeRun(), d('Videos save as they finish.')].filter(Boolean).join(' — '),
       )
       reportBatchEnd()
     } finally {
@@ -470,7 +472,7 @@ export function BatchPanel() {
         controller.signal,
         lanes,
       )
-      setNote(summarizeRun() ?? `Retried ${failedUrls.length} link(s).`)
+      setNote(summarizeRun() ?? d('Retried {n} link(s).', { n: failedUrls.length }))
       reportBatchEnd()
     } finally {
       setIsRunning(false)
@@ -508,7 +510,7 @@ export function BatchPanel() {
         | null
       if (!response.ok || !data?.success) {
         trackPlaylistImported({ count: 0, ok: false })
-        setNote(data?.error || 'Could not expand that playlist.')
+        setNote(data?.error || d('Could not expand that playlist.'))
         return
       }
       trackPlaylistImported({ count: data.videos?.length ?? 0, ok: true })
@@ -518,12 +520,12 @@ export function BatchPanel() {
         .filter((u) => !existing.has(u))
       const slots = MAX_BATCH_URLS - parsedUrls.length
       if (slots <= 0) {
-        setNote(`Batch is full — ${MAX_BATCH_URLS} links max.`)
+        setNote(d('Batch is full — {max} links max.', { max: MAX_BATCH_URLS }))
         return
       }
       const accepted = fresh.slice(0, slots)
       if (accepted.length === 0) {
-        setNote('Those videos are already in the batch.')
+        setNote(d('Those videos are already in the batch.'))
         return
       }
       setRawInput((prev) =>
@@ -532,12 +534,14 @@ export function BatchPanel() {
       setPlaylistUrl('')
       const leftOut = fresh.length - accepted.length
       setNote(
-        `Imported ${accepted.length} video${accepted.length === 1 ? '' : 's'}.` +
-          (leftOut > 0 ? ` ${leftOut} more than the ${MAX_BATCH_URLS}-link limit were left out.` : ''),
+        d(accepted.length === 1 ? 'Imported 1 video.' : 'Imported {n} videos.', { n: accepted.length }) +
+          (leftOut > 0
+            ? ` ${d('{n} more than the {max}-link limit were left out.', { n: leftOut, max: MAX_BATCH_URLS })}`
+            : ''),
       )
     } catch (error) {
       trackCaughtError('playlist_import', error)
-      setNote('Network error while importing the playlist.')
+      setNote(d('Network error while importing the playlist.'))
     } finally {
       setIsImporting(false)
     }
@@ -562,11 +566,11 @@ export function BatchPanel() {
           template: filenameTemplate,
         }),
       )
-      setNote(`${zipCandidates.length} photo/audio item(s) saved as a ZIP.`)
+      setNote(d('{n} photo/audio item(s) saved as a ZIP.', { n: zipCandidates.length }))
       transfer.completed({ size_bytes: blob.size, delivery: 'zip' })
     } catch (error) {
       transfer.failed(error)
-      setNote('Could not build the ZIP — try again.')
+      setNote(d('Could not build the ZIP — try again.'))
     } finally {
       setIsZipping(false)
     }
@@ -618,9 +622,9 @@ export function BatchPanel() {
       className='animate-section-in mt-4 p-4'
     >
       <div className='flex items-center justify-between gap-2'>
-        <h2 className='text-sm font-semibold text-white/85'>Batch download</h2>
+        <h2 className='text-sm font-semibold text-white/85'>{d('Batch download')}</h2>
         <span className='text-xs text-white/50'>
-          {parsedUrls.length}/{MAX_BATCH_URLS} links
+          {d('{count}/{max} links', { count: parsedUrls.length, max: MAX_BATCH_URLS })}
         </span>
       </div>
 
@@ -636,8 +640,8 @@ export function BatchPanel() {
           ref={textareaRef}
           value={rawInput}
           onChange={(e) => setRawInput(e.target.value)}
-          placeholder={`Paste up to ${MAX_BATCH_URLS} links, one per line or separated by spaces/commas`}
-          aria-label='Batch links'
+          placeholder={d('Paste up to {max} links, one per line or separated by spaces/commas', { max: MAX_BATCH_URLS })}
+          aria-label={d('Batch links')}
           disabled={isRunning}
           className='field-sizing-content block max-h-64 min-h-24 w-full resize-none overflow-y-auto rounded-xl bg-transparent p-3 text-sm leading-relaxed text-white caret-cyan-300 outline-none selection:bg-cyan-400/25 placeholder:text-white/40 disabled:opacity-60'
         />
@@ -660,8 +664,8 @@ export function BatchPanel() {
                 void handleImportPlaylist()
               }
             }}
-            placeholder='Playlist, subreddit, board, or channel link — expand into the queue'
-            aria-label='Collection link'
+            placeholder={d('Playlist, subreddit, board, or channel link — expand into the queue')}
+            aria-label={d('Collection link')}
             disabled={isRunning || isImporting}
             className='min-w-0 flex-1 rounded-lg bg-transparent px-2 py-1.5 text-xs text-white caret-cyan-300 outline-none placeholder:text-white/35 disabled:opacity-60'
           />
@@ -671,7 +675,7 @@ export function BatchPanel() {
             disabled={isRunning || isImporting || !playlistUrl.trim()}
             className='shrink-0 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50'
           >
-            {isImporting ? 'Importing…' : 'Import'}
+            {isImporting ? d('Importing…') : d('Import')}
           </button>
         </div>
       </Surface>
@@ -682,13 +686,13 @@ export function BatchPanel() {
       <div className='mt-2 flex items-center gap-2 text-xs'>
         <span
           className='text-white/50'
-          title='Parallel downloads. More is faster until an extractor starts refusing the extra traffic from your IP.'
+          title={d('Parallel downloads. More is faster until an extractor starts refusing the extra traffic from your IP.')}
         >
-          Speed
+          {d('Speed')}
         </span>
         <div
           role='group'
-          aria-label='Parallel resolve lanes'
+          aria-label={d('Parallel resolve lanes')}
           className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
         >
           {LANE_CHOICES.map((n) => (
@@ -715,10 +719,10 @@ export function BatchPanel() {
       {/* One format for the whole batch — see the BatchFormat comment above
           for why this isn't per-item. */}
       <div className='mt-2 flex items-center gap-2 text-xs'>
-        <span className='text-white/50'>Format</span>
+        <span className='text-white/50'>{d('Format')}</span>
         <div
           role='group'
-          aria-label='Batch download format'
+          aria-label={d('Batch download format')}
           className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
         >
           {(['video', 'audio'] as const).map((f) => (
@@ -735,7 +739,7 @@ export function BatchPanel() {
                 format === f ? 'bg-cyan-400/90 text-[#04171b]' : 'text-white/55 hover:text-white'
               }`}
             >
-              {f === 'video' ? 'Video' : 'Audio (MP3)'}
+              {f === 'video' ? d('Video') : d('Audio (MP3)')}
             </button>
           ))}
         </div>
@@ -748,7 +752,7 @@ export function BatchPanel() {
           disabled={isRunning || parsedUrls.length === 0}
           className='btn-grad btn-press rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50'
         >
-          {isRunning ? 'Resolving…' : 'Start batch'}
+          {isRunning ? d('Resolving…') : d('Start batch')}
         </button>
 
         {isRunning && (
@@ -757,7 +761,7 @@ export function BatchPanel() {
             onClick={handleCancel}
             className='rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:text-white'
           >
-            Cancel
+            {d('Cancel')}
           </button>
         )}
 
@@ -767,7 +771,7 @@ export function BatchPanel() {
             onClick={() => void handleRetryFailed()}
             className='rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:text-white'
           >
-            Retry failed ({failedUrls.length})
+            {d('Retry failed ({n})', { n: failedUrls.length })}
           </button>
         )}
 
@@ -778,7 +782,7 @@ export function BatchPanel() {
             disabled={isZipping}
             className='rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50'
           >
-            {isZipping ? 'Zipping…' : `Save all (${zipCandidateCount})`}
+            {isZipping ? d('Zipping…') : d('Save all ({n})', { n: zipCandidateCount })}
           </button>
         )}
       </div>
@@ -808,8 +812,8 @@ export function BatchPanel() {
 
       <p className='mt-3 text-xs text-white/50'>
         {format === 'video'
-          ? 'Videos save individually as each one finishes. Photos collect into one ZIP — tap “Save all” once the queue is done.'
-          : 'Audio tracks collect into one ZIP — tap “Save all” once the queue is done. A link with nothing downloadable (e.g. a playable-only embed) is marked as such, not as a failure.'}
+          ? d('Videos save individually as each one finishes. Photos collect into one ZIP — tap “Save all” once the queue is done.')
+          : d('Audio tracks collect into one ZIP — tap “Save all” once the queue is done. A link with nothing downloadable (e.g. a playable-only embed) is marked as such, not as a failure.')}
       </p>
     </Surface>
   )
