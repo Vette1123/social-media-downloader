@@ -2,6 +2,7 @@ import { trackPrefChanged } from './analytics'
 import {
   isLocale,
   isRtl,
+  loadDictionaries,
   translate,
   type TKey,
   type Locale,
@@ -30,14 +31,30 @@ function mirrorDocument(locale: Locale): void {
   document.documentElement.dir = isRtl(locale) ? 'rtl' : 'ltr'
 }
 
+/**
+ * The locale only becomes current once its dictionary is in, so the snapshot
+ * change is what re-renders with translated copy. `pending` keeps the last
+ * choice winning if two loads race.
+ */
+let pending: Locale = 'en'
+
+async function adopt(next: Locale): Promise<void> {
+  pending = next
+  if (next !== 'en') await loadDictionaries()
+  if (pending !== next) return
+  current = next
+  for (const listener of listeners) listener()
+}
+
 // Hydrate once at first client import. Module init is outside rendering, so
 // this is a store load rather than a state update during render.
 if (typeof window !== 'undefined') {
   try {
     const stored = window.localStorage.getItem(LOCALE_KEY)
-    if (isLocale(stored)) {
-      current = stored
-      mirrorDocument(current)
+    if (isLocale(stored) && stored !== 'en') {
+      // lang and dir now, before paint. The words follow with the dictionary.
+      mirrorDocument(stored)
+      void adopt(stored)
     }
   } catch {
     // private mode / disabled storage — English until changed this session.
@@ -62,7 +79,6 @@ export function subscribeLocale(listener: () => void): () => void {
 
 export function setLocale(next: Locale): void {
   if (next === current) return
-  current = next
   try {
     window.localStorage.setItem(LOCALE_KEY, next)
   } catch {
@@ -70,7 +86,7 @@ export function setLocale(next: Locale): void {
   }
   mirrorDocument(next)
   trackPrefChanged({ key: 'language', value: next })
-  for (const listener of listeners) listener()
+  void adopt(next)
 }
 
 /**

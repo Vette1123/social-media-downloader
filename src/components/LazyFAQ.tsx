@@ -71,10 +71,8 @@ export function LazyFAQ({
       )
       io.observe(ref.current)
     }
-    // Hydrate on idle unconditionally so the styled version always lands, even
-    // if the user never scrolls.
-    const ric = idleCb()
-    ric(open)
+    // No load on idle: the native <details> below already works, so someone who
+    // never reaches the FAQ never pays for the accordion library.
 
     const el = ref.current
     const events = ['pointerdown', 'touchstart', 'focusin'] as const
