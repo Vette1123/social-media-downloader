@@ -69,6 +69,12 @@ jobs:
       # The corollary worth knowing: the build type-checks *test* files too,
       # which `pnpm test` does not. A type error in a `.test.ts` fails the
       # deploy, not the test run. That is why `pnpm verify` starts with tsc.
+      # A bot's pull request has no developer machine behind it, so `pnpm verify`
+      # runs here. Pushes still rely on the build, as above.
+      - name: Verify
+        if: github.event_name == 'pull_request'
+        run: pnpm verify
+
       # Static export into out/ (pages, images, robots, sitemap) plus the
       # _headers file and the completeness checks in scripts/cf-postbuild.mjs.
       - name: Build static site
