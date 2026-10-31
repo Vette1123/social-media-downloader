@@ -98,3 +98,4 @@ the index for exactly that.
 | 2026-10-31 | [Everything to latest](2026-10-31-everything-to-latest.md) | Read `package.json` before naming a dependency: a comment outlives what it describes |
 | 2026-10-31 | [Dependabot and two bumps](2026-10-31-dependabot-and-two-bumps.md) | One wrapped command needs `spawn`, not a deprecated package. |
 | 2026-10-31 | [The crawl quota that was already full](2026-10-31-the-crawl-quota-that-was-already-full.md) | Read the setting a warning names before acting on it; send IndexNow only what moved |
+| 2026-10-31 | [Pull request CI for bot PRs](2026-10-31-pull-request-ci.md) | Dependabot PRs read Dependabot secrets, and a first CI run is a test of the job: dispatch it on main and read it |
