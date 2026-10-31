@@ -31,7 +31,7 @@ import type { SupportedPlatform } from '@/lib/validator'
 
 /**
  * `Platform.slug` is the URL slug ('tiktok-downloader'), but offers.ts and
- * selectOffer() key platform targeting on detectPlatform()'s output
+ * selectOffers() key platform targeting on detectPlatform()'s output
  * ('tiktok') — see src/lib/validator.ts. This is the one place that maps
  * between the two so PromoSlot never has to know about landing-page routing.
  * Typed against `SupportedPlatform` (not `string`) so a typo'd value fails

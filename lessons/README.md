@@ -94,3 +94,4 @@ the index for exactly that.
 | 2026-10-31 | [Every word in every language](2026-10-31-every-word-in-every-language.md) | A plain `d()` plus a subscribe-only hook beats threading a translator, and a screen that is first paint waits for its language instead of swapping it in. |
 | 2026-10-31 | [A Facebook reel behind the login wall](2026-10-31-facebook-reel-behind-login-wall.md) | One failing link proves nothing until a known-good control passes the same surface |
 | 2026-10-31 | [Rafiq in the offer slot](2026-10-31-rafiq-in-the-offer-slot.md) | Two equal offers on a fixed seed means one never shows |
+| 2026-10-31 | [Both apps at once](2026-10-31-both-apps-at-once.md) | A test for "the user sees both" follows one user on one page |

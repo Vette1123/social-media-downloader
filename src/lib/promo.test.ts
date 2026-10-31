@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hashToSeed, offerHref, selectOffer } from './promo'
+import { offerHref, selectOffers } from './promo'
 import { OFFERS } from '../config/offers'
 import type { Offer } from '@/config/offers'
 
@@ -15,29 +15,24 @@ const offer = (over: Partial<Offer> & { id: string }): Offer => ({
 })
 
 describe('our own apps in the offer slot', () => {
-  const platforms = ['tiktok', 'instagram', 'facebook', 'twitter', 'youtube', 'reddit', 'vimeo', 'pinterest']
+  const platforms = ['tiktok', 'instagram', 'facebook', 'twitter', 'youtube', 'reddit', 'vimeo', 'pinterest', undefined]
 
-  it('shows both Masareef and Rafiq across platforms in each placement', () => {
+  it('shows Masareef and Rafiq together on every platform and placement', () => {
     for (const placement of ['post-result', 'in-content'] as const) {
-      const shown = new Set(
-        platforms.map(
-          (platform) =>
-            selectOffer(OFFERS, {
-              placement,
-              platform,
-              seed: hashToSeed(`:r1:${placement}:${platform}`),
-            })?.id,
-        ),
-      )
-      expect([...shown].sort()).toEqual(['masareef', 'rafiq'])
+      for (const platform of platforms) {
+        const ids = selectOffers(OFFERS, { placement, platform }).map((o) => o.id)
+        expect(ids, `${placement} on ${platform}`).toEqual(['masareef', 'rafiq'])
+      }
     }
   })
 })
 
-describe('selectOffer', () => {
-  it('returns null when no offer matches the placement', () => {
-    const offers = [offer({ id: 'a', placements: ['in-content'] })]
-    expect(selectOffer(offers, { placement: 'post-result', seed: 0 })).toBeNull()
+describe('selectOffers', () => {
+  const ids = (offers: readonly Offer[], platform?: string) =>
+    selectOffers(offers, { placement: 'post-result', platform }).map((o) => o.id)
+
+  it('returns nothing when no offer matches the placement', () => {
+    expect(ids([offer({ id: 'a', placements: ['in-content'] })])).toEqual([])
   })
 
   it('prefers a platform-specific offer over an all-platforms one', () => {
@@ -45,12 +40,7 @@ describe('selectOffer', () => {
       offer({ id: 'generic', platforms: 'all' }),
       offer({ id: 'tiktok-only', platforms: ['tiktok'] }),
     ]
-    const picked = selectOffer(offers, {
-      placement: 'post-result',
-      platform: 'tiktok',
-      seed: 0,
-    })
-    expect(picked?.id).toBe('tiktok-only')
+    expect(ids(offers, 'tiktok')).toEqual(['tiktok-only'])
   })
 
   it('falls back to all-platforms offers when nothing targets the platform', () => {
@@ -58,35 +48,25 @@ describe('selectOffer', () => {
       offer({ id: 'generic', platforms: 'all' }),
       offer({ id: 'tiktok-only', platforms: ['tiktok'] }),
     ]
-    const picked = selectOffer(offers, {
-      placement: 'post-result',
-      platform: 'vimeo',
-      seed: 0,
-    })
-    expect(picked?.id).toBe('generic')
+    expect(ids(offers, 'vimeo')).toEqual(['generic'])
   })
 
-  it('is deterministic for a given seed', () => {
-    const offers = [offer({ id: 'a' }), offer({ id: 'b' }), offer({ id: 'c' })]
-    const opts = { placement: 'post-result' as const, seed: 7 }
-    expect(selectOffer(offers, opts)?.id).toBe(selectOffer(offers, opts)?.id)
-  })
-
-  it('respects weight — a zero-weight offer is never picked', () => {
+  it('benches a zero or negative weight', () => {
     const offers = [
-      offer({ id: 'never', weight: 0 }),
-      offer({ id: 'always', weight: 5 }),
+      offer({ id: 'zero', weight: 0 }),
+      offer({ id: 'bad', weight: -3 }),
+      offer({ id: 'live', weight: 1 }),
     ]
-    for (let seed = 0; seed < 50; seed++) {
-      expect(selectOffer(offers, { placement: 'post-result', seed })?.id).toBe('always')
-    }
+    expect(ids(offers)).toEqual(['live'])
   })
 
-  it('ignores offers with a negative weight', () => {
-    const offers = [offer({ id: 'bad', weight: -3 }), offer({ id: 'good', weight: 1 })]
-    for (let seed = 0; seed < 20; seed++) {
-      expect(selectOffer(offers, { placement: 'post-result', seed })?.id).toBe('good')
-    }
+  it('caps the slot at the two heaviest, keeping catalogue order on a tie', () => {
+    const offers = [
+      offer({ id: 'first', weight: 1 }),
+      offer({ id: 'second', weight: 1 }),
+      offer({ id: 'heavy', weight: 5 }),
+    ]
+    expect(ids(offers)).toEqual(['heavy', 'first'])
   })
 })
 
