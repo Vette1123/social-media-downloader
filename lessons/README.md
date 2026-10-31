@@ -92,3 +92,4 @@ the index for exactly that.
 | 2026-10-31 | [What first load still carried](2026-10-31-what-first-load-still-carried.md) | Translations, an accordion and marketing copy shipped to everyone; lastmod moved on every deploy without the content changing |
 | 2026-10-31 | [The site in five languages](2026-10-31-the-site-in-five-languages.md) | Anything above `{children}` in a root layout cannot see a provider below it |
 | 2026-10-31 | [Every word in every language](2026-10-31-every-word-in-every-language.md) | A plain `d()` plus a subscribe-only hook beats threading a translator, and a screen that is first paint waits for its language instead of swapping it in. |
+| 2026-10-31 | [A Facebook reel that was never public](2026-10-31-facebook-reel-never-public.md) | One failing link proves nothing until a known-good control passes the same surface |
