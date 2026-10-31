@@ -52,22 +52,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // Static, image-free pages — no per-route opengraph-image exists for these,
   // unlike the home and platform pages above.
-  const staticPages = ['/pro', '/privacy', '/terms'].map<MetadataRoute.Sitemap[number]>(
-    (path) => {
-      const url = `${siteConfig.url}${path}`
-      return {
-        url,
-        lastModified: lastChanged([`src/app${path}/page.tsx`]),
-        changeFrequency: 'monthly',
-        priority: 0.5,
-        alternates: {
-          languages: {
-            en: url,
-            'x-default': url,
-          },
-        },
-      }
-    },
+  const infoChanged = lastChanged(['src/lib/legalCopy.ts'])
+  const staticPages = ['/pro', '/privacy', '/terms'].flatMap((path) =>
+    LOCALES.map<MetadataRoute.Sitemap[number]>((locale) => ({
+      ...localeEntry(locale, path),
+      lastModified: infoChanged,
+      changeFrequency: 'monthly',
+      priority: 0.5,
+    })),
   )
 
   return [...home, ...platformEntries, ...staticPages]

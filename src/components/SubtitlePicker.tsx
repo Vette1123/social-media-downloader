@@ -5,6 +5,7 @@ import {
   trackCaughtError,
   trackFeatureUsed,
 } from '@/lib/analytics'
+import { d, useDeepWords } from '@/lib/i18nDeep'
 import { useCallback, useState } from 'react'
 import { saveBlob } from '@/lib/blobSaver'
 import { usePrefs, setSubtitleLang } from '@/lib/prefs'
@@ -33,6 +34,7 @@ function loadFormat(): SubtitleFormat {
  * Rendered as nothing for free visitors — the panel is an extra, not an ad.
  */
 export function SubtitlePicker({ videoId }: { videoId: string }) {
+  useDeepWords()
   const tier = useTier()
   const proToken = useProToken()
   const { subtitleLang } = usePrefs()
@@ -75,7 +77,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
         tracks?: CaptionTrack[]
       } | null
       if (!response.ok || !data?.success) {
-        setError(data?.error || 'Could not load subtitles.')
+        setError(data?.error || d('Could not load subtitles.'))
         return
       }
       // The remembered language floats to the front so it is one tap, not a
@@ -89,7 +91,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
         : all
       setTracks([...preferred, ...rest])
     } catch {
-      setError('Network error while loading subtitles.')
+      setError(d('Network error while loading subtitles.'))
     } finally {
       setLoadingTracks(false)
     }
@@ -124,7 +126,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
           const data = (await response.json().catch(() => null)) as {
             error?: string
           } | null
-          setError(data?.error || 'Could not fetch that subtitle track.')
+          setError(data?.error || d('Could not fetch that subtitle track.'))
           transfer.failed(data?.error ?? `HTTP ${response.status}`)
           return
         }
@@ -138,7 +140,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
         transfer.completed({ size_bytes: content.length })
       } catch (error) {
         trackCaughtError('subtitle_download', error)
-        setError('Network error while fetching the track.')
+        setError(d('Network error while fetching the track.'))
       } finally {
         setBusyKey(null)
       }
@@ -160,7 +162,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
         aria-expanded={open}
         className='inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-white/70 transition-colors hover:text-white'
       >
-        Subtitles
+        {d('Subtitles')}
         <ChevronDownIcon
           className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
@@ -171,10 +173,10 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
           {/* Format choice sits above the tracks so it reads as applying to
               all of them, and persists — see FMT_KEY. */}
           <div className='mb-2 flex items-center gap-2'>
-            <span className='text-[11px] text-white/45'>Format</span>
+            <span className='text-[11px] text-white/45'>{d('Format')}</span>
             <div
               role='group'
-              aria-label='Subtitle format'
+              aria-label={d('Subtitle format')}
               className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
             >
               {(['srt', 'vtt'] as const).map((f) => (
@@ -194,10 +196,10 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
               ))}
             </div>
           </div>
-          {loadingTracks && <p className='text-xs text-white/50'>Loading tracks…</p>}
+          {loadingTracks && <p className='text-xs text-white/50'>{d('Loading tracks…')}</p>}
           {error && <p className='text-xs text-red-300/90'>{error}</p>}
           {tracks && tracks.length === 0 && (
-            <p className='text-xs text-white/50'>This video has no subtitle tracks.</p>
+            <p className='text-xs text-white/50'>{d('This video has no subtitle tracks.')}</p>
           )}
           {tracks && tracks.length > 0 && (
             <ul className='flex flex-wrap gap-1.5'>
@@ -211,7 +213,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
                       disabled={busyKey !== null}
                       className='rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-xs text-white/70 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50'
                     >
-                      {busyKey === key ? 'Saving…' : `${track.name} · ${format.toUpperCase()}`}
+                      {busyKey === key ? d('Saving…') : `${track.name} · ${format.toUpperCase()}`}
                     </button>
                   </li>
                 )

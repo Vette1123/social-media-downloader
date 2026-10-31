@@ -1,4 +1,6 @@
 import { PRO_BENEFITS } from '@/config/pro'
+import { WHATS_NEW } from '@/config/whatsNew'
+import { legalCopy } from '@/lib/legalCopy'
 
 /**
  * The English words on the home and platform pages, and the shape every language
@@ -85,6 +87,7 @@ export const pageCopy = {
     ],
     formatsEyebrow: 'Supported link formats',
     faqTitle: 'Frequently asked questions',
+    whatsNew: WHATS_NEW.map(({ date, title, detail }) => ({ date, title, detail })),
     whatsNewTitle: 'Recently added',
     whatsNewSub:
       'The tool is under active development — here is what changed lately.',
@@ -121,6 +124,7 @@ export const pageCopy = {
     disclaimer:
       'Public posts only. {site} is an independent tool, not affiliated with or endorsed by TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch or Vimeo; their names and logos belong to their owners and identify which links this tool accepts.',
   },
+  legal: legalCopy,
   howTo: {
     homeName:
       'How to download a public TikTok, X, Instagram, Facebook or YouTube video',

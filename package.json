@@ -15,6 +15,8 @@
     "test": "vitest run",
     "verify": "pnpm typecheck && pnpm lint && pnpm test",
     "perf": "node scripts/perf-audit.mjs",
+    "i18n:deep": "node scripts/i18n-deep.mjs",
+    "i18n:lock": "cross-env I18N_LOCK=1 vitest run src/lib/localeContent.test.ts",
     "cf:build": "cross-env DEPLOY_TARGET=cloudflare next build && node scripts/cf-postbuild.mjs",
     "preview": "pnpm cf:build && wrangler dev",
     "deploy": "pnpm cf:build && wrangler deploy && node scripts/indexnow.mjs --force",

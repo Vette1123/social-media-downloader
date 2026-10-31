@@ -9,11 +9,13 @@
  * ends in losing access has to find them, not wait to be found.
  */
 
+import { d, useDeepWords } from '@/lib/i18nDeep'
 import { PAST_DUE_GRACE_MS } from '@/lib/billing/entitlement'
 import { useAccount } from '@/lib/account'
 import { formatDate, nowMs } from '@/lib/clientEnv'
 
 export function PastDueBanner() {
+  useDeepWords()
   const { plan } = useAccount()
   if (plan?.status !== 'past_due' || plan.pastDueSince === null) return null
 
@@ -26,14 +28,14 @@ export function PastDueBanner() {
       className='mx-auto mb-4 flex max-w-3xl flex-col gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between'
     >
       <p>
-        We couldn&rsquo;t take payment. Pro stays on until {formatDate(endsAt)}.
+        {d("We couldn't take payment. Pro stays on until {date}.", { date: formatDate(endsAt) })}
       </p>
       <a
         href='/api/billing/portal'
         data-pro-cta='past_due_portal'
         className='shrink-0 rounded-lg bg-amber-400/20 px-3 py-1.5 font-semibold text-amber-50 transition-colors hover:bg-amber-400/30'
       >
-        Update payment method
+        {d('Update payment method')}
       </a>
     </div>
   )

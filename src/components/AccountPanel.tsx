@@ -60,6 +60,9 @@ import {
 import { useTier } from '@/lib/entitlements'
 import { PRO_BENEFITS } from '@/config/pro'
 import { PAST_DUE_GRACE_MS, paidThrough } from '@/lib/billing/entitlement'
+import { Rich } from '@/components/Rich'
+import { useLocalePath } from '@/lib/i18nStore'
+import { d, dKnown, dn, useDeepWords } from '@/lib/i18nDeep'
 import { formatDate, nowMs, useHydrated, useOnPageVisible } from '@/lib/clientEnv'
 import { siteConfig } from '@/config/site'
 
@@ -204,20 +207,20 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
   switch (bucket) {
     case 'free':
       return {
-        lede: "You're on the free plan.",
-        chip: { label: 'Free', tone: 'idle' },
-        title: 'Free',
+        lede: d('You\'re on the free plan.'),
+        chip: { label: d('Free'), tone: 'idle' },
+        title: d('Free'),
         facts: [],
       }
     case 'granted':
       return {
-        lede: 'The extras are switched on for this account. Thank you.',
+        lede: d('The extras are switched on for this account. Thank you.'),
         // Said plainly because the honest description is also the reassuring
         // one: this is a gift, not a plan, so there is no date to watch, no
         // renewal to catch, and nothing that can fail to charge.
-        note: 'Nothing is billing and there is nothing to cancel.',
-        chip: { label: 'Supporter', tone: 'live' },
-        title: 'Supporter',
+        note: d('Nothing is billing and there is nothing to cancel.'),
+        chip: { label: d('Supporter'), tone: 'live' },
+        title: d('Supporter'),
         facts: [],
       }
     // Both dormant: no row has a subscription and none can be created. The
@@ -226,56 +229,57 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
     // asserting a number nothing else in the codebase agrees with.
     case 'active-monthly':
       return {
-        chip: { label: 'Active', tone: 'live' },
-        title: 'Pro, monthly',
+        chip: { label: d('Active'), tone: 'live' },
+        title: d('Pro, monthly'),
         facts: [
-          { label: 'Next charge', value: dateOr(plan?.renewsAt, 'Soon') },
-          { label: 'Renews', value: 'Every month, until cancelled' },
+          { label: d('Next charge'), value: dateOr(plan?.renewsAt, d('Soon')) },
+          { label: d('Renews'), value: d('Every month, until cancelled') },
         ],
       }
     case 'active-annual':
       return {
-        chip: { label: 'Active', tone: 'live' },
-        title: 'Pro, annual',
+        chip: { label: d('Active'), tone: 'live' },
+        title: d('Pro, annual'),
         facts: [
-          { label: 'Next charge', value: dateOr(plan?.renewsAt, 'Soon') },
-          { label: 'Renews', value: 'Every year, until cancelled' },
+          { label: d('Next charge'), value: dateOr(plan?.renewsAt, d('Soon')) },
+          { label: d('Renews'), value: d('Every year, until cancelled') },
         ],
       }
     case 'cancelled':
       return {
-        lede: `Pro until ${dateOr(plan?.endsAt, 'the end of the period')}. Won't renew after that.`,
+        lede: d("Pro until {date}. Won't renew after that.", {
+          date: dateOr(plan?.endsAt, d('the end of the period')),
+        }),
         // Said because it is the question someone has straight after
         // cancelling, and because the honest answer is reassuring: they are
         // cancelled, they keep what they paid for, and no further money moves.
-        note: 'You keep Pro until then, and nothing further will be charged.',
-        chip: { label: 'Ending', tone: 'ending' },
-        title: 'Pro, cancelled',
+        note: d('You keep Pro until then, and nothing further will be charged.'),
+        chip: { label: d('Ending'), tone: 'ending' },
+        title: d('Pro, cancelled'),
         facts: [
-          { label: 'Pro until', value: dateOr(plan?.endsAt, 'End of the period') },
-          { label: 'Next charge', value: 'None' },
+          { label: d('Pro until'), value: dateOr(plan?.endsAt, d('End of the period')) },
+          { label: d('Next charge'), value: d('None') },
         ],
       }
     case 'past-due':
       return {
-        lede: `We couldn't take payment. Pro stays on until ${dateOr(
-          graceEndsAt(plan),
-          'the grace period ends',
-        )}.`,
-        chip: { label: 'Payment failed', tone: 'warn' },
-        title: 'Pro, payment failed',
+        lede: d("We couldn't take payment. Pro stays on until {date}.", {
+          date: dateOr(graceEndsAt(plan), d('the grace period ends')),
+        }),
+        chip: { label: d('Payment failed'), tone: 'warn' },
+        title: d('Pro, payment failed'),
         // One row only: the button underneath already says what to do about it,
         // and a "To fix it — update your card" row was the same instruction
         // printed twice, six millimetres apart.
-        facts: [{ label: 'Pro until', value: dateOr(graceEndsAt(plan), 'The grace period ends') }],
+        facts: [{ label: d('Pro until'), value: dateOr(graceEndsAt(plan), d('The grace period ends')) }],
       }
     case 'ended':
       return {
-        lede: "Your subscription has ended, so you're back on the free plan.",
-        note: 'Nothing further will be charged.',
-        chip: { label: 'Ended', tone: 'idle' },
-        title: 'Free',
-        facts: [{ label: 'Ended', value: dateOr(plan?.endsAt, 'Already') }],
+        lede: d('Your subscription has ended, so you\'re back on the free plan.'),
+        note: d('Nothing further will be charged.'),
+        chip: { label: d('Ended'), tone: 'idle' },
+        title: d('Free'),
+        facts: [{ label: d('Ended'), value: dateOr(plan?.endsAt, d('Already')) }],
       }
   }
 }
@@ -292,22 +296,30 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
  * an account page not change is owed the reason before they email to ask.
  */
 function SupportLink() {
+  useDeepWords()
+  const to = useLocalePath()
   return (
     <div className='flex flex-col gap-2'>
-      <a href='/pro' data-pro-cta='account_upgrade' className={`${ACTION_BUTTON_CLASS} w-fit items-center gap-2`}>
+      <a href={to('/pro')} data-pro-cta='account_upgrade' className={`${ACTION_BUTTON_CLASS} w-fit items-center gap-2`}>
         <CoffeeIcon className='h-4 w-4' />
-        Support this project
+        {d('Support this project')}
       </a>
       <p className='text-xs text-white/50'>
-        Nothing is for sale and nothing renews. Supporters get the extras
-        switched on by hand — donate, then email{' '}
-        <a
-          className='underline underline-offset-2 hover:text-white/70'
-          href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Supporter — switch on the extras')}`}
-        >
-          {siteConfig.supportEmail}
-        </a>{' '}
-        and give it a day.
+        <Rich
+          text={d(
+            'Nothing is for sale and nothing renews. Supporters get the extras switched on by hand — donate, then email {email} and give it a day.',
+          )}
+          parts={{
+            email: (
+              <a
+                className='underline underline-offset-2 hover:text-white/70'
+                href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Supporter — switch on the extras')}`}
+              >
+                {siteConfig.supportEmail}
+              </a>
+            ),
+          }}
+        />
       </p>
     </div>
   )
@@ -326,6 +338,7 @@ function SupportLink() {
  * access for the remainder of your billing period" is a sentence people skip.
  */
 function CancelPlanButton({ plan }: { plan: PlanState | null }) {
+  useDeepWords()
   const [confirming, setConfirming] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -340,7 +353,7 @@ function CancelPlanButton({ plan }: { plan: PlanState | null }) {
     // the card is replaced by the cancelled state, so there is no success
     // message to show and nothing to reset. Only the failure path stays here.
     if (!ok) {
-      setError('That did not go through. Please try again in a minute.')
+      setError(d('That did not go through. Please try again in a minute.'))
       setSubmitting(false)
     }
   }
@@ -355,7 +368,7 @@ function CancelPlanButton({ plan }: { plan: PlanState | null }) {
         disabled={submitting}
         className={QUIET_BUTTON_CLASS}
       >
-        {submitting ? 'Cancelling…' : 'Cancel plan'}
+        {submitting ? d('Cancelling…') : d('Cancel plan')}
       </button>
       {error && (
         <p role='alert' className='mt-2 basis-full text-xs text-red-300'>
@@ -365,14 +378,14 @@ function CancelPlanButton({ plan }: { plan: PlanState | null }) {
       <ConfirmDialog
         open={confirming}
         tone='neutral'
-        title='Cancel your plan?'
+        title={d('Cancel your plan?')}
         body={
           until
-            ? `Your next charge is stopped. You keep Pro until ${until}, and nothing further will be charged. You can resubscribe at any time.`
-            : 'Your next charge is stopped. You keep Pro to the end of the period you have already paid for, and nothing further will be charged.'
+            ? d('Your next charge is stopped. You keep Pro until {until}, and nothing further will be charged. You can resubscribe at any time.', { until })
+            : d('Your next charge is stopped. You keep Pro to the end of the period you have already paid for, and nothing further will be charged.')
         }
-        confirmLabel='Cancel my plan'
-        dismissLabel='Keep my plan'
+        confirmLabel={d('Cancel my plan')}
+        dismissLabel={d('Keep my plan')}
         onCancel={() => setConfirming(false)}
         onConfirm={() => void cancel()}
       />
@@ -381,6 +394,7 @@ function CancelPlanButton({ plan }: { plan: PlanState | null }) {
 }
 
 function PlanAction({ bucket, plan }: { bucket: PlanBucket; plan: PlanState | null }) {
+  useDeepWords()
   switch (bucket) {
     case 'free':
       return <SupportLink />
@@ -397,7 +411,7 @@ function PlanAction({ bucket, plan }: { bucket: PlanBucket; plan: PlanState | nu
       return (
         <div className='flex flex-wrap items-center gap-2'>
           <a href='/api/billing/portal' className={SECONDARY_BUTTON_CLASS}>
-            Manage billing
+            {d('Manage billing')}
           </a>
           <CancelPlanButton plan={plan} />
         </div>
@@ -410,7 +424,7 @@ function PlanAction({ bucket, plan }: { bucket: PlanBucket; plan: PlanState | nu
       return (
         <div className='flex flex-wrap items-center gap-2'>
           <a href='/api/billing/portal' className={ACTION_BUTTON_CLASS}>
-            Update payment method
+            {d('Update payment method')}
           </a>
           <CancelPlanButton plan={plan} />
         </div>
@@ -425,7 +439,7 @@ function PlanAction({ bucket, plan }: { bucket: PlanBucket; plan: PlanState | nu
       return (
         <div className='flex flex-wrap items-center gap-2'>
           <a href='/api/billing/portal' className={SECONDARY_BUTTON_CLASS}>
-            Manage billing
+            {d('Manage billing')}
           </a>
         </div>
       )
@@ -504,6 +518,7 @@ function FreePlanPitch() {
 }
 
 function PlanSection({ plan, entitled }: { plan: PlanState | null; entitled: boolean }) {
+  useDeepWords()
   // Read at render rather than held in state: nothing on this card counts down,
   // and the only boundary it decides — has the paid period run out — is months
   // away for anyone looking at it. A ticking clock here would be a re-render per
@@ -516,7 +531,7 @@ function PlanSection({ plan, entitled }: { plan: PlanState | null; entitled: boo
     <Surface glow radius='3xl' className='animate-card-enter p-5 shadow-2xl sm:p-6'>
       <div className='flex items-start justify-between gap-3'>
         <div className='min-w-0'>
-          <h2 className='text-xs font-medium tracking-wide text-white/45 uppercase'>Plan</h2>
+          <h2 className='text-xs font-medium tracking-wide text-white/45 uppercase'>{d('Plan')}</h2>
           <p className='mt-1 text-xl font-bold text-white sm:text-2xl'>{copy.title}</p>
           {copy.price && <p className='mt-0.5 text-sm text-white/55'>{copy.price}</p>}
         </div>
@@ -546,15 +561,21 @@ function PlanSection({ plan, entitled }: { plan: PlanState | null; entitled: boo
           it does). Keep this sentence in step with the Terms. */}
       {isRenewing(bucket) && (
         <p className='mt-3 text-xs text-white/50'>
-          Cancelling stops the next charge and Pro runs to the end of the
-          period you have paid for. Charged in the last 14 days?{' '}
-          <a
-            className='underline underline-offset-2 hover:text-white/70'
-            href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Refund request')}`}
-          >
-            Email us
-          </a>{' '}
-          for a full refund.
+          <Rich
+            text={d(
+              'Cancelling stops the next charge and Pro runs to the end of the period you have paid for. Charged in the last 14 days? {email} for a full refund.',
+            )}
+            parts={{
+              email: (
+                <a
+                  className='underline underline-offset-2 hover:text-white/70'
+                  href={`mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent('Refund request')}`}
+                >
+                  {d('Email us')}
+                </a>
+              ),
+            }}
+          />
         </p>
       )}
     </Surface>
@@ -562,6 +583,7 @@ function PlanSection({ plan, entitled }: { plan: PlanState | null; entitled: boo
 }
 
 function PreferencesSection() {
+  useDeepWords()
   const { quality, format } = usePrefs()
 
   function chooseFormat(next: Format): void {
@@ -576,11 +598,11 @@ function PreferencesSection() {
 
   return (
     <Surface radius='3xl' className='animate-card-enter p-5 sm:p-6'>
-      <h2 className='text-lg font-semibold text-white'>Preferences</h2>
+      <h2 className='text-lg font-semibold text-white'>{d('Preferences')}</h2>
       <div className='mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs'>
         <div className='flex items-center gap-2'>
-          <span className='text-white/50'>Format</span>
-          <div role='group' aria-label='Download format' className={TOGGLE_GROUP_CLASS}>
+          <span className='text-white/50'>{d('Format')}</span>
+          <div role='group' aria-label={d('Download format')} className={TOGGLE_GROUP_CLASS}>
             {(['video', 'audio'] as const).map((f) => (
               <button
                 key={f}
@@ -589,7 +611,7 @@ function PreferencesSection() {
                 aria-pressed={format === f}
                 className={toggleButtonClass(format === f)}
               >
-                {f === 'video' ? 'Video' : 'Audio (MP3)'}
+                {f === 'video' ? d('Video') : d('Audio (MP3)')}
               </button>
             ))}
           </div>
@@ -597,8 +619,8 @@ function PreferencesSection() {
 
         {format === 'video' && (
           <div className='flex items-center gap-2'>
-            <span className='text-white/50'>Quality</span>
-            <div role='group' aria-label='Preferred video quality' className={TOGGLE_GROUP_CLASS}>
+            <span className='text-white/50'>{d('Quality')}</span>
+            <div role='group' aria-label={d('Preferred video quality')} className={TOGGLE_GROUP_CLASS}>
               {(['hd', 'sd'] as const).map((q) => (
                 <button
                   key={q}
@@ -607,7 +629,7 @@ function PreferencesSection() {
                   aria-pressed={quality === q}
                   className={toggleButtonClass(quality === q)}
                 >
-                  {q === 'hd' ? 'HD' : 'Data saver'}
+                  {q === 'hd' ? 'HD' : d('Data saver')}
                 </button>
               ))}
             </div>
@@ -654,12 +676,12 @@ function tokenList(): string {
 function templateHint(template: string): string {
   const unknown = unknownFilenameTokens(template)
   if (unknown.length > 0) {
-    return `There is no {${unknown[0]}} — use ${tokenList()}.`
+    return d('There is no {token} — use {list}.', { token: `{${unknown[0]}}`, list: tokenList() })
   }
   if (!isFilenameTemplate(template)) {
-    return 'A template needs at least one placeholder, or every file would be given the same name.'
+    return d('A template needs at least one placeholder, or every file would be given the same name.')
   }
-  return `Available: ${tokenList()}. The extension is always added for you.`
+  return d('Available: {list}. The extension is always added for you.', { list: tokenList() })
 }
 
 /** One on/off supporter setting, with the line that says what it is doing. */
@@ -698,17 +720,17 @@ function FlagRow({
 /** What the auto-save line says, in each of its two states. */
 function autoSaveDetail(on: boolean): string {
   if (on) {
-    return 'Paste a link and the file is already saving. Carousels still wait for you to pick.'
+    return d('Paste a link and the file is already saving. Carousels still wait for you to pick.')
   }
-  return 'Off: a resolved link waits on the card until you tap Download.'
+  return d('Off: a resolved link waits on the card until you tap Download.')
 }
 
 /** What the clipboard-watch line says, in each of its two states. */
 function clipboardWatchDetail(on: boolean): string {
   if (on) {
-    return 'Copy a link anywhere, switch back to this tab, and it resolves. Your browser will ask permission the first time, and some browsers refuse it outright — the Paste button always works.'
+    return d('Copy a link anywhere, switch back to this tab, and it resolves. Your browser will ask permission the first time, and some browsers refuse it outright — the Paste button always works.')
   }
-  return 'Off: nothing is read from your clipboard unless you press Paste.'
+  return d('Off: nothing is read from your clipboard unless you press Paste.')
 }
 
 /**
@@ -721,6 +743,8 @@ function clipboardWatchDetail(on: boolean): string {
  * config/pro.ts.
  */
 function AutoSaveSection() {
+  useDeepWords()
+  const to = useLocalePath()
   const tier = useTier()
   const prefs = usePrefs()
   const isPro = tier === 'pro'
@@ -738,10 +762,10 @@ function AutoSaveSection() {
   return (
     <Surface radius='3xl' className='animate-card-enter p-5 sm:p-6'>
       <div className='flex flex-wrap items-baseline justify-between gap-2'>
-        <h2 className='text-lg font-semibold text-white'>Saving</h2>
+        <h2 className='text-lg font-semibold text-white'>{d('Saving')}</h2>
         {!isPro && (
           <span className='rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 text-[11px] font-medium text-cyan-200'>
-            Supporters
+            {d('Supporters')}
           </span>
         )}
       </div>
@@ -750,14 +774,14 @@ function AutoSaveSection() {
         <>
           <FlagRow
             id='autoSave'
-            label='Start the download as soon as a link resolves'
+            label={d('Start the download as soon as a link resolves')}
             on={prefs.autoSave === true}
             onChange={setAuto}
             detail={autoSaveDetail(prefs.autoSave === true)}
           />
           <FlagRow
             id='clipboardWatch'
-            label='Resolve a copied link when I come back to this tab'
+            label={d('Resolve a copied link when I come back to this tab')}
             on={prefs.clipboardWatch === true}
             onChange={setWatch}
             detail={clipboardWatchDetail(prefs.clipboardWatch === true)}
@@ -766,16 +790,14 @@ function AutoSaveSection() {
       ) : (
         <>
           <p className='mt-1 text-sm text-white/55'>
-            Let a pasted link save itself with no second tap, and let a link you
-            copied elsewhere resolve the moment you come back to this tab.
-            Supporters can switch both on.
+            {d('Let a pasted link save itself with no second tap, and let a link you copied elsewhere resolve the moment you come back to this tab. Supporters can switch both on.')}
           </p>
           <Link
-            href='/pro'
+            href={to('/pro')}
             data-pro-cta='account_prefs'
             className='mt-4 inline-flex text-sm font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
           >
-            See what supporting gets you →
+            {d('See what supporting gets you →')}
           </Link>
         </>
       )}
@@ -784,6 +806,8 @@ function AutoSaveSection() {
 }
 
 function FilenamesSection() {
+  useDeepWords()
+  const to = useLocalePath()
   const tier = useTier()
   const prefs = usePrefs()
   const isPro = tier === 'pro'
@@ -811,17 +835,17 @@ function FilenamesSection() {
   return (
     <Surface radius='3xl' className='animate-card-enter p-5 sm:p-6'>
       <div className='flex flex-wrap items-baseline justify-between gap-2'>
-        <h2 className='text-lg font-semibold text-white'>File names</h2>
+        <h2 className='text-lg font-semibold text-white'>{d('File names')}</h2>
         {!isPro && (
           <span className='rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 text-[11px] font-medium text-cyan-200'>
-            Supporters
+            {d('Supporters')}
           </span>
         )}
       </div>
       <p className='mt-1 text-sm text-white/55'>
         {isPro
-          ? 'Every download is named this way. The date leads by default so a folder sorted by name is in the order you saved things.'
-          : 'Downloads are named with the date, the platform, the account and the title. Supporters can change that shape.'}
+          ? d('Every download is named this way. The date leads by default so a folder sorted by name is in the order you saved things.')
+          : d('Downloads are named with the date, the platform, the account and the title. Supporters can change that shape.')}
       </p>
 
       <p className='mt-4 overflow-x-auto rounded-lg border border-white/[0.08] bg-black/25 px-3 py-2 font-mono text-xs whitespace-nowrap text-cyan-200/90'>
@@ -849,7 +873,7 @@ function FilenamesSection() {
           </div>
 
           <label className='block'>
-            <span className='sr-only'>Filename template</span>
+            <span className='sr-only'>{d('Filename template')}</span>
             <input
               type='text'
               value={shown}
@@ -873,18 +897,18 @@ function FilenamesSection() {
 
       {!isPro && (
         <Link
-          href='/pro'
+          href={to('/pro')}
           data-pro-cta='account_filename'
           className='mt-4 inline-flex text-sm font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
         >
-          See what supporting gets you →
+          {d('See what supporting gets you →')}
         </Link>
       )}
     </Surface>
   )
 }
 
-const DELETE_FAILED = 'Could not delete the account. Try again.'
+const DELETE_FAILED = d('Could not delete the account. Try again.')
 
 /**
  * A full page load of the home page, deliberately not `useRouter().push()`.
@@ -924,6 +948,7 @@ function AccountSection({
    *  free-plan visitors to an API error page. */
   hasSubscription: boolean
 }) {
+  useDeepWords()
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   /** Which confirmation is on screen, if any. Only ever one at a time. */
@@ -972,7 +997,7 @@ function AccountSection({
 
   return (
     <Surface radius='3xl' className='animate-card-enter p-5 sm:p-6'>
-      <h2 className='text-lg font-semibold text-white'>Account</h2>
+      <h2 className='text-lg font-semibold text-white'>{d('Account')}</h2>
 
       <div className='mt-3 flex items-center gap-3'>
         <Avatar identity={identity} size={44} />
@@ -980,7 +1005,7 @@ function AccountSection({
           {identity.name && (
             <p className='truncate text-sm font-semibold text-white'>{identity.name}</p>
           )}
-          <p className='truncate text-sm text-white/60'>{identity.email ?? 'Signed in'}</p>
+          <p className='truncate text-sm text-white/60'>{identity.email ?? d('Signed in')}</p>
         </div>
       </div>
 
@@ -990,14 +1015,14 @@ function AccountSection({
           onClick={() => void signOutAndGoHome()}
           className={SECONDARY_BUTTON_CLASS}
         >
-          Sign out
+          {d('Sign out')}
         </button>
         <button
           type='button'
           onClick={() => setConfirming('signout-all')}
           className={SECONDARY_BUTTON_CLASS}
         >
-          Sign out everywhere
+          {d('Sign out everywhere')}
         </button>
       </div>
 
@@ -1013,7 +1038,7 @@ function AccountSection({
             className='h-3 w-3 transition-transform duration-200 group-open:rotate-180'
             aria-hidden
           />
-          Close this account
+          {d('Close this account')}
         </summary>
 
         <div className='mt-3'>
@@ -1022,13 +1047,16 @@ function AccountSection({
               // Points at the plan card rather than the billing portal: cancelling
               // is done there now, and sending someone to Creem's portal to do it
               // is exactly the path that would cost them their remaining months.
-              <>
-                Deleting your account does not cancel your subscription. Use{' '}
-                <span className='text-white/70'>Cancel plan</span> above first, or it
-                will keep renewing after the account is gone.
-              </>
+              <Rich
+                text={d(
+                  'Deleting your account does not cancel your subscription. Use {cancel} above first, or it will keep renewing after the account is gone.',
+                )}
+                parts={{
+                  cancel: <span className='text-white/70'>{d('Cancel plan')}</span>,
+                }}
+              />
             ) : (
-              'Deleting your account removes your email address, your preferences, and every signed-in session. It cannot be undone.'
+              d('Deleting your account removes your email address, your preferences, and every signed-in session. It cannot be undone.')
             )}
           </p>
           <button
@@ -1037,7 +1065,7 @@ function AccountSection({
             disabled={deleting}
             className='btn-danger btn-press mt-3 rounded-xl px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50'
           >
-            {deleting ? 'Deleting…' : 'Delete account'}
+            {deleting ? d('Deleting…') : d('Delete account')}
           </button>
           {deleteError && <p className='mt-2 text-xs text-red-300'>{deleteError}</p>}
         </div>
@@ -1046,9 +1074,9 @@ function AccountSection({
       <ConfirmDialog
         open={confirming === 'signout-all'}
         tone='neutral'
-        title='Sign out everywhere?'
-        body='Every device currently signed in to this account will be signed out, including this one. Nothing else changes, and you can sign back in with Google at any time.'
-        confirmLabel='Sign out everywhere'
+        title={d('Sign out everywhere?')}
+        body={d('Every device currently signed in to this account will be signed out, including this one. Nothing else changes, and you can sign back in with Google at any time.')}
+        confirmLabel={d('Sign out everywhere')}
         onCancel={() => setConfirming(null)}
         onConfirm={() => {
           setConfirming(null)
@@ -1057,13 +1085,13 @@ function AccountSection({
       />
       <ConfirmDialog
         open={confirming === 'delete'}
-        title='Delete your account?'
+        title={d('Delete your account?')}
         body={
           hasSubscription
-            ? 'This does not cancel your subscription. It will keep renewing after the account is gone, so use "Cancel plan" on your plan card first. Your email address, preferences and sessions are removed, and this cannot be undone.'
-            : 'Your email address, preferences and every signed-in session are removed. This cannot be undone.'
+            ? d('This does not cancel your subscription. It will keep renewing after the account is gone, so use "Cancel plan" on your plan card first. Your email address, preferences and sessions are removed, and this cannot be undone.')
+            : d('Your email address, preferences and every signed-in session are removed. This cannot be undone.')
         }
-        confirmLabel='Delete my account'
+        confirmLabel={d('Delete my account')}
         onCancel={() => setConfirming(null)}
         onConfirm={() => void handleDelete()}
       />
@@ -1109,6 +1137,7 @@ function PlanPlaceholder() {
  * The retry is a button, not a timer: nothing on this page may poll.
  */
 function LoadFailed() {
+  useDeepWords()
   const [retrying, setRetrying] = useState(false)
 
   async function retry(): Promise<void> {
@@ -1120,8 +1149,9 @@ function LoadFailed() {
   return (
     <Surface radius='3xl' className='animate-card-enter p-6 text-center sm:p-8'>
       <p className='text-sm text-white/70'>
-        We couldn&rsquo;t load your account. Accounts may not be switched on yet, or the connection
-        dropped.
+        {d(
+          'We couldn’t load your account. Accounts may not be switched on yet, or the connection dropped.',
+        )}
       </p>
       <button
         type='button'
@@ -1129,20 +1159,21 @@ function LoadFailed() {
         disabled={retrying}
         className={`${SECONDARY_BUTTON_CLASS} mt-4 disabled:cursor-not-allowed disabled:opacity-50`}
       >
-        {retrying ? 'Trying…' : 'Try again'}
+        {retrying ? d('Trying…') : d('Try again')}
       </button>
     </Surface>
   )
 }
 
 function SignInPrompt() {
+  useDeepWords()
   return (
     <Surface glow radius='3xl' className='animate-card-enter p-6 text-center sm:p-8'>
-      <p className='text-sm text-white/70'>Sign in to see your plan and manage your account.</p>
+      <p className='text-sm text-white/70'>{d('Sign in to see your plan and manage your account.')}</p>
       {/* Home, not back to this page. Signing in is a means to using the
           downloader, so it ends where the downloader is. */}
       <a href={signInHref()} className={`${ACTION_BUTTON_CLASS} mt-4`}>
-        Sign in with Google
+        {d('Sign in with Google')}
       </a>
     </Surface>
   )
@@ -1160,8 +1191,8 @@ function SignInPrompt() {
  */
 const NOTICES: Record<string, Record<string, string>> = {
   billing: {
-    none: 'There is no subscription on this account, so there is nothing to manage yet.',
-    unavailable: 'The billing portal could not be opened just now. Please try again in a minute.',
+    none: dn('There is no subscription on this account, so there is nothing to manage yet.'),
+    unavailable: dn('The billing portal could not be opened just now. Please try again in a minute.'),
   },
   /**
    * A sign-in that came back from Google without a usable session. Sent here
@@ -1171,10 +1202,11 @@ const NOTICES: Record<string, Record<string, string>> = {
    * is that way forward.
    */
   signin: {
-    expired:
+    expired: dn(
       'That sign-in took too long, or it started in a different browser. Please try again from here.',
-    failed: 'Google could not complete the sign-in. Please try again.',
-    email: 'Google did not return a verified email address, so no account could be created.',
+    ),
+    failed: dn('Google could not complete the sign-in. Please try again.'),
+    email: dn('Google did not return a verified email address, so no account could be created.'),
   },
 }
 
@@ -1204,6 +1236,7 @@ function Notice({ children }: { children: string }) {
 }
 
 export function AccountPanel() {
+  const wordsReady = useDeepWords()
   // `userId` is no longer destructured here: it existed to bind a buyer to a
   // checkout, and there is no checkout.
   const { signedIn, failed, pro, email, name, picture, plan } = useAccount()
@@ -1229,6 +1262,10 @@ export function AccountPanel() {
   // while the token in hand is still fresh, so a tab merely being switched
   // back to costs nothing.
   useOnPageVisible(syncAccount)
+
+  // On a translated page the first text here is rare words still in flight:
+  // showing them in English and swapping was this page's only layout shift.
+  if (!wordsReady) return <Skeleton />
 
   if (signedIn === undefined && failed) return <LoadFailed />
 
@@ -1259,7 +1296,7 @@ export function AccountPanel() {
   if (!settled) {
     return (
       <div className='space-y-6'>
-        {notice && <Notice>{notice}</Notice>}
+        {notice && <Notice>{dKnown(notice)}</Notice>}
         <SignInPrompt />
       </div>
     )
@@ -1267,7 +1304,7 @@ export function AccountPanel() {
 
   return (
     <div className='space-y-6'>
-      {notice && <Notice>{notice}</Notice>}
+      {notice && <Notice>{dKnown(notice)}</Notice>}
       {/* The plan is the one card the browser cannot answer on its own. It
           waits only for someone the cache remembers as entitled; for everyone
           else `plan: null` IS their plan, so the real card renders at once.

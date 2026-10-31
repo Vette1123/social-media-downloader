@@ -31,13 +31,19 @@ export function localePath(locale: Locale, path: string): string {
   return path === '/' ? `/${locale}` : `/${locale}${path}`
 }
 
-/** Home and the platform pages are the only pages that exist in every language. */
+const INFO_PAGES = ['pro', 'privacy', 'terms', 'account']
+
 export function isLocalizedPath(path: string): boolean {
   const bare = path.replace(/\/+$/, '') || '/'
-  return bare === '/' || (PLATFORM_SLUGS as readonly string[]).includes(bare.slice(1))
+  const page = bare.slice(1)
+  return (
+    bare === '/' ||
+    INFO_PAGES.includes(page) ||
+    (PLATFORM_SLUGS as readonly string[]).includes(page)
+  )
 }
 
-/** This page in another language, or null when it only exists in English. */
+/** This page in another language, or null for a URL that is not a page. */
 export function equivalentPath(pathname: string, locale: Locale): string | null {
   const bare = stripLocale(pathname.replace(/\/+$/, '') || '/')
   return isLocalizedPath(bare) ? localePath(locale, bare) : null

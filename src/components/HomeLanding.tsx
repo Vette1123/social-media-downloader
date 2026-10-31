@@ -22,7 +22,6 @@ import {
 } from '@/components/icons'
 import { DevAppLinks } from '@/components/DevAppLinks'
 import { SiteFooter } from '@/components/SiteFooter'
-import { WHATS_NEW } from '@/config/whatsNew'
 import type { Locale } from '@/lib/i18n'
 import { contentFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
@@ -402,17 +401,16 @@ export function HomeLanding({ locale = 'en' }: { locale?: Locale }) {
           {/* ---------------------------------------------------------------
               WHAT'S NEW — proof of life, four lines, newest first. Config-fed
               (src/config/whatsNew.ts) and pruned rather than accumulated, so
-              it never becomes a wall nobody reads. English only: a dated
-              changelog is the one section a translation would let go stale.
+              it never becomes a wall nobody reads.
           ---------------------------------------------------------------- */}
-          {locale === 'en' && WHATS_NEW.length > 0 && (
+          {home.whatsNew.length > 0 && (
             <section className='defer-render mt-16 sm:mt-24'>
               <SectionHead
                 title={home.whatsNewTitle}
                 sub={home.whatsNewSub}
               />
               <ol className='mx-auto grid max-w-3xl gap-2.5'>
-                {WHATS_NEW.map((item) => (
+                {home.whatsNew.map((item) => (
                   // <li> rather than the Surface directly: an <ol> may only
                   // contain list items, and a dated changelog is exactly the
                   // ordered list a screen reader should announce as one.

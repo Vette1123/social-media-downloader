@@ -5,6 +5,7 @@ import { Surface } from '@/components/Surface'
 import { SUPPORT_PRICES } from '@/config/support'
 import { fill, type Locale } from '@/lib/i18n'
 import { contentFor } from '@/lib/localeContent'
+import { localePath } from '@/lib/localeRoutes'
 
 /**
  * The ask, on the home page and on every platform landing page.
@@ -49,7 +50,7 @@ export function SupportPanel({
           </p>
         </div>
         <Link
-          href='/pro'
+          href={localePath(locale, '/pro')}
           data-pro-cta='support_panel'
           className='btn-grad inline-flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold whitespace-nowrap'
         >
@@ -78,7 +79,7 @@ export function SupportPanel({
 
         <div className='mt-6 flex flex-wrap items-center gap-4'>
           <Link
-            href='/pro'
+            href={localePath(locale, '/pro')}
             data-pro-cta='support_monthly'
             className='btn-grad inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold whitespace-nowrap'
           >
@@ -86,7 +87,7 @@ export function SupportPanel({
             {fill(support.monthly, { monthly: SUPPORT_PRICES.monthly })}
           </Link>
           <Link
-            href='/pro'
+            href={localePath(locale, '/pro')}
             data-pro-cta='support_lifetime'
             className='text-sm text-white/60 underline-offset-4 transition-colors hover:text-white hover:underline'
           >
