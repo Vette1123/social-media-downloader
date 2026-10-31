@@ -62,6 +62,18 @@ export const OFFERS: readonly Offer[] = [
     label: 'Our app',
   },
   {
+    id: 'rafiq',
+    headline: 'Prayer, Qur’an and adhkar in one place',
+    body: 'Rafiq is a private companion for prayer, Qur’an, adhkar and qibla, from the people behind this site.',
+    cta: 'Get Rafiq',
+    href: 'https://vette1123.github.io/rafiq-privacy/go',
+    weight: 1,
+    platforms: 'all',
+    placements: ['post-result', 'in-content'],
+    image: '/promo/rafiq.png',
+    label: 'Our app',
+  },
+  {
     id: 'hitpaw-converter',
     headline: 'Convert and edit what you just saved',
     body: 'HitPaw Video Converter handles 1000+ formats, batch conversion, and quick edits on desktop.',
@@ -79,9 +91,7 @@ export const OFFERS: readonly Offer[] = [
     // Redirects to pcloud.com/lifetime. 20% of a $199-399 lifetime plan, and
     // the subid survives the redirect chain through to landing.pcloud.com, so
     // placement attribution works off this one link.
-    // Benched for Masareef: the slot's seed never changes, so two live offers
-    // would not rotate, one would simply never show. Set to 1 and Masareef to 0
-    // to swap back.
+    // Benched for our own apps. Set to 1 and those to 0 to swap back.
     href: 'https://partner.pcloud.com/r/156822',
     weight: 0,
     platforms: 'all',

@@ -52,6 +52,10 @@ cookies omitted, so the session is only needed to find them.
   this page's escaped URLs, so the reused helper returned nothing. Look at the card, and
   read a reused helper against the new page's shape.
 
+- The owner and caption were read from the browser's `document.scripts`, which is not the
+  HTML a server gets. In the raw page they sit past every list. Test a parser on
+  `fetch()` of the page, not the DOM after it ran.
+
 ## What worked
 
 - Headless Chrome with an empty `--user-data-dir` and `--screenshot`. It is a private

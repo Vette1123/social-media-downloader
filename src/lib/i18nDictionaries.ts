@@ -117,6 +117,9 @@ const es: Record<TKey, string> = {
   offerMasareefBody: "Masareef es un control de gastos multimoneda que funciona sin conexión, hecho por los creadores de este sitio.",
   offerMasareefCta: "Conseguir Masareef",
   offerMasareefLabel: "Nuestra app",
+  offerRafiqHeadline: "Oración, Corán y adhkar en un solo lugar",
+  offerRafiqBody: "Rafiq es un compañero privado para oración, Corán, adhkar y qibla, hecho por los creadores de este sitio.",
+  offerRafiqCta: "Conseguir Rafiq",
   iosSaveHint: "En iPhone se guarda en Archivos. Para añadirlo a Fotos, abre el archivo, toca Compartir y luego Guardar video.",
 }
 
@@ -235,6 +238,9 @@ const pt: Record<TKey, string> = {
   offerMasareefBody: "O Masareef é um controle de gastos multimoeda que funciona offline, feito pelas pessoas por trás deste site.",
   offerMasareefCta: "Baixar o Masareef",
   offerMasareefLabel: "Nosso app",
+  offerRafiqHeadline: "Oração, Alcorão e adhkar em um só lugar",
+  offerRafiqBody: "O Rafiq é um companheiro privado para oração, Alcorão, adhkar e qibla, feito pelas pessoas por trás deste site.",
+  offerRafiqCta: "Baixar o Rafiq",
   iosSaveHint: "No iPhone, ele é salvo em Arquivos. Para levar às Fotos, abra o arquivo, toque em Compartilhar e depois em Salvar Vídeo.",
 }
 
@@ -353,6 +359,9 @@ const id: Record<TKey, string> = {
   offerMasareefBody: "Masareef adalah pencatat pengeluaran multi-mata uang yang mengutamakan offline, dari orang-orang di balik situs ini.",
   offerMasareefCta: "Dapatkan Masareef",
   offerMasareefLabel: "Aplikasi kami",
+  offerRafiqHeadline: "Salat, Al-Qur’an, dan zikir dalam satu tempat",
+  offerRafiqBody: "Rafiq adalah pendamping pribadi untuk salat, Al-Qur’an, zikir, dan kiblat, dari orang-orang di balik situs ini.",
+  offerRafiqCta: "Dapatkan Rafiq",
   iosSaveHint: "Di iPhone, file tersimpan di Berkas. Untuk memasukkannya ke Foto, buka file, ketuk Bagikan, lalu Simpan Video.",
 }
 
@@ -471,6 +480,9 @@ const ar: Record<TKey, string> = {
   offerMasareefBody: "Masareef متتبع مصروفات متعدد العملات يعمل دون اتصال أولًا، من صنّاع هذا الموقع.",
   offerMasareefCta: "احصل على Masareef",
   offerMasareefLabel: "تطبيقنا",
+  offerRafiqHeadline: "الصلاة والقرآن والأذكار في مكان واحد",
+  offerRafiqBody: "Rafiq رفيق خاص للصلاة والقرآن والأذكار والقبلة، من صانعي هذا الموقع.",
+  offerRafiqCta: "احصل على Rafiq",
   iosSaveHint: "على iPhone يُحفظ في الملفات. لإضافته إلى الصور افتح الملف، ثم اضغط مشاركة، ثم حفظ الفيديو.",
 }
 
