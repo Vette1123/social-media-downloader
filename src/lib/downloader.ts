@@ -492,7 +492,8 @@ const FB_REEL_ID_SPAN = 20_000
 /** A reel's details end by here; the live page has them within 55 KB. */
 const FB_REEL_SECTION_SPAN = 100_000
 /** How close the owner and caption sit to the `"id"` that ties them to a reel. */
-const FB_STORY_SPAN = 2_000
+const FB_OWNER_SPAN = 2_000
+const FB_CAPTION_SPAN = 12_000
 
 /** The first capture of `pattern`, undone from JSON-string escaping. */
 function facebookField(section: string, pattern: RegExp): string {

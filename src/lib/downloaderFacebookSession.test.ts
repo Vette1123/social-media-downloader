@@ -20,6 +20,7 @@ const details = (tag: string) =>
 /** The page puts these far past every list, tied to the reel only by its id. */
 const story = (id: string, tag: string) =>
   `"owner":{"__typename":"User","__isActor":"User","id":"615","name":"${tag} owner","is_verified":false,"url":"x"},"woodhenge_creator_info":null}},"id":"${id}","video_owner_type":"x"},` +
+  `${'"pad":1,'.repeat(800)}` +
   `"message":{"text":"${tag} caption \\ud83d\\udda4","ranges":[]}`
 
 const block = (id: string, tag: string) =>
