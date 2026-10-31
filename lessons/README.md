@@ -95,3 +95,4 @@ the index for exactly that.
 | 2026-10-31 | [A Facebook reel behind the login wall](2026-10-31-facebook-reel-behind-login-wall.md) | One failing link proves nothing until a known-good control passes the same surface |
 | 2026-10-31 | [Rafiq in the offer slot](2026-10-31-rafiq-in-the-offer-slot.md) | Two equal offers on a fixed seed means one never shows |
 | 2026-10-31 | [Both apps at once](2026-10-31-both-apps-at-once.md) | A test for "the user sees both" follows one user on one page |
+| 2026-10-31 | [Everything to latest](2026-10-31-everything-to-latest.md) | Read `package.json` before naming a dependency: a comment outlives what it describes |

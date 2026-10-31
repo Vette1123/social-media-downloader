@@ -9,7 +9,7 @@ import { nativeMediaAvailable } from './nativeMedia'
  * IP), which — unlike the public Cobalt/Piped instances on datacenter IPs —
  * YouTube does not bot-block when running from a residential connection. It is
  * therefore the most reliable YouTube source when the binary is available
- * (local dev / a self-hosted box). When it isn't (e.g. the Vercel serverless
+ * (local dev / a self-hosted box). When it isn't (e.g. a serverless
  * runtime, where the binary isn't shipped), every call here fails gracefully so
  * the caller can fall back to the public extractors / embed.
  *

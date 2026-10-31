@@ -8,7 +8,7 @@
  *
  * Two shapes have to be tolerated:
  *
- *   1. Lazy use — src/lib/ytdlp.ts and src/lib/audioExtractor.ts load these via
+ *   1. Lazy use — src/lib/ytdlp.ts loads these via
  *      `await import(...)` inside a try/catch and fall back to the network
  *      extractors when it fails. Throwing on call reproduces exactly the
  *      "binary not available" path they were written for.

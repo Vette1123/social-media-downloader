@@ -3,7 +3,7 @@
  *
  * They need a subprocess and a writable filesystem. That holds locally and on a
  * self-hosted box, but not on Cloudflare Workers (workerd has neither) and not
- * on Vercel's serverless runtime (the binaries aren't shipped there). The routes
+ * on a serverless runtime (the binaries aren't shipped there). The routes
  * that depend on them already degrade gracefully, but "gracefully" still meant
  * doing the expensive part first — /api/slideshow downloads every frame into
  * memory before it ever reaches ffmpeg. Checking up front turns a doomed request

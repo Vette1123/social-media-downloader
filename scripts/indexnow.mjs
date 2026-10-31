@@ -3,13 +3,10 @@
  * (Bing, Yandex, Seznam, Naver, …) re-crawl changed pages within minutes
  * instead of waiting for their normal cycle. One POST notifies all of them.
  *
- *   pnpm indexnow          submit every canonical URL
- *   pnpm indexnow --force  submit even outside a Vercel production build
+ *   pnpm indexnow   submit every canonical URL
  *
- * Wired as `postbuild` (see package.json + .npmrc `enable-pre-post-scripts`),
- * so every production deploy pings automatically. A guard skips local/preview
- * builds, and every failure is logged and swallowed — a flaky search-engine
- * endpoint must never fail a deploy.
+ * The deploy workflow runs it after every production deploy. Every failure is
+ * logged and swallowed: a flaky search-engine endpoint must never fail a deploy.
  *
  * Ownership: public/<key>.txt is served at the site root. IndexNow fetches it
  * to confirm we own the host before honoring the submission.
@@ -49,15 +46,6 @@ async function collectUrls() {
 }
 
 async function main() {
-  const force = process.argv.includes('--force')
-  const isVercelProd = process.env.VERCEL_ENV === 'production'
-  if (!force && !isVercelProd) {
-    console.log(
-      `IndexNow: skipped (VERCEL_ENV=${process.env.VERCEL_ENV ?? 'unset'}; pass --force to submit anyway).`
-    )
-    return
-  }
-
   const urlList = await collectUrls()
   const res = await fetch(ENDPOINT, {
     method: 'POST',

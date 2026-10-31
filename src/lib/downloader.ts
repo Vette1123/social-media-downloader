@@ -316,7 +316,7 @@ function pickTikwmCover(
 // store. Some free hosts hand the resolver a rotating/temporary public URL with
 // no API to read it back, so the resolver publishes its own live URL to this
 // store and we read it here — rotation heals with no env changes. Credentials
-// come from env (Vercel) only; nothing sensitive lands in the repo. The value is
+// come from env only; nothing sensitive lands in the repo. The value is
 // cached in-process briefly so a burst of requests doesn't hammer the store.
 let _resolverCache: { url: string | null; at: number } = { url: null, at: 0 }
 const RESOLVER_DISCOVERY_TTL_MS = 60_000
@@ -1200,7 +1200,7 @@ export class Downloader {
 
   // Cobalt instances, tried in order. Cobalt tunnels the media, so the URL it
   // returns plays cross-origin (unlike a raw CDN URL) — which is what makes it
-  // work from datacenter hosts (Vercel) for TikTok, and as a login-free source
+  // work from datacenter hosts for TikTok, and as a login-free source
   // for YouTube/Twitter/Instagram/Facebook.
   //
   // The public instance is tried FIRST (it's warm and fast); self-hosted
@@ -1261,7 +1261,7 @@ export class Downloader {
   // Optional Instagram session cookie (the `sessionid` value). Public posts
   // work without it, and the extractor degrades gracefully when it's absent or
   // expired. Use a burner account: Instagram may flag an account for automated
-  // access from datacenter (e.g. Vercel) IPs.
+  // access from datacenter IPs.
   //
   // Two conditions, both required. IG_SESSIONID must be set on the deployment,
   // *and* this instance must have been constructed credentialed — which happens
@@ -1573,7 +1573,7 @@ export class Downloader {
    * Generic extractor for platforms without a bespoke path. Cobalt tunnels the
    * media through its own server, so the returned URL isn't bound to a signed
    * CDN session and streams from any IP — the only extraction path that works
-   * on a datacenter host (Vercel) for these sources. Handles single videos and
+   * on a datacenter host for these sources. Handles single videos and
    * image/gallery pickers (Cobalt returns a picker for multi-image posts).
    */
   private async downloadGeneric(
@@ -2169,7 +2169,7 @@ export class Downloader {
    *      currently bot-blocked. Sparse metadata, so title/author/thumbnail are
    *      enriched from YouTube's public oEmbed endpoint.
    *   3. Embed fallback — when no extractor can produce a stream (e.g. on a
-   *      datacenter host like Vercel), return the official embed so the video
+   *      datacenter host), return the official embed so the video
    *      is still viewable.
    */
   private async downloadYouTube(url: string): Promise<VideoData> {
@@ -2452,7 +2452,7 @@ export class Downloader {
     //        uncredentialed resolve.
     //      - Cobalt — the datacenter-reachable rescue. Instagram's own signed
     //        video CDN URLs are frequently refused with an HTTP 500/403 when
-    //        re-fetched from a datacenter IP (e.g. Vercel), even though
+    //        re-fetched from a datacenter IP, even though
     //        extraction succeeded — so the /api/video proxy can't stream them
     //        and the player is dead. Cobalt re-extracts the clip and hands
     //        back a URL that DOES stream from any IP. It is also the one that
@@ -2498,7 +2498,7 @@ export class Downloader {
           // Confirm the stream actually serves bytes from THIS host, and that
           // those bytes are a video, before committing to it. Instagram's
           // signed CDN URLs often 500/403 when re-fetched from a datacenter IP
-          // (Vercel) even though extraction worked — which renders a dead
+          // even though extraction worked — which renders a dead
           // player. And a Cobalt tunnel that failed to extract the clip streams
           // the cover JPEG perfectly happily, which is worse: it passes a
           // reachability check and downloads as a picture named .mp4.
@@ -2948,7 +2948,7 @@ export class Downloader {
     //     returns isn't bound to TikTok's signed CDN session and plays from any
     //     IP (the raw playAddr that snaptik/direct-scrape hand back 403s when
     //     re-fetched from a different host — which is why TikTok broke on
-    //     Vercel). Measured 8.3s for the same post.
+    //     a datacenter host). Measured 8.3s for the same post.
     //
     // In sequence that was ~16s of cold resolve, because the visitor paid
     // tikwm's queue in full before Cobalt was even asked. Raced, the answer
@@ -2965,7 +2965,7 @@ export class Downloader {
     // sequential: each is either free (yt-dlp, absent on workerd) or expensive
     // and unlikely (the public scrapers).
     //   - yt-dlp — fast + reliable locally (residential IP), unavailable on
-    //     Vercel/workerd, where it returns null.
+    //     workerd, where it returns null.
     //   - the remaining public scrapers as last resorts (snaptik ships
     //     obfuscated JS, ssstik needs a rotating token). Skipped where page
     //     scraping cannot work — see htmlScrapingAvailable() — because they are
@@ -3007,7 +3007,7 @@ export class Downloader {
    * result whose video/audio point at the same-origin /api/tiktok streaming
    * endpoint, which lets yt-dlp do the actual fetch server-side (TikTok's CDN
    * URLs are signed against the extracting session and can't be replayed by the
-   * plain media proxy). Returns null when yt-dlp is unavailable (e.g. Vercel) or
+   * plain media proxy). Returns null when yt-dlp is unavailable or
    * the video can't be reached here, so the next method gets a turn.
    */
   private async tryYtDlpTikTok(url: string): Promise<VideoData | null> {
@@ -3030,7 +3030,7 @@ export class Downloader {
   }
 
   /**
-   * TikTok via Cobalt — the reliable path on datacenter hosts (Vercel). Cobalt
+   * TikTok via Cobalt — the reliable path on datacenter hosts. Cobalt
    * tunnels the media through its own server, so the returned URL plays from any
    * IP, unlike TikTok's signed CDN URLs (which 403 when re-fetched elsewhere).
    * The tunnel serves browser-friendly H.264 with range support, so it drives

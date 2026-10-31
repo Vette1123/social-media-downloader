@@ -37,9 +37,6 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Linux, deliberately: the OpenNext bundler mirrors pnpm's nested
-    # node_modules using symlinks, which Windows refuses without Developer Mode
-    # or elevation.
     timeout-minutes: 20
 
     steps:
@@ -103,7 +100,7 @@ jobs:
       # search-engine endpoint must never fail a deploy.
       - name: Ping IndexNow
         if: github.event_name != 'pull_request'
-        run: node scripts/indexnow.mjs --force
+        run: node scripts/indexnow.mjs
 
   # The deploy is not the verification. This is: 148 assertions against the
   # live origin — every API route, the static-asset headers that prove pages are
