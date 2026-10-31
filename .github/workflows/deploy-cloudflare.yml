@@ -43,7 +43,10 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      # Full history: sitemap lastmod is each page's last commit (src/config/build.ts).
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       # No `version:` input on purpose — package.json's `packageManager` field
       # pins the exact pnpm release, and the action errors out if both are set.

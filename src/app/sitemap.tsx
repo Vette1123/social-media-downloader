@@ -1,5 +1,9 @@
 import type { MetadataRoute } from 'next'
-import { buildDate } from '@/config/build'
+import {
+  HOME_PAGE_SOURCES,
+  lastChanged,
+  PLATFORM_PAGE_SOURCES,
+} from '@/config/build'
 import { siteConfig } from '@/config/site'
 import { platforms } from '@/lib/platforms'
 
@@ -8,12 +12,10 @@ import { platforms } from '@/lib/platforms'
 // declared itself static.
 export const dynamic = 'force-static'
 
-const lastModified = buildDate
-
 export default function sitemap(): MetadataRoute.Sitemap {
   const home: MetadataRoute.Sitemap[number] = {
     url: siteConfig.url,
-    lastModified,
+    lastModified: lastChanged(HOME_PAGE_SOURCES),
     changeFrequency: 'weekly',
     priority: 1,
     alternates: {
@@ -25,11 +27,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     images: [`${siteConfig.url}/opengraph-image`],
   }
 
+  const platformsChanged = lastChanged(PLATFORM_PAGE_SOURCES)
   const platformEntries = platforms.map<MetadataRoute.Sitemap[number]>((p) => {
     const url = `${siteConfig.url}/${p.slug}`
     return {
       url,
-      lastModified,
+      lastModified: platformsChanged,
       changeFrequency: 'monthly',
       priority: 0.8,
       alternates: {
@@ -49,7 +52,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       const url = `${siteConfig.url}${path}`
       return {
         url,
-        lastModified,
+        lastModified: lastChanged([`src/app${path}/page.tsx`]),
         changeFrequency: 'monthly',
         priority: 0.5,
         alternates: {

@@ -1,7 +1,21 @@
-import { describe, expect, it } from 'vitest'
-import { LOCALES, isLocale, isRtl, translate, type TKey } from './i18n'
+import { readFileSync } from 'node:fs'
+import { beforeAll, describe, expect, it } from 'vitest'
+import {
+  LOCALES,
+  isLocale,
+  isRtl,
+  loadDictionaries,
+  translate,
+  type TKey,
+} from './i18n'
+
+beforeAll(loadDictionaries)
 
 describe('translate', () => {
+  it('keeps other languages out of the English bundle', () => {
+    expect(readFileSync('src/lib/i18n.ts', 'utf8')).not.toContain('Pega un enlace')
+  })
+
   it('falls back per-key to English when a dictionary lacks the key', () => {
     // Every dictionary here is complete for these keys, so prove the
     // fallback with a key only English defines by construction: ask in ar

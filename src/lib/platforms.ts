@@ -755,7 +755,7 @@ export const platforms: Platform[] = [
     slug: 'twitch-clip-downloader',
     name: 'Twitch',
     brandLabel: 'Twitch clip & VOD downloader',
-    metaTitle: 'Twitch Clip Downloader — Save Clips & VODs in HD, No Login',
+    metaTitle: 'Twitch Clip Downloader — Save Clips & VODs in HD',
     metaDescription:
       'Download Twitch clips and VODs in HD as MP4. Paste a clips.twitch.tv, twitch.tv/…/clip/, or twitch.tv/videos/ link and save instantly — free, no login.',
     h1: 'Twitch Clip & VOD Downloader — HD MP4',

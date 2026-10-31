@@ -1,11 +1,9 @@
-'use client'
-
 import Link from '@/components/IntentLink'
+import { HiddenForPro } from '@/components/HiddenForPro'
 import { CheckIcon, CoffeeIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
 import { PRO_BENEFITS } from '@/config/pro'
 import { SUPPORT_PRICES } from '@/config/support'
-import { useTier } from '@/lib/entitlements'
 
 /**
  * The ask, on the home page and on every platform landing page.
@@ -28,16 +26,9 @@ import { useTier } from '@/lib/entitlements'
  * prohibits, and it does not stop being true because there is no processor.
  */
 export function SupportPanel({ variant = 'full' }: { variant?: 'full' | 'compact' }) {
-  const tier = useTier()
-
-  // Rendered by default and hidden only once the client confirms the extras are
-  // already on. The reverse (wait for hydration, then show) would leave a hole
-  // in the page for every visitor in order to spare the few who support this,
-  // and this is a marketing section where that hole is the whole cost.
-  if (tier === 'pro') return null
-
   if (variant === 'compact') {
     return (
+      <HiddenForPro>
       <Surface
         tone='accent'
         interaction='lift'
@@ -61,10 +52,12 @@ export function SupportPanel({ variant = 'full' }: { variant?: 'full' | 'compact
           Buy me a coffee
         </Link>
       </Surface>
+      </HiddenForPro>
     )
   }
 
   return (
+    <HiddenForPro>
     <Surface
       tone='accent'
       radius='3xl'
@@ -116,5 +109,6 @@ export function SupportPanel({ variant = 'full' }: { variant?: 'full' | 'compact
         ))}
       </ul>
     </Surface>
+    </HiddenForPro>
   )
 }

@@ -5,7 +5,7 @@ import { siteConfig } from '@/config/site'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy — Social Media Downloader',
-  description: `How ${siteConfig.name} handles your data: no sign-up needed, a Google sign-in and nothing else for Pro, usage analytics to improve the site, no cross-site tracking.`,
+  description: `How ${siteConfig.name} handles your data: no sign-up needed, Google sign-in for Pro only, usage analytics, no cross-site tracking.`,
   alternates: { canonical: '/privacy' },
 }
 
