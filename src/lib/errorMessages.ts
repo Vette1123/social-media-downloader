@@ -3,6 +3,10 @@
 // text; this classifier normalises the common failure modes into a consistent
 // voice and adds an actionable hint, without swallowing genuinely novel errors.
 
+import { dKnown, dn, speaksEnglish } from '@/lib/i18nDeep'
+
+const GENERIC_HINT = dn('Something went wrong resolving the media. Try again in a moment.')
+
 export interface FriendlyError {
   /** Short headline shown in bold. */
   title: string
@@ -108,6 +112,26 @@ export function friendlyError(
   }
   return {
     title: 'Couldn’t process this link',
-    hint: text || 'Something went wrong resolving the media. Try again in a moment.',
+    hint: text || GENERIC_HINT,
   }
+}
+
+/**
+ * The banner line in the page's language. Server text has no translation, so
+ * where English would show it raw, a translated page says the general sentence.
+ */
+export function failureLine(
+  raw: string | undefined,
+  url?: string,
+  context: ErrorContext = {},
+): string {
+  const { title, hint } = friendlyError(raw, url, context)
+  const known = dKnown(hint)
+  const shown = known === hint && !speaksEnglish() ? dKnown(GENERIC_HINT) : known
+  return `${dKnown(title)} — ${shown}`
+}
+
+/** For a short slot: the server's words in English, the headline elsewhere. */
+export function failureTitle(raw: string): string {
+  return speaksEnglish() ? raw : dKnown(friendlyError(raw).title)
 }

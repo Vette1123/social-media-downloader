@@ -93,6 +93,8 @@ export function d(english: string, vars?: Vars): string {
 /** Marks a sentence kept in data, for the extractor. Shown later with `dKnown`. */
 export const dn = (english: string): string => english
 
+export const speaksEnglish = (): boolean => active === 'en'
+
 /** A sentence that arrives in a variable. Text no dictionary has shows as it is. */
 export function dKnown(text: string): string {
   return loaded[active]?.[text] ?? text

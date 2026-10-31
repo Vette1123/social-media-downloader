@@ -81,8 +81,6 @@
   "Next slide": "Próximo slide",
   "None": "Nenhum",
   "Nothing further will be charged.": "Nada mais será cobrado.",
-  "Nothing is billing and there is nothing to cancel.": "Não há nenhuma cobrança em andamento e nada para cancelar.",
-  "Nothing is for sale and nothing renews. Supporters get the extras switched on by hand — donate, then email {email} and give it a day.": "Nada está à venda e nada renova. Os extras dos apoiadores são ativados à mão — faça uma doação, escreva para {email} e dê um dia.",
   "Off: a resolved link waits on the card until you tap Download.": "Desligado: um link resolvido fica esperando no card até você tocar em Baixar.",
   "Off: nothing is read from your clipboard unless you press Paste.": "Desligado: nada é lido da sua área de transferência a menos que você pressione Colar.",
   "Only public posts can be downloaded. Make sure the account and post are public, then try again.": "Só posts públicos podem ser baixados. Confira se a conta e o post são públicos e tente de novo.",
@@ -214,5 +212,14 @@
   "{n} photo/audio item(s) saved as a ZIP.": "{n} item(ns) de foto ou áudio salvo(s) como ZIP.",
   "{n} saved": "{n} salvos",
   "{n} {noun} downloaded as ZIP! 🗜️": "{n} itens baixados como ZIP! 🗜️",
-  "← Back to the downloader": "← Voltar ao downloader"
+  "← Back to the downloader": "← Voltar ao downloader",
+  "Nothing is billed here. A membership is managed on Buy Me a Coffee.": "Nada é cobrado aqui. Uma assinatura é gerenciada no Buy Me a Coffee.",
+  "A membership switches the extras on by itself for the address you pay with. Paid under a different address, or sent a one-off coffee? Email {email} and give it a day.": "Uma assinatura ativa os extras por si só para o endereço com que você paga. Pagou com outro endereço ou enviou um café avulso? Envie um e-mail para {email} e aguarde um dia.",
+  "Cancelled": "Cancelado",
+  "No downloadable media": "Nenhuma mídia para baixar",
+  "Done": "Pronto",
+  "Queued": "Na fila",
+  "Failed to resolve": "Não foi possível resolver",
+  "Page not found": "Página não encontrada",
+  "Something went wrong resolving the media. Try again in a moment.": "Algo deu errado ao processar a mídia. Tente novamente em instantes."
 }

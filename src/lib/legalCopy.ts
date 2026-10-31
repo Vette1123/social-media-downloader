@@ -75,7 +75,8 @@ export const legalCopy = {
       {
         heading: 'Payments',
         paragraphs: [
-          'Nothing is sold on this site, so we take no payments and hold no billing data. If you support the project, that happens entirely on Buy Me a Coffee under their privacy policy — we never see your card details, and the only thing that reaches us is whatever you put in the email asking for the extras to be switched on.',
+          'Nothing is sold on this site, so we take no payments and hold no billing data. If you support the project, that happens entirely on Buy Me a Coffee under their privacy policy, and we never see your card details.',
+          'Buy Me a Coffee tells us the email address you paid with, the level you chose, and when a membership starts or ends. We keep that record so the extras can switch on for that address, including before you sign in here. It is removed when a membership ends; a lifetime record is kept so the extras stay yours. Deleting your account does not remove this record, because it belongs to the payment and not to the account: email {email} and we will erase it.',
         ],
       },
       {
@@ -145,10 +146,10 @@ export const legalCopy = {
       {
         heading: 'Supporting this project',
         paragraphs: [
-          'Nothing on {site} is for sale. There is no subscription, no plan, and no charge of any kind — if you are ever billed by something claiming to be this site, it is not us, and we would like to hear about it.',
-          'You can support the project voluntarily through Buy Me a Coffee. That is a donation, handled entirely by them under their own terms: it is one-off, it does not renew, and there is nothing here to cancel. As a thank-you we switch some conveniences on for your account — a batch queue, ZIP bundling for a run, priority resolve, custom file names, and no sponsor card — by hand, after you email us.',
-          'Those conveniences are a gift and not a purchased entitlement. We may change or withdraw them at any time, and because no sale takes place there is nothing to refund. None of them change what a link can reach; see above.',
-          'If you want a donation reversed, that is between you and Buy Me a Coffee, though emailing {email} first is usually faster.',
+          'Nothing on {site} is sold by us, and we never charge you directly. If you are ever billed by something claiming to be this site that is not Buy Me a Coffee, it is not us, and we would like to hear about it.',
+          'You can support the project voluntarily through Buy Me a Coffee: a monthly or yearly membership that renews until you cancel it, a lifetime level paid once, or a one-off coffee. Payment, renewal and cancellation are handled entirely by them under their own terms, and a membership is cancelled there, not here. A membership or the lifetime level switches some conveniences on by itself for the address you pay with, once you sign in here with that address: a batch queue, ZIP bundling for a run, priority resolve, custom file names, and no sponsor card. A membership’s conveniences end when the membership does. A one-off coffee switches nothing on by itself: email us and we will do it by hand, and the same goes if you paid under a different address.',
+          'Those conveniences are a gift and not a purchased entitlement. We may change or withdraw them at any time, and because we sell nothing there is nothing for us to refund. None of them change what a link can reach; see above.',
+          'If you want a payment reversed, that is between you and Buy Me a Coffee, though emailing {email} first is usually faster.',
         ],
       },
       {

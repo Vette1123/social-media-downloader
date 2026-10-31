@@ -11,8 +11,8 @@ import { contentFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
 import type { ReactNode } from 'react'
 
-const PRIVACY_UPDATED = '2026-10-30'
-const TERMS_UPDATED = '2026-08-10'
+const PRIVACY_UPDATED = '2026-10-31'
+const TERMS_UPDATED = '2026-10-31'
 
 const LINK = 'text-cyan-300 underline underline-offset-2 hover:text-cyan-200'
 

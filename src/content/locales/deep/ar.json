@@ -81,8 +81,6 @@
   "Next slide": "الشريحة التالية",
   "None": "لا شيء",
   "Nothing further will be charged.": "لن يُخصم أي مبلغ بعد ذلك.",
-  "Nothing is billing and there is nothing to cancel.": "لا توجد فوترة ولا شيء لإلغائه.",
-  "Nothing is for sale and nothing renews. Supporters get the extras switched on by hand — donate, then email {email} and give it a day.": "لا شيء معروض للبيع ولا شيء يتجدد. يحصل الداعمون على المزايا الإضافية بتفعيل يدوي: تبرّع، ثم راسل {email} وامنحنا يومًا.",
   "Off: a resolved link waits on the card until you tap Download.": "متوقف: الرابط الذي جُلب ينتظر على البطاقة حتى تضغط تحميل.",
   "Off: nothing is read from your clipboard unless you press Paste.": "متوقف: لا يُقرأ شيء من حافظتك ما لم تضغط لصق.",
   "Only public posts can be downloaded. Make sure the account and post are public, then try again.": "يمكن تحميل المنشورات العامة فقط. تأكد أن الحساب والمنشور عامان ثم حاول مرة أخرى.",
@@ -214,5 +212,14 @@
   "{n} photo/audio item(s) saved as a ZIP.": "حُفظ {n} من عناصر الصور/الصوت في ملف ZIP.",
   "{n} saved": "حُفظ {n}",
   "{n} {noun} downloaded as ZIP! 🗜️": "عدد العناصر المحمّلة كملف ZIP: {n} 🗜️",
-  "← Back to the downloader": "→ العودة إلى أداة التحميل"
+  "← Back to the downloader": "→ العودة إلى أداة التحميل",
+  "Nothing is billed here. A membership is managed on Buy Me a Coffee.": "لا تُحصَّل أي مبالغ هنا. تُدار العضوية على Buy Me a Coffee.",
+  "A membership switches the extras on by itself for the address you pay with. Paid under a different address, or sent a one-off coffee? Email {email} and give it a day.": "تفعّل العضوية المزايا تلقائيًا للبريد الذي تدفع به. هل دفعت ببريد مختلف أو أرسلت قهوة لمرة واحدة؟ راسل {email} وأمهلنا يومًا.",
+  "Cancelled": "أُلغي",
+  "No downloadable media": "لا توجد وسائط قابلة للتحميل",
+  "Done": "تم",
+  "Queued": "في الطابور",
+  "Failed to resolve": "تعذّرت المعالجة",
+  "Page not found": "الصفحة غير موجودة",
+  "Something went wrong resolving the media. Try again in a moment.": "حدث خطأ أثناء معالجة الوسائط. حاول مرة أخرى بعد قليل."
 }

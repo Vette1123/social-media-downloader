@@ -28,6 +28,15 @@ test when English changes, naming the field.
   {n}", which no reviewer has to think about.
 - A long Bash heredoc failed on quoting and ran nothing. Node scripts go through
   Write.
+- The first sweep only read `src/components`. The batch row statuses live in
+  `src/lib/batchPresentation.ts` and shipped in English. Strings are found by what
+  renders them, not by which folder looks like UI.
+- The first report called raw server text acceptable. It was an unfinished case:
+  a translated page now shows a translated headline instead.
+- Terms and Privacy still described hand-set extras after the webhook replaced them.
+  Privacy omitted that Buy Me a Coffee sends us the payer's email, and that the
+  `supporters` row outlives account deletion. Translating copy "as written" spread
+  that to four languages. Read the code before translating a legal claim.
 
 ## What worked
 

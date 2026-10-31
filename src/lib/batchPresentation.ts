@@ -1,3 +1,5 @@
+import { failureTitle } from '@/lib/errorMessages'
+import { d } from '@/lib/i18nDeep'
 /**
  * Pure presentation logic for the Pro batch panel — kept out of
  * `BatchPanel.tsx` so this decision-critical routing (which delivery path a
@@ -37,13 +39,15 @@ export function isCancelled(item: BatchItem): boolean {
 }
 
 export function rowStatusText(item: BatchItem): string {
-  if (isCancelled(item)) return 'Cancelled'
-  if (item.status === 'failed') return item.error || 'Failed to resolve'
-  if (item.status === 'done') {
-    return categorizeResult(item.result) === 'none' ? 'No downloadable media' : 'Done'
+  if (isCancelled(item)) return d('Cancelled')
+  if (item.status === 'failed') {
+    return item.error ? failureTitle(item.error) : d('Failed to resolve')
   }
-  if (item.status === 'resolving') return 'Resolving…'
-  return 'Queued'
+  if (item.status === 'done') {
+    return categorizeResult(item.result) === 'none' ? d('No downloadable media') : d('Done')
+  }
+  if (item.status === 'resolving') return d('Resolving…')
+  return d('Queued')
 }
 
 // Cancellation is a user action, not a failure — it gets the same neutral

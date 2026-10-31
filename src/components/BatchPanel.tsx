@@ -11,6 +11,7 @@ import {
   trackPlaylistImported,
   trackRetryClicked,
 } from '@/lib/analytics'
+import { failureTitle } from '@/lib/errorMessages'
 import { d, useDeepWords } from '@/lib/i18nDeep'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Surface } from '@/components/Surface'
@@ -510,7 +511,7 @@ export function BatchPanel() {
         | null
       if (!response.ok || !data?.success) {
         trackPlaylistImported({ count: 0, ok: false })
-        setNote(data?.error || d('Could not expand that playlist.'))
+        setNote(data?.error ? failureTitle(data.error) : d('Could not expand that playlist.'))
         return
       }
       trackPlaylistImported({ count: data.videos?.length ?? 0, ok: true })
