@@ -1,4 +1,3 @@
-import { siteConfig } from '@/config/site'
 
 export type { PlatformSlug } from '@/lib/platformSlugs'
 import type { PlatformSlug } from '@/lib/platformSlugs'
@@ -893,7 +892,3 @@ export const platformsBySlug: Record<PlatformSlug, Platform> = platforms.reduce(
   },
   {} as Record<PlatformSlug, Platform>,
 )
-
-export function platformUrl(slug: PlatformSlug): string {
-  return `${siteConfig.url}/${slug}`
-}

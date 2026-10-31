@@ -1,9 +1,5 @@
 import type { Offer, OfferPlacement } from '@/config/offers'
 
-/** A dismissal suppresses the slot for a week, not forever. */
-export const PROMO_DISMISS_MS = 7 * 24 * 60 * 60 * 1000
-export const PROMO_DISMISS_KEY = 'smd:promo-dismissed-at'
-
 function matchesPlacement(offer: Offer, placement: OfferPlacement): boolean {
   return offer.placements.includes(placement) && offer.weight > 0
 }

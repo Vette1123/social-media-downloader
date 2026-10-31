@@ -17,7 +17,6 @@
  */
 
 import { Downloader } from './downloader'
-import type { VideoData } from './types'
 import { validateUrl, detectPlatform, parseYouTubeId } from './validator'
 import { getCached, setCached } from './responseCache'
 import { worthCaching } from './cacheWorthy'
