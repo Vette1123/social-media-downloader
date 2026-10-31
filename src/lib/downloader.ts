@@ -491,11 +491,40 @@ const FB_POSTER_URL = /https:\/\/[^"'\\\s]+\/t15\.[^"'\\\s]+/
 const FB_REEL_ID_SPAN = 20_000
 /** A reel's details end by here; the live page has them within 55 KB. */
 const FB_REEL_SECTION_SPAN = 100_000
+/** How close the owner and caption sit to the `"id"` that ties them to a reel. */
+const FB_STORY_SPAN = 2_000
 
 /** The first capture of `pattern`, undone from JSON-string escaping. */
 function facebookField(section: string, pattern: RegExp): string {
   const raw = section.match(pattern)?.[1]
   return raw ? (JSON.parse(`"${raw}"`) as string) : ''
+}
+
+/**
+ * The owner and caption of one reel. They sit past every source list, in a block
+ * whose only link to the reel is its `"id"`, owner just before and caption just
+ * after, so the first id with a named owner ahead of it is the one.
+ */
+function facebookStory(
+  html: string,
+  videoId: string,
+): { author: string; caption: string } {
+  const key = `"id":"${videoId}"`
+  for (let at = html.indexOf(key); at !== -1; at = html.indexOf(key, at + 1)) {
+    // The nearest owner: the previous reel's can sit inside the same span.
+    const owners = html
+      .slice(Math.max(0, at - FB_STORY_SPAN), at)
+      .matchAll(/"owner":\{"__typename":"\w+"[^{}]*?"name":"((?:[^"\\]|\\.)*)"/g)
+    const raw = [...owners].at(-1)?.[1]
+    if (!raw) continue
+    const author = JSON.parse(`"${raw}"`) as string
+    const caption = facebookField(
+      html.slice(at, at + FB_STORY_SPAN),
+      /"message":\{"text":"((?:[^"\\]|\\.)*)"/,
+    )
+    return { author, caption }
+  }
+  return { author: '', caption: '' }
 }
 
 /**
@@ -538,11 +567,7 @@ export function facebookReelFromPage(
         section,
         /"preferred_thumbnail":\{"image":\{"uri":"([^"]+)"/,
       ),
-      caption: facebookField(section, /"message":\{"text":"((?:[^"\\]|\\.)*)"/),
-      author: facebookField(
-        section,
-        /"owner":\{"__typename":"\w+"[^{}]*?"name":"((?:[^"\\]|\\.)*)"/,
-      ),
+      ...facebookStory(html, videoId),
       duration: Math.round(ms / 1000),
     }
   }
