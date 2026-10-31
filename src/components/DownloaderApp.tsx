@@ -63,7 +63,7 @@ import { namedAuthor } from '@/lib/byline'
 import Link from '@/components/IntentLink'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { d, dKnown, useDeepWords } from '@/lib/i18nDeep'
-import { friendlyError } from '@/lib/errorMessages'
+import { failureLine, failureTitle } from '@/lib/errorMessages'
 import { useLocale, useT, useLocalePath } from '@/lib/i18nStore'
 import {
   clearPlatformQuality,
@@ -607,8 +607,7 @@ function browserIsOffline(): boolean {
  * apart across two handlers, plus the connection check none of them made.
  */
 function explain(raw: string | undefined, url?: string): string {
-  const fe = friendlyError(raw, url, { online: !browserIsOffline() })
-  return `${dKnown(fe.title)} — ${dKnown(fe.hint)}`
+  return failureLine(raw, url, { online: !browserIsOffline() })
 }
 
 /**
@@ -1998,7 +1997,7 @@ export function DownloaderApp() {
             kind: 'error',
             text:
               error instanceof Error
-                ? d('Slideshow render failed: {reason}', { reason: error.message })
+                ? d('Slideshow render failed: {reason}', { reason: failureTitle(error.message) })
                 : d('Failed to render slideshow video'),
           },
         })

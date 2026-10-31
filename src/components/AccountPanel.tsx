@@ -218,7 +218,7 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
         // Said plainly because the honest description is also the reassuring
         // one: this is a gift, not a plan, so there is no date to watch, no
         // renewal to catch, and nothing that can fail to charge.
-        note: d('Nothing is billing and there is nothing to cancel.'),
+        note: d('Nothing is billed here. A membership is managed on Buy Me a Coffee.'),
         chip: { label: d('Supporter'), tone: 'live' },
         title: d('Supporter'),
         facts: [],
@@ -287,13 +287,9 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
 /**
  * The one thing this page can offer someone with no extras.
  *
- * There is no checkout to send them to any more — a plan picker, a Creem
- * redirect and a "payments opening shortly" button all lived here and are gone
- * with the store. What replaced them is a link to the support page and an
- * honest description of the fulfilment, which is a human reading an email.
- *
- * Saying "by hand" out loud is deliberate. Someone who donates and then watches
- * an account page not change is owed the reason before they email to ask.
+ * There is no checkout to send them to any more. What replaced it is a link to
+ * the support page and an honest description of how the extras land: by themselves
+ * for the address that paid, and by a human reading an email for anything else.
  */
 function SupportLink() {
   useDeepWords()
@@ -307,7 +303,7 @@ function SupportLink() {
       <p className='text-xs text-white/50'>
         <Rich
           text={d(
-            'Nothing is for sale and nothing renews. Supporters get the extras switched on by hand — donate, then email {email} and give it a day.',
+            'A membership switches the extras on by itself for the address you pay with. Paid under a different address, or sent a one-off coffee? Email {email} and give it a day.',
           )}
           parts={{
             email: (

@@ -5,6 +5,7 @@ import {
   trackCaughtError,
   trackFeatureUsed,
 } from '@/lib/analytics'
+import { failureTitle } from '@/lib/errorMessages'
 import { d, useDeepWords } from '@/lib/i18nDeep'
 import { useCallback, useState } from 'react'
 import { saveBlob } from '@/lib/blobSaver'
@@ -77,7 +78,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
         tracks?: CaptionTrack[]
       } | null
       if (!response.ok || !data?.success) {
-        setError(data?.error || d('Could not load subtitles.'))
+        setError(data?.error ? failureTitle(data.error) : d('Could not load subtitles.'))
         return
       }
       // The remembered language floats to the front so it is one tap, not a
@@ -126,7 +127,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
           const data = (await response.json().catch(() => null)) as {
             error?: string
           } | null
-          setError(data?.error || d('Could not fetch that subtitle track.'))
+          setError(data?.error ? failureTitle(data.error) : d('Could not fetch that subtitle track.'))
           transfer.failed(data?.error ?? `HTTP ${response.status}`)
           return
         }

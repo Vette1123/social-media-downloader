@@ -262,7 +262,8 @@
           {
             "heading": "Pagamentos",
             "paragraphs": [
-              "Nada é vendido neste site, então não recebemos pagamentos nem guardamos dados de cobrança. Se você apoia o projeto, isso acontece inteiramente no Buy Me a Coffee, sob a política de privacidade deles — nunca vemos os dados do seu cartão, e a única coisa que chega até nós é o que você escrever no e-mail pedindo para ativar os extras."
+              "Nada é vendido neste site, então não recebemos pagamentos nem guardamos dados de cobrança. Se você apoiar o projeto, isso acontece inteiramente no Buy Me a Coffee, sob a política de privacidade deles, e nunca vemos os dados do seu cartão.",
+              "O Buy Me a Coffee nos informa o endereço de e-mail com que você pagou, o nível escolhido e quando uma assinatura começa ou termina. Guardamos esse registro para que os extras sejam ativados para esse endereço, inclusive antes de você entrar aqui. Ele é removido quando uma assinatura termina; um registro vitalício é mantido para que os extras continuem seus. Excluir sua conta não remove este registro, porque ele pertence ao pagamento e não à conta: envie um e-mail para {email} e nós o apagaremos."
             ]
           },
           {
@@ -331,10 +332,10 @@
           {
             "heading": "Apoiar este projeto",
             "paragraphs": [
-              "Nada no {site} está à venda. Não há assinatura, nem plano, nem cobrança de nenhum tipo — se algum dia você for cobrado por algo que diga ser este site, não somos nós, e gostaríamos de saber.",
-              "Você pode apoiar o projeto voluntariamente pelo Buy Me a Coffee. Isso é uma doação, tratada inteiramente por eles sob os termos próprios: é pontual, não renova e não há nada aqui para cancelar. Como agradecimento, ativamos algumas facilidades na sua conta — uma fila em lote, pacote ZIP para um lote, resolução prioritária, nomes de arquivo personalizados e nenhum card de patrocinador — à mão, depois que você nos escrever.",
-              "Essas facilidades são um presente e não um direito adquirido por compra. Podemos alterá-las ou retirá-las a qualquer momento e, como não há venda, não há nada a reembolsar. Nenhuma delas muda o que um link consegue alcançar; veja acima.",
-              "Se você quiser reverter uma doação, isso é entre você e o Buy Me a Coffee, embora escrever antes para {email} costume ser mais rápido."
+              "Nada em {site} é vendido por nós, e nunca cobramos você diretamente. Se algum dia você for cobrado por algo que diz ser este site e não for o Buy Me a Coffee, não somos nós, e gostaríamos de saber.",
+              "Você pode apoiar o projeto voluntariamente pelo Buy Me a Coffee: com uma assinatura mensal ou anual que se renova até você cancelar, com um nível vitalício de pagamento único ou com um café avulso. Pagamento, renovação e cancelamento são tratados inteiramente por eles, sob os próprios termos, e uma assinatura é cancelada lá, não aqui. Uma assinatura ou o nível vitalício ativa por si só algumas comodidades para o endereço com que você paga, assim que você entra aqui com esse endereço: fila em lote, agrupamento em ZIP de um lote, resolução prioritária, nomes de arquivo personalizados e nenhum cartão de patrocinador. As comodidades de uma assinatura terminam quando ela termina. Um café avulso não ativa nada por si só: envie um e-mail e faremos isso manualmente; o mesmo vale se você pagou com outro endereço.",
+              "Essas comodidades são um presente, e não um direito adquirido. Podemos alterá-las ou retirá-las a qualquer momento e, como não vendemos nada, não há nada para reembolsarmos. Nenhuma delas muda o que um link pode alcançar; veja acima.",
+              "Se você quiser estornar um pagamento, isso é entre você e o Buy Me a Coffee, embora enviar antes um e-mail para {email} costume ser mais rápido."
             ]
           },
           {

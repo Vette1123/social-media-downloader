@@ -81,8 +81,6 @@
   "Next slide": "Slide berikutnya",
   "None": "Tidak ada",
   "Nothing further will be charged.": "Tidak akan ada tagihan lagi.",
-  "Nothing is billing and there is nothing to cancel.": "Tidak ada yang ditagihkan dan tidak ada yang perlu dibatalkan.",
-  "Nothing is for sale and nothing renews. Supporters get the extras switched on by hand — donate, then email {email} and give it a day.": "Tidak ada yang dijual dan tidak ada yang diperpanjang. Fitur tambahan untuk pendukung diaktifkan secara manual — berdonasilah, lalu kirim email ke {email} dan beri waktu sehari.",
   "Off: a resolved link waits on the card until you tap Download.": "Mati: link yang sudah diproses menunggu di kartu sampai kamu mengetuk Unduh.",
   "Off: nothing is read from your clipboard unless you press Paste.": "Mati: tidak ada yang dibaca dari clipboard-mu kecuali kamu menekan Tempel.",
   "Only public posts can be downloaded. Make sure the account and post are public, then try again.": "Hanya postingan publik yang bisa diunduh. Pastikan akun dan postingannya publik, lalu coba lagi.",
@@ -214,5 +212,14 @@
   "{n} photo/audio item(s) saved as a ZIP.": "{n} item foto/audio disimpan sebagai ZIP.",
   "{n} saved": "{n} tersimpan",
   "{n} {noun} downloaded as ZIP! 🗜️": "{n} item diunduh sebagai ZIP! 🗜️",
-  "← Back to the downloader": "← Kembali ke downloader"
+  "← Back to the downloader": "← Kembali ke downloader",
+  "Nothing is billed here. A membership is managed on Buy Me a Coffee.": "Tidak ada tagihan di sini. Keanggotaan dikelola di Buy Me a Coffee.",
+  "A membership switches the extras on by itself for the address you pay with. Paid under a different address, or sent a one-off coffee? Email {email} and give it a day.": "Keanggotaan mengaktifkan ekstra dengan sendirinya untuk alamat yang kamu pakai membayar. Membayar dengan alamat lain atau mengirim kopi sekali? Kirim email ke {email} dan tunggu sehari.",
+  "Cancelled": "Dibatalkan",
+  "No downloadable media": "Tidak ada media yang bisa diunduh",
+  "Done": "Selesai",
+  "Queued": "Dalam antrean",
+  "Failed to resolve": "Gagal memproses",
+  "Page not found": "Halaman tidak ditemukan",
+  "Something went wrong resolving the media. Try again in a moment.": "Terjadi kesalahan saat memproses media. Coba lagi sebentar lagi."
 }

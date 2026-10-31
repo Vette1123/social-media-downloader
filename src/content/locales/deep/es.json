@@ -81,8 +81,6 @@
   "Next slide": "Diapositiva siguiente",
   "None": "Ninguno",
   "Nothing further will be charged.": "No se cobrará nada más.",
-  "Nothing is billing and there is nothing to cancel.": "No hay ningún cobro en curso y no hay nada que cancelar.",
-  "Nothing is for sale and nothing renews. Supporters get the extras switched on by hand — donate, then email {email} and give it a day.": "Nada está a la venta y nada se renueva. A quienes apoyan se les activan los extras a mano: haz una donación, escribe a {email} y dame un día.",
   "Off: a resolved link waits on the card until you tap Download.": "Desactivado: un enlace resuelto espera en la tarjeta hasta que toques Descargar.",
   "Off: nothing is read from your clipboard unless you press Paste.": "Desactivado: no se lee nada de tu portapapeles a menos que pulses Pegar.",
   "Only public posts can be downloaded. Make sure the account and post are public, then try again.": "Solo se pueden descargar publicaciones públicas. Asegúrate de que la cuenta y la publicación sean públicas e inténtalo de nuevo.",
@@ -214,5 +212,14 @@
   "{n} photo/audio item(s) saved as a ZIP.": "{n} elemento(s) de foto o audio guardados como ZIP.",
   "{n} saved": "{n} guardados",
   "{n} {noun} downloaded as ZIP! 🗜️": "¡{n} elementos descargados como ZIP! 🗜️",
-  "← Back to the downloader": "← Volver al descargador"
+  "← Back to the downloader": "← Volver al descargador",
+  "Nothing is billed here. A membership is managed on Buy Me a Coffee.": "Aquí no se cobra nada. Una membresía se gestiona en Buy Me a Coffee.",
+  "A membership switches the extras on by itself for the address you pay with. Paid under a different address, or sent a one-off coffee? Email {email} and give it a day.": "Una membresía activa los extras por sí sola para la dirección con la que pagas. ¿Pagaste con otra dirección o enviaste un café puntual? Escribe a {email} y danos un día.",
+  "Cancelled": "Cancelado",
+  "No downloadable media": "Sin contenido descargable",
+  "Done": "Listo",
+  "Queued": "En cola",
+  "Failed to resolve": "No se pudo resolver",
+  "Page not found": "Página no encontrada",
+  "Something went wrong resolving the media. Try again in a moment.": "Algo salió mal al procesar el contenido. Inténtalo de nuevo en un momento."
 }

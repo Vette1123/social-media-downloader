@@ -1,7 +1,9 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from '@/components/IntentLink'
 import { Surface } from '@/components/Surface'
+import { siteConfig } from '@/config/site'
 import { useHydrated } from '@/lib/clientEnv'
 import { d, useDeepWords } from '@/lib/i18nDeep'
 import { useLocale } from '@/lib/i18nStore'
@@ -16,9 +18,14 @@ export function NotFoundBody({
 }: {
   links: Array<{ slug: string; brandLabel: string }>
 }) {
-  useDeepWords()
+  const wordsReady = useDeepWords()
   const locale = useLocale()
   const hydrated = useHydrated()
+  useEffect(() => {
+    if (locale !== 'en' && wordsReady) {
+      document.title = `${d('Page not found')} — ${siteConfig.name}`
+    }
+  }, [locale, wordsReady])
   const to = (path: string) => (hydrated ? localePath(locale, path) : path)
   return (
     <>

@@ -262,7 +262,8 @@
           {
             "heading": "Pembayaran",
             "paragraphs": [
-              "Tidak ada yang dijual di situs ini, jadi kami tidak menerima pembayaran dan tidak menyimpan data penagihan. Jika Anda mendukung proyek ini, itu terjadi sepenuhnya di Buy Me a Coffee berdasarkan kebijakan privasi mereka — kami tidak pernah melihat detail kartu Anda, dan satu-satunya yang sampai kepada kami adalah apa pun yang Anda tulis di email yang meminta fitur tambahan diaktifkan."
+              "Tidak ada yang dijual di situs ini, jadi kami tidak menerima pembayaran dan tidak menyimpan data penagihan. Jika Anda mendukung proyek ini, hal itu sepenuhnya terjadi di Buy Me a Coffee berdasarkan kebijakan privasi mereka, dan kami tidak pernah melihat detail kartu Anda.",
+              "Buy Me a Coffee memberi tahu kami alamat email yang Anda gunakan untuk membayar, tingkat yang Anda pilih, serta kapan keanggotaan dimulai atau berakhir. Kami menyimpan catatan itu agar ekstra dapat aktif untuk alamat tersebut, termasuk sebelum Anda masuk di sini. Catatan dihapus saat keanggotaan berakhir; catatan seumur hidup disimpan agar ekstra tetap menjadi milik Anda. Menghapus akun tidak menghapus catatan ini, karena catatan ini terkait pembayaran dan bukan akun: kirim email ke {email} dan kami akan menghapusnya."
             ]
           },
           {
@@ -331,10 +332,10 @@
           {
             "heading": "Mendukung proyek ini",
             "paragraphs": [
-              "Tidak ada apa pun di {site} yang dijual. Tidak ada langganan, tidak ada paket, dan tidak ada biaya dalam bentuk apa pun — jika suatu saat Anda ditagih oleh sesuatu yang mengaku sebagai situs ini, itu bukan kami, dan kami ingin mengetahuinya.",
-              "Anda dapat mendukung proyek ini secara sukarela lewat Buy Me a Coffee. Itu adalah donasi, ditangani sepenuhnya oleh mereka berdasarkan ketentuan mereka sendiri: sifatnya sekali saja, tidak diperpanjang, dan tidak ada yang perlu dibatalkan di sini. Sebagai ucapan terima kasih, kami mengaktifkan beberapa kemudahan untuk akun Anda — antrean batch, paket ZIP untuk satu batch, pemrosesan prioritas, nama file kustom, dan tanpa kartu sponsor — secara manual, setelah Anda mengirim email kepada kami.",
-              "Kemudahan itu adalah hadiah dan bukan hak yang dibeli. Kami dapat mengubah atau mencabutnya kapan saja, dan karena tidak ada penjualan, tidak ada yang perlu dikembalikan. Tak satu pun mengubah apa yang bisa dijangkau sebuah link; lihat di atas.",
-              "Jika Anda ingin donasi dibatalkan, itu urusan antara Anda dan Buy Me a Coffee, meskipun mengirim email ke {email} lebih dulu biasanya lebih cepat."
+              "Tidak ada apa pun di {site} yang kami jual, dan kami tidak pernah menagih Anda secara langsung. Jika Anda ditagih oleh sesuatu yang mengaku sebagai situs ini dan bukan Buy Me a Coffee, itu bukan kami, dan kami ingin mengetahuinya.",
+              "Anda dapat mendukung proyek ini secara sukarela melalui Buy Me a Coffee: dengan keanggotaan bulanan atau tahunan yang diperpanjang sampai Anda membatalkannya, tingkat seumur hidup yang dibayar sekali, atau kopi sekali kirim. Pembayaran, perpanjangan, dan pembatalan sepenuhnya ditangani oleh mereka berdasarkan ketentuan mereka sendiri, dan keanggotaan dibatalkan di sana, bukan di sini. Keanggotaan atau tingkat seumur hidup mengaktifkan sendiri beberapa kemudahan untuk alamat yang Anda gunakan membayar, setelah Anda masuk di sini dengan alamat tersebut: antrean batch, penggabungan ZIP untuk satu tanda, resolve prioritas, nama file khusus, dan tanpa kartu sponsor. Kemudahan keanggotaan berakhir saat keanggotaan berakhir. Kopi sekali kirim tidak mengaktifkan apa pun dengan sendirinya: kirim email kepada kami dan kami akan melakukannya secara manual; hal yang sama berlaku jika Anda membayar dengan alamat lain.",
+              "Kemudahan tersebut adalah hadiah, bukan hak yang dibeli. Kami dapat mengubah atau menariknya kapan saja, dan karena kami tidak menjual apa pun, tidak ada yang perlu kami kembalikan. Tidak satu pun mengubah apa yang dapat dijangkau sebuah tautan; lihat di atas.",
+              "Jika Anda ingin membatalkan pembayaran, itu urusan antara Anda dan Buy Me a Coffee, meskipun mengirim email ke {email} terlebih dahulu biasanya lebih cepat."
             ]
           },
           {
