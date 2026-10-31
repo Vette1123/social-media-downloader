@@ -15,8 +15,11 @@ const CDN = 'https:\\/\\/video.example.fbcdn.net\\/o1\\/v\\/t2'
 
 const details = (tag: string) =>
   `"preferred_thumbnail":{"image":{"uri":"https:\\/\\/scontent.example.fbcdn.net\\/v\\/t15.5256-10\\/${tag}.jpg?a=1"}},` +
-  `"playable_duration_in_ms":17853,"owner":{"__typename":"User","id":"615"},` +
-  `"owner":{"__typename":"User","__isActor":"User","id":"615","name":"${tag} owner","is_verified":false},` +
+  `"playable_duration_in_ms":17853,"owner":{"__typename":"User","id":"615"}`
+
+/** The page puts these far past every list, tied to the reel only by its id. */
+const story = (id: string, tag: string) =>
+  `"owner":{"__typename":"User","__isActor":"User","id":"615","name":"${tag} owner","is_verified":false,"url":"x"},"woodhenge_creator_info":null}},"id":"${id}","video_owner_type":"x"},` +
   `"message":{"text":"${tag} caption \\ud83d\\udda4","ranges":[]}`
 
 const block = (id: string, tag: string) =>
@@ -25,7 +28,7 @@ const block = (id: string, tag: string) =>
   `{"progressive_url":"${CDN}\\/${tag}-hd.mp4?a=1&b=2","failure_reason":null,"metadata":{"quality":"HD"}}` +
   `],"hls_playlist_urls":[]}},"id":"${id}","owner":{"id":"61589208197179"},${details(tag)}`
 
-const PAGE = `<html><title>Facebook</title>${block(NEXT_REEL, 'next')}${block(REEL, 'wanted')}</html>`
+const PAGE = `<html><title>Facebook</title>${block(NEXT_REEL, 'next')}${block(REEL, 'wanted')}${story(NEXT_REEL, 'next')}${story(REEL, 'wanted')}</html>`
 
 describe('facebookReelFromPage', () => {
   it('returns the HD file of the requested reel, not the next one in the feed', () => {
