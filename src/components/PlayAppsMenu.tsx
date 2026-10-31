@@ -2,6 +2,7 @@
 
 import { trackFeatureUsed } from '@/lib/analytics'
 import { useEffect, useRef, useState } from 'react'
+import { useT } from '@/lib/i18nStore'
 import { AppsIcon, ChevronDownIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
 import { openStoreListing, PLAY_APPS, storeHref, storesLabel } from '@/lib/apps'
@@ -22,6 +23,7 @@ import { openStoreListing, PLAY_APPS, storeHref, storesLabel } from '@/lib/apps'
  * Play Store app, exactly as the old links did.
  */
 export function PlayAppsMenu() {
+  const t = useT()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -56,7 +58,7 @@ export function PlayAppsMenu() {
         className='inline-flex items-center gap-1.5 whitespace-nowrap text-white/70 transition-colors hover:text-white'
       >
         <AppsIcon className='h-4 w-4' />
-        Our apps
+        {t('ourApps')}
         <ChevronDownIcon
           className={`h-3.5 w-3.5 text-white/40 transition-transform duration-200 ${
             open ? 'rotate-180' : ''
@@ -76,7 +78,7 @@ export function PlayAppsMenu() {
         <div className='animate-section-in absolute bottom-full left-1/2 z-30 mb-2 w-72 -translate-x-1/2 sm:right-0 sm:left-auto sm:translate-x-0'>
           <Surface role='menu' radius='xl' elevation='raised' className='p-2 shadow-2xl'>
             <p className='px-2 pt-1 pb-2 text-xs font-medium text-white/45'>
-              Our apps
+              {t('ourApps')}
             </p>
             {PLAY_APPS.map((app) => (
               <a

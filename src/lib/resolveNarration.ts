@@ -69,6 +69,14 @@ const STILL_WORKING_MS = 5000
 /** After this, the honest thing to offer is a reason to keep waiting. */
 const TAKING_A_WHILE_MS = 15000
 
+/** The same three stages as a dictionary key, for the translated pages. */
+export function narrationKey(
+  elapsedMs: number,
+): 'narrateReading' | 'narrateSlow' | 'narrateLong' {
+  if (elapsedMs >= TAKING_A_WHILE_MS) return 'narrateLong'
+  return elapsedMs >= STILL_WORKING_MS ? 'narrateSlow' : 'narrateReading'
+}
+
 export function resolveNarration(
   platform: SupportedPlatform | null | undefined,
   elapsedMs: number,

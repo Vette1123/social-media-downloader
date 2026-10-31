@@ -24,6 +24,7 @@ import {
 import { shouldDropException } from '@/lib/analyticsNoise'
 import { scrubEvent } from '@/lib/analyticsPrivacy'
 import { getLocaleSnapshot, subscribeLocale } from '@/lib/i18nStore'
+import { localeFromPath } from '@/lib/localeRoutes'
 import {
   afterPageSettles,
   analyticsEnabled,
@@ -198,7 +199,7 @@ export function AnalyticsContext() {
   useEffect(() => {
     const sync = () =>
       registerAnalyticsContext({
-        locale: getLocaleSnapshot(),
+        locale: localeFromPath(window.location.pathname) ?? getLocaleSnapshot(),
         display_mode: displayMode(),
         app_version: process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev',
         low_power: document.documentElement.classList.contains('low-power'),

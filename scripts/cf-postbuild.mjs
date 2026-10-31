@@ -96,6 +96,31 @@ function fail(message) {
  * this catches a page that silently failed to render far more reliably than a
  * hardcoded expected-route list would.
  */
+/**
+ * ponytail: the root layout is shared, so it prints `lang="en"` on every page and
+ * the localized pages are corrected here, after the export. Ceiling: only the
+ * exported HTML is right, not `next dev`, where DocumentLocale fixes it after
+ * hydration. The upgrade is a root layout per language, which moves every route
+ * in src/app under a group and is not worth it for one attribute.
+ */
+function localizeHtml(files) {
+  let rewritten = 0
+  for (const file of files) {
+    const path = toUrlPath(file)
+    const locale = path.match(/^\/(es|pt|id|ar)(?:\.html$|\/.*\.html$)/)?.[1]
+    if (!locale) continue
+    const html = readFileSync(file, 'utf8')
+    const opening = '<html lang="en" dir="ltr"'
+    if (!html.includes(opening)) fail(`${path}: no ${opening} to localize.`)
+    const dir = locale === 'ar' ? 'rtl' : 'ltr'
+    writeFileSync(file, html.replace(opening, `<html lang="${locale}" dir="${dir}"`))
+    rewritten++
+  }
+  // 4 languages × (home + 12 platforms).
+  if (rewritten !== 52) fail(`expected 52 localized pages, found ${rewritten}.`)
+  console.log(`  localized <html> on ${rewritten} pages`)
+}
+
 function verifySitemapRoutes(files) {
   const sitemapPath = join(OUT_DIR, 'sitemap.xml')
   let sitemap
@@ -349,6 +374,7 @@ async function optimizeImages(files) {
 // -------------------------------------------------------------------- main
 
 const files = walk(OUT_DIR)
+localizeHtml(files)
 const routes = verifySitemapRoutes(files)
 const manifestAssets = verifyManifest(files)
 const images = buildHeaders(files)

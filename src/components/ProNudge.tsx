@@ -6,6 +6,7 @@ import { CloseIcon } from '@/components/icons'
 import { useEffect } from 'react'
 import { trackFeatureUsed, trackProNudgeShown } from '@/lib/analytics'
 import { useTier } from '@/lib/entitlements'
+import { useT } from '@/lib/i18nStore'
 import { dismissNudge, useProSignals } from '@/lib/proSignals'
 
 /**
@@ -125,17 +126,18 @@ export function ProNudge({
  */
 export function ProHeroLine() {
   const tier = useTier()
+  const t = useT()
   if (tier === 'pro') return null
 
   return (
     <p className='mb-7 text-xs text-white/50 md:text-sm'>
-      Free, no account, no limits.{' '}
+      {t('proHeroFree')}{' '}
       <Link
         href='/pro'
         data-pro-cta='hero_line'
         className='font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
       >
-        Support the project →
+        {t('proHeroLink')}
       </Link>
     </p>
   )

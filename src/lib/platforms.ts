@@ -1,18 +1,7 @@
 import { siteConfig } from '@/config/site'
 
-export type PlatformSlug =
-  | 'video-downloader'
-  | 'tiktok-downloader'
-  | 'twitter-video-downloader'
-  | 'instagram-downloader'
-  | 'youtube-downloader'
-  | 'facebook-downloader'
-  | 'pinterest-downloader'
-  | 'reddit-video-downloader'
-  | 'threads-video-downloader'
-  | 'snapchat-downloader'
-  | 'twitch-clip-downloader'
-  | 'vimeo-downloader'
+export type { PlatformSlug } from '@/lib/platformSlugs'
+import type { PlatformSlug } from '@/lib/platformSlugs'
 
 export interface PlatformSeoCard {
   title: string

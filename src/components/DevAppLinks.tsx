@@ -2,12 +2,9 @@ import { GitHubIcon, PortfolioIcon } from '@/components/icons'
 import { LinkCard } from '@/components/LinkCard'
 import { PlayAppPromoCards } from '@/components/PlayAppPromoCards'
 import { siteConfig } from '@/config/site'
+import type { Locale } from '@/lib/i18n'
+import { contentFor } from '@/lib/localeContent'
 import { INSTALL_SLOT_ID } from '@/lib/clientEnv'
-
-const devLinks = [
-  { href: siteConfig.author.url, label: 'Portfolio', Icon: PortfolioIcon },
-  { href: siteConfig.links.github, label: 'GitHub', Icon: GitHubIcon },
-] as const
 
 /**
  * Hero row: who built this, plus our own apps. Rendered identically
@@ -15,7 +12,15 @@ const devLinks = [
  * before, which is how the two Play cards ended up clipped on phones in one
  * place and had to be fixed in two.
  */
-export function DevAppLinks() {
+export function DevAppLinks({ locale = 'en' }: { locale?: Locale }) {
+  const devLinks = [
+    {
+      href: siteConfig.author.url,
+      label: contentFor(locale).copy.footer.portfolio,
+      Icon: PortfolioIcon,
+    },
+    { href: siteConfig.links.github, label: 'GitHub', Icon: GitHubIcon },
+  ]
   return (
     <>
       <div className='mx-auto mt-6 flex max-w-md flex-wrap items-stretch justify-center gap-2 sm:max-w-none sm:gap-3'>

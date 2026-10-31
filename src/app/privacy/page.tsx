@@ -2,10 +2,15 @@ import type { Metadata } from 'next'
 import Link from '@/components/IntentLink'
 import { SiteFooter } from '@/components/SiteFooter'
 import { siteConfig } from '@/config/site'
+import { staticOpenGraph } from '@/lib/pageMetadata'
+
+const title = 'Privacy Policy — Social Media Downloader'
+const description = `How ${siteConfig.name} handles your data: no sign-up needed, Google sign-in for Pro only, usage analytics, no cross-site tracking.`
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Social Media Downloader',
-  description: `How ${siteConfig.name} handles your data: no sign-up needed, Google sign-in for Pro only, usage analytics, no cross-site tracking.`,
+  title,
+  description,
+  openGraph: staticOpenGraph('/privacy', title, description),
   alternates: { canonical: '/privacy' },
 }
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { useT } from '@/lib/i18nStore'
 import { AppsIcon } from '@/components/icons'
 import { LinkCard } from '@/components/LinkCard'
 import {
@@ -18,13 +19,14 @@ import {
 // too, so a green Play-coloured card is the same false claim the Play icon was;
 // it is now the site's own cyan/sky, which is what every other accent here uses.
 export function PlayAppPromoCard({ app }: { app: PlayApp }) {
+  const t = useT()
   return (
     <LinkCard
       href={storeHref(app)}
       label={app.name}
       Icon={AppsIcon}
       iconHoverClass='group-hover:text-white'
-      title={`${app.name} — an app made by us, on ${storesLabel(app)}`}
+      title={t('appCardTitle', { app: app.name, stores: storesLabel(app) })}
       onClick={(e: React.MouseEvent) => {
         e.preventDefault()
         openStoreListing(app)

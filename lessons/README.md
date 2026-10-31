@@ -90,3 +90,4 @@ the index for exactly that.
 | 2026-10-30 | [PostHog to the Reely standard, plus the Worker](2026-10-30-posthog-standard.md) | Every action, error and download is tracked through one typed layer and three dashboards; a privacy page is a spec, so what the code records and what the page says change in the same commit |
 | 2026-10-31 | [The 100 that hid 607 KiB](2026-10-31-the-100-that-hid-607-kib.md) | Lighthouse said 100 while viewport prefetch was the heaviest thing on the page; read the request list, not the score |
 | 2026-10-31 | [What first load still carried](2026-10-31-what-first-load-still-carried.md) | Translations, an accordion and marketing copy shipped to everyone; lastmod moved on every deploy without the content changing |
+| 2026-10-31 | [The site in five languages](2026-10-31-the-site-in-five-languages.md) | Anything above `{children}` in a root layout cannot see a provider below it |

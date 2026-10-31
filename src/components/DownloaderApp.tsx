@@ -93,7 +93,7 @@ import {
   trackShared,
   type LinkSource,
 } from '@/lib/analytics'
-import { resolveNarration } from '@/lib/resolveNarration'
+import { narrationKey, resolveNarration } from '@/lib/resolveNarration'
 import {
   MISSES_SHOWN,
   missesHeading,
@@ -828,6 +828,8 @@ function ResolveNarration({
   platform: SupportedPlatform | null
 }) {
   const [elapsed, setElapsed] = useState(0)
+  const locale = useLocale()
+  const t = useT()
   useEffect(() => {
     const startedAt = nowMs()
     const timer = window.setInterval(() => setElapsed(nowMs() - startedAt), 1000)
@@ -839,7 +841,9 @@ function ResolveNarration({
       aria-live='polite'
       className='animate-fade-in-up text-center text-xs text-white/45'
     >
-      {resolveNarration(platform, elapsed)}
+      {locale === 'en'
+        ? resolveNarration(platform, elapsed)
+        : t(narrationKey(elapsed))}
     </p>
   )
 }
@@ -1218,9 +1222,7 @@ export function DownloaderApp() {
     const target = (overrideUrl ?? state.url).trim()
     if (!target) {
       trackLinkRejected({ platform: 'none', reason: 'empty' })
-      setUrlError(
-        'Please paste a TikTok, Twitter/X, Instagram, Facebook, or YouTube URL first',
-      )
+      setUrlError(t('errorEmpty'))
       return
     }
 
@@ -1403,7 +1405,7 @@ export function DownloaderApp() {
   const handlePaste = async () => {
     if (!navigator.clipboard?.readText) {
       inputRef.current?.focus()
-      setUrlError('Long-press the field and choose Paste.')
+      setUrlError(t('errorLongPress'))
       return
     }
     try {
@@ -1416,14 +1418,14 @@ export function DownloaderApp() {
         trackFeatureUsed('paste_chip', { outcome: 'not_a_link' })
         dispatch({ type: 'SET_URL', payload: text.trim() })
         inputRef.current?.focus()
-        setUrlError('That doesn’t look like a link — paste a post URL.')
+        setUrlError(t('errorNotLink'))
       } else {
         inputRef.current?.focus()
       }
     } catch {
       trackFeatureUsed('paste_chip', { outcome: 'denied' })
       inputRef.current?.focus()
-      setUrlError('Couldn’t read the clipboard — paste the link manually.')
+      setUrlError(t('errorClipboard'))
     }
   }
 
@@ -2477,7 +2479,7 @@ export function DownloaderApp() {
     const savedAt = history.find((e) => e.url === state.originalUrl)?.savedAt
     if (!savedAt) return null
     const ago = savedAgo(savedAt, nowMs(), locale)
-    return ago ? `Saved ${ago}` : `Saved on ${formatDate(savedAt)}`
+    return ago ? t('savedAgo', { ago }) : t('savedOn', { date: formatDate(savedAt) })
   })()
 
   const toggleImageGallery = () => {
@@ -2553,6 +2555,7 @@ export function DownloaderApp() {
       >
         <div className='relative flex min-w-0 flex-1 items-center'>
           <input
+            dir='auto'
             ref={inputRef}
             type='url'
             inputMode='url'
@@ -2684,14 +2687,13 @@ export function DownloaderApp() {
         <ProNudge
           id='paste-multi'
           tone='attached'
-          action='See how'
+          action={t('seeHow')}
           lede={
             <>
               <strong className='font-semibold text-white'>
-                {pastedLinks} links.
+                {t('pastedLinks', { n: pastedLinks })}
               </strong>{' '}
-              These save to Recent to download one at a time. Supporters get a
-              queue that runs the whole list.
+              {t('pastedLinksHint')}
             </>
           }
         />
@@ -2706,10 +2708,7 @@ export function DownloaderApp() {
         {dragging ? (
           <span className='text-cyan-300/80'>{t('dropHint')}</span>
         ) : (
-          <>
-            Videos, reels, shorts, MP3 audio &amp; photo carousels — paste
-            several links to grab them in one go
-          </>
+          t('heroHint')
         )}
       </p>
 
@@ -2719,10 +2718,10 @@ export function DownloaderApp() {
           in audio mode. */}
       <div className='mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs'>
         <div className='flex items-center gap-2'>
-          <span className='text-white/50'>Format</span>
+          <span className='text-white/50'>{t('format')}</span>
           <div
             role='group'
-            aria-label='Download format'
+            aria-label={t('formatAria')}
             className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
           >
             {(['video', 'audio'] as const).map((f) => (
@@ -2737,7 +2736,7 @@ export function DownloaderApp() {
                     : 'text-white/55 hover:text-white'
                 }`}
               >
-                {f === 'video' ? 'Video' : 'Audio (MP3)'}
+                {f === 'video' ? t('videoBtn') : t('formatAudio')}
               </button>
             ))}
           </div>
@@ -2746,10 +2745,10 @@ export function DownloaderApp() {
         {format === 'video' && (
           <div className='flex flex-col gap-1'>
             <div className='flex items-center gap-2'>
-              <span className='text-white/50'>Quality</span>
+              <span className='text-white/50'>{t('quality')}</span>
               <div
                 role='group'
-                aria-label='Preferred video quality'
+                aria-label={t('qualityAria')}
                 className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
               >
                 {(['hd', 'sd'] as const).map((q) => (
@@ -2764,7 +2763,7 @@ export function DownloaderApp() {
                         : 'text-white/55 hover:text-white'
                     }`}
                   >
-                    {q === 'hd' ? 'HD' : 'Data saver'}
+                    {q === 'hd' ? 'HD' : t('dataSaver')}
                   </button>
                 ))}
               </div>
@@ -2793,9 +2792,9 @@ export function DownloaderApp() {
                 // and wondering where the video came from.
                 const remembered = [
                   rememberedFormat === 'audio' ? 'MP3' : null,
-                  rememberedFormat === 'video' ? 'Video' : null,
+                  rememberedFormat === 'video' ? t('videoBtn') : null,
                   rememberedQuality === 'hd' ? 'HD' : null,
-                  rememberedQuality === 'sd' ? 'Data saver' : null,
+                  rememberedQuality === 'sd' ? t('dataSaver') : null,
                 ].filter(Boolean)
                 return (
                   <span className='text-[11px] text-white/40'>
@@ -2811,7 +2810,7 @@ export function DownloaderApp() {
                       }}
                       className='underline underline-offset-2 transition-colors hover:text-white/70'
                     >
-                      reset
+                      {t('reset')}
                     </button>
                   </span>
                 )
@@ -2952,7 +2951,7 @@ export function DownloaderApp() {
                   {h.savedAt && (
                     <CheckIcon
                       className='h-3.5 w-3.5 shrink-0 text-cyan-300/70'
-                      aria-label='Already downloaded'
+                      aria-label={t('alreadyDownloaded')}
                     />
                   )}
                 </button>
@@ -2962,7 +2961,7 @@ export function DownloaderApp() {
                     trackFeatureUsed('history_remove')
                     removeHistory(h.url)
                   }}
-                  aria-label={`Remove ${h.title} from recent`}
+                  aria-label={t('removeRecent', { title: h.title })}
                   className='absolute top-1/2 right-1.5 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
                 >
                   <span aria-hidden className='text-base leading-none'>
@@ -3114,7 +3113,7 @@ export function DownloaderApp() {
           <ProNudge
             id='post-download'
             tone='attached'
-            action={`Support this — $${SUPPORT_PRICES.monthly}/month`}
+            action={t('supportCta', { price: SUPPORT_PRICES.monthly })}
             lede={
               <>
                 Saved you some time? This site is free to use and not free to
@@ -3176,7 +3175,7 @@ export function DownloaderApp() {
                 {state.videoMetadata.thumbnail && (
                   <img
                     src={state.videoMetadata.thumbnail}
-                    alt='Video thumbnail'
+                    alt={t('thumbnailAlt')}
                     loading='lazy'
                     decoding='async'
                     className='w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover flex-shrink-0'
@@ -3196,7 +3195,7 @@ export function DownloaderApp() {
                   </h3>
                   {resultAuthor && (
                     <p className='break-words line-clamp-2 text-white/70 text-xs md:text-sm mt-1'>
-                      by {resultAuthor}
+                      {t('byAuthor', { author: resultAuthor })}
                     </p>
                   )}
                   {(state.videoMetadata.duration > 0 ||
@@ -3242,33 +3241,33 @@ export function DownloaderApp() {
                         >
                       > = {
                         tiktok: {
-                          label: 'View on TikTok',
+                          label: t('viewOn', { site: 'TikTok' }),
                           Icon: TikTokIcon,
                           color: 'text-pink-400 hover:text-pink-300',
                         },
                         twitter: {
-                          label: 'View on Twitter/X',
+                          label: t('viewOn', { site: 'Twitter/X' }),
                           Icon: TwitterXIcon,
                           color: 'text-sky-400 hover:text-sky-300',
                         },
                         instagram: {
-                          label: 'View on Instagram',
+                          label: t('viewOn', { site: 'Instagram' }),
                           Icon: InstagramIcon,
                           color: 'text-fuchsia-400 hover:text-fuchsia-300',
                         },
                         facebook: {
-                          label: 'View on Facebook',
+                          label: t('viewOn', { site: 'Facebook' }),
                           Icon: FacebookIcon,
                           color: 'text-blue-400 hover:text-blue-300',
                         },
                         youtube: {
-                          label: 'View on YouTube',
+                          label: t('viewOn', { site: 'YouTube' }),
                           Icon: YouTubeIcon,
                           color: 'text-red-400 hover:text-red-300',
                         },
                       }
                       const fallback = {
-                        label: 'View original post',
+                        label: t('viewOriginal'),
                         Icon: ExternalLinkIcon,
                         color: 'text-cyan-400 hover:text-cyan-300',
                       }
@@ -3304,7 +3303,7 @@ export function DownloaderApp() {
                   className='btn-ghost btn-press w-full py-2.5 px-4 font-semibold rounded-xl flex items-center justify-center text-sm md:text-base'
                 >
                   <span className='relative'>
-                    {state.showPreview ? 'Hide preview' : 'Show preview'}
+                    {state.showPreview ? t('hidePreview') : t('showPreview')}
                   </span>
                 </button>
               )}
@@ -3349,16 +3348,16 @@ export function DownloaderApp() {
                             type: 'SET_MESSAGE',
                             payload: {
                               kind: 'info',
-                              text: 'Preview unavailable, but download should work',
+                              text: t('previewUnavailable'),
                             },
                           })
                         }}
                       >
-                        Your browser does not support the video tag.
+                        {t('videoUnsupported')}
                       </video>
                     </div>
                     <p className='text-white/50 text-xs text-center'>
-                      Press play to preview — nothing streams until you do.
+                      {t('pressPlay')}
                     </p>
                   </div>
                 )}
@@ -3428,7 +3427,7 @@ export function DownloaderApp() {
                       <div className='animate-section-in space-y-3 px-1'>
                         <div className='flex items-center justify-between bg-white/[0.03] border border-white/[0.08] rounded-lg p-3'>
                           <span className='text-white text-sm'>
-                            Select {galleryNoun} to download:
+                            {t('selectToDownload', { noun: galleryNoun })}
                           </span>
                           <div className='flex space-x-2'>
                             <button
@@ -3438,7 +3437,7 @@ export function DownloaderApp() {
                               }}
                               className='btn-grad px-3 py-1 text-xs font-semibold rounded-md transition-[box-shadow] duration-200'
                             >
-                              All
+                              {t('selectAll')}
                             </button>
                             <button
                               onClick={() => {
@@ -3447,7 +3446,7 @@ export function DownloaderApp() {
                               }}
                               className='btn-ghost px-3 py-1 text-xs font-medium rounded-md transition-colors'
                             >
-                              None
+                              {t('selectNone')}
                             </button>
                           </div>
                         </div>
@@ -3550,8 +3549,8 @@ export function DownloaderApp() {
 
                               <div className='pointer-events-none absolute inset-x-1.5 bottom-1.5 rounded bg-black/40 px-1.5 py-0.5 text-center text-[10px] text-white/80 opacity-0 transition-opacity group-hover:opacity-100'>
                                 {image.kind === 'video'
-                                  ? 'Click to play'
-                                  : 'Click to preview'}
+                                  ? t('clickPlay')
+                                  : t('clickPreview')}
                               </div>
                             </div>
                           ))}
@@ -3578,13 +3577,13 @@ export function DownloaderApp() {
                                 htmlFor='downloadAsZip'
                                 className='text-white text-sm'
                               >
-                                Download as ZIP file
+                                {t('zipLabel')}
                               </label>
                             </div>
                             <p className='text-white/60 text-xs'>
                               {state.downloadImagesAsZip
-                                ? `Selected ${galleryNoun} arrive as one ZIP file`
-                                : `Selected ${galleryNoun} download one by one`}
+                                ? t('zipOn', { noun: galleryNoun })
+                                : t('zipOff', { noun: galleryNoun })}
                             </p>
                           </div>
 
@@ -3607,7 +3606,7 @@ export function DownloaderApp() {
                             <>
                               <DownloadIcon className='flex-shrink-0 h-5 w-5' />
                               <span>
-                                Download selected (
+                                {t('downloadSelected')} (
                                 {state.videoMetadata?.images?.filter(
                                   (img) => img.selected,
                                 ).length || 0}
@@ -3640,7 +3639,7 @@ export function DownloaderApp() {
                   { key: 'hd', label: 'HD', onPick: () => reResolve('video', 'hd') },
                   {
                     key: 'sd',
-                    label: 'Data saver',
+                    label: t('dataSaver'),
                     onPick: () => reResolve('video', 'sd'),
                   },
                   {
@@ -3651,10 +3650,10 @@ export function DownloaderApp() {
                 ]
                 return (
                   <div className='flex items-center justify-center gap-2 text-xs'>
-                    <span className='text-white/50'>Get it as</span>
+                    <span className='text-white/50'>{t('getItAs')}</span>
                     <div
                       role='group'
-                      aria-label='Re-download as'
+                      aria-label={t('getItAsAria')}
                       className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
                     >
                       {options.map((o) => {
@@ -3782,7 +3781,7 @@ export function DownloaderApp() {
                 >
                   <span className='relative inline-flex items-center gap-2'>
                     <DownloadIcon className='h-4 w-4 flex-shrink-0' />
-                    Save both — video and MP3
+                    {t('saveBoth')}
                   </span>
                 </button>
               )}
@@ -3830,8 +3829,8 @@ export function DownloaderApp() {
                 !state.videoMetadata?.isPhotoCarousel && (
                   <p className='text-center text-[11px] leading-relaxed text-white/50'>
                     {canSendToApp
-                      ? 'Saved to Files. “Send to an app” above drops it straight into Photos or a chat.'
-                      : 'On iPhone it saves to Files. To add it to Photos, open the file, tap Share, then Save Video.'}
+                      ? t('iosSavedFiles')
+                      : t('iosSaveHint')}
                   </p>
                 )}
 

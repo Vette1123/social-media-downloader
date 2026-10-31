@@ -6,6 +6,7 @@ import { Surface } from '@/components/Surface'
 import { OFFERS, type OfferPlacement } from '@/config/offers'
 import { useHydrated } from '@/lib/clientEnv'
 import { useTier } from '@/lib/entitlements'
+import { useLocale, useT } from '@/lib/i18nStore'
 import { offerHref, selectOffer } from '@/lib/promo'
 
 /**
@@ -82,6 +83,8 @@ export function PromoSlot({
 }) {
   const hydrated = useHydrated()
   const tier = useTier()
+  const t = useT()
+  const locale = useLocale()
 
   // useId() returns the same string during the static (server) render and
   // during client hydration, so hashing it into the seed guarantees the same
@@ -95,6 +98,8 @@ export function PromoSlot({
     () => selectOffer(OFFERS, { placement, platform, seed }),
     [placement, platform, seed],
   )
+  // Only our own app is translated: a sponsor's words are the sponsor's.
+  const translated = locale !== 'en' && offer?.id === 'masareef'
 
   const adsEnabled = process.env.NEXT_PUBLIC_ADS_ENABLED === '1'
   const shownOffer = hydrated && tier !== 'pro' ? offer?.id : undefined
@@ -134,9 +139,11 @@ export function PromoSlot({
               />
             )}
             <div className='min-w-0'>
-              <p className='text-sm font-semibold text-white'>{offer.headline}</p>
+              <p className='text-sm font-semibold text-white'>
+                {translated ? t('offerMasareefHeadline') : offer.headline}
+              </p>
               <p className='mt-1 text-xs leading-relaxed text-white/60 md:text-sm'>
-                {offer.body}
+                {translated ? t('offerMasareefBody') : offer.body}
               </p>
             </div>
           </div>
@@ -156,9 +163,9 @@ export function PromoSlot({
             radius='xl'
             className='whitespace-nowrap px-3 py-2 text-sm font-medium text-white/80 hover:text-white'
           >
-            {offer.cta}
+            {translated ? t('offerMasareefCta') : offer.cta}
           </Surface>
-          <span className='text-[11px] text-white/50'>{offer.label ?? 'Sponsored'}</span>
+          <span className='text-[11px] text-white/50'>{translated ? t('offerMasareefLabel') : (offer.label ?? 'Sponsored')}</span>
         </div>
       )}
     </Surface>

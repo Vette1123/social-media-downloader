@@ -15,6 +15,12 @@ describe('routeTemplate', () => {
     expect(routeTemplate('/pro/')).toBe('/pro')
     expect(routeTemplate('/')).toBe('/')
   })
+
+  it('folds the language, so one screen stays one route', () => {
+    expect(routeTemplate('/es/tiktok-downloader')).toBe('/tiktok-downloader')
+    expect(routeTemplate('/ar')).toBe('/')
+    expect(routeTemplate('/id/')).toBe('/')
+  })
 })
 
 describe('nextVisit', () => {

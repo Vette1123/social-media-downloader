@@ -6,11 +6,15 @@ import { CheckIcon, CoffeeIcon } from '@/components/icons'
 import { PRO_BENEFITS } from '@/config/pro'
 import { siteConfig } from '@/config/site'
 import { SUPPORT_LIFETIME, SUPPORT_MEMBERSHIP, SUPPORT_PRICES } from '@/config/support'
+import { staticOpenGraph } from '@/lib/pageMetadata'
+
+const title = 'Support Social Media Downloader'
+const description = 'This downloader is free and stays free. Supporters also get the batch queue, playlist import, subtitle downloads, ZIP bundling and priority resolve.'
 
 export const metadata: Metadata = {
-  title: 'Support Social Media Downloader',
-  description:
-    'This downloader is free and stays free. Supporters also get the batch queue, playlist import, subtitle downloads, ZIP bundling and priority resolve.',
+  title,
+  description,
+  openGraph: staticOpenGraph('/pro', title, description),
   alternates: { canonical: '/pro' },
 }
 
