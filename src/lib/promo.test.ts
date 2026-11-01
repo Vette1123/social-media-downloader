@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { offerHref, selectOffers } from './promo'
+import { offerHref, offerRel, selectOffers } from './promo'
 import { OFFERS } from '../config/offers'
 import type { Offer } from '@/config/offers'
 
@@ -67,6 +67,25 @@ describe('selectOffers', () => {
       offer({ id: 'heavy', weight: 5 }),
     ]
     expect(ids(offers)).toEqual(['heavy', 'first'])
+  })
+})
+
+describe('our own apps', () => {
+  const own = OFFERS.filter((o) => o.ownApp)
+
+  it('are the two apps, on their chooser pages', () => {
+    expect(own.map((o) => o.id)).toEqual(['masareef', 'rafiq'])
+  })
+
+  it.each(own)('$id links to a clean, followed /go', (o) => {
+    expect(offerHref(o, 'in-content')).toBe(
+      `https://vette1123.github.io/${o.id}-privacy/go`,
+    )
+    expect(offerRel(o)).not.toMatch(/sponsored|nofollow/)
+  })
+
+  it('leaves an affiliate link sponsored', () => {
+    expect(offerRel(offer({ id: 'pcloud' }))).toContain('sponsored nofollow')
   })
 })
 

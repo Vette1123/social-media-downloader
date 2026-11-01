@@ -48,6 +48,10 @@ export function offerHref(
   placement: OfferPlacement,
   platform?: string,
 ): string {
+  // Nothing reads a subid on our own page, and an affiliate-shaped URL on a
+  // sponsored link is what a content blocker exists to stop.
+  if (offer.ownApp) return offer.href
+
   const subid = `${placement}_${platform || 'none'}`
 
   // The fragment has to be split off before `subid` is inserted and
@@ -61,4 +65,11 @@ export function offerHref(
   const fragment = hashIndex === -1 ? '' : offer.href.slice(hashIndex)
   const separator = base.includes('?') ? '&' : '?'
   return `${base}${separator}subid=${subid}${fragment}`
+}
+
+/** Google must follow a link to our own app; an affiliate link it must not. */
+export function offerRel(offer: Offer): string {
+  return offer.ownApp
+    ? 'noopener noreferrer'
+    : 'sponsored nofollow noopener noreferrer'
 }

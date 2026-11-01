@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useT } from '@/lib/i18nStore'
 import { AppsIcon, ChevronDownIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
-import { openStoreListing, PLAY_APPS, storeHref, storesLabel } from '@/lib/apps'
+import { onStoreLinkClick, PLAY_APPS, storeHref, storesLabel } from '@/lib/apps'
 
 /**
  * The footer's "Our apps" menu — the same popover the streaming site's header
@@ -88,10 +88,9 @@ export function PlayAppsMenu() {
                 target='_blank'
                 rel='noopener noreferrer'
                 onClick={(e) => {
-                  e.preventDefault()
+                  onStoreLinkClick(e, app)
                   setOpen(false)
                   trackFeatureUsed('app_store', { action: app.androidPackage })
-                  openStoreListing(app)
                 }}
                 // .card-hover, not a translucent white film: rows in a panel are
                 // exactly what that primitive is for, and hoverStyles.test.ts

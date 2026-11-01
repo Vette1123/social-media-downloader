@@ -40,6 +40,8 @@ export interface Offer {
   image?: string
   /** The tag beside the button. Defaults to 'Sponsored'; our own apps say so. */
   label?: string
+  /** Our link, not an affiliate's: a clean URL, followed by crawlers. */
+  ownApp?: boolean
 }
 
 /**
@@ -60,6 +62,7 @@ export const OFFERS: readonly Offer[] = [
     placements: ['post-result', 'in-content'],
     image: '/promo/masareef.png',
     label: 'Our app',
+    ownApp: true,
   },
   {
     id: 'rafiq',
@@ -72,6 +75,7 @@ export const OFFERS: readonly Offer[] = [
     placements: ['post-result', 'in-content'],
     image: '/promo/rafiq.png',
     label: 'Our app',
+    ownApp: true,
   },
   {
     id: 'hitpaw-converter',

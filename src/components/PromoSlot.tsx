@@ -8,7 +8,7 @@ import { useHydrated } from '@/lib/clientEnv'
 import { useTier } from '@/lib/entitlements'
 import type { TKey } from '@/lib/i18n'
 import { useLocale, useT } from '@/lib/i18nStore'
-import { offerHref, selectOffers } from '@/lib/promo'
+import { offerHref, offerRel, selectOffers } from '@/lib/promo'
 
 /** Our own apps are translated: a sponsor's words are the sponsor's. */
 const OWN_APP_COPY: Record<string, { headline: TKey; body: TKey; cta: TKey }> = {
@@ -108,7 +108,7 @@ function OfferCard({
           href={offerHref(offer, placement, platform)}
           onClick={() => trackFeatureUsed('promo_click', { action: offer.id, outcome: placement })}
           target='_blank'
-          rel='sponsored nofollow noopener noreferrer'
+          rel={offerRel(offer)}
           className='btn-grad btn-press whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-semibold'
         >
           {copy ? t(copy.cta) : offer.cta}
