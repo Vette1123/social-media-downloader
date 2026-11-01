@@ -30,6 +30,7 @@ the index for exactly that.
 
 | Date | Lesson | The one thing |
 | --- | --- | --- |
+| 2026-11-01 | [Store links belong to the browser](2026-11-01-store-links-belong-to-the-browser.md) | Our own apps were on the affiliate path. A link to your own page is a plain, followed anchor. |
 | 2026-10-20 | [The features I pitched were already on the ship](2026-10-20-already-shipped-telegram-webhook.md) | Map the repo before pitching features — three of four were built and tested already; the Telegram webhook was the only real gap, and it now exists. |
 | 2026-10-20 | [The reel that waited for everyone who was slow](2026-10-20-instagram-reel-race.md) | A chain of independent extractors is a race wearing a queue's clothing — race them, and never fetch a surface that design-side produces nothing for the link shape at hand. |
 | 2026-09-22 | [The link the browser had to fetch itself](2026-09-22-recipe-direct-browser.md) | Recipe-built URLs hand off to the browser with the referrer stripped (that host serves the full file referrer-less and a stub otherwise), and the only relay that answers Workers meters anonymous egress — measure it from two egresses before blaming the target, and never burn its quota with diagnostics. |
