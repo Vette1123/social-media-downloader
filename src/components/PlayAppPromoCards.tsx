@@ -4,7 +4,7 @@ import { useT } from '@/lib/i18nStore'
 import { AppsIcon } from '@/components/icons'
 import { LinkCard } from '@/components/LinkCard'
 import {
-  openStoreListing,
+  onStoreLinkClick,
   PLAY_APPS,
   PlayApp,
   storeHref,
@@ -27,10 +27,7 @@ export function PlayAppPromoCard({ app }: { app: PlayApp }) {
       Icon={AppsIcon}
       iconHoverClass='group-hover:text-white'
       title={t('appCardTitle', { app: app.name, stores: storesLabel(app) })}
-      onClick={(e: React.MouseEvent) => {
-        e.preventDefault()
-        openStoreListing(app)
-      }}
+      onClick={(e: React.MouseEvent) => onStoreLinkClick(e, app)}
       className='overflow-hidden'
     >
       <span
