@@ -1,1 +1,77 @@
-{}
+{
+  "01a1906f-f716-7f70-9b6d-5def239770ea": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a18e4f-47c3-7590-9c05-3017627a8018": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a19363-2a2e-7892-af5a-c68e766974f1": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a18fd5-4876-7980-a3d1-6f75e6951cd6": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a18e22-36a9-7923-abd7-cd91071e09a7": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a19180-42ad-7b00-b7ff-04439bdbba16": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a18e4f-335e-7ae3-95c9-cd2967be459c": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a18eab-e8e2-7443-a5d4-a768a375ba5c": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a19162-fcb6-7c03-9d7e-0dea2c4290bd": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a193ca-9d4e-7ed1-a213-8bd0605c610b": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a19857-10f7-7612-8f0c-475f79bb4463": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a18dc2-4966-7780-911a-32ad1d640e86": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a18dc2-4966-7780-911a-3296bfae05c8": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a18dc2-4965-7a41-a511-57947879189e": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  },
+  "01a19ba3-309b-7090-847b-1329f54f41ea": {
+    "fixedOn": "2026-11-03",
+    "what": "proxy 4xx/502 passthrough, failureCode rules, exception noise filter",
+    "commit": "2c21cb7"
+  }
+}
