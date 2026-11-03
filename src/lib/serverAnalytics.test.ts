@@ -47,4 +47,15 @@ describe('reportServerFailure', () => {
     )
     expect(waitUntil).not.toHaveBeenCalled()
   })
+
+  it('ignores 502: a proxy relaying that the upstream host failed', () => {
+    const waitUntil = vi.fn()
+    reportServerFailure(
+      new Request('https://x.space/api/audio'),
+      { POSTHOG_PROJECT_KEY: 'phc_x' },
+      { waitUntil },
+      { route: '/api/audio', status: 502 },
+    )
+    expect(waitUntil).not.toHaveBeenCalled()
+  })
 })

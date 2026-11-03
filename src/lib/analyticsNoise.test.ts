@@ -19,6 +19,13 @@ describe('shouldDropException', () => {
     expect(shouldDropException(exception('Failed to fetch'))).toBe(true)
   })
 
+  it('drops the early-crash "Script error." and the iOS no-stack DOMExceptions', () => {
+    expect(shouldDropException(exception('[early_crash] Script error.'))).toBe(true)
+    expect(shouldDropException(exception('NotSupportedError: The operation is not supported.'))).toBe(true)
+    expect(shouldDropException(exception("Can't find variable: EmptyRanges"))).toBe(true)
+    expect(shouldDropException(exception('AbortError: The operation was aborted.'))).toBe(true)
+  })
+
   it('drops a stack with no frame of ours', () => {
     expect(
       shouldDropException(exception('boom', ['https://x.space/:224:408'])),
