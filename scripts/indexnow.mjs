@@ -1,18 +1,26 @@
 /**
  * Submits the site's changed URLs to IndexNow so participating engines
- * (Bing, Yandex, Seznam, Naver, …) re-crawl them within minutes instead of
+ * (Bing, Yandex, Seznam, Naver, ...) re-crawl them within minutes instead of
  * waiting for their normal cycle. One POST notifies all of them.
  *
- *   pnpm indexnow                 submit every canonical URL (by hand, rarely)
- *   indexnow.mjs --snapshot F     save the live sitemap to F, before a deploy
- *   indexnow.mjs --since F        submit what moved between F and out/sitemap.xml
+ *   indexnow.mjs --plan F    BEFORE the deploy: compare out/ with the live site,
+ *                            write the changed URLs and why to F
+ *   indexnow.mjs --submit F  AFTER the deploy: submit what F lists
+ *   pnpm indexnow            plan and submit in one go (CI on main, or --force)
+ *   --dry-run                print the set and reasons, submit nothing (any env)
+ *   --all                    treat every URL in out/sitemap.xml as changed
+ *   --force                  submit outside a push to main
  *
- * The deploy workflow runs the last two around every production deploy. A deploy
- * changes no page most of the time, and resubmitting all of them each time asks
- * the engine to spend its crawl on pages it already has.
+ * "Changed" means new to the live sitemap, dropped from it, or a built page
+ * whose fingerprint (scripts/lib/indexnow-diff.mjs) differs from the page live
+ * right now. That comparison only means something before the deploy goes out,
+ * while the previous version still answers, which is why planning and
+ * submitting are separate steps. If the live sitemap cannot be read, every URL
+ * is submitted and the log says so. A missing plan file does the same.
  *
- * Every failure is logged and swallowed: a flaky search-engine endpoint must
- * never fail a deploy.
+ * The deploy workflow runs plan then submit around `wrangler deploy`. Every
+ * failure is logged and swallowed: a flaky search-engine endpoint must never
+ * fail a deploy.
  *
  * Ownership: public/<key>.txt is served at the site root. IndexNow fetches it
  * to confirm we own the host before honoring the submission.
@@ -20,92 +28,80 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  changeReason,
+  htmlRouteFor,
+  removedUrls,
+  sitemapUrls,
+} from './lib/indexnow-diff.mjs'
 
 // Matches public/f62bfbe4672c27f2ad3204b176eaab35.txt — the two must agree.
 const INDEXNOW_KEY = 'f62bfbe4672c27f2ad3204b176eaab35'
 // The shared endpoint fans one submission out to every participating engine.
 const ENDPOINT = 'https://api.indexnow.org/IndexNow'
+const OUT_DIR = 'out'
 
 const baseUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.socialdownloader.space'
 ).replace(/\/+$/, '')
 const host = new URL(baseUrl).host
-const SITEMAP_HEADERS = { 'User-Agent': 'socialdownloader-indexnow/1.0' }
+const FETCH_HEADERS = { 'User-Agent': 'socialdownloader-indexnow/1.0' }
 
-/** `<loc>` → `<lastmod>`. `<image:loc>` does not match, so images stay out. */
-function parseSitemap(xml) {
-  const pages = new Map()
-  for (const [, entry] of xml.matchAll(/<url>([\s\S]*?)<\/url>/g)) {
-    const loc = entry.match(/<loc>([^<]+)<\/loc>/)?.[1].trim()
-    if (loc) pages.set(loc, entry.match(/<lastmod>([^<]+)<\/lastmod>/)?.[1])
-  }
-  return pages
-}
-
-/**
- * The URLs that differ between two sitemaps: new, re-dated or removed. A removed
- * URL is sent too, so engines recrawl it, see the 404 and drop it. Returns null
- * when `beforeXml` holds no URLs, because that is a bad baseline, not an empty site.
- */
-export function changedUrls(beforeXml, afterXml) {
-  const before = parseSitemap(beforeXml)
-  if (!before.size) return null
-  const after = parseSitemap(afterXml)
-  const moved = [...after].filter(([loc, lastmod]) => before.get(loc) !== lastmod)
-  const removed = [...before.keys()].filter((loc) => !after.has(loc))
-  return [...moved.map(([loc]) => loc), ...removed]
-}
-
-/**
- * Pulls the canonical URL set straight from the deployed sitemap so the two
- * never drift; falls back to just the homepage if the sitemap is unreachable.
- */
-async function collectUrls() {
+async function fetchText(url) {
   try {
-    const res = await fetch(`${baseUrl}/sitemap.xml`, {
-      headers: SITEMAP_HEADERS,
-    })
-    if (res.ok) {
-      const xml = await res.text()
-      const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) =>
-        m[1].trim()
-      )
-      if (urls.length) return [...new Set(urls)]
-    }
+    const res = await fetch(url, { headers: FETCH_HEADERS })
+    return res.ok ? await res.text() : null
   } catch {
-    /* fall through to the homepage */
+    return null
   }
-  return [`${baseUrl}/`]
 }
 
-/** Saves the sitemap that is live now. A failure leaves no file: `--since` copes. */
-async function snapshot(file) {
-  const res = await fetch(`${baseUrl}/sitemap.xml`, { headers: SITEMAP_HEADERS })
-  if (!res.ok) throw new Error(`sitemap answered ${res.status}`)
-  const xml = await res.text()
-  writeFileSync(file, xml)
-  console.log(`IndexNow: saved ${parseSitemap(xml).size} URLs as the baseline`)
+function readBuilt(file) {
+  const path = join(OUT_DIR, file)
+  return existsSync(path) ? readFileSync(path, 'utf8') : null
 }
 
-/**
- * What to submit after a deploy. Reads the built sitemap rather than the live
- * one: the deploy already succeeded, and a stale edge copy would read as "nothing
- * changed". With no usable baseline it submits everything, the safe direction.
- */
-async function urlsSince(file) {
-  const before = existsSync(file) ? readFileSync(file, 'utf8') : ''
-  const urls = changedUrls(before, readFileSync('out/sitemap.xml', 'utf8'))
-  if (urls) return urls
-  console.warn('IndexNow: no usable baseline, submitting every URL')
-  return collectUrls()
+/** Runs `fn` over `items`, `size` at a time, so ~80 page fetches don't hit the edge at once. */
+async function inBatches(items, size, fn) {
+  for (let i = 0; i < items.length; i += size) {
+    await Promise.all(items.slice(i, i + size).map(fn))
+  }
 }
 
-async function main() {
-  const flag = process.argv[2]
-  if (flag === '--snapshot') return snapshot(process.argv[3])
-  const urlList =
-    flag === '--since' ? await urlsSince(process.argv[3]) : await collectUrls()
+/** `{ url: reason }` for what this build changes. */
+async function buildPlan(all) {
+  const builtXml = readBuilt('sitemap.xml')
+  if (!builtXml) throw new Error('out/sitemap.xml is missing: run pnpm cf:build first')
+  const urls = [...sitemapUrls(builtXml)]
+  const every = (reason) => Object.fromEntries(urls.map((u) => [u, reason]))
+  if (all) return every('all')
+
+  const liveXml = await fetchText(`${baseUrl}/sitemap.xml`)
+  if (liveXml === null) {
+    console.warn(`IndexNow: live sitemap unreadable, planning all ${urls.length} URLs.`)
+    return every('live-sitemap-unreadable')
+  }
+  const liveSitemap = sitemapUrls(liveXml)
+  const reasons = {}
+  await inBatches(urls, 10, async (url) => {
+    const route = htmlRouteFor(url, baseUrl)
+    const built = route ? readBuilt(route) : null
+    const live = built !== null && liveSitemap.has(url) ? await fetchText(url) : null
+    const reason = changeReason({ url, liveSitemap, built, live })
+    if (reason) reasons[url] = reason
+  })
+  for (const url of removedUrls(liveSitemap, new Set(urls))) reasons[url] = 'removed'
+  console.log(`IndexNow: ${Object.keys(reasons).length} of ${urls.length} URLs changed vs the live site.`)
+  return reasons
+}
+
+function printPlan(plan) {
+  for (const [url, reason] of Object.entries(plan)) console.log(`  ${reason}  ${url}`)
+}
+
+async function submit(urlList) {
   if (!urlList.length) {
     console.log('IndexNow: no page changed in this deploy, nothing to submit')
     return
@@ -121,20 +117,54 @@ async function main() {
     }),
   })
   // 200 OK and 202 Accepted both mean the submission was received.
-  console.log(
-    `IndexNow: submitted ${urlList.length} URLs → ${res.status} ${res.statusText}`
-  )
+  console.log(`IndexNow: submitted ${urlList.length} URLs -> ${res.status} ${res.statusText}`)
   if (!res.ok && res.status !== 202) {
     const body = await res.text().catch(() => '')
     console.warn(`IndexNow: non-success response body: ${body.slice(0, 500)}`)
   }
 }
 
+/** After the deploy: send what the plan lists. No plan means planning died, so send all. */
+async function submitPlan(file) {
+  if (existsSync(file)) return submit(Object.keys(JSON.parse(readFileSync(file, 'utf8'))))
+  console.warn('IndexNow: no plan file, submitting every URL in the live sitemap')
+  const xml = await fetchText(`${baseUrl}/sitemap.xml`)
+  return submit(xml ? [...sitemapUrls(xml)] : [`${baseUrl}/`])
+}
+
+async function main() {
+  const args = process.argv.slice(2)
+  const valueOf = (name) => args[args.indexOf(name) + 1]
+  const dryRun = args.includes('--dry-run')
+  const all = args.includes('--all')
+
+  if (args.includes('--submit') && !dryRun) return submitPlan(valueOf('--submit'))
+
+  if (args.includes('--plan')) {
+    const plan = await buildPlan(all)
+    printPlan(plan)
+    if (dryRun) return console.log('IndexNow: --dry-run, no plan written.')
+    return writeFileSync(valueOf('--plan'), JSON.stringify(plan, null, 2))
+  }
+
+  const onMain =
+    process.env.GITHUB_REF === 'refs/heads/main' &&
+    process.env.GITHUB_EVENT_NAME !== 'pull_request'
+  if (!dryRun && !args.includes('--force') && !onMain) {
+    console.log('IndexNow: skipped (not a push to main; pass --force or --dry-run).')
+    return
+  }
+  const plan = await buildPlan(all)
+  printPlan(plan)
+  if (dryRun) return console.log('IndexNow: --dry-run, nothing submitted.')
+  await submit(Object.keys(plan))
+}
+
 // Best-effort: log any failure but always exit 0 so a search-engine ping can
-// never fail the build it runs inside. Guarded so importing the helpers in a
+// never fail the build it runs inside. Guarded so importing this file in a
 // test cannot fire a real submission.
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((err) => {
-    console.warn(`IndexNow: submission failed (ignored): ${String(err)}`)
+    console.warn(`IndexNow: failed (ignored): ${String(err)}`)
   })
 }

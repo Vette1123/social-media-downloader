@@ -49,3 +49,6 @@ next-env.d.ts
 .zcode/
 .prof/
 .worker-size-check/
+
+# IndexNow plan written before a deploy
+/.indexnow-plan.json

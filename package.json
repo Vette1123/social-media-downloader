@@ -18,7 +18,7 @@
     "i18n:lock": "cross-env I18N_LOCK=1 vitest run src/lib/localeContent.test.ts",
     "cf:build": "cross-env DEPLOY_TARGET=cloudflare next build && node scripts/cf-postbuild.mjs",
     "preview": "pnpm cf:build && wrangler dev",
-    "deploy": "pnpm cf:build && wrangler deploy && node scripts/indexnow.mjs",
+    "deploy": "pnpm cf:build && node scripts/indexnow.mjs --plan .indexnow-plan.json && wrangler deploy && node scripts/indexnow.mjs --submit .indexnow-plan.json",
     "cf:startup": "node --experimental-vm-modules scripts/worker-startup.mjs",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "cf:smoke": "node scripts/cf-smoke.mjs",

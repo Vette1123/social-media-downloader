@@ -94,11 +94,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # What is live before this deploy, so the ping below can send only the
-      # pages this deploy moved.
-      - name: Snapshot the live sitemap
+      # Compares each built page with the one live now, before the deploy replaces it,
+      # so the ping below sends only the pages whose content changed.
+      - name: Plan IndexNow (built pages vs live)
         if: github.event_name != 'pull_request'
-        run: node scripts/indexnow.mjs --snapshot .sitemap-before.xml
+        run: node scripts/indexnow.mjs --plan .indexnow-plan.json
 
       - name: Deploy
         if: github.event_name != 'pull_request'
@@ -112,7 +112,7 @@ jobs:
       # endpoint must never fail a deploy.
       - name: Ping IndexNow
         if: github.event_name != 'pull_request'
-        run: node scripts/indexnow.mjs --since .sitemap-before.xml
+        run: node scripts/indexnow.mjs --submit .indexnow-plan.json
 
   # The deploy is not the verification. This is: 148 assertions against the
   # live origin — every API route, the static-asset headers that prove pages are
