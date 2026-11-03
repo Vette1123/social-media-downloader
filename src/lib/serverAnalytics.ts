@@ -66,7 +66,9 @@ export function reportServerFailure(
 ): void {
   const key = env.POSTHOG_PROJECT_KEY
   // 501 is nativeMedia's deliberate "cannot run here", which nothing failed to do.
-  if (!key || failure.status === 501) return
+  // 502 is a proxy saying the upstream host failed, not this Worker; the browser
+  // still records it as an api_error, so the trend is kept.
+  if (!key || failure.status === 501 || failure.status === 502) return
   const country = (request as Request & { cf?: { country?: string } }).cf?.country
   ctx.waitUntil(
     fetch(CAPTURE_URL, {

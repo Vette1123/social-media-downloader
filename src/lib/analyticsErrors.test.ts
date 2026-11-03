@@ -9,7 +9,12 @@ describe('failureCode', () => {
     ['The post may be private', 'private'],
     ['This site is not supported', 'unsupported'],
     ['Video unavailable', 'unavailable'],
-    ['HTTP 502', 'server'],
+    ['HTTP 500', 'server'],
+    ['HTTP 502', 'unavailable'],
+    ['HTTP 403', 'unavailable'],
+    ['network error', 'network'],
+    ['Instagram only serves these to a logged-in account', 'private'],
+    ['video2.twimg.nom.es blocks automated requests from our servers', 'unavailable'],
     ['Failed to extract download URL', 'upstream'],
     [undefined, 'upstream'],
   ] as const)('%s → %s', (message, code) => {

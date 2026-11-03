@@ -11,7 +11,11 @@ const NOISE_PATTERNS = [
   /Minified React error #418\b/i,
   /react\.dev\/errors\/418\b/i,
   /Hydration failed because the server rendered HTML/i,
-  /^\s*Script error\.?\s*$/i,
+  // Optionally behind the "[source]" prefix our own early-crash reporter adds.
+  /^\s*(\[[\w:]+\]\s*)?Script error\.?\s*$/i,
+  // iOS Safari, thrown with no stack and no frame of ours: native media controls
+  // and a navigation cancelling a request. Nothing here to act on.
+  /^\s*(DOMException: )?(NotSupportedError: The operation is not supported|AbortError: The operation was aborted)\.?\s*$/i,
   /Failed to execute '(removeChild|insertBefore)' on 'Node'/i,
   /NotFoundError: The object can not be found here/i,
   /The node to be removed is not a child of this node/i,
@@ -20,6 +24,8 @@ const NOISE_PATTERNS = [
   /_internal_videoInjector/i,
   /\bstandardSelectors\b/,
   /Transition was skipped/i,
+  // Injected by a Safari extension or reader mode; nothing of ours defines it.
+  /Can't find variable: EmptyRanges/i,
   // A tab that outlived a deploy, or a connection that dropped.
   /ChunkLoadError|Loading (CSS )?chunk \S+ failed/i,
   /Failed to fetch dynamically imported module/i,

@@ -129,6 +129,62 @@ function timestampedName(prefix: string, extension: string): string {
 }
 
 /**
+ * What a proxy answers when the upstream host would not hand the file over.
+ * An upstream 4xx (an expired signed link, a deleted post) is passed through, so
+ * the client sees what really happened. Anything else (a 5xx, Cloudflare's 530,
+ * a dropped connection) is a 502: the origin failed, not this Worker, and it
+ * must not read as a 500 of ours in Error Tracking.
+ */
+function upstreamFailure(upstreamStatus: number | undefined, what: string): Response {
+  const passThrough =
+    upstreamStatus !== undefined &&
+    upstreamStatus >= 400 &&
+    upstreamStatus < 500 &&
+    upstreamStatus !== 429
+  return json(
+    { error: `Failed to fetch ${what}${upstreamStatus ? `: ${upstreamStatus}` : ''}` },
+    { status: passThrough ? upstreamStatus : 502 },
+  )
+}
+
+/** Thrown when the upstream fetch itself fails, as opposed to this handler. */
+class UpstreamError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number,
+  ) {
+    super(message)
+  }
+}
+
+/**
+ * Fetches the upstream file, retrying once on a transient failure (429/5xx or a
+ * dropped connection): a cold CDN edge otherwise becomes a red banner on the
+ * first tap. Definitive 4xx answers are returned as-is, never retried. A fetch
+ * that throws, or a 5xx that outlasts the retry, becomes an UpstreamError.
+ */
+async function fetchUpstream(url: string, headers: Record<string, string>): Promise<Response> {
+  try {
+    return await withRetry(
+      async () => {
+        const res = await fetch(url, { headers, redirect: 'follow' })
+        if (res.ok || res.status === 206 || (res.status < 500 && res.status !== 429)) return res
+        await res.body?.cancel().catch(() => {})
+        const err = new Error(`upstream ${res.status}`) as Error & {
+          response?: { status?: number }
+        }
+        err.response = { status: res.status }
+        throw err
+      },
+      { retries: 1, isRetryable: isTransientError },
+    )
+  } catch (error) {
+    const status = (error as { response?: { status?: number } }).response?.status
+    throw new UpstreamError(errorMessage(error), status)
+  }
+}
+
+/**
  * Streams a remote image same-origin.
  *
  * Instagram's scontent/fbcdn hosts omit CORS headers, so the browser cannot
@@ -145,16 +201,8 @@ export async function handleImageProxy(request: Request): Promise<Response> {
       return json({ error: 'Invalid image URL format' }, { status: 400 })
     }
 
-    const response = await fetch(imageUrl, {
-      headers: upstreamHeaders(imageUrl, IMAGE_ACCEPT),
-      redirect: 'follow',
-    })
-    if (!response.ok) {
-      return json(
-        { error: `Failed to fetch image: ${response.status}` },
-        { status: response.status },
-      )
-    }
+    const response = await fetchUpstream(imageUrl, upstreamHeaders(imageUrl, IMAGE_ACCEPT))
+    if (!response.ok) return upstreamFailure(response.status, 'image')
 
     const headers: Record<string, string> = {
       'Content-Type': response.headers.get('content-type') || 'image/jpeg',
@@ -168,6 +216,7 @@ export async function handleImageProxy(request: Request): Promise<Response> {
     // Pass the body through as a stream — never buffer it into memory.
     return new Response(response.body, { status: 200, headers })
   } catch (error) {
+    if (error instanceof UpstreamError) return upstreamFailure(error.status, 'image')
     return json(
       { error: 'Failed to fetch image: ' + errorMessage(error) },
       { status: 500 },
@@ -201,31 +250,9 @@ export async function handleVideoProxy(request: Request): Promise<Response> {
       ...(rangeHeader ? { Range: rangeHeader } : {}),
     })
 
-    // One upstream retry on a transient failure (429/5xx/network drop). A
-    // cold CDN edge or a one-shot 502 otherwise turns into a red banner on
-    // the visitor's first tap; the second tap succeeds because the upstream
-    // has warmed. Definitive 4xx answers are returned as-is, never retried.
-    const response = await withRetry(
-      async () => {
-        const res = await fetch(videoUrl, { headers, redirect: 'follow' })
-        if (res.ok || res.status === 206) return res
-        if (res.status === 429 || res.status >= 500) {
-          await res.body?.cancel().catch(() => {})
-          const err = new Error(`upstream ${res.status}`) as Error & {
-            response?: { status?: number }
-          }
-          err.response = { status: res.status }
-          throw err
-        }
-        return res
-      },
-      { retries: 1, isRetryable: isTransientError },
-    )
+    const response = await fetchUpstream(videoUrl, headers)
     if (!response.ok && response.status !== 206) {
-      return json(
-        { error: `Failed to fetch video: ${response.status}` },
-        { status: response.status },
-      )
+      return upstreamFailure(response.status, 'video')
     }
 
     const ranged = await resolveRangeResponse(response, rangeHeader, (retry) =>
@@ -265,6 +292,7 @@ export async function handleVideoProxy(request: Request): Promise<Response> {
       headers: responseHeaders,
     })
   } catch (error) {
+    if (error instanceof UpstreamError) return upstreamFailure(error.status, 'video')
     return json(
       { error: 'Failed to fetch video: ' + errorMessage(error) },
       { status: 500 },
@@ -294,11 +322,9 @@ export async function handleAudioProxy(request: Request): Promise<Response> {
       ...(rangeHeader ? { Range: rangeHeader } : {}),
     })
 
-    const response = await fetch(audioUrl, { headers, redirect: 'follow' })
+    const response = await fetchUpstream(audioUrl, headers)
     if (!response.ok && response.status !== 206) {
-      throw new Error(
-        `Failed to fetch audio: ${response.status} ${response.statusText}`,
-      )
+      return upstreamFailure(response.status, 'audio')
     }
 
     const ranged = await resolveRangeResponse(response, rangeHeader, (retry) =>
@@ -320,7 +346,8 @@ export async function handleAudioProxy(request: Request): Promise<Response> {
       status: ranged.status,
       headers: responseHeaders,
     })
-  } catch {
+  } catch (error) {
+    if (error instanceof UpstreamError) return upstreamFailure(error.status, 'audio')
     return json({ success: false, error: 'Failed to extract audio' }, { status: 500 })
   }
 }
