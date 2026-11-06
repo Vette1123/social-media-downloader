@@ -112,12 +112,12 @@
     "support": {
       "compactTitle": "Este sitio es gratis y no tiene límites.",
       "compactBody": "Mantener los servicios de resolución en marcha cuesta dinero. ${monthly} al mes cubre una parte y activa la cola por lotes.",
-      "coffee": "Invítame un café",
+      "coffee": "Apoya esto",
       "title": "Gratis para siempre. Pero mantenerlo cuesta.",
       "body": "Cada descarga aquí es gratis, sin cuenta y sin límites, y eso no va a cambiar. Una membresía cubre una parte de lo que cuesta mantener en marcha los servicios de resolución, y activa estas cuatro funciones para ti.",
       "monthly": "Apoyar: ${monthly}/mes",
       "lifetime": "O ${lifetime} una sola vez, para siempre",
-      "note": "Cancela cuando quieras, desde Buy Me a Coffee. Un café suelto de cualquier importe también sirve.",
+      "note": "Por ahora el apoyo se gestiona por correo. Cancela cuando quieras con un solo correo.",
       "benefits": [
         {
           "title": "La cola por lotes",
@@ -218,15 +218,14 @@
         "membershipPrice": "${monthly}/mes · ${yearly}/año",
         "lifetime": "De por vida",
         "lifetimePrice": "${lifetime} una sola vez · no se renueva",
-        "howItSwitches": "Cualquiera de las dos activa los extras por sí sola, para el correo con el que pagas. No necesitas una cuenta aquí para pagar y no tienes que enviarme nada.",
+        "howItSwitches": "Cualquiera de los dos botones abre un correo para mí. La respuesta te dice cómo pagar, y activo los extras a mano para la dirección con la que inicias sesión, normalmente el mismo día.",
         "extrasTitle": "Quienes apoyan reciben los extras",
-        "levels": "Los dos niveles son {membership} y {lifetime}. Inicia sesión aquí con el mismo correo con el que pagaste y los extras ya estarán activos, normalmente en unos minutos. La mensual cubre este descargador; la de por vida cubre todos los proyectos que creo, incluidos los que todavía no existen.",
-        "oneOff": "¿Prefieres {coffee} de cualquier importe? Es un simple agradecimiento y no activa nada por sí solo. Lo mismo si iniciaste sesión con otro correo: escribe a {email} desde el correo que aparece en tu recibo y lo resolveré a mano, normalmente el mismo día.",
-        "oneOffLink": "un café suelto",
+        "levels": "La mensual cubre este descargador; la vitalicia cubre todos los proyectos que creo, incluidos los que aún no existen. Inicia sesión aquí con la dirección que indicaste en el correo y los extras ya estarán activos.",
+        "oneOff": "¿Iniciaste sesión con una dirección distinta de la que indicaste? Escribe a {email} y lo paso a mano, normalmente el mismo día.",
         "directTitle": "Y una línea directa conmigo.",
         "directBody": "Quienes apoyan reciben mi número: escríbeme cuando quieras, sobre lo que sea. Pide una función y la construiré si se puede construir. La lista es corta, así que es una promesa real y no una frase bonita.",
         "closing": "Todo lo anterior trata de hacer el mismo trabajo sin estar encima: una cola en lugar de un enlace a la vez, una tanda completa en un solo archivo en lugar de veinte, una lista de reproducción en lugar de veinte pegados, y descargas con el nombre que usas para ordenar tus cosas. Ninguna de estas funciones llega a nada que un visitante sin ellas no pueda descargar ya, y ninguna implica que este sitio inicie sesión en algún lugar en tu nombre. Todo lo que hoy es gratis seguirá siéndolo, apoye alguien esto o no.",
-        "tip": "Apoyar esto es una propina, no una compra: no hay factura nuestra ni política de reembolso, porque no se vende nada. Los pagos, las membresías y su cancelación los gestiona por completo Buy Me a Coffee bajo sus propios términos. Consultas: {email}, atendidas por {author}."
+        "tip": "Apoyar esto es una propina, no una compra: no hay factura nuestra ni política de reembolso, porque no se vende nada. Por ahora se gestiona por correo, y dejarlo cuesta un solo correo. Preguntas: {email}, las responde {author}."
       },
       "privacy": {
         "metaTitle": "Política de privacidad — Social Media Downloader",
@@ -262,8 +261,8 @@
           {
             "heading": "Pagos",
             "paragraphs": [
-              "En este sitio no se vende nada, así que no recibimos pagos ni guardamos datos de facturación. Si apoyas el proyecto, eso ocurre por completo en Buy Me a Coffee según su política de privacidad, y nunca vemos los datos de tu tarjeta.",
-              "Buy Me a Coffee nos indica la dirección de correo con la que pagaste, el nivel que elegiste y cuándo empieza o termina una membresía. Guardamos ese registro para que los extras se activen para esa dirección, incluso antes de que inicies sesión aquí. Se elimina cuando termina una membresía; un registro de por vida se conserva para que los extras sigan siendo tuyos. Eliminar tu cuenta no borra este registro, porque pertenece al pago y no a la cuenta: escribe a {email} y lo eliminaremos."
+              "En este sitio no se vende nada, así que no recibimos pagos a través de él ni guardamos datos de facturación. Si apoyas el proyecto, eso se gestiona por correo, y nunca vemos los datos de tu tarjeta.",
+              "Guardamos la dirección de correo para la que se activa el apoyo, y si es mensual, anual o vitalicio, para que los extras se activen para esa dirección, incluso antes de que inicies sesión aquí. Se elimina cuando termina el apoyo; el registro vitalicio se conserva para que los extras sigan siendo tuyos. Eliminar tu cuenta no borra este registro, porque pertenece al apoyo y no a la cuenta: escribe a {email} y lo borraremos."
             ]
           },
           {
@@ -332,10 +331,10 @@
           {
             "heading": "Apoyar este proyecto",
             "paragraphs": [
-              "Nada en {site} lo vendemos nosotros y nunca te cobramos directamente. Si alguna vez te cobra algo que dice ser este sitio y no es Buy Me a Coffee, no somos nosotros, y nos gustaría saberlo.",
-              "Puedes apoyar el proyecto de forma voluntaria a través de Buy Me a Coffee: con una membresía mensual o anual que se renueva hasta que la canceles, con un nivel de por vida de pago único o con un café puntual. El pago, la renovación y la cancelación los gestiona por completo esa plataforma según sus propios términos, y una membresía se cancela allí, no aquí. Una membresía o el nivel de por vida activan por sí solos algunas comodidades para la dirección con la que pagas, en cuanto inicias sesión aquí con esa dirección: cola por lotes, agrupación en ZIP de un lote, resolución prioritaria, nombres de archivo personalizados y ninguna tarjeta de patrocinador. Las comodidades de una membresía terminan cuando termina la membresía. Un café puntual no activa nada por sí solo: escríbenos y lo haremos a mano; lo mismo si pagaste con otra dirección.",
+              "Nada en {site} se vende a través del sitio, y el sitio nunca te cobra. Si alguna vez te cobra algo que dice ser este sitio y que no acordaste por correo con nosotros, no somos nosotros, y nos gustaría saberlo.",
+              "Puedes apoyar el proyecto de forma voluntaria por correo: con una membresía mensual o anual que dura hasta que pidas terminarla, o con un nivel vitalicio pagado una sola vez. Escribe y la respuesta te dice cómo pagar. El apoyo activa algunas comodidades para la dirección que indiques, una vez que inicies sesión aquí con esa dirección: una cola por lotes, empaquetado ZIP de una tanda, resolución prioritaria, nombres de archivo personalizados y sin tarjeta de patrocinio. Las comodidades de una membresía terminan cuando termina la membresía. Si iniciaste sesión con otra dirección, escríbenos y la pasaremos a mano.",
               "Esas comodidades son un regalo y no un derecho adquirido. Podemos cambiarlas o retirarlas en cualquier momento y, como no vendemos nada, no hay nada que debamos reembolsar. Ninguna cambia lo que un enlace puede alcanzar; consulta lo anterior.",
-              "Si quieres revertir un pago, eso es entre tú y Buy Me a Coffee, aunque escribir primero a {email} suele ser más rápido."
+              "Si quieres revertir un pago, escribe a {email}."
             ]
           },
           {

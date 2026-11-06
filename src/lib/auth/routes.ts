@@ -12,7 +12,7 @@ import { requireDb, type WorkerEnv } from '../workerEnv'
 import type { WaitUntilContext } from '../edgeCache'
 import { ACCESS_TOKEN_TTL_MS, signToken } from '../proToken'
 import { hasGrant, isEntitled, isProAt } from '../billing/entitlement'
-import { claimSupporterGrants } from '../billing/bmc'
+import { claimSupporterGrants } from '../billing/supporters'
 import {
   OAUTH_STATE_COOKIE,
   OAUTH_VERIFIER_COOKIE,

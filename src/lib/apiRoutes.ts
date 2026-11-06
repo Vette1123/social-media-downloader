@@ -39,7 +39,6 @@ import {
 import { fetchPlayerResponse } from './youtubeInnertube'
 import { type TokenPayload, verifyToken } from './proToken'
 import { handleWebhook } from './billing/webhook'
-import { handleBmcWebhook } from './billing/bmc'
 import { handlePortal } from './billing/portal'
 import { handleCheckout } from './billing/checkout'
 import { handleCancel } from './billing/cancel'
@@ -729,7 +728,6 @@ export const API_ROUTES: Record<string, { method: string; handler: Handler }> = 
   '/api/tiktok': { method: 'GET', handler: nativeMediaRoute('Direct TikTok download') },
   '/api/youtube': { method: 'GET', handler: nativeMediaRoute('Direct YouTube download') },
   '/api/billing/webhook': { method: 'POST', handler: handleWebhook },
-  '/api/billing/bmc': { method: 'POST', handler: handleBmcWebhook },
   '/api/billing/portal': { method: 'GET', handler: handlePortal },
   '/api/billing/checkout': { method: 'GET', handler: handleCheckout },
   '/api/billing/cancel': { method: 'POST', handler: handleCancel },

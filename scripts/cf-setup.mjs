@@ -506,7 +506,7 @@ async function apexRedirectViaPageRule(ctx, zone) {
  * store either, which on this zone has already cost us, twice, in ways that
  * took a day each to diagnose:
  *
- *   - every payment-provider webhook delivery (docs/buymeacoffee-setup.md),
+ *   - every payment-provider webhook delivery,
  *     worked around with an IP Access Rule whitelist for one AWS /24;
  *   - Google's OAuth brand-verification fetch (lessons/2026-08-15-…).
  *
@@ -588,8 +588,8 @@ const JUNK_UAS = [
 
 /**
  * Paths this rule must never touch: the webhook senders are exactly the kind of
- * client it describes. Buy Me a Coffee posts from AWS as `BMC-HTTPS-ROBOT` and
- * the other provider posts with an `axios` user agent, and both verify an HMAC
+ * client it describes. The payment provider posts with an
+ * `axios` user agent and its handler verifies an HMAC
  * over their own body before a byte is trusted — they do not need UA screening
  * and cannot survive it.
  */
@@ -921,7 +921,7 @@ const HEALTH_MUST_PASS = [
   /gptbot|oai-searchbot|chatgpt-user|perplexity|claudebot|anthropic/i,
   /facebookexternalhit|twitterbot|telegrambot|whatsapp|discordbot|linkedinbot|slackbot/i,
   /socialdownloader-indexnow/i,
-  /bmc-https-robot|creem/i,
+  /creem/i,
 ]
 
 /**

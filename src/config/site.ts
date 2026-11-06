@@ -53,28 +53,6 @@ export const siteConfig = {
     portfolio: 'https://www.mohamedgado.com',
     /** Our other site: the streaming/discovery app. Sister link, both ways. */
     reely: 'https://www.reely.space',
-    /**
-     * The one way to put money into this project, and deliberately a donation
-     * rather than a product.
-     *
-     * A tip is not a sale: nothing is promised in return, so there is no
-     * merchant of record, no entitlement to enforce, no refund policy and no
-     * subscription to cancel. That matters here — every merchant of record
-     * approached refused this product category, and the honest response is to
-     * stop selling rather than to keep rewording the same offer.
-     */
-    sponsor: 'https://buymeacoffee.com/vetteotp',
-    /**
-     * The two membership levels, rather than the tip jar.
-     *
-     * A separate link because the two asks are different: `sponsor` is a
-     * one-off of any amount and grants nothing automatically, while this page
-     * carries the levels the webhook actually recognises — pay here and the
-     * extras switch themselves on. Anywhere the copy mentions supporter status
-     * must point at this one, or someone follows the ask, pays, and gets
-     * nothing. See docs/buymeacoffee-setup.md.
-     */
-    membership: 'https://buymeacoffee.com/vetteotp/membership',
   },
   twitterTag: '@Sadge1996',
   /**

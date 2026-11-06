@@ -1,61 +1,45 @@
 /**
- * Which Buy Me a Coffee offers belong to *this* project.
+ * How somebody becomes a supporter, and what it costs.
  *
- * One account serves several projects, and every webhook endpoint on it
- * receives every event — endpoints subscribe to event types, not to levels. The
- * only per-purchase attribute the provider carries that we control is the name
- * of the thing bought, so each project tags its offers with its own short name
- * and recognises nothing else. That tag is the whole mechanism; there is no
- * shared database and no cross-project lookup.
- *
- * Written once, here. The webhook matches on it (`src/lib/billing/bmc.ts`) and
- * the support page prints it (`src/app/pro/page.tsx`), and the failure this
- * file exists to prevent is those two drifting apart from each other or from
- * the dashboard: a renamed offer stops every grant, with one log line to say so
- * and a supporter who paid to notice it.
+ * The old payment provider suspended the account on 2026-11-06, so until a new
+ * one is in place support is arranged by EMAIL: every support button opens a
+ * pre-addressed mail to `PRO_EMAIL`, the reply says how to pay, and the owner
+ * switches the extras on by hand with `pnpm pro <address>`
+ * (scripts/grant-pro.mjs). That writes the same `supporters` row every earlier
+ * supporter already has, so nobody who paid before loses anything, and an
+ * address with no account yet is claimed on its first sign-in
+ * (src/lib/billing/supporters.ts).
  *
  * Its own file rather than a field on `siteConfig` so the Worker bundle does
- * not pull in the keyword list, and the support page does not pull in the
- * webhook.
- *
- * Copying this to another project: change `SUPPORT_TAG`, rename the two offers
- * in the dashboard to match, and nothing else moves.
+ * not pull it in.
  */
 export const SUPPORT_TAG = 'Downloader'
 
-/**
- * The recurring level, on the provider's Memberships shelf. $5 monthly or $50
- * yearly — the same prices in every project.
- */
-export const SUPPORT_MEMBERSHIP = `${SUPPORT_TAG} — Supporter`
+/** Where a request to support goes. One constant; every support button reads it. */
+export const PRO_EMAIL = 'booogado@gmail.com'
+
+/** The plans, as the subject line names them. */
+export type ProPlan = 'Monthly or yearly' | 'Lifetime' | 'Any plan'
 
 /**
- * The one-time purchase — and the one offer that is deliberately NOT tagged.
- *
- * Buy Me a Coffee allows exactly one lifetime level per account, not one per
- * project, so a tagged `Downloader — Lifetime` cannot coexist with a second
- * project's. The choice that leaves is either no lifetime at all, or one that
- * covers everything on the account. This is the second: the string below is
- * shared verbatim by every project's support config, every endpoint recognises
- * it, and $99 buys supporter status in all of them at once.
- *
- * That is the exact behaviour `SUPPORT_TAG` exists to prevent, allowed here on
- * purpose and only here. The *recurring* membership is still tagged, so the
- * cheap offer cannot leak across projects.
- *
- * Renamed in the dashboard, it stops granting everywhere at once — so the string
- * has to change in every project's config in the same sitting. The other copy
- * lives in `movies-streaming-platform/config/support.ts`.
+ * A pre-filled mail asking to support: the plan in the subject, and the address
+ * to switch on in the body, because the extras are granted to the sign-in email
+ * and a request that does not name it costs a round trip.
  */
-export const SUPPORT_LIFETIME = 'Lifetime — everything I build'
+export function proMailto(plan: ProPlan, accountEmail: string | null = null): string {
+  const subject = `${SUPPORT_TAG} supporter — ${plan}`
+  const body = [
+    `Hi, I would like to support Social Media Downloader (${plan}).`,
+    '',
+    `The email I sign in with: ${accountEmail ?? ''}`,
+    '',
+  ].join('\n')
+  return `mailto:${PRO_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
 
 /**
- * What each one costs, in whole dollars, so the site and the dashboard cannot
- * disagree about the price of the thing it is linking to.
- *
- * The rule the numbers encode: a lifetime is a *multiple* of the yearly, never
- * a discount on it. At the first attempt it was $35 against a $50 yearly, which
- * kills the yearly outright and pays for itself in seven months — a permanent
- * grant sold for less than one year of the thing it replaces.
+ * What each plan costs, in whole dollars. A lifetime is a *multiple* of the
+ * yearly, never a discount on it: priced under the annual it kills the annual
+ * and pays for itself inside a year.
  */
 export const SUPPORT_PRICES = { monthly: 5, yearly: 50, lifetime: 99 } as const
