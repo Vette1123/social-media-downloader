@@ -1,6 +1,6 @@
 import Link from '@/components/IntentLink'
 import { HiddenForPro } from '@/components/HiddenForPro'
-import { CheckIcon, CoffeeIcon } from '@/components/icons'
+import { CheckIcon, MailIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
 import { SUPPORT_PRICES } from '@/config/support'
 import { fill, type Locale } from '@/lib/i18n'
@@ -54,7 +54,7 @@ export function SupportPanel({
           data-pro-cta='support_panel'
           className='btn-grad inline-flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold whitespace-nowrap'
         >
-          <CoffeeIcon className='h-4 w-4' />
+          <MailIcon className='h-4 w-4' />
           {support.coffee}
         </Link>
       </Surface>
@@ -83,7 +83,7 @@ export function SupportPanel({
             data-pro-cta='support_monthly'
             className='btn-grad inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold whitespace-nowrap'
           >
-            <CoffeeIcon className='h-4 w-4' />
+            <MailIcon className='h-4 w-4' />
             {fill(support.monthly, { monthly: SUPPORT_PRICES.monthly })}
           </Link>
           <Link

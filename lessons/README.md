@@ -102,3 +102,4 @@ the index for exactly that.
 | 2026-10-31 | [The crawl quota that was already full](2026-10-31-the-crawl-quota-that-was-already-full.md) | Read the setting a warning names before acting on it; send IndexNow only what moved |
 | 2026-10-31 | [Pull request CI for bot PRs](2026-10-31-pull-request-ci.md) | Dependabot PRs read Dependabot secrets, and a first CI run is a test of the job: dispatch it on main and read it |
 | 2026-11-03 | [Reddit blocks the Worker](2026-11-03-reddit-blocks-the-worker.md) | Reddit 403s Cloudflare egress on every media surface since 10-23; Reddit needs a resolver hosted outside Cloudflare. |
+| 2026-11-06 | [Support by email](2026-11-06-support-by-email.md) | The payment provider was suspended; both /pro buttons are a pre-filled mail to one constant, `pnpm pro` grants by hand, and a test fails if the old provider is named anywhere live. |

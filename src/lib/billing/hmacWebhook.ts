@@ -2,11 +2,10 @@
  * The transport half of a signed webhook: read the body safely, then prove it
  * came from the sender. Nothing in here knows which provider it is serving.
  *
- * Extracted from src/lib/billing/webhook.ts when a second provider (Buy Me a
- * Coffee, src/lib/billing/bmc.ts) arrived wanting exactly the same three
- * things. Both are hex HMAC-SHA256 over the raw bytes and differ only in the
- * header name, so a second copy would have been a second place for a
- * constant-time comparison to quietly stop being constant-time.
+ * Extracted from src/lib/billing/webhook.ts when a second provider arrived
+ * wanting exactly the same three things, so a second copy would not become a
+ * second place for a constant-time comparison to quietly stop being
+ * constant-time.
  *
  * Deliberately free of imports from this repo so it can be copied into another
  * project as-is.

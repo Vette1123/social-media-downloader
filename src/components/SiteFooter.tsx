@@ -77,9 +77,8 @@ export function SiteFooter({
           <Link href={localePath(locale, '/terms')} className='transition-colors hover:text-white/80'>
             {footer.terms}
           </Link>
-          {/* One link, not the two that used to sit here ("Pro" and a second
-              straight at Buy Me a Coffee). /pro is the donation page now, so
-              pointing at both was the same destination twice under two names. */}
+          {/* One link: /pro is the donation page, and the only place support
+              is asked for. */}
           <Link href={localePath(locale, '/pro')} data-pro-cta='footer' className='transition-colors hover:text-white/80'>
             {footer.support}
           </Link>

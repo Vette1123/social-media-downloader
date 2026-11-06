@@ -11,7 +11,6 @@
 [![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 [![Release](https://img.shields.io/github/v/release/Vette1123/social-media-downloader?label=release&color=F38020&logo=cloudflare&logoColor=white)](../../releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy_Me_A_Coffee-support-FFDD00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/vetteotp)
 
 ### 🚀 [Try it live →](https://www.socialdownloader.space)
 
@@ -140,12 +139,9 @@ Nothing here is for sale. A subscription existed briefly and was withdrawn: two
 merchants of record refused to underwrite a third-party downloader, the second
 after every fixable item on their published review checklist had been fixed, so
 the rejection was about the product category and not the paperwork. Supporting
-the project is a donation, and supporters get the extras switched on by hand —
-see [the support page](https://www.socialdownloader.space/pro).
-
-<a href="https://buymeacoffee.com/vetteotp">
-  <img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=vetteotp&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" height="48" />
-</a>
+the project is a donation, arranged by email with booogado@gmail.com for now,
+and supporters get the extras switched on by hand — see
+[the support page](https://www.socialdownloader.space/pro).
 
 ## Tech stack
 
@@ -218,7 +214,6 @@ value is set once rather than kept in step across three files. Do not add a
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth client used for sign-in. Created in Google Cloud console; both the dev and production redirect URIs must be registered on it. Replacing the client with one from a *different* Google Cloud project changes every existing user's `sub`, since a `sub` identifies a person within a project rather than globally — `handleAuthCallback` re-keys the row by verified email so accounts survive the move, and the consent screen on the new project must be published (a project left in Testing admits only its listed test users). |
 | `CREEM_API_KEY` | Dormant. Mints a customer-portal URL per click for any subscription that predates the withdrawal, and backs the lazy reconcile. Nothing creates subscriptions any more. |
 | `CREEM_WEBHOOK_SECRET` | Dormant, and still never optional while the endpoint is registered: an unverified webhook endpoint would let anyone grant themselves the extras. |
-| `BMC_WEBHOOK_SECRET` | Signing secret for the Buy Me a Coffee webhook, one per endpoint, from its dashboard. Without it `/api/billing/bmc` answers 503 and grants nothing. Setup and payload notes: `docs/buymeacoffee-setup.md`. |
 
 ### Accounts and grants
 
@@ -230,27 +225,20 @@ Signing in is with a Google account, entitlement is a signed short-lived access
 token, and preferences (HD/SD, video/audio) sync across devices for anyone
 signed in. Signing in never changes what is free.
 
-**Grants.** The `users.grants` column holds a comma-separated set, set and
-cleared with one command:
+**Grants.** The `users.grants` column holds a comma-separated set. Support is
+arranged by email (`PRO_EMAIL` in `src/config/support.ts`) since the payment
+provider suspended the account on 2026-11-06, and `pro` is granted by hand:
 
 ```bash
-pnpm exec wrangler d1 execute social-media-downloader --remote \
-  --command "UPDATE users SET grants = 'pro' WHERE email = 'someone@example.com'"
+pnpm pro someone@example.com            # grant
+pnpm pro someone@example.com --revoke   # take it back
 ```
 
-It takes effect within one access-token TTL (15 minutes), with no deploy. Note
-that this command *assigns* the column rather than adding to it, so running it
-on an account that also holds `ig` silently drops that. The Buy Me a Coffee
-webhook (`/api/billing/bmc`) adds and removes single names instead and is the
-normal path now — `docs/buymeacoffee-setup.md`. It records support against an
-email address in `supporters` whether or not an account exists yet, and the
-grant is applied when that address signs in. One Buy Me a Coffee account serves
-several projects, so support is tied to a project by the name of the thing
-bought: this site recognises the `Downloader — Supporter` membership and the
-`Downloader — Lifetime` extra (`src/config/support.ts`) and ignores everything
-else sold on the account. A plain one-off coffee carries no name to match and
-grants nothing automatically; it is handled by hand as an expiring window rather
-than as a `pro` grant, which has no expiry.
+The script records the grant against the address in `supporters` whether or not
+an account exists yet, adds or removes the single name on every account holding
+that address (never assigning the column, so `ig` survives), and an account
+created later claims it on sign-in (`src/lib/billing/supporters.ts`). It takes
+effect within one access-token TTL (15 minutes), with no deploy.
 
 Two names are defined, and keeping them separate is the point:
 
