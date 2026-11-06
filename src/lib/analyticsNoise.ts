@@ -16,6 +16,9 @@ const NOISE_PATTERNS = [
   // iOS Safari, thrown with no stack and no frame of ours: native media controls
   // and a navigation cancelling a request. Nothing here to act on.
   /^\s*(DOMException: )?(NotSupportedError: The operation is not supported|AbortError: The operation was aborted)\.?\s*$/i,
+  // A codec this browser cannot decode (Firefox and HEVC): native controls reject
+  // play() with no stack. The <video> onError already tells the viewer.
+  /^\s*(DOMException: )?NotSupportedError: The media resource indicated by the src attribute or assigned media provider object was not suitable\.?\s*$/i,
   /Failed to execute '(removeChild|insertBefore)' on 'Node'/i,
   /NotFoundError: The object can not be found here/i,
   /The node to be removed is not a child of this node/i,
@@ -68,6 +71,21 @@ function isForeignException(event: ExceptionEvent): boolean {
     }
   }
   return sawFrame
+}
+
+/**
+ * The early-crash reporter wraps what it catches in an Error built at OUR call
+ * site, so the stack PostHog receives is always ours and isForeignException can
+ * never see the thrower. Decide here, from the original: a filename or stack that
+ * names files, none of them under /_next/, is a wallet or extension script
+ * (`window.ethereum.selectedAddress`, `M_ID`). Nothing to go on at all is kept.
+ */
+export function isForeignEarlyError(filename: unknown, error: unknown): boolean {
+  const stack = error instanceof Error && typeof error.stack === 'string' ? error.stack : ''
+  const file = typeof filename === 'string' ? filename : ''
+  if (OWN_FRAME.test(file) || OWN_FRAME.test(stack)) return false
+  const namesAFile = /\w+:\/\/|\.jsb/
+  return namesAFile.test(file) || namesAFile.test(stack)
 }
 
 export function shouldDropException(event: ExceptionEvent): boolean {

@@ -221,5 +221,6 @@
   "Queued": "Dalam antrean",
   "Failed to resolve": "Gagal memproses",
   "Page not found": "Halaman tidak ditemukan",
-  "Something went wrong resolving the media. Try again in a moment.": "Terjadi kesalahan saat memproses media. Coba lagi sebentar lagi."
+  "Something went wrong resolving the media. Try again in a moment.": "Terjadi kesalahan saat memproses media. Coba lagi sebentar lagi.",
+  "This video won’t play in this browser, but the download still works.": "Video ini tidak bisa diputar di browser ini, tetapi unduhannya tetap berfungsi."
 }

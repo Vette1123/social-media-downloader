@@ -103,3 +103,4 @@ the index for exactly that.
 | 2026-10-31 | [Pull request CI for bot PRs](2026-10-31-pull-request-ci.md) | Dependabot PRs read Dependabot secrets, and a first CI run is a test of the job: dispatch it on main and read it |
 | 2026-11-03 | [Reddit blocks the Worker](2026-11-03-reddit-blocks-the-worker.md) | Reddit 403s Cloudflare egress on every media surface since 10-23; Reddit needs a resolver hosted outside Cloudflare. |
 | 2026-11-06 | [Support by email](2026-11-06-support-by-email.md) | The payment provider was suspended; both /pro buttons are a pre-filled mail to one constant, `pnpm pro` grants by hand, and a test fails if the old provider is named anywhere live. |
+| 2026-11-06 | [Extension errors behind our stack](2026-11-06-extension-errors-behind-our-stack.md) | The early-crash reporter wraps errors at our call site, so foreign-ness must be decided from the original ErrorEvent; every `<video>` gets an onError. |
