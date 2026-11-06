@@ -15,6 +15,7 @@ import {
   appReducer,
   initialState,
   isResolvingOrDownloading,
+  mainButtonLabel,
   retryTarget,
   type AppMessage,
   type VideoMetadata,
@@ -1425,7 +1426,9 @@ export function DownloaderApp() {
         inputRef.current?.focus()
         setUrlError(t('errorNotLink'))
       } else {
+        trackFeatureUsed('paste_chip', { outcome: 'empty' })
         inputRef.current?.focus()
+        setUrlError(d('Your clipboard is empty. Copy a link first.'))
       }
     } catch {
       trackFeatureUsed('paste_chip', { outcome: 'denied' })
@@ -2625,22 +2628,17 @@ export function DownloaderApp() {
         </div>
         <button
           onClick={() => handleProcess()}
-          disabled={
-            state.loading ||
-            state.downloading ||
-            state.downloadingAudio ||
-            state.downloadingImages
-          }
+          disabled={isResolvingOrDownloading(state)}
           className='btn-grad btn-press group relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl px-6 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50 md:text-base'
         >
           <span
             className='pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-full'
             aria-hidden
           />
-          {state.loading ? (
+          {isResolvingOrDownloading(state) ? (
             <span className='relative flex items-center'>
               <SpinnerIcon className='-ml-1 mr-2 h-4 w-4 md:h-5 md:w-5' />
-              {t('processing')}
+              {t(mainButtonLabel(state))}
             </span>
           ) : (
             <span className='relative'>{t('downloadBtn')}</span>
