@@ -4,6 +4,7 @@ import {
   autoOpensPreview,
   initialState,
   isResolvingOrDownloading,
+  mainButtonLabel,
   retryTarget,
   type ImageData,
 } from './appReducer'
@@ -117,6 +118,29 @@ describe('the typed message channel', () => {
  * Without this, every transfer in progress renders a button offering to
  * restart itself.
  */
+describe('mainButtonLabel', () => {
+  const idle = {
+    loading: false,
+    downloading: false,
+    downloadingAudio: false,
+    downloadingImages: false,
+  }
+
+  it('says Download only when nothing is running', () => {
+    expect(mainButtonLabel(idle)).toBe('downloadBtn')
+  })
+
+  it('says Processing while a link resolves', () => {
+    expect(mainButtonLabel({ ...idle, loading: true })).toBe('processing')
+  })
+
+  it('says Downloading through every transfer, never a dimmed Download', () => {
+    for (const flag of ['downloading', 'downloadingAudio', 'downloadingImages'] as const) {
+      expect(mainButtonLabel({ ...idle, [flag]: true }), flag).toBe('downloadingBtn')
+    }
+  })
+})
+
 describe('isResolvingOrDownloading', () => {
   const idle = {
     loading: false,
