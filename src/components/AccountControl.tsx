@@ -29,7 +29,7 @@ import { stripLocale } from '@/lib/localeRoutes'
 import { useRef, useState } from 'react'
 import { trackFeatureUsed } from '@/lib/analytics'
 import { Avatar } from '@/components/Avatar'
-import { CoffeeIcon, PinIcon, PinOffIcon } from '@/components/icons'
+import { MailIcon, PinIcon, PinOffIcon } from '@/components/icons'
 import {
   type CachedProfile,
   cachedProfile,
@@ -184,7 +184,7 @@ function ProPill({
       title={t('supportProject')}
       className='icon-lift pointer-events-auto flex items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-400/10 py-1.5 pr-3 pl-2.5 text-xs font-semibold whitespace-nowrap text-cyan-200 backdrop-blur'
     >
-      <CoffeeIcon className='h-3.5 w-3.5' />
+      <MailIcon className='h-3.5 w-3.5' />
       <span>{t('supportShort')}</span>
       {earned && (
         <span className='hidden font-medium text-cyan-100/80 sm:inline'>

@@ -112,12 +112,12 @@
     "support": {
       "compactTitle": "Este site é grátis e não tem limites.",
       "compactBody": "Manter os resolvedores no ar custa dinheiro. ${monthly} por mês cobre uma parte disso e ativa a fila em lote.",
-      "coffee": "Me pague um café",
+      "coffee": "Apoie isto",
       "title": "Grátis para sempre. Mas não é de graça para manter.",
       "body": "Todo download aqui é grátis, sem conta e sem limites, e isso não vai mudar. A assinatura cobre uma parte do custo de manter os resolvedores no ar — e ativa estes quatro recursos para você.",
       "monthly": "Apoie — ${monthly}/mês",
       "lifetime": "Ou ${lifetime} uma única vez, para sempre",
-      "note": "Cancele quando quiser, pelo Buy Me a Coffee. Um café avulso de qualquer valor também vale.",
+      "note": "Por enquanto, o apoio é combinado por e-mail. Cancele quando quiser com um único e-mail.",
       "benefits": [
         {
           "title": "A fila em lote",
@@ -218,15 +218,14 @@
         "membershipPrice": "${monthly}/mês · ${yearly}/ano",
         "lifetime": "Vitalício",
         "lifetimePrice": "${lifetime} uma única vez · nunca renova",
-        "howItSwitches": "Qualquer um dos dois ativa os extras sozinho, para o e-mail com o qual você paga — não precisa de conta aqui para pagar, e não há nada para me enviar.",
+        "howItSwitches": "Qualquer um dos botões abre um e-mail para mim. A resposta explica como pagar, e eu ativo os extras manualmente para o endereço com que você entra, normalmente no mesmo dia.",
         "extrasTitle": "Apoiadores recebem os extras",
-        "levels": "Os dois níveis são {membership} e {lifetime}. Entre aqui com o mesmo e-mail com que você pagou e os extras já estarão ativos, normalmente em poucos minutos. O mensal cobre este downloader; o vitalício cobre todos os projetos que eu criar, inclusive os que ainda não existem.",
-        "oneOff": "Prefere {coffee} de qualquer valor? Esse é um simples agradecimento e não ativa nada sozinho. O mesmo vale se você entrou com outro e-mail — escreva para {email} a partir do e-mail que aparece no seu recibo e eu resolvo à mão, normalmente no mesmo dia.",
-        "oneOffLink": "um café avulso",
+        "levels": "A mensal cobre este downloader; a vitalícia cobre todos os projetos que eu crio, incluindo os que ainda não existem. Entre aqui com o endereço que você informou no e-mail e os extras já estarão ativos.",
+        "oneOff": "Entrou com um endereço diferente do que você informou? Escreva para {email} e eu transfiro manualmente, normalmente no mesmo dia.",
         "directTitle": "E uma linha direta comigo.",
         "directBody": "Apoiadores recebem meu número — me escreva quando quiser, sobre qualquer assunto. Peça um recurso e eu o construo se for possível construir. A lista é curta, então isso é uma promessa de verdade, e não uma frase bonita.",
         "closing": "Tudo o que está acima é sobre fazer o mesmo trabalho sem ficar em cima: uma fila em vez de um link por vez, um lote inteiro em um único arquivo em vez de vinte, uma playlist em vez de vinte colagens, e downloads que chegam com o nome que você usa para organizar as coisas. Nenhum deles alcança algo que um visitante sem eles já não possa baixar, e nenhum deles envolve este site entrar em algum lugar em seu nome. Tudo o que hoje é grátis continua grátis, quer alguém apoie isto ou não.",
-        "tip": "Apoiar isto é uma gorjeta, não uma compra: não há nota fiscal nossa nem política de reembolso, porque nada está sendo vendido. Pagamentos, assinaturas e o cancelamento delas são tratados inteiramente pelo Buy Me a Coffee, sob os termos próprios deles. Dúvidas: {email}, respondidas por {author}."
+        "tip": "Apoiar isto é uma gorjeta, não uma compra: não há fatura nossa nem política de reembolso, porque nada está sendo vendido. Por enquanto é combinado por e-mail, e parar leva um único e-mail. Dúvidas: {email}, respondidas por {author}."
       },
       "privacy": {
         "metaTitle": "Política de Privacidade — Social Media Downloader",
@@ -262,8 +261,8 @@
           {
             "heading": "Pagamentos",
             "paragraphs": [
-              "Nada é vendido neste site, então não recebemos pagamentos nem guardamos dados de cobrança. Se você apoiar o projeto, isso acontece inteiramente no Buy Me a Coffee, sob a política de privacidade deles, e nunca vemos os dados do seu cartão.",
-              "O Buy Me a Coffee nos informa o endereço de e-mail com que você pagou, o nível escolhido e quando uma assinatura começa ou termina. Guardamos esse registro para que os extras sejam ativados para esse endereço, inclusive antes de você entrar aqui. Ele é removido quando uma assinatura termina; um registro vitalício é mantido para que os extras continuem seus. Excluir sua conta não remove este registro, porque ele pertence ao pagamento e não à conta: envie um e-mail para {email} e nós o apagaremos."
+              "Nada é vendido neste site, então não recebemos pagamentos por meio dele nem guardamos dados de cobrança. Se você apoiar o projeto, isso é combinado por e-mail, e nunca vemos os dados do seu cartão.",
+              "Guardamos o endereço de e-mail para o qual o apoio é ativado, e se é mensal, anual ou vitalício, para que os extras sejam ativados para esse endereço, inclusive antes de você entrar aqui. Ele é removido quando o apoio termina; o registro vitalício é mantido para que os extras continuem seus. Excluir sua conta não remove este registro, porque ele pertence ao apoio e não à conta: escreva para {email} e nós o apagaremos."
             ]
           },
           {
@@ -332,10 +331,10 @@
           {
             "heading": "Apoiar este projeto",
             "paragraphs": [
-              "Nada em {site} é vendido por nós, e nunca cobramos você diretamente. Se algum dia você for cobrado por algo que diz ser este site e não for o Buy Me a Coffee, não somos nós, e gostaríamos de saber.",
-              "Você pode apoiar o projeto voluntariamente pelo Buy Me a Coffee: com uma assinatura mensal ou anual que se renova até você cancelar, com um nível vitalício de pagamento único ou com um café avulso. Pagamento, renovação e cancelamento são tratados inteiramente por eles, sob os próprios termos, e uma assinatura é cancelada lá, não aqui. Uma assinatura ou o nível vitalício ativa por si só algumas comodidades para o endereço com que você paga, assim que você entra aqui com esse endereço: fila em lote, agrupamento em ZIP de um lote, resolução prioritária, nomes de arquivo personalizados e nenhum cartão de patrocinador. As comodidades de uma assinatura terminam quando ela termina. Um café avulso não ativa nada por si só: envie um e-mail e faremos isso manualmente; o mesmo vale se você pagou com outro endereço.",
+              "Nada em {site} é vendido pelo site, e o site nunca cobra você. Se algum dia você for cobrado por algo que diz ser este site e que você não combinou por e-mail conosco, não somos nós, e gostaríamos de saber.",
+              "Você pode apoiar o projeto voluntariamente por e-mail: uma assinatura mensal ou anual que dura até você pedir para encerrá-la, ou um nível vitalício pago uma única vez. Escreva e a resposta explica como pagar. O apoio ativa algumas conveniências para o endereço que você informar, assim que você entrar aqui com esse endereço: uma fila em lote, pacote ZIP de uma leva, resolução prioritária, nomes de arquivo personalizados e nenhum cartão de patrocínio. As conveniências de uma assinatura terminam quando a assinatura termina. Se você entrou com outro endereço, escreva para nós e transferiremos manualmente.",
               "Essas comodidades são um presente, e não um direito adquirido. Podemos alterá-las ou retirá-las a qualquer momento e, como não vendemos nada, não há nada para reembolsarmos. Nenhuma delas muda o que um link pode alcançar; veja acima.",
-              "Se você quiser estornar um pagamento, isso é entre você e o Buy Me a Coffee, embora enviar antes um e-mail para {email} costume ser mais rápido."
+              "Se quiser estornar um pagamento, escreva para {email}."
             ]
           },
           {

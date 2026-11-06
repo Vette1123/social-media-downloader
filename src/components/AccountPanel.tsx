@@ -26,7 +26,7 @@ import Link from '@/components/IntentLink'
 import { Surface } from '@/components/Surface'
 import { Avatar, type AvatarIdentity } from '@/components/Avatar'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { CheckIcon, ChevronDownIcon, CoffeeIcon } from '@/components/icons'
+import { CheckIcon, ChevronDownIcon, MailIcon } from '@/components/icons'
 import {
   type PlanState,
   cachedProfile,
@@ -218,7 +218,7 @@ export function planCopy(bucket: PlanBucket, plan: PlanState | null): PlanCopy {
         // Said plainly because the honest description is also the reassuring
         // one: this is a gift, not a plan, so there is no date to watch, no
         // renewal to catch, and nothing that can fail to charge.
-        note: d('Nothing is billed here. A membership is managed on Buy Me a Coffee.'),
+        note: d('Nothing is billed here. To change or stop support, send one email.'),
         chip: { label: d('Supporter'), tone: 'live' },
         title: d('Supporter'),
         facts: [],
@@ -297,13 +297,13 @@ function SupportLink() {
   return (
     <div className='flex flex-col gap-2'>
       <a href={to('/pro')} data-pro-cta='account_upgrade' className={`${ACTION_BUTTON_CLASS} w-fit items-center gap-2`}>
-        <CoffeeIcon className='h-4 w-4' />
+        <MailIcon className='h-4 w-4' />
         {d('Support this project')}
       </a>
       <p className='text-xs text-white/50'>
         <Rich
           text={d(
-            'A membership switches the extras on by itself for the address you pay with. Paid under a different address, or sent a one-off coffee? Email {email} and give it a day.',
+            'Support is arranged by email for now, and the extras are switched on by hand for the address you sign in with. Signed in with a different address? Email {email} and give it a day.',
           )}
           parts={{
             email: (

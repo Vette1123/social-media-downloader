@@ -38,29 +38,6 @@ var saveData=n.connection&&n.connection.saveData;
 low=(cores<=4)||(mem<=4)||!!slowNet||!!saveData;
 }catch(e){}return{low:low};}`
 
-// Attributes for the Buy Me a Coffee widget, and the loader that gives the
-// vendor bundle the DOMContentLoaded it waits for. See the tag in <head> below
-// for why it is written this way rather than as the provider's own snippet.
-// 'right' is lower-case on purpose: the bundle compares the value against the
-// literal 'left' and treats everything else as the right edge, so the
-// capitalised value its generator writes works only by accident. The right
-// corner is free at every breakpoint — both corner slots sit at the top.
-const bmcWidgetScript = `(function(){try{
-var n=navigator;if(n.connection&&n.connection.saveData){return;}
-var a={name:'BMC-Widget',cfasync:'false',id:'vetteotp',
-description:'Support me on Buy me a coffee!',
-message:'',
-color:'#5F7FFF',position:'right',x_margin:'18',y_margin:'18'};
-function load(){var s=document.createElement('script');s.async=true;
-s.src='https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js';
-for(var k in a){s.setAttribute('data-'+k,a[k]);}
-s.onload=function(){window.dispatchEvent(new Event('DOMContentLoaded'));};
-document.head.appendChild(s);}
-function idle(){(window.requestIdleCallback||function(f){setTimeout(f,1200);})(load);}
-if(document.readyState==='complete'){idle();}
-else{window.addEventListener('load',idle);}
-}catch(e){}})();`
-
 export const viewport: Viewport = {
   themeColor: '#08080a',
   colorScheme: 'dark',
@@ -239,50 +216,6 @@ export default function RootLayout({
             __html: JSON.stringify(globalStructuredData),
           }}
         />
-
-        {/* Buy Me a Coffee's floating tip jar, loaded off the critical path.
-
-            The provider's own snippet — a plain <script defer src> with the
-            settings as data attributes — does render here, and is what the
-            sister project ships. This is that tag, built later and by hand,
-            for one reason: a deferred script still downloads as part of the
-            page load and still delays DOMContentLoaded, and 8KB of vendor
-            script plus a webfont and an iframe have no business competing with
-            the first paint for something nobody came here to use.
-
-            `async` is not the way out of that. The vendor bundle does all of
-            its work inside a `DOMContentLoaded` listener with no readyState
-            guard, so any tag that starts executing after that event has fired
-            downloads and then does nothing — the reason every next/script
-            strategy fails on this widget too, measured in the sister project.
-
-            So: inject after `load`, in idle time, and hand the bundle the event
-            it is waiting for. By then the real DOMContentLoaded is long gone,
-            which is what makes the synthetic one safe to dispatch — it fires
-            exactly once, and only after every other listener for it has already
-            run. Anything added later that listens for DOMContentLoaded on
-            `window` will hear this second one, so listen on `document`.
-
-            The same loader runs in the streaming project
-            (movies-streaming-platform/lib/bmc-widget.ts), kept in step by hand:
-            the two share no package, and only the settings object differs. Both
-            files name the other, because the first version of this drifted the
-            moment one side was improved.
-
-            Skipped entirely under Save-Data, on the same reasoning as the
-            low-power branch above: a reader who asked for less should not spend
-            their bytes on our donation button.
-
-            What it sells is coffees, not the levels in config/support.ts, so
-            nothing bought through this panel grants anything — including its
-            "make this monthly" toggle, which fires a recurring event carrying
-            no level name we recognise, and lib/billing/bmc.ts matches on that
-            name alone. The path that turns somebody into a supporter is /pro.
-            If a payer ever reports tipping here and getting nothing switched
-            on, this comment is the why — and it is why `message` is empty: the
-            bubble is the only place the widget could have promised something,
-            so it says nothing at all. */}
-        <script dangerouslySetInnerHTML={{ __html: bmcWidgetScript }} />
       </head>
       <body
         className={`${geistSans.variable} antialiased`}

@@ -3,9 +3,9 @@ import { AccountPanel } from '@/components/AccountPanel'
 import { Rich } from '@/components/Rich'
 import { SiteFooter } from '@/components/SiteFooter'
 import { Surface } from '@/components/Surface'
-import { CheckIcon, CoffeeIcon } from '@/components/icons'
+import { CheckIcon, MailIcon } from '@/components/icons'
 import { siteConfig } from '@/config/site'
-import { SUPPORT_LIFETIME, SUPPORT_MEMBERSHIP, SUPPORT_PRICES } from '@/config/support'
+import { proMailto, SUPPORT_PRICES } from '@/config/support'
 import { fill, type Locale } from '@/lib/i18n'
 import { contentFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
@@ -204,13 +204,12 @@ export function AccountPage({ locale = 'en' }: { locale?: Locale }) {
  * nothing that renews.
  *
  * The extras are still real, and they are still the same four: properties of
- * this site, none of which widen what a link can reach. They switch on from a
- * Buy Me a Coffee membership now rather than by hand — see
- * `docs/buymeacoffee-setup.md` — which changes who runs the payment, not what
- * the money is. The provider owns the checkout, the renewal and the cancel
- * button; there is still no merchant of record here, no entitlement to enforce
- * and no refund policy, because a donation with a thank-you attached is not a
- * sale. A plain one-off coffee still grants nothing until someone asks.
+ * this site, none of which widen what a link can reach. Since the payment
+ * provider suspended the account (2026-11-06) support is arranged by email and
+ * switched on by hand (`pnpm pro`) — which changes who runs the payment, not
+ * what the money is. There is still no merchant of record here, no entitlement
+ * to enforce and no refund policy, because a donation with a thank-you attached
+ * is not a sale.
  *
  * What this page must never do is imply the tip buys reach. That claim is what
  * every acceptable-use policy in this space prohibits, and it is what closed
@@ -219,16 +218,11 @@ export function AccountPage({ locale = 'en' }: { locale?: Locale }) {
 export function ProPage({ locale = 'en' }: { locale?: Locale }) {
   const { copy } = contentFor(locale)
   const { pro, shared } = copy.legal
-  const strong = (text: string) => (
-    <strong className='font-semibold text-white/80'>
-      <bdi>{text}</bdi>
-    </strong>
-  )
   return (
     <Shell locale={locale} path='/pro'>
       <div className='text-center'>
         <span className='btn-grad inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase'>
-          <CoffeeIcon className='h-3.5 w-3.5' />
+          <MailIcon className='h-3.5 w-3.5' />
           {pro.badge}
         </span>
         <h1 className='mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl'>
@@ -242,10 +236,8 @@ export function ProPage({ locale = 'en' }: { locale?: Locale }) {
       <Surface glow radius='3xl' className='mt-8 p-5 shadow-2xl sm:p-8'>
         <div className='grid gap-3 sm:grid-cols-2'>
           <a
-            href={siteConfig.links.membership}
+            href={proMailto('Monthly or yearly')}
             data-pro-cta='pro_membership'
-            target='_blank'
-            rel='noopener noreferrer'
             className='btn-grad btn-press flex flex-col items-center gap-0.5 rounded-xl px-6 py-3.5'
           >
             <span className='text-sm font-semibold sm:text-base'>
@@ -259,10 +251,8 @@ export function ProPage({ locale = 'en' }: { locale?: Locale }) {
             </span>
           </a>
           <a
-            href={siteConfig.links.membership}
+            href={proMailto('Lifetime')}
             data-pro-cta='pro_lifetime'
-            target='_blank'
-            rel='noopener noreferrer'
             className='btn-press flex flex-col items-center gap-0.5 rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 transition-colors hover:bg-white/10'
           >
             <span className='text-sm font-semibold text-white sm:text-base'>
@@ -279,29 +269,12 @@ export function ProPage({ locale = 'en' }: { locale?: Locale }) {
         <div className='mt-8 border-t border-white/10 pt-6'>
           <h2 className='text-lg font-semibold text-white'>{pro.extrasTitle}</h2>
           <p className='mt-1 text-sm text-white/60'>
-            <Rich
-              text={pro.levels}
-              parts={{
-                membership: strong(SUPPORT_MEMBERSHIP),
-                lifetime: strong(SUPPORT_LIFETIME),
-              }}
-            />
+            {pro.levels}
           </p>
           <p className='mt-3 text-sm text-white/60'>
             <Rich
               text={pro.oneOff}
               parts={{
-                coffee: (
-                  <a
-                    className={LINK}
-                    href={siteConfig.links.sponsor}
-                    data-pro-cta='pro_coffee'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                  >
-                    {pro.oneOffLink}
-                  </a>
-                ),
                 email: <EmailLink subject='Supporter — switch on the extras' />,
               }}
             />

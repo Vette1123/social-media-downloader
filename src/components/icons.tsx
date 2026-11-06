@@ -424,18 +424,16 @@ export const FilmIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
 )
 
 /**
- * The mark for supporting the project. A coffee cup rather than a heart: it
- * names the actual gesture, matches the platform the link goes to, and asks for
- * a small one-off thing — a heart reads as a like, and a star reads as status.
+ * The mark for supporting the project. An envelope, because support is arranged
+ * by email for now (src/config/support.ts) and the icon should name what the
+ * button actually does.
  *
- * Lucide's `coffee`, unchanged.
+ * Lucide's `mail`, unchanged.
  */
-export const CoffeeIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
+export const MailIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
   <svg className={className} {...strokeIcon} {...props}>
-    <path d='M10 2v2' />
-    <path d='M14 2v2' />
-    <path d='M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1' />
-    <path d='M6 2v2' />
+    <path d='m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7' />
+    <rect x='2' y='4' width='20' height='16' rx='2' />
   </svg>
 )
 

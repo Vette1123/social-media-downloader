@@ -105,12 +105,12 @@ export const pageCopy = {
     compactTitle: 'This site is free and has no limits.',
     compactBody:
       'Keeping the resolvers up costs money. ${monthly} a month covers a slice of it, and switches on the batch queue.',
-    coffee: 'Buy me a coffee',
+    coffee: 'Support this',
     title: 'Free forever. Not free to run.',
     body: 'Every download here is free, with no account and no limits, and that is not changing. A membership covers a slice of what it costs to keep the resolvers up — and switches these four on for you.',
     monthly: 'Support this — ${monthly}/month',
     lifetime: 'Or ${lifetime} once, forever',
-    note: 'Cancel any time, from Buy Me a Coffee. A one-off coffee of any amount works too.',
+    note: 'Support is arranged by email for now. Cancel any time with one email.',
     benefits: PRO_BENEFITS.map(({ title, body }) => ({ title, body })),
   },
   footer: {

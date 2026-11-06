@@ -26,19 +26,18 @@ export const legalCopy = {
     lifetime: 'Lifetime',
     lifetimePrice: '${lifetime} once · never renews',
     howItSwitches:
-      'Either one switches the extras on by itself, for the address you pay with — no account here needed to pay, and nothing to send me.',
+      'Either button opens an email to me. The reply says how to pay, and I switch the extras on by hand for the address you sign in with, usually the same day.',
     extrasTitle: 'Supporters get the extras',
     levels:
-      'The two levels are {membership} and {lifetime}. Sign in here with the same address you paid with and the extras are already on, usually within minutes. The monthly covers this downloader; the lifetime covers every project I build, including the ones that do not exist yet.',
+      'The monthly covers this downloader; the lifetime covers every project I build, including the ones that do not exist yet. Sign in here with the address you named in the email and the extras are already on.',
     oneOff:
-      'Prefer {coffee} of any amount? That one is a plain thank-you and switches nothing on by itself. Same if you signed in with a different address — email {email} from the address on your receipt and I’ll sort it by hand, usually the same day.',
-    oneOffLink: 'a one-off coffee',
+      'Signed in with a different address than the one you named? Email {email} and I’ll move it by hand, usually the same day.',
     directTitle: 'And a direct line to me.',
     directBody:
       'Supporters get my number — message me any time, about anything. Ask for a feature and I’ll build it if it can be built. It’s a short list, so that is a real promise rather than a nice sentence.',
     closing:
       'Every one above is about doing the same work without standing over it — a queue instead of one link at a time, a whole run in one archive instead of twenty files, a playlist instead of twenty pastes, and downloads that land named the way you file things. None of them reach anything a visitor without them cannot already download, and none of them involve this site signing in anywhere on your behalf. Everything free today stays free whether anyone supports this or not.',
-    tip: 'Supporting this is a tip, not a purchase: no invoice from us and no refund policy, because nothing is being sold. Payments, memberships and cancelling one are handled entirely by Buy Me a Coffee under their own terms. Questions: {email}, answered by {author}.',
+    tip: 'Supporting this is a tip, not a purchase: no invoice from us and no refund policy, because nothing is being sold. It is arranged by email for now, and stopping it takes one email. Questions: {email}, answered by {author}.',
   },
   privacy: {
     metaTitle: 'Privacy Policy — Social Media Downloader',
@@ -75,8 +74,8 @@ export const legalCopy = {
       {
         heading: 'Payments',
         paragraphs: [
-          'Nothing is sold on this site, so we take no payments and hold no billing data. If you support the project, that happens entirely on Buy Me a Coffee under their privacy policy, and we never see your card details.',
-          'Buy Me a Coffee tells us the email address you paid with, the level you chose, and when a membership starts or ends. We keep that record so the extras can switch on for that address, including before you sign in here. It is removed when a membership ends; a lifetime record is kept so the extras stay yours. Deleting your account does not remove this record, because it belongs to the payment and not to the account: email {email} and we will erase it.',
+          'Nothing is sold on this site, so we take no payments through it and hold no billing data. If you support the project, that is arranged by email, and we never see your card details.',
+          'We keep the email address support is switched on for, and whether it is monthly, yearly or lifetime, so the extras can switch on for that address, including before you sign in here. It is removed when support ends; a lifetime record is kept so the extras stay yours. Deleting your account does not remove this record, because it belongs to the support and not to the account: email {email} and we will erase it.',
         ],
       },
       {
@@ -146,10 +145,10 @@ export const legalCopy = {
       {
         heading: 'Supporting this project',
         paragraphs: [
-          'Nothing on {site} is sold by us, and we never charge you directly. If you are ever billed by something claiming to be this site that is not Buy Me a Coffee, it is not us, and we would like to hear about it.',
-          'You can support the project voluntarily through Buy Me a Coffee: a monthly or yearly membership that renews until you cancel it, a lifetime level paid once, or a one-off coffee. Payment, renewal and cancellation are handled entirely by them under their own terms, and a membership is cancelled there, not here. A membership or the lifetime level switches some conveniences on by itself for the address you pay with, once you sign in here with that address: a batch queue, ZIP bundling for a run, priority resolve, custom file names, and no sponsor card. A membership’s conveniences end when the membership does. A one-off coffee switches nothing on by itself: email us and we will do it by hand, and the same goes if you paid under a different address.',
+          'Nothing on {site} is sold through the site, and the site never charges you. If you are ever billed by something claiming to be this site that you did not arrange by email with us, it is not us, and we would like to hear about it.',
+          'You can support the project voluntarily by email: a monthly or yearly membership that runs until you ask to stop it, or a lifetime level paid once. Write and the reply says how to pay. Support switches some conveniences on for the address you name, once you sign in here with that address: a batch queue, ZIP bundling for a run, priority resolve, custom file names, and no sponsor card. A membership’s conveniences end when the membership does. If you signed in under a different address, email us and we will move it by hand.',
           'Those conveniences are a gift and not a purchased entitlement. We may change or withdraw them at any time, and because we sell nothing there is nothing for us to refund. None of them change what a link can reach; see above.',
-          'If you want a payment reversed, that is between you and Buy Me a Coffee, though emailing {email} first is usually faster.',
+          'If you want a payment reversed, email {email}.',
         ],
       },
       {
