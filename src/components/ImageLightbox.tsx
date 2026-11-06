@@ -202,6 +202,9 @@ export function ImageLightbox({
 
   const [downloading, setDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState('')
+  // A clip whose codec this browser cannot decode (Firefox and HEVC) fails with
+  // a black box and no word. Kept per slide so the next one starts clean.
+  const [unplayableIndex, setUnplayableIndex] = useState<number | null>(null)
 
   const handleDownloadOne = async () => {
     if (downloading) return
@@ -333,6 +336,10 @@ export function ImageLightbox({
                 preload='metadata'
                 className='max-h-full max-w-full rounded-lg bg-black shadow-2xl'
                 onPlay={() => trackFeatureUsed('media_play', { action: 'lightbox_video' })}
+                onError={() => {
+                  setUnplayableIndex(activeIndex)
+                  trackFeatureUsed('lightbox', { action: 'video_unplayable' })
+                }}
               />
             ) : (
               <img
@@ -364,6 +371,11 @@ export function ImageLightbox({
         className='flex shrink-0 flex-col items-center justify-center gap-2 p-4'
         onClick={stop}
       >
+        {isVideo && unplayableIndex === activeIndex && (
+          <p role='status' className='text-center text-xs text-white/70'>
+            {d('This video won’t play in this browser, but the download still works.')}
+          </p>
+        )}
         <button
           onClick={handleDownloadOne}
           disabled={downloading}
