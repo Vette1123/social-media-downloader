@@ -193,6 +193,22 @@ export function autoOpensPreview({
  * a restart mid-transfer — a retry is only ever meaningful once nothing is
  * in flight.
  */
+/**
+ * What the main button says. It is disabled for every busy state, and a dimmed
+ * plain "Download" during a transfer read as a broken button: people kept
+ * tapping it (rage and dead clicks on /). Every busy state gets a spinner.
+ */
+export function mainButtonLabel(
+  state: Pick<
+    AppState,
+    'loading' | 'downloading' | 'downloadingAudio' | 'downloadingImages'
+  >,
+): 'processing' | 'downloadingBtn' | 'downloadBtn' {
+  if (state.loading) return 'processing'
+  if (isResolvingOrDownloading(state)) return 'downloadingBtn'
+  return 'downloadBtn'
+}
+
 export function isResolvingOrDownloading(
   state: Pick<
     AppState,
