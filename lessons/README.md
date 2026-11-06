@@ -105,3 +105,4 @@ the index for exactly that.
 | 2026-11-06 | [Support by email](2026-11-06-support-by-email.md) | The payment provider was suspended; both /pro buttons are a pre-filled mail to one constant, `pnpm pro` grants by hand, and a test fails if the old provider is named anywhere live. |
 | 2026-11-06 | [Extension errors behind our stack](2026-11-06-extension-errors-behind-our-stack.md) | The early-crash reporter wraps errors at our call site, so foreign-ness must be decided from the original ErrorEvent; every `<video>` gets an onError. |
 | 2026-11-06 | [The button that looked broken](2026-11-06-the-button-that-looked-broken.md) | A disabled control says why: the main button spins through every busy state, and an empty clipboard says so. |
+| 2026-11-06 | [Daily sitemap](2026-11-06-daily-sitemap.md) | The site only rebuilt on push; a daily scheduled deploy keeps sitemap.xml fresh without touching lastmod. |

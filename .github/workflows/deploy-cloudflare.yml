@@ -1,13 +1,21 @@
 name: Deploy to Cloudflare Workers
 
-# Push to main deploys. Pull requests build and size-check only — never deploy,
-# so a PR can't take production down or race the live Worker.
+# Push to main deploys, and once a day on schedule. Pull requests build and
+# size-check only — never deploy, so a PR can't take production down or race
+# the live Worker.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
+  # Daily rebuild so sitemap.xml is regenerated at least once a day (Bing:
+  # "sitemaps should be updated at least once a day"). Lastmod stays each
+  # page's last commit, IndexNow sends only changed URLs, and the release job
+  # runs on push only, so a quiet day republishes the same site.
+  schedule:
+    # 04:23 UTC: off the hour, clear of platform-monitor (05:41).
+    - cron: '23 4 * * *'
 
 concurrency:
   # One deploy at a time. Queued pushes supersede each other rather than racing
