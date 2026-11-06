@@ -21,7 +21,7 @@ import {
   trackPwaInstalled,
   trackSignedIn,
 } from '@/lib/analytics'
-import { shouldDropException } from '@/lib/analyticsNoise'
+import { isForeignEarlyError, shouldDropException } from '@/lib/analyticsNoise'
 import { scrubEvent } from '@/lib/analyticsPrivacy'
 import { getLocaleSnapshot, subscribeLocale } from '@/lib/i18nStore'
 import { localeFromPath } from '@/lib/localeRoutes'
@@ -132,9 +132,11 @@ function scheduleBoot(): void {
  */
 function reportEarlyCrashes(): void {
   const onError = (event: ErrorEvent) => {
+    if (isForeignEarlyError(event.filename, event.error)) return
     trackCaughtError('early_crash', event.error ?? event.message)
   }
   const onRejection = (event: PromiseRejectionEvent) => {
+    if (isForeignEarlyError('', event.reason)) return
     trackCaughtError('early_rejection', event.reason)
   }
   window.addEventListener('error', onError)

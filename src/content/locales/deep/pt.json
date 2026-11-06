@@ -221,5 +221,6 @@
   "Queued": "Na fila",
   "Failed to resolve": "Não foi possível resolver",
   "Page not found": "Página não encontrada",
-  "Something went wrong resolving the media. Try again in a moment.": "Algo deu errado ao processar a mídia. Tente novamente em instantes."
+  "Something went wrong resolving the media. Try again in a moment.": "Algo deu errado ao processar a mídia. Tente novamente em instantes.",
+  "This video won’t play in this browser, but the download still works.": "Este vídeo não reproduz neste navegador, mas o download continua funcionando."
 }
