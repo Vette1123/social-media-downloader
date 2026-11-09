@@ -175,4 +175,36 @@ describe('isEntitled', () => {
     expect(isEntitled(row({ sub_status: 'expired' }), NOW)).toBe(false)
     expect(isEntitled(row({ sub_status: 'expired', grants: 'pro' }), NOW)).toBe(true)
   })
+
+  /** `pnpm pro <email> --until <date>`: a prepaid year switches itself off. */
+  describe('a grant with an end date', () => {
+    it('holds until the date', () => {
+      expect(isEntitled(row({ sub_status: null, grants: 'pro', pro_until: NOW + DAY }), NOW)).toBe(
+        true,
+      )
+    })
+
+    it('ends on the date, exactly', () => {
+      expect(isEntitled(row({ sub_status: null, grants: 'pro', pro_until: NOW }), NOW)).toBe(false)
+      expect(
+        isEntitled(row({ sub_status: null, grants: 'pro', pro_until: NOW - DAY }), NOW),
+      ).toBe(false)
+    })
+
+    it('is forever when there is no date', () => {
+      expect(isEntitled(row({ sub_status: null, grants: 'pro', pro_until: null }), NOW)).toBe(true)
+    })
+
+    it('does not cut short a subscription that is still paid for', () => {
+      expect(
+        isEntitled(row({ sub_status: 'active', grants: 'pro', pro_until: NOW - DAY }), NOW),
+      ).toBe(true)
+    })
+
+    it('does not grant anything without the grant itself', () => {
+      expect(isEntitled(row({ sub_status: null, grants: null, pro_until: NOW + DAY }), NOW)).toBe(
+        false,
+      )
+    })
+  })
 })

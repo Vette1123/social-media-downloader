@@ -1,8 +1,14 @@
 #!/usr/bin/env node
 // Hand a supporter the extras, or take them back.
 //
-//   pnpm pro someone@example.com            # grant
-//   pnpm pro someone@example.com --revoke   # take it back
+//   pnpm pro someone@example.com                     # grant, lifetime
+//   pnpm pro someone@example.com --until 1y          # grant for a year from today
+//   pnpm pro someone@example.com --until 2027-11-09  # grant until that day (UTC)
+//   pnpm pro someone@example.com --revoke            # take it back
+//
+// `--until` stores an end date (migrations/0009) and Pro switches itself off
+// then: no reminder, no second run. Granting again without it makes the
+// address lifetime and clears any date.
 //
 // Support is arranged by email (src/config/support.ts), so this is the only way
 // `pro` is granted. It writes two places, in this order:
@@ -19,6 +25,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { loadLocalEnv } from './load-env.mjs'
+import { parseUntil, splitUntil } from './pro-until.mjs'
 
 loadLocalEnv()
 try {
@@ -29,7 +36,8 @@ try {
 
 const args = process.argv.slice(2)
 const revoke = args.includes('--revoke')
-const email = args
+const { raw: untilRaw, rest } = splitUntil(args)
+const email = rest
   .find((a) => !a.startsWith('-'))
   ?.trim()
   .toLowerCase()
@@ -45,7 +53,16 @@ function fail(message) {
   process.exit(1)
 }
 
-if (!email) fail('usage: pnpm pro <email> [--revoke]')
+if (!email) fail('usage: pnpm pro <email> [--until YYYY-MM-DD|1y] [--revoke]')
+if (revoke && untilRaw !== null) fail('--until and --revoke together make no sense: pick one')
+let until = null
+if (untilRaw !== null) {
+  try {
+    until = parseUntil(untilRaw)
+  } catch (error) {
+    fail(error.message)
+  }
+}
 if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) fail(`not an email: ${email}`)
 if (!TOKEN) fail('CLOUDFLARE_API_TOKEN is not set (.env / .env.local)')
 if (!ACCOUNT_ID) fail('CLOUDFLARE_ACCOUNT_ID is not set (.env / .env.local)')
@@ -89,33 +106,44 @@ const now = Date.now()
 
 if (revoke) {
   await d1(
-    `UPDATE supporters SET grants = '', lifetime = 0, source = 'manual', updated_at = ? WHERE email = ?`,
+    `UPDATE supporters SET grants = '', lifetime = 0, ends_at = NULL, source = 'manual', updated_at = ? WHERE email = ?`,
     [now, email],
   )
 } else {
+  // The latest grant is the truth, dates included: `--until` on a lifetime
+  // supporter makes them time-limited, and a plain grant clears a date.
   await d1(
-    `INSERT INTO supporters (email, grants, level, lifetime, source, event_id, updated_at)
-     VALUES (?, ?, 'manual', 1, 'manual', NULL, ?)
+    `INSERT INTO supporters (email, grants, level, lifetime, source, event_id, ends_at, updated_at)
+     VALUES (?, ?, 'manual', ?, 'manual', NULL, ?, ?)
      ON CONFLICT(email) DO UPDATE SET
        grants = excluded.grants,
        level = excluded.level,
-       lifetime = MAX(supporters.lifetime, excluded.lifetime),
+       lifetime = excluded.lifetime,
+       ends_at = excluded.ends_at,
        source = excluded.source,
        updated_at = excluded.updated_at`,
-    [email, GRANT, now],
+    [email, GRANT, until === null ? 1 : 0, until, now],
   )
 }
 
 // Every row with that address: email is not unique (a deleted and recreated
-// Google account can leave two).
-const users = await d1('SELECT id, grants FROM users WHERE email = ?', [email])
+// Google account can leave two). A revoke clears the date along with the grant.
+const nextUntil = revoke ? null : until
+const users = await d1('SELECT id, grants, pro_until FROM users WHERE email = ?', [email])
 for (const user of users) {
   const next = revoke ? withoutGrant(user.grants) : withGrant(user.grants)
-  if (next === user.grants) continue
-  await d1('UPDATE users SET grants = ? WHERE id = ?', [next, user.id])
+  if (next === user.grants && nextUntil === (user.pro_until ?? null)) continue
+  await d1('UPDATE users SET grants = ?, pro_until = ? WHERE id = ?', [next, nextUntil, user.id])
 }
 
 console.log(`\n✔ ${GRANT} ${revoke ? 'revoked' : 'granted'} for ${email}`)
+if (!revoke) {
+  console.log(
+    until === null
+      ? '  Lifetime: no end date.'
+      : `  Until ${new Date(until).toISOString().slice(0, 10)} 00:00 UTC, then it switches itself off.`,
+  )
+}
 if (users.length === 0) {
   console.log(
     revoke
