@@ -34,7 +34,7 @@ import {
   type CachedProfile,
   cachedProfile,
   hasAccountHint,
-  signInHref,
+  signInLink,
   useAccount,
 } from '@/lib/account'
 import { useHydrated, useOnPageVisible, usePeekOnScroll } from '@/lib/clientEnv'
@@ -252,7 +252,7 @@ function Control({
       // *successful* retry would land the visitor on their account under an
       // error notice about the attempt that just worked.
       <a
-        href={signInHref(pathname)}
+        {...signInLink(pathname)}
         onClick={() => trackFeatureUsed('sign_in_link')}
         className='btn-grad btn-press pointer-events-auto rounded-full px-4 py-2 text-xs font-semibold sm:py-1.5'
       >

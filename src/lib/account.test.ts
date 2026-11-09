@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { signInHref, tokenIsUsable } from './account'
+import { signInHref, signInLink, tokenIsUsable } from './account'
+
+describe('signInLink', () => {
+  it('is nofollow, so crawlers stop queueing one auth URL per page', () => {
+    expect(signInLink('/es/tiktok-downloader')).toEqual({
+      href: '/api/auth/google?redirect_to=%2Fes%2Ftiktok-downloader',
+      rel: 'nofollow',
+    })
+  })
+})
 
 describe('signInHref', () => {
   it('points at the start endpoint with no destination', () => {
