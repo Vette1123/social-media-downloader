@@ -38,6 +38,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { isMustPassStop, PROBE_EXTENSIONS } from './lib/edge-health.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const ENV_FILE = path.join(ROOT, '.env')
@@ -596,16 +597,12 @@ const JUNK_UAS = [
 const WEBHOOK_PATH_PREFIX = '/api/billing/'
 
 /**
- * Extensions nothing here serves. `out/` contains no .php/.asp/.jpg at all —
- * checked, not assumed — so no real request can match, and every hit is a
- * vulnerability scan.
- *
- * This saves no Worker CPU: `not_found_handling: "404-page"` already answers
- * these from the asset store without invoking the Worker (see
- * cloudflare/worker.js). It is here to keep the scans out of the analytics that
- * the rest of these rules are read against.
+ * PROBE_EXTENSIONS (scripts/lib/edge-health.mjs) saves no Worker CPU:
+ * `not_found_handling: "404-page"` already answers them from the asset store
+ * without invoking the Worker (see cloudflare/worker.js). The rule keeps the
+ * scans out of the analytics the rest of these rules are read against, and
+ * `health` reads the same list to tell a scan in crawler clothing from a crawler.
  */
-const PROBE_EXTENSIONS = ['.php', '.asp', '.aspx', '.cgi', '.env', '.sql', '.bak']
 
 const orUserAgent = (fragments) =>
   fragments.map((f) => `(http.user_agent contains "${f}")`).join(' or ')
@@ -907,24 +904,6 @@ async function stepWaf(ctx) {
 const HEALTH_HOURS = 23.5
 
 /**
- * Clients whose challenge or block is a defect, not a defence.
- *
- * Search crawlers first: a challenge to one of these is an unindexed page. Then
- * this project's own senders — `indexnow` submits the deployed sitemap after
- * every deploy and swallows its own failures, so it fails silently by design;
- * the webhook robots pay for support that never gets granted.
- */
-const HEALTH_MUST_PASS = [
-  /googlebot/i,
-  /google-inspectiontool|googleagent|^google$/i,
-  /bingbot|duckduckbot|yandexbot|applebot|baiduspider/i,
-  /gptbot|oai-searchbot|chatgpt-user|perplexity|claudebot|anthropic/i,
-  /facebookexternalhit|twitterbot|telegrambot|whatsapp|discordbot|linkedinbot|slackbot/i,
-  /socialdownloader-indexnow/i,
-  /creem/i,
-]
-
-/**
  * Every browser user agent is mostly the same forty characters of history, and
  * the one token that identifies the client is buried in the middle of them.
  * Cutting the string to fit a terminal keeps the boilerplate and drops the
@@ -1013,8 +992,9 @@ async function stepHealth(ctx) {
   for (const event of events) {
     const agent = event.userAgent || '(no user agent)'
     const key = `${event.action} ${event.source} ${agent}`
-    const group = groups.get(key) ?? { action: event.action, source: event.source, agent, ips: new Set(), paths: new Set(), count: 0 }
+    const group = groups.get(key) ?? { action: event.action, source: event.source, agent, ips: new Set(), paths: new Set(), count: 0, mustPass: false }
     group.count += 1
+    group.mustPass ||= isMustPassStop(event)
     group.ips.add(event.clientIP)
     group.paths.add(event.clientRequestPath)
     groups.set(key, group)
@@ -1035,7 +1015,7 @@ async function stepHealth(ctx) {
       `${String(group.count).padStart(4)}  ${group.action.padEnd(18)} ${group.source.padEnd(15)} ` +
       `${group.ips.size} IP${group.ips.size === 1 ? ' ' : 's'}  ${shortAgent(group.agent).padEnd(64)}  ` +
       C.dim([...group.paths].slice(0, 2).join(' '))
-    const shouldPass = HEALTH_MUST_PASS.some((pattern) => pattern.test(group.agent))
+    const shouldPass = group.mustPass
 
     if (HISTORICAL_SOURCES.has(group.source)) {
       historical += 1
