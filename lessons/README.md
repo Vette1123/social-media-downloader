@@ -108,3 +108,4 @@ the index for exactly that.
 | 2026-11-06 | [Daily sitemap](2026-11-06-daily-sitemap.md) | The site only rebuilt on push; a daily scheduled deploy keeps sitemap.xml fresh without touching lastmod. |
 | 2026-11-09 | [A supporter grant that ends by itself](2026-11-09-pro-until.md) | `pnpm pro <email> --until 1y` stores an end date and `isEntitled` honours it, so a prepaid sponsor year needs no reminder to revoke. |
 | 2026-11-09 | [Template URLs, nofollow sign-in, 301 slashes](2026-11-09-search-console-template-urls.md) | Google crawled the JSON-LD SearchAction template as a page; an Error from another realm dodged the early-error filter because it failed `instanceof`. |
+| 2026-11-09 | [Bing "Blocked" localized pages, edge-health false alarm](2026-11-09-bing-localized-blocked.md) | Bing had a stale "Blocked" verdict on every localized page while its Live URL test passed: request indexing, do not wait. A crawler UA on a probe path is a scanner. |
