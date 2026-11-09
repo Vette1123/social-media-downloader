@@ -12,7 +12,7 @@
   "01a19363-2a2e-7892-af5a-c68e766974f1": {
     "fixedOn": "2026-11-09",
     "what": "early errors: WebKit NotFoundError without its type, other-realm Errors (Chrome iOS \"Error: Na\"), .js\b typo",
-    "commit": "PR"
+    "commit": "#32"
   },
   "01a18fd5-4876-7980-a3d1-6f75e6951cd6": {
     "fixedOn": "2026-11-03",
@@ -77,6 +77,6 @@
   "01a1a50a-de42-7481-a50d-aa1f34c05a52": {
     "fixedOn": "2026-11-09",
     "what": "early errors: WebKit NotFoundError without its type, other-realm Errors (Chrome iOS \"Error: Na\"), .js\b typo",
-    "commit": "PR"
+    "commit": "#32"
   }
 }
