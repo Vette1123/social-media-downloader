@@ -45,19 +45,19 @@
     "youtube-dl-exec": "^3.1.19"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261030.1",
+    "@cloudflare/workers-types": "^5.20261102.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "cross-env": "^10.1.0",
-    "eslint": "^10.13.0",
+    "eslint": "^10.14.0",
     "eslint-config-next": "16.4.3",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.3.3",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.0.5",
-    "wrangler": "^4.156.0"
+    "wrangler": "^4.156.1"
   }
 }
