@@ -55,6 +55,8 @@ export interface UserRow extends BillingRow {
   sub_checkout_at: number | null
   /** Hand-set capabilities, comma separated. See migrations/0007. */
   grants: string | null
+  /** When the `pro` grant stops, or null for never. See migrations/0009. */
+  pro_until: number | null
 }
 
 /**
@@ -137,7 +139,7 @@ export const USER_COLUMNS =
   // Hand-set capabilities. Read on every refresh because the access token is
   // minted from it, so clearing a grant in D1 takes effect within one token TTL
   // with no other step.
-  'users.grants'
+  'users.grants, users.pro_until'
 
 /**
  * Mint a session, evicting the oldest if the user is already at the cap.

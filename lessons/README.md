@@ -106,3 +106,4 @@ the index for exactly that.
 | 2026-11-06 | [Extension errors behind our stack](2026-11-06-extension-errors-behind-our-stack.md) | The early-crash reporter wraps errors at our call site, so foreign-ness must be decided from the original ErrorEvent; every `<video>` gets an onError. |
 | 2026-11-06 | [The button that looked broken](2026-11-06-the-button-that-looked-broken.md) | A disabled control says why: the main button spins through every busy state, and an empty clipboard says so. |
 | 2026-11-06 | [Daily sitemap](2026-11-06-daily-sitemap.md) | The site only rebuilt on push; a daily scheduled deploy keeps sitemap.xml fresh without touching lastmod. |
+| 2026-11-09 | [A supporter grant that ends by itself](2026-11-09-pro-until.md) | `pnpm pro <email> --until 1y` stores an end date and `isEntitled` honours it, so a prepaid sponsor year needs no reminder to revoke. |

@@ -25,6 +25,8 @@ export interface BillingRow {
   sub_past_due_since: number | null
   /** Hand-set capabilities. See migration 0007 and `hasGrant`. */
   grants?: string | null
+  /** When the `pro` grant stops (epoch ms), or null for never. See migration 0009. */
+  pro_until?: number | null
 }
 
 /**
@@ -175,5 +177,16 @@ export function isProAt(row: BillingRow | null, now: number): boolean {
  * half that must keep working if a processor is ever found.
  */
 export function isEntitled(row: BillingRow | null, now: number): boolean {
-  return hasGrant(row, 'pro') || isProAt(row, now)
+  return grantedProAt(row, now) || isProAt(row, now)
+}
+
+/**
+ * The `pro` grant, bounded by `pro_until` when one is set (a one-year
+ * supporter, `pnpm pro <email> --until <date>`). Null means forever, which is
+ * every grant made before the column existed.
+ */
+function grantedProAt(row: BillingRow | null, now: number): boolean {
+  if (!hasGrant(row, 'pro')) return false
+  const until = row?.pro_until ?? null
+  return until === null || now < until
 }
