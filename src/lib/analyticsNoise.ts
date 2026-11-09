@@ -20,7 +20,8 @@ const NOISE_PATTERNS = [
   // play() with no stack. The <video> onError already tells the viewer.
   /^\s*(DOMException: )?NotSupportedError: The media resource indicated by the src attribute or assigned media provider object was not suitable\.?\s*$/i,
   /Failed to execute '(removeChild|insertBefore)' on 'Node'/i,
-  /NotFoundError: The object can not be found here/i,
+  // WebKit's NotFoundError; the early reporter sends the message without its type.
+  /(NotFoundError: )?The object can not be found here/i,
   /The node to be removed is not a child of this node/i,
   /Child to insert before is not a child of this node/i,
   /ResizeObserver loop/i,
@@ -78,14 +79,27 @@ function isForeignException(event: ExceptionEvent): boolean {
  * site, so the stack PostHog receives is always ours and isForeignException can
  * never see the thrower. Decide here, from the original: a filename or stack that
  * names files, none of them under /_next/, is a wallet or extension script
- * (`window.ethereum.selectedAddress`, `M_ID`). Nothing to go on at all is kept.
+ * (`window.ethereum.selectedAddress`, `M_ID`). An Error-shaped value that fails
+ * `instanceof Error` was built in another JS realm, which none of our code runs
+ * in (Chrome iOS's injected scripts: "Error: Na"). Nothing to go on is kept.
  */
 export function isForeignEarlyError(filename: unknown, error: unknown): boolean {
-  const stack = error instanceof Error && typeof error.stack === 'string' ? error.stack : ''
+  const stack = stackOf(error)
   const file = typeof filename === 'string' ? filename : ''
   if (OWN_FRAME.test(file) || OWN_FRAME.test(stack)) return false
-  const namesAFile = /\w+:\/\/|\.jsb/
-  return namesAFile.test(file) || namesAFile.test(stack)
+  const namesAFile = /\w+:\/\/|\.js\b/
+  return namesAFile.test(file) || namesAFile.test(stack) || isOtherRealmError(error)
+}
+
+function stackOf(error: unknown): string {
+  const stack = (error as { stack?: unknown } | null)?.stack
+  return typeof stack === 'string' ? stack : ''
+}
+
+function isOtherRealmError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null || error instanceof Error) return false
+  const { name, message } = error as { name?: unknown; message?: unknown }
+  return typeof name === 'string' && typeof message === 'string'
 }
 
 export function shouldDropException(event: ExceptionEvent): boolean {
