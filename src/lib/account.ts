@@ -116,6 +116,15 @@ export function signInHref(redirectTo?: string): string {
 }
 
 /**
+ * The props for every sign-in anchor. `nofollow`, because Google queued one
+ * `/api/auth/google?redirect_to=…` per page it found the link on, then listed
+ * all of them as "Blocked by robots.txt" in Search Console.
+ */
+export function signInLink(redirectTo?: string): { href: string; rel: 'nofollow' } {
+  return { href: signInHref(redirectTo), rel: 'nofollow' }
+}
+
+/**
  * Whether the browser is probably signed in, answered synchronously with no
  * network call. The header renders from this so that a page view still invokes
  * no Worker at all — see src/lib/auth/cookies.ts.

@@ -33,6 +33,12 @@ describe('shouldDropException', () => {
     ).toBe(true)
   })
 
+  it('drops the WebKit NotFoundError the early reporter sends without its type', () => {
+    expect(shouldDropException(exception('[early_crash] The object can not be found here.'))).toBe(
+      true,
+    )
+  })
+
   it('drops a stack with no frame of ours', () => {
     expect(
       shouldDropException(exception('boom', ['https://x.space/:224:408'])),
@@ -63,6 +69,25 @@ describe('isForeignEarlyError', () => {
     expect(
       isForeignEarlyError('', thrown("TypeError: reading 'M_ID'", '    at https://cdn.x.com/lib.js:3:9')),
     ).toBe(true)
+  })
+
+  it('drops a stack that names a script by file alone, with no scheme', () => {
+    expect(isForeignEarlyError('', thrown('Error: x', '    at inpage.js:3:9'))).toBe(true)
+  })
+
+  // Chrome iOS, 2026-11-09: "[early_rejection] Error: Na", a closure-minified
+  // name that is nowhere in our bundle. The reason failed `instanceof Error`
+  // (String() gave "Error: Na"), so it was built in another JS realm.
+  it('drops an Error from another realm, which never passes instanceof', () => {
+    const foreignRealm = { name: 'Error', message: 'Na', stack: '' }
+    expect(isForeignEarlyError('', foreignRealm)).toBe(true)
+    const named = { name: 'Error', message: 'x', stack: 'Na@https://cdn.x.com/a.js:1:2' }
+    expect(isForeignEarlyError('', named)).toBe(true)
+  })
+
+  it('keeps an Error from another realm whose stack is ours', () => {
+    const ownStack = { name: 'Error', message: 'boom', stack: `m@${ours}:1:2` }
+    expect(isForeignEarlyError('', ownStack)).toBe(false)
   })
 
   it('keeps a crash in our bundle', () => {

@@ -56,14 +56,9 @@ const websiteNode = {
   description: siteConfig.description,
   inLanguage: LOCALES,
   publisher: { '@id': `${siteConfig.url}/#organization` },
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: `${siteConfig.url}/?url={search_term_string}`,
-    },
-    'query-input': 'required name=search_term_string',
-  },
+  // No potentialAction, on purpose. Google retired the sitelinks search box in
+  // 2024, and crawled the SearchAction/UseAction templates as literal URLs
+  // ("/?url={search_term_string}", "/?url={url}" in Search Console, 2026-11).
 }
 
 const webApplicationNode = {
@@ -110,11 +105,6 @@ const webApplicationNode = {
   creator: { '@id': `${siteConfig.url}/#person` },
   publisher: { '@id': `${siteConfig.url}/#organization` },
   mainEntityOfPage: { '@id': `${siteConfig.url}/#website` },
-  potentialAction: {
-    '@type': 'UseAction',
-    target: `${siteConfig.url}/?url={url}`,
-    'query-input': 'required name=url',
-  },
 }
 
 export const globalStructuredData = {

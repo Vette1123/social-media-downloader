@@ -34,7 +34,7 @@ import {
   hasAccountHint,
   markSignedOut,
   refreshAccount,
-  signInHref,
+  signInLink,
   signOut,
   useAccount,
 } from '@/lib/account'
@@ -1168,7 +1168,7 @@ function SignInPrompt() {
       <p className='text-sm text-white/70'>{d('Sign in to see your plan and manage your account.')}</p>
       {/* Home, not back to this page. Signing in is a means to using the
           downloader, so it ends where the downloader is. */}
-      <a href={signInHref()} className={`${ACTION_BUTTON_CLASS} mt-4`}>
+      <a {...signInLink()} className={`${ACTION_BUTTON_CLASS} mt-4`}>
         {d('Sign in with Google')}
       </a>
     </Surface>
