@@ -39,26 +39,26 @@
     "clsx": "^2.1.1",
     "jszip": "^3.10.2",
     "motion": "^14.9.0",
-    "next": "16.4.3",
-    "posthog-js": "^1.444.0",
+    "next": "16.4.4",
+    "posthog-js": "^1.445.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "youtube-dl-exec": "^3.1.19"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261030.1",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@cloudflare/workers-types": "^5.20261103.1",
+    "@tailwindcss/postcss": "^4.3.4",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "cross-env": "^10.1.0",
-    "eslint": "^10.13.0",
-    "eslint-config-next": "16.4.3",
+    "eslint": "^10.14.0",
+    "eslint-config-next": "16.4.4",
     "sharp": "^0.35.5",
-    "tailwindcss": "^4.3.3",
+    "tailwindcss": "^4.3.4",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "vitest": "^5.1.0",
-    "wrangler": "^4.156.0"
+    "wrangler": "^4.157.0"
   }
 }
