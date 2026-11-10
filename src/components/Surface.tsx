@@ -110,7 +110,14 @@ export function Surface<T extends ElementType = 'div'>({
       )}
       {...rest}
     >
-      {/* Sits above the ::before ring but below content (content is z-2). */}
+      {/* The perimeter sheen: a masked ring (z-1) with a conic gradient inside
+          that ROTATES rather than being repainted, so it runs on the
+          compositor. Below content (content is z-2). */}
+      {glow && (
+        <span aria-hidden className='glow-ring'>
+          <span className='glow-ring-spin' />
+        </span>
+      )}
       {glow && <CardSpotlight />}
       {children}
     </Component>

@@ -15,6 +15,7 @@
     "verify": "pnpm typecheck && pnpm lint && pnpm test",
     "pro": "node scripts/grant-pro.mjs",
     "perf": "node scripts/perf-audit.mjs",
+    "perf:idle": "node scripts/idle-paint-probe.mjs",
     "i18n:deep": "node scripts/i18n-deep.mjs",
     "i18n:lock": "cross-env I18N_LOCK=1 vitest run src/lib/localeContent.test.ts",
     "cf:build": "cross-env DEPLOY_TARGET=cloudflare next build && node scripts/cf-postbuild.mjs",
