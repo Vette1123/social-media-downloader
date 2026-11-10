@@ -43,3 +43,33 @@ describe.each([
     expect((await ask(handler)).status).toBe(200)
   })
 })
+
+describe.each([
+  ['audio', handleAudioProxy],
+  ['video', handleVideoProxy],
+])('%s proxy reopening a seek', (_name, handler) => {
+  it('answers 502, not 500, when the reopened request drops', async () => {
+    // A closed range on an upstream that omits Content-Range makes the proxy
+    // re-ask from the seek point. That second fetch dropping was the last way
+    // left to reach the catch-all 500 (PostHog worker:/api/audio:500).
+    const answers: (Response | Error)[] = [
+      new Response('bytes', { status: 206 }),
+      new Error('connection reset'),
+      new Error('connection reset'),
+    ]
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        const next = answers.shift()!
+        if (next instanceof Error) throw next
+        return next
+      }),
+    )
+    const res = await handler(
+      new Request('https://x.space/api/x?url=' + encodeURIComponent('https://cdn.test/f'), {
+        headers: { Range: 'bytes=10-20' },
+      }),
+    )
+    expect(res.status).toBe(502)
+  })
+})
