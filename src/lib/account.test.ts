@@ -2,11 +2,26 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { signInHref, signInLink, tokenIsUsable } from './account'
 
 describe('signInLink', () => {
-  it('is nofollow, so crawlers stop queueing one auth URL per page', () => {
-    expect(signInLink('/es/tiktok-downloader')).toEqual({
-      href: '/api/auth/google?redirect_to=%2Fes%2Ftiktok-downloader',
-      rel: 'nofollow',
-    })
+  it('renders one constant URL, so crawlers stop queueing one auth URL per page', () => {
+    const link = signInLink('/es/tiktok-downloader')
+    expect(link.href).toBe('/api/auth/google')
+    expect(link.rel).toBe('nofollow')
+  })
+
+  it('adds the destination at click time, so the visitor still comes back', () => {
+    const anchor = { href: signInLink('/es/tiktok-downloader').href }
+    signInLink('/es/tiktok-downloader').onClick({ currentTarget: anchor })
+    expect(anchor.href).toBe('/api/auth/google?redirect_to=%2Fes%2Ftiktok-downloader')
+
+    const tab = { href: '/api/auth/google' }
+    signInLink('/es/tiktok-downloader').onAuxClick({ currentTarget: tab })
+    expect(tab.href).toBe('/api/auth/google?redirect_to=%2Fes%2Ftiktok-downloader')
+  })
+
+  it('leaves the plain URL alone with no destination', () => {
+    const anchor = { href: '/api/auth/google' }
+    signInLink().onClick({ currentTarget: anchor })
+    expect(anchor.href).toBe('/api/auth/google')
   })
 })
 
