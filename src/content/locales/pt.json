@@ -249,7 +249,7 @@
           {
             "heading": "Análises",
             "paragraphs": [
-              "Usamos o PostHog para ver como o site é usado e para detectar e corrigir erros. Isso abrange as páginas e os botões usados e o que é baixado: a plataforma, o link, o título e o autor. Uma pequena amostra das visitas é gravada como reprodução de sessão, com o texto digitado oculto. Os eventos carregam um ID aleatório, ou o ID da sua conta se você estiver logado, e nunca o seu nome ou e-mail. Não define cookies. Também usamos o Cloudflare Web Analytics para contar as visualizações de página."
+              "Usamos o PostHog para ver como o site é usado e para detectar e corrigir erros. Isso abrange as páginas e os botões usados e o que é baixado: a plataforma, o link, o título e o autor e, para links que não puderam ser obtidos, o nome de domínio do site (nunca o resto do endereço). Uma pequena amostra das visitas é gravada como reprodução de sessão, com o texto digitado oculto. Os eventos carregam um ID aleatório, ou o ID da sua conta se você estiver logado, e nunca o seu nome ou e-mail. Não define cookies. Também usamos o Cloudflare Web Analytics para contar as visualizações de página."
             ]
           },
           {

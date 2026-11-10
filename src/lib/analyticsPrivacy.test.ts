@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contentLink, scrubEvent, scrubText, scrubUrl } from './analyticsPrivacy'
+import { contentLink, linkHost, scrubEvent, scrubText, scrubUrl } from './analyticsPrivacy'
 
 describe('scrubUrl', () => {
   it('drops the share-target link and keeps the path', () => {
@@ -66,5 +66,27 @@ describe('scrubEvent', () => {
       properties: { content_url: 'https://a.com/watch?v=1' },
     })
     expect(event.properties?.content_url).toBe('https://a.com/watch?v=1')
+  })
+})
+
+describe('linkHost', () => {
+  it('keeps the registrable domain only', () => {
+    expect(linkHost('https://www.dailymotion.com/video/x8abc?token=SECRET')).toBe('dailymotion.com')
+    expect(linkHost('https://m.vimeo.com/123')).toBe('vimeo.com')
+  })
+
+  it('keeps co.uk-style suffixes whole', () => {
+    expect(linkHost('https://www.bbc.co.uk/iplayer/episode/b0')).toBe('bbc.co.uk')
+  })
+
+  it('accepts a link with no scheme', () => {
+    expect(linkHost('www.dailymotion.com/video/x8abc')).toBe('dailymotion.com')
+  })
+
+  it('records nothing for text, IPs or empty input', () => {
+    expect(linkHost('hello world')).toBeUndefined()
+    expect(linkHost('http://192.168.0.1/x')).toBeUndefined()
+    expect(linkHost('')).toBeUndefined()
+    expect(linkHost(undefined)).toBeUndefined()
   })
 })

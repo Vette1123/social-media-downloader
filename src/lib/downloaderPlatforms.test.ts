@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Downloader, firstResult, parseTwitchClipSlug } from './downloader'
+import { Downloader, firstResult, noMediaMessage, parseTwitchClipSlug } from './downloader'
+import { failureCode } from './analyticsErrors'
 import { detectPlatform, unwrapLoginWall } from './validator'
 
 /**
@@ -286,6 +287,20 @@ describe('the Pinterest pin extractor', () => {
         thumbnail: 'https://i.pinimg.example/564.jpg',
       },
     ])
+  })
+})
+
+describe('Pinterest short links', () => {
+  it('follows a pin.it link to the pin before reading it', async () => {
+    const spy = stubFetch({
+      data: [{ grid_title: 'Short', images: { orig: { url: 'https://i.pinimg.example/o.jpg' } } }],
+    })
+    const downloader = new Downloader()
+    vi.spyOn(downloader as unknown as { resolveRedirect(u: string): Promise<string> }, 'resolveRedirect')
+      .mockResolvedValue('https://www.pinterest.com/pin/214343263495052387/')
+    const result = await priv(downloader).tryPinterestPin('https://pin.it/4DhYmEB')
+    expect(String(spy.mock.calls[0][0])).toContain('pin_ids=214343263495052387')
+    expect(result?.images).toHaveLength(1)
   })
 })
 
@@ -702,5 +717,17 @@ describe('the Vimeo extractor', () => {
     const result = await priv(new Downloader()).tryVimeo('https://vimeo.com/1')
     expect(result?.downloadUrl).toBe('https://vod.example/1080.mp4')
     expect(result?.embedUrl).toBeUndefined()
+  })
+})
+
+describe('the catch-all failure message', () => {
+  it('does not blame the post for a site we have no extractor for', () => {
+    const message = noMediaMessage('generic')
+    expect(message).not.toMatch(/may be private/i)
+    expect(failureCode(message)).toBe('unsupported')
+  })
+
+  it('keeps the post-level guess for a named platform', () => {
+    expect(noMediaMessage('snapchat')).toMatch(/snapchat.*may be private/i)
   })
 })

@@ -52,6 +52,35 @@ export function contentLink(raw: string | null | undefined): string | undefined 
   }
 }
 
+const SECOND_LEVEL = /^(?:co|com|org|net|gov|edu|ac|or|ne)$/
+
+/**
+ * The registrable domain of a link and nothing else: `dailymotion.com`, never
+ * a path, query or subdomain. It says which SITE failed to resolve, which is
+ * what a "generic" failure needs. ponytail: no public-suffix list, so only the
+ * common `co.uk`-style second levels are kept whole; upgrade path is `tldts`.
+ */
+export function linkHost(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined
+  const text = raw.trim()
+  try {
+    const hostname = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`).hostname
+      .toLowerCase()
+      .replace(/\.$/, '')
+    if (!hostname.includes('.') || /^[\d.]+$/.test(hostname) || hostname.includes(':')) {
+      return undefined
+    }
+    const labels = hostname.split('.')
+    const keep =
+      labels.length > 2 && labels[labels.length - 1].length === 2 && SECOND_LEVEL.test(labels[labels.length - 2])
+        ? 3
+        : 2
+    return labels.slice(-keep).join('.')
+  } catch {
+    return undefined
+  }
+}
+
 /** Any URL quoted inside free text — an error message, usually — becomes `<url>`. */
 export function scrubText(text: string): string {
   return text.replace(URL_IN_TEXT, '<url>')

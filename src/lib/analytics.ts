@@ -23,7 +23,7 @@ import {
   failureCode,
   isExpectedFailure,
 } from './analyticsErrors'
-import { contentLink, scrubText } from './analyticsPrivacy'
+import { contentLink, linkHost, scrubText } from './analyticsPrivacy'
 import { ph } from './posthogClient'
 
 export const EVENTS = {
@@ -282,13 +282,20 @@ export function trackLinkSubmitted(props: {
   source: LinkSource
   format?: string
   quality?: string
+  link?: string
 }): void {
-  track(EVENTS.LINK_SUBMITTED, props)
+  const { link, ...rest } = props
+  track(EVENTS.LINK_SUBMITTED, { ...rest, host: linkHost(link) })
 }
 
 /** A link refused without a request: a profile, a playlist, a site's front page. */
-export function trackLinkRejected(props: { platform: string; reason: string }): void {
-  track(EVENTS.LINK_REJECTED, props)
+export function trackLinkRejected(props: {
+  platform: string
+  reason: string
+  link?: string
+}): void {
+  const { link, ...rest } = props
+  track(EVENTS.LINK_REJECTED, { ...rest, host: linkHost(link) })
 }
 
 export function trackResolveSucceeded(
@@ -303,6 +310,7 @@ export function trackResolveFailed(props: {
   message: string | undefined
   duration_ms: number
   format: string
+  link?: string
 }): void {
   const code = failureCode(props.message)
   const expected = isExpectedFailure(code)
@@ -311,6 +319,7 @@ export function trackResolveFailed(props: {
     platform: props.platform,
     code,
     message,
+    host: linkHost(props.link),
     duration_ms: props.duration_ms,
     format: props.format,
   })

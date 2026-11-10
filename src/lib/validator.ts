@@ -303,3 +303,33 @@ export function parseYouTubeId(url: string): string | null {
   }
   return null
 }
+
+/**
+ * The link inside whatever was pasted or sent. Share sheets send "Look at this
+ * https://…", a chat adds a closing bracket, a copied address bar drops the
+ * scheme — and `detectPlatform` is anchored, so each of those used to answer
+ * "Invalid URL" for a link that was fine. Returns the input untouched when it is
+ * already a single link, a cleaned `https://…` link when one is embedded, or
+ * null when there is none.
+ */
+export function extractLink(text: string | null | undefined): string | null {
+  if (!text || typeof text !== 'string') return null
+  const trimmed = text.trim()
+  if (!trimmed) return null
+  if (!/\s/.test(trimmed) && detectPlatform(trimmed) !== 'unknown') return trimmed
+  const withScheme = trimmed.match(/https?:\/\/[^\s<>"']+/i)
+  if (withScheme) return trimTail(withScheme[0])
+  // No scheme: only a www. host, or a host with a path, counts — "hello.world"
+  // in a sentence is not a link.
+  const bare = trimmed.match(
+    /(?:^|[\s(<"'])((?:www\.[a-z0-9-]+(?:\.[a-z0-9-]+)+|[a-z0-9-]+(?:\.[a-z0-9-]+)+\/)[^\s<>"']*)/i,
+  )
+  if (!bare) return null
+  const candidate = `https://${trimTail(bare[1])}`
+  return isHttpUrl(candidate) ? candidate : null
+}
+
+// Sentence punctuation and a closing bracket are not part of a link.
+function trimTail(link: string): string {
+  return link.replace(/[.,;:!?)\]}>'"]+$/, '')
+}

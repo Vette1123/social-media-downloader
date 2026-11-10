@@ -76,7 +76,13 @@ export async function resolve(
   const quality = opts.quality ?? 'hd'
   const startedAt = Date.now()
   const elapsed = () => Date.now() - startedAt
-  trackLinkSubmitted({ platform, source: opts.source ?? 'typed', format, quality })
+  trackLinkSubmitted({
+    platform,
+    source: opts.source ?? 'typed',
+    format,
+    quality,
+    link: url,
+  })
   try {
     const result = await resolveLink(url, opts)
     if (result.success) {
@@ -91,6 +97,7 @@ export async function resolve(
         message: result.error,
         duration_ms: elapsed(),
         format,
+        link: url,
       })
     }
     return result
@@ -102,6 +109,7 @@ export async function resolve(
         message: errorMessage(error),
         duration_ms: elapsed(),
         format,
+        link: url,
       })
     }
     throw error

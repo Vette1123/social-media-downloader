@@ -30,6 +30,7 @@ the index for exactly that.
 
 | Date | Lesson | The one thing |
 | --- | --- | --- |
+| 2026-11-10 | [Resolver failures: name the host, accept the link inside the text](2026-11-10-resolver-failures-by-host.md) | Failure events carry the site's domain, shared text with a link in it parses, pin.it reaches the pin extractor, and the generic error stops blaming the post. |
 | 2026-11-03 | [IndexNow by content, and the error board](2026-11-03-indexnow-content-diff-and-error-board.md) | Compare built pages with the live ones before the deploy, not lastmod; a proxy that answers 500 for an upstream refusal opens issues that are not ours. |
 | 2026-11-01 | [Store links belong to the browser](2026-11-01-store-links-belong-to-the-browser.md) | Our own apps were on the affiliate path. A link to your own page is a plain, followed anchor. |
 | 2026-10-20 | [The features I pitched were already on the ship](2026-10-20-already-shipped-telegram-webhook.md) | Map the repo before pitching features — three of four were built and tested already; the Telegram webhook was the only real gap, and it now exists. |

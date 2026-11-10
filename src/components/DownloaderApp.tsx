@@ -82,7 +82,7 @@ import {
   removeFormat,
   type FormatMap,
 } from '@/lib/platformFormat'
-import { detectPlatform, type SupportedPlatform } from '@/lib/validator'
+import { detectPlatform, extractLink, type SupportedPlatform } from '@/lib/validator'
 import {
   beginDownload,
   contentProps,
@@ -1225,7 +1225,9 @@ export function DownloaderApp() {
     overrideUrl?: string,
     source: LinkSource = 'typed',
   ) => {
-    const target = (overrideUrl ?? state.url).trim()
+    const typed = (overrideUrl ?? state.url).trim()
+    // Shared text with a link in it, or a link with no scheme, is still a link.
+    const target = extractLink(typed) ?? typed
     if (!target) {
       trackLinkRejected({ platform: 'none', reason: 'empty' })
       setUrlError(t('errorEmpty'))
@@ -1256,7 +1258,11 @@ export function DownloaderApp() {
     // underneath saying yes.
     const advice = linkAdvice(target)
     if (advice) {
-      trackLinkRejected({ platform: detectPlatform(target), reason: 'not_a_post' })
+      trackLinkRejected({
+        platform: detectPlatform(target),
+        reason: 'not_a_post',
+        link: target,
+      })
       setPasteAdvice(advice)
       dispatch({ type: 'SET_URL', payload: target })
       return
