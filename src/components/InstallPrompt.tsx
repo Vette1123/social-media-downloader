@@ -101,19 +101,22 @@ export function InstallPrompt() {
 
         <div className='min-w-0 flex-1'>
           <p className='text-sm font-medium text-white'>{t('installTitle')}</p>
+          {/* iOS has nothing to tap here: Safari's own toolbar holds the Share
+              button, and navigator.share() opens a sheet without "Add to Home
+              Screen". So the glyph sits inline in the instruction, as text — a
+              bordered "Share" pill here looked like a button and drew dead clicks. */}
           <p className='mt-0.5 text-xs text-white/60'>
-            {isIOS
-              ? t('installIos')
-              : t('installAndroid')}
+            {isIOS && (
+              <ExternalLinkIcon
+                aria-hidden='true'
+                className='me-1 inline h-3.5 w-3.5 align-[-3px] text-cyan-300'
+              />
+            )}
+            {isIOS ? t('installIos') : t('installAndroid')}
           </p>
         </div>
 
-        {isIOS ? (
-          <span className='col-span-2 flex shrink-0 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-xs font-medium text-white/70'>
-            <ExternalLinkIcon className='h-3.5 w-3.5' />
-            {t('installShare')}
-          </span>
-        ) : (
+        {!isIOS && (
           <button
             type='button'
             onClick={install}

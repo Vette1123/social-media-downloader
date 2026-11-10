@@ -113,3 +113,4 @@ the index for exactly that.
 | 2026-11-09 | [Bing "Blocked" localized pages, edge-health false alarm](2026-11-09-bing-localized-blocked.md) | Bing had a stale "Blocked" verdict on every localized page while its Live URL test passed: request indexing, do not wait. A crawler UA on a probe path is a scanner. |
 | 2026-11-10 | [Stale signed links, Snapchat @user/spotlight, repeat errors](2026-11-10-stale-links-snapchat-dead-clicks.md) | A signed media URL is a lease: Save re-resolves the post on 403/404/410; a repeated error replays so the press is visible. |
 | 2026-11-10 | [Dependabot: vite and minimatch](2026-11-10-dependabot-vite-minimatch.md) | Override only the vulnerable range when the parent pins the old major. |
+| 2026-11-10 | [A Share pill that was not a button, and the seek reopen 500](2026-11-10-ios-share-pill-and-seek-reopen.md) | Never style non-interactive text as a button; every proxy fetch goes through `fetchUpstream`. |

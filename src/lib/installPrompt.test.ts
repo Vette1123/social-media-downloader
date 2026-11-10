@@ -17,4 +17,13 @@ describe('install prompt placement', () => {
     expect(source).not.toMatch(/className='[^']*(?<!sm:)\bfixed\b/)
     expect(source).toContain('sm:fixed')
   })
+
+  it('the iOS hint has no button-shaped span, which drew dead clicks', () => {
+    const source = readFileSync('src/components/InstallPrompt.tsx', 'utf8')
+
+    // A bordered, filled pill reading "Share" looked tappable and did nothing.
+    // Safari's own toolbar holds the real Share button; the hint only points at it.
+    expect(source).not.toMatch(/<span[^>]*\bborder\b[^>]*>\s*<ExternalLinkIcon/)
+    expect(source).not.toContain("t('installShare')")
+  })
 })

@@ -98,7 +98,6 @@ export type TKey =
   | 'installTitle'
   | 'installIos'
   | 'installAndroid'
-  | 'installShare'
   | 'installAction'
   | 'installDismiss'
   | 'copyLink'
@@ -220,7 +219,6 @@ const en: Record<TKey, string> = {
   installTitle: 'Install the app',
   installIos: 'Tap Share, then “Add to Home Screen”.',
   installAndroid: 'Share videos straight from TikTok. No browser, no paste.',
-  installShare: 'Share',
   installAction: 'Install',
   installDismiss: 'Dismiss install prompt',
   copyLink: 'Copy link',
