@@ -21,3 +21,8 @@ allowBuilds:
 # Install the latest release of everything, with no waiting window. This turns
 # off pnpm's supply-chain delay on purpose; CI's frozen install needs it too.
 minimumReleaseAge: 0
+# Dependabot GHSA for minimatch >=7 <11.0.1 has no patched 10.x, and eslint's
+# @eslint/config-array still asks for ^10. Lint is the only consumer (dev only).
+# ponytail: drop this once @eslint/config-array depends on minimatch ^11.
+overrides:
+  'minimatch@>=7 <11.0.1': ^11.0.1
