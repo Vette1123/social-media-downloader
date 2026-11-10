@@ -50,6 +50,12 @@ function pageMetadata({
       url: `${siteConfig.url}${canonical === '/' ? '' : canonical}`,
       siteName: siteConfig.name,
       locale: OG_LOCALES[locale],
+      // The same page in the other languages, as og:locale:alternate. hreflang
+      // tells a search engine; this tells Facebook and LinkedIn which language
+      // card to show a reader.
+      alternateLocale: LOCALES.filter((other) => other !== locale).map(
+        (other) => OG_LOCALES[other],
+      ),
       type: 'website',
       ...(images && {
         images: [{ url: images.og, ...OG_SIZE, type: 'image/png', alt: title }],
@@ -84,6 +90,21 @@ export function infoMetadata(
         ? undefined
         : { og: `${root}/opengraph-image`, twitter: `${root}/twitter-image` },
   })
+}
+
+/**
+ * /account, in any language. Noindex, but a shared or bookmarked link still
+ * shows a description, and without one it inherited the homepage's: a
+ * downloader pitch on a page about a subscription.
+ */
+export function accountMetadata(locale: Locale = 'en'): Metadata {
+  const { account } = contentFor(locale).copy.legal
+  return {
+    title: account.metaTitle,
+    description: account.intro,
+    alternates: { canonical: localePath(locale, '/account') },
+    robots: { index: false },
+  }
 }
 
 export function homeMetadata(locale: Exclude<Locale, 'en'>): Metadata {

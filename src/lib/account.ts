@@ -115,13 +115,29 @@ export function signInHref(redirectTo?: string): string {
   return `/api/auth/google?redirect_to=${encodeURIComponent(redirectTo)}`
 }
 
+interface SignInLink {
+  href: string
+  rel: 'nofollow'
+  onClick: (event: { currentTarget: { href: string } }) => void
+  onAuxClick: (event: { currentTarget: { href: string } }) => void
+}
+
 /**
- * The props for every sign-in anchor. `nofollow`, because Google queued one
- * `/api/auth/google?redirect_to=…` per page it found the link on, then listed
- * all of them as "Blocked by robots.txt" in Search Console.
+ * The props for every sign-in anchor.
+ *
+ * The HTML carries one constant URL, and the destination is added at the moment
+ * of the click. Google queued one `/api/auth/google?redirect_to=…` per page it
+ * found the link on and listed each as "Blocked by robots.txt" in Search
+ * Console; `nofollow` alone did not stop it, because Google treats it as a hint.
+ * A click handler runs before the browser reads `href`, so a visitor still
+ * comes back to the page they signed in from. `onAuxClick` covers a middle-click
+ * into a new tab.
  */
-export function signInLink(redirectTo?: string): { href: string; rel: 'nofollow' } {
-  return { href: signInHref(redirectTo), rel: 'nofollow' }
+export function signInLink(redirectTo?: string): SignInLink {
+  const follow = (event: { currentTarget: { href: string } }) => {
+    if (redirectTo) event.currentTarget.href = signInHref(redirectTo)
+  }
+  return { href: signInHref(), rel: 'nofollow', onClick: follow, onAuxClick: follow }
 }
 
 /**

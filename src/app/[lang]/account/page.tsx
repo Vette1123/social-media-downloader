@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { AccountPage } from '@/components/InfoPages'
-import { contentFor } from '@/lib/localeContent'
+import { accountMetadata } from '@/lib/pageMetadata'
 import { toRouteLocale } from '@/lib/routeLocale'
 
 interface Props {
@@ -8,12 +8,7 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const locale = toRouteLocale((await params).lang)
-  return {
-    title: contentFor(locale).copy.legal.account.metaTitle,
-    alternates: { canonical: `/${locale}/account` },
-    robots: { index: false },
-  }
+  return accountMetadata(toRouteLocale((await params).lang))
 }
 
 export default async function Page({ params }: Props) {

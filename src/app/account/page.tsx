@@ -1,12 +1,7 @@
-import type { Metadata } from 'next'
 import { AccountPage } from '@/components/InfoPages'
-import { contentFor } from '@/lib/localeContent'
+import { accountMetadata } from '@/lib/pageMetadata'
 
-export const metadata: Metadata = {
-  title: contentFor('en').copy.legal.account.metaTitle,
-  alternates: { canonical: '/account' },
-  robots: { index: false },
-}
+export const metadata = accountMetadata()
 
 export default function Page() {
   return <AccountPage />

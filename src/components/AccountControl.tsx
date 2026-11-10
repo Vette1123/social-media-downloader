@@ -238,6 +238,7 @@ function Control({
   const signedIn = live.signedIn ?? hasAccountHint()
 
   if (!signedIn) {
+    const link = signInLink(pathname)
     return (
       // A plain anchor, not next/link. `/api/auth/google` is a Worker route
       // that does not exist in the static export, so the client router treats
@@ -250,10 +251,14 @@ function Control({
       // Pathname only, deliberately: the query string is where a failed
       // sign-in's `?signin=expired` lives, and carrying that through a
       // *successful* retry would land the visitor on their account under an
-      // error notice about the attempt that just worked.
+      // error notice about the attempt that just worked. The destination is
+      // added on click, not in the HTML: see signInLink.
       <a
-        {...signInLink(pathname)}
-        onClick={() => trackFeatureUsed('sign_in_link')}
+        {...link}
+        onClick={(event) => {
+          link.onClick(event)
+          trackFeatureUsed('sign_in_link')
+        }}
         className='btn-grad btn-press pointer-events-auto rounded-full px-4 py-2 text-xs font-semibold sm:py-1.5'
       >
         {t('signIn')}
