@@ -100,3 +100,23 @@ describe('isForeignEarlyError', () => {
     expect(isForeignEarlyError(undefined, thrown('Error: boom'))).toBe(false)
   })
 })
+
+describe('isForeignEarlyError, by message alone', () => {
+  // 2026-11-03..09, 49 events: a cross-origin script's error reaches window.onerror
+  // as the bare string "Script error." with no filename and no Error object.
+  it.each([
+    'Script error.',
+    "Minified React error #418; visit https://react.dev/errors/418 for the full message",
+    "Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.",
+    'The object can not be found here.',
+    "undefined is not an object (evaluating 'window.ethereum.selectedAddress = undefined')",
+    "Cannot read properties of undefined (reading 'M_ID')",
+  ])('drops %s', (message) => {
+    expect(isForeignEarlyError('', message)).toBe(true)
+    expect(isForeignEarlyError('', new Error(message))).toBe(true)
+  })
+
+  it('keeps an ordinary message', () => {
+    expect(isForeignEarlyError('', 'boom')).toBe(false)
+  })
+})

@@ -97,6 +97,10 @@ const staticExportConfig = {
 } as const satisfies NextConfig
 
 const nextConfig: NextConfig = {
+  // The browser needs to know too: a slideshow render cannot run on the static
+  // Cloudflare deploy, so the button for it must not be shown (nativeMedia.ts).
+  env: { NEXT_PUBLIC_DEPLOY_TARGET: process.env.DEPLOY_TARGET ?? '' },
+
   // Everywhere except the static build (local dev, any Node host), keep these
   // native / dynamic-require packages out of the server bundle so their
   // runtime `require()` calls resolve from node_modules instead of being

@@ -18,6 +18,17 @@ export function nativeMediaAvailable(): boolean {
 }
 
 /**
+ * Whether the browser should offer "render a slideshow video". The render is
+ * ffmpeg, so on the Cloudflare deploy it only ever answered 501 and 23 people a
+ * week pressed a button that could not work. The gallery's own image and ZIP
+ * downloads cover that result. `deployTarget` is NEXT_PUBLIC_DEPLOY_TARGET, the
+ * build-time copy of DEPLOY_TARGET that the browser bundle can read.
+ */
+export function slideshowRenderOffered(deployTarget: string | undefined): boolean {
+  return deployTarget !== 'cloudflare'
+}
+
+/**
  * Whether this runtime can afford to fetch a full social-platform page and scan
  * it for an embedded media URL.
  *

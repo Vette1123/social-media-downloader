@@ -75,8 +75,13 @@
     "commit": "2c21cb7"
   },
   "01a1a50a-de42-7481-a50d-aa1f34c05a52": {
-    "fixedOn": "2026-11-09",
-    "what": "early errors: WebKit NotFoundError without its type, other-realm Errors (Chrome iOS \"Error: Na\"), .js\b typo",
-    "commit": "#32"
+    "fixedOn": "2026-11-10",
+    "what": "early reporter drops noise by message too (Error: Na, Script error., wallet, M_ID)",
+    "commit": "fix/posthog-errors"
+  },
+  "01a1c3c5-e846-72e1-b197-2f9d79d24764": {
+    "fixedOn": "2026-11-10",
+    "what": "failureCode: signed-in refusals are private, an expected event not an exception",
+    "commit": "fix/posthog-errors"
   }
 }

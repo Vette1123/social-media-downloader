@@ -14,6 +14,7 @@ describe('failureCode', () => {
     ['HTTP 403', 'unavailable'],
     ['network error', 'network'],
     ['Instagram only serves these to a logged-in account', 'private'],
+    ['LinkedIn serves its videos to signed-in members only; the public page publishes just a preview.', 'private'],
     ['video2.twimg.nom.es blocks automated requests from our servers', 'unavailable'],
     ['Failed to extract download URL', 'upstream'],
     [undefined, 'upstream'],
