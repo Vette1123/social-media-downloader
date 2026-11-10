@@ -212,6 +212,38 @@ function pickAudio(data: InnertubePlayerResponse): InnertubeFormat | undefined {
 }
 
 /**
+ * Whether a track can be read past its first megabyte.
+ *
+ * IOS audio URLs answer the first ~1 MB and then `403` every range beyond it
+ * (a PO token is required for the rest), so a "download" played a few seconds
+ * and then failed as `HTTP 403` after the viewer pressed Save. Measured
+ * 2026-11-10: `Range: bytes=0-99999` is `206`, `bytes=1000000-1099999` is `403`.
+ * One tiny ranged read past that mark is the whole check. Only a refusal counts:
+ * a network error or an odd status leaves the track on offer.
+ */
+const PROBE_OFFSET = 2_000_000
+
+async function readsPastFirstMegabyte(format: InnertubeFormat): Promise<boolean> {
+  const length = Number(format.contentLength)
+  if (!format.url || (length > 0 && length <= PROBE_OFFSET)) return true
+  try {
+    const response = await fetch(format.url, {
+      headers: { Range: `bytes=${PROBE_OFFSET}-${PROBE_OFFSET + 99}` },
+    })
+    await response.body?.cancel().catch(() => {})
+    return response.status !== 403
+  } catch {
+    return true
+  }
+}
+
+/** The audio track worth handing over, or undefined when it would only fail on Save. */
+async function usableAudio(data: InnertubePlayerResponse): Promise<InnertubeFormat | undefined> {
+  const audio = pickAudio(data)
+  return audio && (await readsPastFirstMegabyte(audio)) ? audio : undefined
+}
+
+/**
  * How one client answered, in a few characters, for the log line below.
  *
  * `LOGIN_REQUIRED` and a `403` mean completely different things — "Google
@@ -313,10 +345,10 @@ export async function tryYouTubeInnertube(
   const data = await fetchPlayerResponse(videoId)
   if (!data) return null
 
-  const audio = pickAudio(data)
   // Audio mode never needs the video track, so a video with no muxed
   // progressive stream can still succeed here.
   if (mode === 'audio') {
+    const audio = await usableAudio(data)
     if (!audio?.url) return null
     return {
       ...baseVideoData(data, videoId, canonicalUrl),
@@ -333,6 +365,7 @@ export async function tryYouTubeInnertube(
   // it to put a working MP3 button beside the embed, which would otherwise cost
   // a second player call for a response we are already holding.
   if (!progressive?.url) {
+    const audio = await usableAudio(data)
     if (!audio?.url) return null
     return {
       ...baseVideoData(data, videoId, canonicalUrl),
@@ -348,7 +381,7 @@ export async function tryYouTubeInnertube(
     // `Content-Disposition: attachment`, so handing one straight to the browser
     // would play the video instead of saving it. Routing through /api/video
     // gives it the attachment disposition — and repairs Range responses.
-    musicUrl: audio?.url,
+    musicUrl: pickAudio(data)?.url,
   }
 }
 

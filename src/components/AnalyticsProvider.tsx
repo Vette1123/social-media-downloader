@@ -132,7 +132,7 @@ function scheduleBoot(): void {
  */
 function reportEarlyCrashes(): void {
   const onError = (event: ErrorEvent) => {
-    if (isForeignEarlyError(event.filename, event.error)) return
+    if (isForeignEarlyError(event.filename, event.error ?? event.message)) return
     trackCaughtError('early_crash', event.error ?? event.message)
   }
   const onRejection = (event: PromiseRejectionEvent) => {

@@ -135,6 +135,7 @@ import { saveBlob, saveMedia } from '@/lib/blobSaver'
 import { isTransientError, withRetry } from '@/lib/retry'
 import { canShareFile, fileFromBlob, shareFile } from '@/lib/shareFile'
 import { audioTagsFor } from '@/lib/audioTags'
+import { slideshowRenderOffered } from '@/lib/nativeMedia'
 import { bytesFromDataUrl, tagMp3 } from '@/lib/id3'
 import {
   forgetSaved,
@@ -3692,6 +3693,7 @@ export function DownloaderApp() {
               {/* Download Buttons */}
               {(() => {
                 const hasImagesForSlideshow =
+                  slideshowRenderOffered(process.env.NEXT_PUBLIC_DEPLOY_TARGET) &&
                   state.videoMetadata?.isPhotoCarousel &&
                   (state.videoMetadata?.images?.length ?? 0) > 0
                 const showVideoButton =

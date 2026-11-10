@@ -28,6 +28,9 @@ const NOISE_PATTERNS = [
   /_internal_videoInjector/i,
   /\bstandardSelectors\b/,
   /Transition was skipped/i,
+  // Wallet and page-translator scripts reading globals that are not ours.
+  /window\.ethereum\b/,
+  /reading 'M_ID'/,
   // Injected by a Safari extension or reader mode; nothing of ours defines it.
   /Can't find variable: EmptyRanges/i,
   // A tab that outlived a deploy, or a connection that dropped.
@@ -84,11 +87,20 @@ function isForeignException(event: ExceptionEvent): boolean {
  * in (Chrome iOS's injected scripts: "Error: Na"). Nothing to go on is kept.
  */
 export function isForeignEarlyError(filename: unknown, error: unknown): boolean {
+  // No file, no stack, no Error: a cross-origin "Script error." is only its text,
+  // and the same text rules that drop the exception drop the early report.
+  if (NOISE_PATTERNS.some((pattern) => pattern.test(messageOf(error)))) return true
   const stack = stackOf(error)
   const file = typeof filename === 'string' ? filename : ''
   if (OWN_FRAME.test(file) || OWN_FRAME.test(stack)) return false
   const namesAFile = /\w+:\/\/|\.js\b/
   return namesAFile.test(file) || namesAFile.test(stack) || isOtherRealmError(error)
+}
+
+function messageOf(error: unknown): string {
+  if (typeof error === 'string') return error
+  const message = (error as { message?: unknown } | null)?.message
+  return typeof message === 'string' ? message : ''
 }
 
 function stackOf(error: unknown): string {
