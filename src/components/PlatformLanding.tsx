@@ -26,7 +26,7 @@ import { contentFor, platformFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
 import type { PageCopy } from '@/lib/pageCopy'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
-import { platformStructuredData } from '@/lib/structuredData'
+import { jsonLdText, platformStructuredData } from '@/lib/structuredData'
 import type { SupportedPlatform } from '@/lib/validator'
 
 /**
@@ -286,7 +286,7 @@ export function PlatformLanding({
     <script
       type='application/ld+json'
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify(platformStructuredData(slug, locale)),
+        __html: jsonLdText(platformStructuredData(slug, locale)),
       }}
     />
     <div className='app-bg relative min-h-[100dvh] overflow-clip'>
