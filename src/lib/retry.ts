@@ -40,3 +40,11 @@ export function isTransientError(e: unknown): boolean {
   // No response at all (network layer) — worth one more try.
   return err instanceof Error && !('response' in (err as object))
 }
+
+// True when a media URL itself is dead: refused (403), gone (404) or expired
+// (410). Signed CDN links die between the resolve and the Save tap, and
+// retrying the same URL can never succeed - resolving the post again can.
+export function isStaleLinkError(e: unknown): boolean {
+  const status = (e as { response?: { status?: number } })?.response?.status
+  return status === 403 || status === 404 || status === 410
+}

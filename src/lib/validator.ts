@@ -107,6 +107,8 @@ const platformPatterns: Record<
   snapchat: [
     /^(https?:\/\/)?(www\.)?snapchat\.com\/(?:spotlight|t|p|add|u)\/[\w.@/-]+/,
     /^(https?:\/\/)?story\.snapchat\.com\/[\w/@-]+/,
+    // What the Snapchat app shares now: snapchat.com/@user/spotlight/<id>.
+    /^(https?:\/\/)?(www\.)?snapchat\.com\/@[\w.-]+\/spotlight\/[\w-]+/,
   ],
   twitch: [
     /^(https?:\/\/)?(www\.|m\.)?twitch\.tv\/[\w]+\/clip\/[\w-]+/,

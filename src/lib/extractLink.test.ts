@@ -38,3 +38,16 @@ describe('extractLink', () => {
     )
   })
 })
+
+describe('detectPlatform: Snapchat share links', () => {
+  it('knows the @user/spotlight link the Snapchat app shares', () => {
+    // 2026-11-10: every such link was labelled "generic", so Snapchat's own
+    // failures were counted under the generic catch-all.
+    expect(
+      detectPlatform(
+        'https://www.snapchat.com/@rominagafur/spotlight/W7_EDlXWTBiXAEEniNoMPwAAYYmR4a2pyY3NtAZbAPRICAZbAPQI3AAAAAQ',
+      ),
+    ).toBe('snapchat')
+    expect(detectPlatform('https://www.snapchat.com/spotlight/W7_abc')).toBe('snapchat')
+  })
+})

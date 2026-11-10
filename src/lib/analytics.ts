@@ -273,6 +273,8 @@ export type LinkSource =
   | 'history'
   | 'retry'
   | 'repick'
+  /** Save hit a dead signed URL and the post was resolved again. */
+  | 'refresh'
   | 'dropped'
   | 'multi_paste'
   | 'batch'
