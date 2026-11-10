@@ -19,7 +19,10 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe('analytics coverage', () => {
-  const layer = readFileSync(path.join(SRC, 'lib/analytics.ts'), 'utf8')
+  // LF only: a Windows checkout (core.autocrlf) has CRLF, and the helper
+  // pattern below ends on `\n}\n` — under CRLF it matched nothing and reported
+  // every event as uncalled, failing `pnpm verify` locally while CI passed.
+  const layer = readFileSync(path.join(SRC, 'lib/analytics.ts'), 'utf8').replace(/\r\n/g, '\n')
   const others = sourceFiles(SRC)
     .filter((file) => !file.endsWith(path.join('lib', 'analytics.ts')))
     .map((file) => readFileSync(file, 'utf8'))
