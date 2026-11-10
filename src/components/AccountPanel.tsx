@@ -303,7 +303,7 @@ function SupportLink() {
       <p className='text-xs text-white/50'>
         <Rich
           text={d(
-            'Support is arranged by email for now, and the extras are switched on by hand for the address you sign in with. Signed in with a different address? Email {email} and give it a day.',
+            'Support is arranged by email for now, and the extras are granted to the address you sign in with once the payment is done. Signed in with a different address? Email {email} and give it a day.',
           )}
           parts={{
             email: (

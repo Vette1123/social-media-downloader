@@ -26,12 +26,12 @@ export const legalCopy = {
     lifetime: 'Lifetime',
     lifetimePrice: '${lifetime} once · never renews',
     howItSwitches:
-      'Either button opens an email to me. The reply says how to pay, and I switch the extras on by hand for the address you sign in with, usually the same day.',
+      'Either button opens an email to me. An instant reply links the GitHub Sponsors tier to pay with, and the extras are granted to the address you sign in with once the payment is done.',
     extrasTitle: 'Supporters get the extras',
     levels:
       'The monthly covers this downloader; the lifetime covers every project I build, including the ones that do not exist yet. Sign in here with the address you named in the email and the extras are already on.',
     oneOff:
-      'Signed in with a different address than the one you named? Email {email} and I’ll move it by hand, usually the same day.',
+      'Signed in with a different address than the one you named? Email {email} and I’ll move it, usually the same day.',
     directTitle: 'And a direct line to me.',
     directBody:
       'Supporters get my number — message me any time, about anything. Ask for a feature and I’ll build it if it can be built. It’s a short list, so that is a real promise rather than a nice sentence.',
