@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isTransientError, withRetry } from './retry'
+import { isStaleLinkError, isTransientError, withRetry } from './retry'
 
 describe('withRetry', () => {
   it('retries until success within the attempt budget', async () => {
@@ -62,5 +62,24 @@ describe('isTransientError', () => {
   it('treats definitive 4xx as not transient', () => {
     expect(isTransientError({ response: { status: 404 } })).toBe(false)
     expect(isTransientError({ response: { status: 403 } })).toBe(false)
+  })
+})
+
+describe('isStaleLinkError', () => {
+  const http = (status: number) =>
+    Object.assign(new Error(`HTTP ${status}`), { response: { status } })
+
+  it('treats a refused or vanished media URL as a link worth re-resolving', () => {
+    // 2026-11: Save answered HTTP 403 on Twitter and generic videos whose
+    // signed URL had died between the resolve and the tap.
+    expect(isStaleLinkError(http(403))).toBe(true)
+    expect(isStaleLinkError(http(404))).toBe(true)
+    expect(isStaleLinkError(http(410))).toBe(true)
+  })
+
+  it('leaves transient and network failures to withRetry', () => {
+    expect(isStaleLinkError(http(429))).toBe(false)
+    expect(isStaleLinkError(http(503))).toBe(false)
+    expect(isStaleLinkError(new TypeError('Failed to fetch'))).toBe(false)
   })
 })
