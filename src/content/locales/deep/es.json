@@ -214,7 +214,7 @@
   "{n} {noun} downloaded as ZIP! 🗜️": "¡{n} elementos descargados como ZIP! 🗜️",
   "← Back to the downloader": "← Volver al descargador",
   "Nothing is billed here. To change or stop support, send one email.": "Aquí no se cobra nada. Para cambiar o dejar el apoyo, basta con un correo.",
-  "Support is arranged by email for now, and the extras are switched on by hand for the address you sign in with. Signed in with a different address? Email {email} and give it a day.": "Por ahora el apoyo se gestiona por correo, y los extras se activan a mano para la dirección con la que inicias sesión. ¿Iniciaste sesión con otra dirección? Escribe a {email} y dale un día.",
+  "Support is arranged by email for now, and the extras are granted to the address you sign in with once the payment is done. Signed in with a different address? Email {email} and give it a day.": "Por ahora el apoyo se gestiona por correo, y los extras se activan para la dirección con la que inicias sesión en cuanto se completa el pago. ¿Iniciaste sesión con otra dirección? Escribe a {email} y dale un día.",
   "Cancelled": "Cancelado",
   "No downloadable media": "Sin contenido descargable",
   "Done": "Listo",
