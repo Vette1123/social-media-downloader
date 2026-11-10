@@ -214,7 +214,7 @@
   "{n} {noun} downloaded as ZIP! 🗜️": "{n} item diunduh sebagai ZIP! 🗜️",
   "← Back to the downloader": "← Kembali ke downloader",
   "Nothing is billed here. To change or stop support, send one email.": "Tidak ada tagihan di sini. Untuk mengubah atau menghentikan dukungan, cukup kirim satu email.",
-  "Support is arranged by email for now, and the extras are switched on by hand for the address you sign in with. Signed in with a different address? Email {email} and give it a day.": "Untuk saat ini dukungan diatur lewat email, dan fitur tambahan diaktifkan secara manual untuk alamat yang Anda gunakan untuk masuk. Masuk dengan alamat lain? Kirim email ke {email} dan beri waktu sehari.",
+  "Support is arranged by email for now, and the extras are granted to the address you sign in with once the payment is done. Signed in with a different address? Email {email} and give it a day.": "Untuk saat ini dukungan diatur lewat email, dan fitur tambahan diberikan ke alamat yang Anda gunakan untuk masuk setelah pembayaran selesai. Masuk dengan alamat lain? Kirim email ke {email} dan beri waktu sehari.",
   "Cancelled": "Dibatalkan",
   "No downloadable media": "Tidak ada media yang bisa diunduh",
   "Done": "Selesai",

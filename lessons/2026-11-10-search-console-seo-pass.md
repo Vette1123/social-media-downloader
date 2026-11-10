@@ -16,6 +16,8 @@ Bing recommendations: none.
   Sponsors link. The filter is `subject:("Downloader supporter" OR "switch on the extras")
   -subject:re -from:me`. Reely has its own filter and template.
 
+- **Site copy** (/pro, the account panel, in all five languages) now says an instant reply carries the GitHub Sponsors link and the extras are granted once the payment is done. The owner asked that it never say "by hand".
+
 ## Mistakes
 
 - The first `jsonLdText` wrote `'<'`, which TypeScript reads as a literal `<`, so the
