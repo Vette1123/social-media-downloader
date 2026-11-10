@@ -126,7 +126,14 @@ const ADAPTIVE_ONLY = {
   },
 }
 
+/** What googlevideo answers to the tail probe; 206 unless a test says otherwise. */
+let probeStatus = 206
+const fetchMock = vi.fn(async () => new Response(null, { status: probeStatus }))
+vi.stubGlobal('fetch', fetchMock)
+
 beforeEach(() => {
+  probeStatus = 206
+  fetchMock.mockClear()
   asks.length = 0
   responder = () => ({ status: 200, data: null })
 })
@@ -254,5 +261,30 @@ describe('what the fallback can and cannot restore', () => {
     )
     expect(result?.downloadUrl).toBe('https://googlevideo.test/muxed.mp4')
     expect(result?.duration).toBe(213)
+  })
+})
+
+describe('audio that cannot be read past its first megabyte', () => {
+  const ask = (mode: 'auto' | 'audio') =>
+    tryYouTubeInnertube('B6k6zZDjldk', 'https://www.youtube.com/watch?v=B6k6zZDjldk', mode)
+
+  /** IOS URLs serve ~1 MB then 403: a Save button that always ends in HTTP 403. */
+  it('is not offered when googlevideo refuses a read past 1 MB', async () => {
+    responder = (a) => (a.clientName === 'ANDROID_VR' ? BLOCKED : playable(ADAPTIVE_ONLY))
+    probeStatus = 403
+    expect(await ask('audio')).toBeNull()
+    expect(await ask('auto')).toBeNull()
+  })
+
+  it('is offered when the probe is answered', async () => {
+    responder = (a) => (a.clientName === 'ANDROID_VR' ? BLOCKED : playable(ADAPTIVE_ONLY))
+    expect((await ask('audio'))?.musicUrl).toBe('https://googlevideo.test/ios-audio.m4a')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('spends no subrequest when a muxed stream is the deliverable', async () => {
+    responder = () => playable(MUXED)
+    await ask('auto')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
