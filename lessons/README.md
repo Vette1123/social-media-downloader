@@ -115,3 +115,4 @@ the index for exactly that.
 | 2026-11-10 | [Dependabot: vite and minimatch](2026-11-10-dependabot-vite-minimatch.md) | Override only the vulnerable range when the parent pins the old major. |
 | 2026-11-10 | [A Share pill that was not a button, and the seek reopen 500](2026-11-10-ios-share-pill-and-seek-reopen.md) | Never style non-interactive text as a button; every proxy fetch goes through `fetchUpstream`. |
 | 2026-11-10 | [An idle desktop tab painted 650 times a second](2026-11-10-idle-gpu-loops.md) | Never loop a gradient repaint; rotate a static layer, run decoration only under the pointer, and make a perf probe prove it measured the real page. |
+| 2026-11-10 | [Search Console SEO pass, and the Pro auto-reply](2026-11-10-search-console-seo-pass.md) | Title for the query with the impressions; JSON-LD through `jsonLdText`; auto-reply filters exclude `-subject:re -from:me`. |

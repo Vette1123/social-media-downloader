@@ -26,9 +26,9 @@ export const pageCopy = {
     anyLink: 'Any public link',
   },
   home: {
-    metaTitle: 'Social Media Downloader — Save Any Public Video in HD',
+    metaTitle: 'Social Media Video Downloader — Save Any Public Video in HD',
     metaDescription:
-      'Download public videos from TikTok, X, Instagram, Facebook, YouTube and more. HD video, MP3 audio and photo galleries, free with no login.',
+      'Free social media video downloader for TikTok, X, Instagram, Facebook, YouTube and more. Save HD video, MP3 audio and photo galleries with no login.',
     heroLabels: {
       'tiktok-downloader': 'TikTok video downloader',
       'twitter-video-downloader': 'Twitter/X video downloader',

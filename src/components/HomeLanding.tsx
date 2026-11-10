@@ -25,7 +25,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import type { Locale } from '@/lib/i18n'
 import { contentFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
-import { homepageStructuredData } from '@/lib/structuredData'
+import { homepageStructuredData, jsonLdText } from '@/lib/structuredData'
 
 // Line icons for the "what you can do" grid — replaces the old emoji glyphs.
 function IconVideo({ className }: { className?: string }) {
@@ -139,7 +139,7 @@ export function HomeLanding({ locale = 'en' }: { locale?: Locale }) {
       <script
         type='application/ld+json'
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(homepageStructuredData(locale)),
+          __html: jsonLdText(homepageStructuredData(locale)),
         }}
       />
       <div className='app-bg relative min-h-[100dvh] overflow-clip'>

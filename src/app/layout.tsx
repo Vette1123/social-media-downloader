@@ -3,7 +3,7 @@ import { Geist } from 'next/font/google'
 import './globals.css'
 import { siteConfig } from '@/config/site'
 import { versionedIcon } from '@/lib/appIcon'
-import { globalStructuredData } from '@/lib/structuredData'
+import { globalStructuredData, jsonLdText } from '@/lib/structuredData'
 import { SPLASH_DEVICES, splashMedia, splashPath } from '@/lib/splashDevices'
 import { AccountControl } from '@/components/AccountControl'
 import { AnalyticsContext } from '@/components/AnalyticsProvider'
@@ -213,7 +213,7 @@ export default function RootLayout({
         <script
           type='application/ld+json'
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(globalStructuredData),
+            __html: jsonLdText(globalStructuredData),
           }}
         />
       </head>

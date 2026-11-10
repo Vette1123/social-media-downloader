@@ -6,6 +6,16 @@ import { localePath } from '@/lib/localeRoutes'
 import type { PageCopy } from '@/lib/pageCopy'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
 
+/**
+ * A JSON-LD graph as the text of a `<script type="application/ld+json">`.
+ * `JSON.stringify` leaves `<` alone, so a string holding `</script>` would end
+ * the tag early and spill the rest of the graph into the page as HTML.
+ * The escaped form is the same character to a JSON parser and inert to HTML.
+ */
+export function jsonLdText(graph: unknown): string {
+  return JSON.stringify(graph).replace(/</g, '\\u003c')
+}
+
 const ogImage = siteConfig.ogImage
 const datePublished = `${siteConfig.foundingYear}-01-01`
 const dateModified = contentDay
