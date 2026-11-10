@@ -256,10 +256,8 @@ export async function handleVideoProxy(request: Request): Promise<Response> {
     }
 
     const ranged = await resolveRangeResponse(response, rangeHeader, (retry) =>
-      fetch(videoUrl, {
-        headers: { ...headers, Range: retry },
-        redirect: 'follow',
-      }),
+      // Through fetchUpstream, so a drop here is a 502 like the first fetch's.
+      fetchUpstream(videoUrl, { ...headers, Range: retry }),
     )
 
     // `video/mp4` is forced because most of these sources declare nothing
@@ -328,10 +326,8 @@ export async function handleAudioProxy(request: Request): Promise<Response> {
     }
 
     const ranged = await resolveRangeResponse(response, rangeHeader, (retry) =>
-      fetch(audioUrl, {
-        headers: { ...headers, Range: retry },
-        redirect: 'follow',
-      }),
+      // Through fetchUpstream, so a drop here is a 502 like the first fetch's.
+      fetchUpstream(audioUrl, { ...headers, Range: retry }),
     )
 
     const responseHeaders = streamingHeaders(
