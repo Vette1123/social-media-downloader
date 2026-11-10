@@ -414,6 +414,19 @@ async function fetchPageDirectThenRelay(target: string): Promise<string | null> 
  * default shape — it is worth it only where the alternative is a visitor
  * waiting on two sequential extractors.
  */
+/**
+ * The catch-all failure. For a named platform the post being private is a fair
+ * guess. For `generic` — any site we have no bespoke extractor for — it is not:
+ * most failures there are a page that publishes no media we can read, so blaming
+ * the post (or implying a login) sends the visitor to check the wrong thing.
+ */
+export function noMediaMessage(platform: SupportedPlatform): string {
+  if (platform === 'generic') {
+    return 'No downloadable video or image was found at this link. The site may be unsupported by this extractor, or it may show the media only to signed-in viewers.'
+  }
+  return `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`
+}
+
 export async function firstResult<T>(
   methods: Array<() => Promise<T | null>>,
 ): Promise<T | null> {
@@ -1662,10 +1675,7 @@ export class Downloader {
       linkedin:
         'LinkedIn serves its videos to signed-in members only; the public page publishes just a preview.',
     }
-    throw new Error(
-      platformReason[platform] ||
-        `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`,
-    )
+    throw new Error(platformReason[platform] || noMediaMessage(platform))
   }
 
   /**
@@ -2122,7 +2132,11 @@ export class Downloader {
    * pin becomes a one-image gallery rather than a failure.
    */
   private async tryPinterestPin(url: string): Promise<VideoData | null> {
-    const id = /\/pin\/(\d+)/.exec(url)?.[1]
+    // A pin.it short link carries no id of its own: follow it to the pin, the
+    // way Facebook's share links are followed. Without this every pin.it link
+    // skipped the one extractor that reads pins and relied on Cobalt alone.
+    const pinUrl = /\/pin\/\d+/.test(url) ? url : await this.resolveRedirect(url)
+    const id = /\/pin\/(\d+)/.exec(pinUrl)?.[1]
     if (!id) return null
 
     const response = await http.get(

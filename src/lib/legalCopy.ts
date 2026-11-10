@@ -62,7 +62,7 @@ export const legalCopy = {
       {
         heading: 'Analytics',
         paragraphs: [
-          'We use PostHog to see how the site is used and to catch and fix errors. That covers the pages and buttons used and what is downloaded: the platform, link, title and author. A small sample of visits is recorded as a session replay, with typed text hidden. Events carry a random ID, or your account ID if you are signed in, and never your name or email. It sets no cookies. We also use Cloudflare Web Analytics for page-view counts.',
+          'We use PostHog to see how the site is used and to catch and fix errors. That covers the pages and buttons used and what is downloaded: the platform, link, title and author, and, for links that could not be fetched, the domain name of the site (never the rest of the address). A small sample of visits is recorded as a session replay, with typed text hidden. Events carry a random ID, or your account ID if you are signed in, and never your name or email. It sets no cookies. We also use Cloudflare Web Analytics for page-view counts.',
         ],
       },
       {

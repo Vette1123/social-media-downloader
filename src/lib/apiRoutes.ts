@@ -17,7 +17,7 @@
  */
 
 import { Downloader } from './downloader'
-import { validateUrl, detectPlatform, parseYouTubeId } from './validator'
+import { validateUrl, detectPlatform, parseYouTubeId, extractLink } from './validator'
 import { getCached, setCached } from './responseCache'
 import { worthCaching } from './cacheWorthy'
 import { readEdgeCache, writeEdgeCache, type WaitUntilContext } from './edgeCache'
@@ -175,7 +175,10 @@ export async function handleDownload(
   ctx?: WaitUntilContext,
 ): Promise<Response> {
   try {
-    const { url, type = 'video', quality, format } = await request.json()
+    const input = await request.json()
+    const { type = 'video', quality, format } = input
+    // A link inside shared text is still a link (see extractLink).
+    const url = extractLink(input.url) ?? input.url
     const preferredQuality: 'hd' | 'sd' = quality === 'sd' ? 'sd' : 'hd'
     const mode: 'auto' | 'audio' = format === 'audio' ? 'audio' : 'auto'
 

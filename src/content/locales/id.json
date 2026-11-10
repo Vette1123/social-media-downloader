@@ -249,7 +249,7 @@
           {
             "heading": "Analitik",
             "paragraphs": [
-              "Kami memakai PostHog untuk melihat bagaimana situs digunakan serta menemukan dan memperbaiki error. Itu mencakup halaman dan tombol yang dipakai serta apa yang diunduh: platform, link, judul, dan pembuatnya. Sebagian kecil kunjungan direkam sebagai pemutaran ulang sesi, dengan teks yang diketik disembunyikan. Peristiwa membawa ID acak, atau ID akun Anda jika Anda masuk, dan tidak pernah nama atau email Anda. Tidak ada cookie yang dipasang. Kami juga memakai Cloudflare Web Analytics untuk jumlah tampilan halaman."
+              "Kami memakai PostHog untuk melihat bagaimana situs digunakan serta menemukan dan memperbaiki error. Itu mencakup halaman dan tombol yang dipakai serta apa yang diunduh: platform, link, judul, dan pembuatnya serta, untuk link yang gagal diambil, nama domain situsnya saja (tidak pernah sisa alamatnya). Sebagian kecil kunjungan direkam sebagai pemutaran ulang sesi, dengan teks yang diketik disembunyikan. Peristiwa membawa ID acak, atau ID akun Anda jika Anda masuk, dan tidak pernah nama atau email Anda. Tidak ada cookie yang dipasang. Kami juga memakai Cloudflare Web Analytics untuk jumlah tampilan halaman."
             ]
           },
           {
