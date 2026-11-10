@@ -132,7 +132,7 @@ import {
   type HistoryEntry,
 } from '@/lib/history'
 import { saveBlob, saveMedia } from '@/lib/blobSaver'
-import { isTransientError, withRetry } from '@/lib/retry'
+import { isStaleLinkError, isTransientError, withRetry } from '@/lib/retry'
 import { canShareFile, fileFromBlob, shareFile } from '@/lib/shareFile'
 import { audioTagsFor } from '@/lib/audioTags'
 import { slideshowRenderOffered } from '@/lib/nativeMedia'
@@ -918,7 +918,18 @@ export function DownloaderApp() {
   const [state, dispatch] = useReducer(appReducer, initialState)
   const containerRef = useRef<HTMLDivElement>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const [urlError, setUrlError] = useState<string | null>(null)
+  const [urlError, setUrlErrorText] = useState<string | null>(null)
+  // Every failed attempt counts, even with the same words: pressing Download on
+  // an empty box (or Paste on an empty clipboard) a second time used to set an
+  // identical error, so nothing on screen moved and it read as a dead button
+  // (PostHog dead clicks, 2026-11). The counter keys the message, which replays
+  // its entrance, and the caret goes where the link belongs.
+  const [urlErrorAttempt, setUrlErrorAttempt] = useState(0)
+  const setUrlError = (text: string | null) => {
+    setUrlErrorText(text)
+    if (text === null) return
+    setUrlErrorAttempt((n) => n + 1)
+  }
   /**
    * What a pasted link turned out to be, when it turned out not to be a post.
    *
@@ -970,6 +981,9 @@ export function DownloaderApp() {
     setBatchMisses([])
   }, [])
   const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (urlErrorAttempt > 0) inputRef.current?.focus()
+  }, [urlErrorAttempt])
   const pasteBarRef = useRef<HTMLDivElement>(null)
   // Persisted in localStorage and mutated from several places, so it is read
   // from the history store rather than mirrored into component state — the
@@ -1115,6 +1129,29 @@ export function DownloaderApp() {
         effectiveFormat(format, detectPlatform(target) as SupportedPlatform, getStoredFormatMap()),
       proToken,
     })
+
+  // A signed media URL can die between the resolve and the Save tap (an
+  // expired CDN signature answers 403/404/410), and fetching the same URL again
+  // can never work. Resolve the same post once more and fetch the fresh link;
+  // anything else, or a second failure, surfaces as before.
+  const fetchFreshMediaBlob = async (
+    url: string,
+    kind: 'video' | 'audio',
+    signal: AbortSignal,
+  ): Promise<Blob> => {
+    const onProgress = (p: number | null) =>
+      dispatch({ type: 'SET_PROGRESS', payload: p })
+    try {
+      return await fetchMediaBlob(url, onProgress, signal)
+    } catch (error) {
+      const target = state.originalUrl
+      if (isAbortError(error) || !isStaleLinkError(error) || !target) throw error
+      const data = await resolveOne(target, { source: 'refresh' })
+      const fresh = kind === 'audio' ? data.audioUrl : data.downloadUrl
+      if (!data.success || !fresh || fresh === url) throw error
+      return fetchMediaBlob(fresh, onProgress, signal)
+    }
+  }
 
   // Snapshot the thumbnail off the main flow and prepend the link to Recent so
   // the card always shows an image (even after the source URL expires) and the
@@ -1916,9 +1953,9 @@ export function DownloaderApp() {
     dispatch({ type: 'SET_PROGRESS', payload: 0 })
 
     try {
-      const blob = await fetchMediaBlob(
+      const blob = await fetchFreshMediaBlob(
         state.downloadUrl,
-        (p) => dispatch({ type: 'SET_PROGRESS', payload: p }),
+        'video',
         cancelRef.current.signal,
       )
       await deliver(blob, nameFile('mp4'))
@@ -2093,9 +2130,9 @@ export function DownloaderApp() {
     dispatch({ type: 'SET_PROGRESS', payload: 0 })
 
     try {
-      const blob = await fetchMediaBlob(
+      const blob = await fetchFreshMediaBlob(
         state.audioUrl,
-        (p) => dispatch({ type: 'SET_PROGRESS', payload: p }),
+        'audio',
         cancelRef.current.signal,
       )
       await deliverAudio(blob, nameFile('mp3'))
@@ -2655,6 +2692,7 @@ export function DownloaderApp() {
 
       {urlError && (
         <p
+          key={urlErrorAttempt}
           id='url-error'
           role='alert'
           className='animate-section-in mt-2 flex items-center gap-1.5 text-xs text-red-300 md:text-sm'
