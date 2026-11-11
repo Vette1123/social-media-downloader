@@ -215,6 +215,9 @@ value is set once rather than kept in step across three files. Do not add a
 | `CREEM_API_KEY` | Dormant. Mints a customer-portal URL per click for any subscription that predates the withdrawal, and backs the lazy reconcile. Nothing creates subscriptions any more. |
 | `CREEM_WEBHOOK_SECRET` | Dormant, and still never optional while the endpoint is registered: an unverified webhook endpoint would let anyone grant themselves the extras. |
 
+The table covers the variables you are most likely to set. `.env.sample` lists every one the code reads, including the
+Instagram cookie set, Cobalt, Upstash, scrape rules, Jina and PostHog, with a comment on each.
+
 ### Accounts and grants
 
 Nothing is sold. A $3/month subscription existed for two days in August 2026 and
