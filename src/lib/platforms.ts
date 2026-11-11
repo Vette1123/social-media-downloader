@@ -12,6 +12,11 @@ export interface PlatformFaq {
   a: string
 }
 
+export interface PlatformStep {
+  name: string
+  text: string
+}
+
 export interface Platform {
   slug: PlatformSlug
   name: string
@@ -31,6 +36,8 @@ export interface Platform {
   cards: PlatformSeoCard[]
   faqs: PlatformFaq[]
   featureList: string[]
+  /** Where that app's Share button is, then what to do on this site. 3-4 steps. */
+  steps: PlatformStep[]
 }
 
 export const platforms: Platform[] = [
@@ -46,6 +53,24 @@ export const platforms: Platform[] = [
       'One paste box for every site: resolve the video, the audio, or the images from any public link.',
     intro:
       'Paste any public video link — from the eleven dedicated platforms or anywhere else. The extractor reads what the page itself publishes (og:video, JSON-LD, player configs, direct files) and verifies it serves real media before offering it, so what you get is a file that plays rather than an error page renamed .mp4. If a page serves its video to the public, this usually resolves it. No login, nothing installed.',
+    steps: [
+      {
+        name: 'Copy the video link',
+        text: 'Open the page that has the video. Copy its address from the browser bar, or use the Share button on that site if it has one.',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality or format on offer.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it. If the page has no public video, the tool says so instead of giving you a broken file.',
+      },
+    ],
     accent: {
       chip: 'bg-cyan-600 text-white',
       grad: 'from-cyan-400 via-sky-500 to-blue-600',
@@ -114,6 +139,24 @@ export const platforms: Platform[] = [
       'Save TikTok videos in 1080p, extract MP3 audio, and download photo carousels with their original music.',
     intro:
       'Paste any public tiktok.com or vm.tiktok.com link to download the video in its original quality, pull the soundtrack as an MP3, or save every image from a TikTok photo carousel — individually or as a single ZIP. Everything happens in your browser, no app to install and no sign-up.',
+    steps: [
+      {
+        name: 'Copy the TikTok link',
+        text: 'Open the video in TikTok and tap the Share arrow, then Copy link. The link looks like tiktok.com/@user/video/… or vm.tiktok.com/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the TikTok link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality, or the MP3 if you only want the sound.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip: 'bg-[#010101] text-white',
       grad: 'from-pink-500 via-fuchsia-500 to-rose-500',
@@ -182,6 +225,24 @@ export const platforms: Platform[] = [
       'Save Twitter videos, X clips, and GIF tweets as MP4 in their original quality.',
     intro:
       'Paste any twitter.com or x.com status URL and the tool resolves the underlying media — HD video, GIF, or multi-attachment thread — so you can preview and download the MP4 directly to your device. No login, no extensions, nothing installed.',
+    steps: [
+      {
+        name: 'Copy the X link',
+        text: 'Open the post on X and tap the share icon under it, then Copy link. The link looks like x.com/user/status/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the X link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality you want.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip: 'bg-black text-white',
       grad: 'from-sky-500 via-blue-500 to-indigo-500',
@@ -250,6 +311,24 @@ export const platforms: Platform[] = [
       'Save Instagram reels, photos, and carousel posts in their original resolution.',
     intro:
       'Paste a public Instagram URL — a reel, a single photo, or a carousel — and the tool extracts the media in its original resolution. Carousels return every image individually so you can pick the ones you want or save them all as a ZIP. No Instagram login required.',
+    steps: [
+      {
+        name: 'Copy the Instagram link',
+        text: 'Open the reel or post in Instagram and tap the paper-plane icon, then Copy link. On a computer, copy the address from the browser bar. It looks like instagram.com/reel/… or instagram.com/p/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the Instagram link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview. For a carousel, pick single images or save them all as a ZIP. For a reel, pick the quality.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip:
         'bg-gradient-to-br from-[#FEDA75] via-[#D62976] to-[#4F5BD5] text-white',
@@ -319,6 +398,24 @@ export const platforms: Platform[] = [
       'Save YouTube videos and Shorts as HD MP4 or extract clean MP3 audio.',
     intro:
       'Paste any youtube.com/watch?v=…, youtu.be/…, or /shorts/… link. The tool resolves the stream so you can preview it, save the MP4 in HD, or pull the soundtrack as an MP3 — useful for podcasts, lectures, or trending audio. Age-restricted, private, and members-only videos aren\'t supported.',
+    steps: [
+      {
+        name: 'Copy the YouTube link',
+        text: 'Open the video or Short in YouTube and tap Share under it, then Copy. The link looks like youtu.be/… or youtube.com/shorts/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the YouTube link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality, or the MP3 if you only want the sound.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip: 'bg-[#FF0000] text-white',
       grad: 'from-red-500 via-rose-500 to-pink-500',
@@ -395,6 +492,24 @@ export const platforms: Platform[] = [
       'Download Facebook videos, watch clips, and reels in HD straight to your device.',
     intro:
       'Paste any public Facebook video, watch clip, or reel URL — facebook.com/…/videos/…, fb.watch/…, or facebook.com/reel/… — and the tool extracts the HD stream for preview and download. No Facebook login, no extension, no app required. Private posts and videos from private groups can\'t be fetched.',
+    steps: [
+      {
+        name: 'Copy the Facebook link',
+        text: 'Open the public video or reel on Facebook and tap Share, then Copy link. The link looks like fb.watch/… or facebook.com/reel/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the Facebook link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality, or the MP3 if you only want the sound.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip: 'bg-[#1877F2] text-white',
       grad: 'from-blue-500 via-sky-500 to-cyan-500',
@@ -463,6 +578,24 @@ export const platforms: Platform[] = [
       'Save Pinterest video pins and full-resolution images straight to your device.',
     intro:
       'Paste any pinterest.com/pin/… or pin.it/… link and the tool resolves the underlying media — an idea-pin video or a full-size image — so you can preview and download it directly. No Pinterest login, no browser extension, nothing installed. Private boards and secret pins can’t be fetched.',
+    steps: [
+      {
+        name: 'Copy the Pinterest link',
+        text: 'Open the pin in Pinterest and tap Share, then Copy link. The link looks like pin.it/… or pinterest.com/pin/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the Pinterest link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the video quality or the full-size image.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip: 'bg-[#E60023] text-white',
       grad: 'from-red-500 via-rose-500 to-red-600',
@@ -539,6 +672,24 @@ export const platforms: Platform[] = [
       'Save Reddit videos with the audio track merged back in — the way they should download.',
     intro:
       'Reddit hosts a post’s video and its audio as two separate streams, which is why a naive “save video” grabs a silent clip. Paste any reddit.com/r/…/comments/… or v.redd.it/… link and the tool resolves both streams and merges them so you get the video with sound. No login, no extension, nothing installed.',
+    steps: [
+      {
+        name: 'Copy the Reddit link',
+        text: 'Open the post in Reddit and tap Share, then Copy link. On a computer, copy the address from the browser bar. It looks like reddit.com/r/…/comments/… or v.redd.it/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the Reddit link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality you want.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it. The video and its sound come merged in one file.',
+      },
+    ],
     accent: {
       chip: 'bg-[#FF4500] text-white',
       grad: 'from-orange-500 via-orange-600 to-red-500',
@@ -615,6 +766,24 @@ export const platforms: Platform[] = [
       'Save videos and photos from Threads posts in their original quality.',
     intro:
       'Paste any threads.net (or threads.com) post URL — threads.net/@username/post/… — and the tool resolves the attached media so you can preview and download the video or photo directly. No Threads or Instagram login, no extension, nothing installed. Private profiles can’t be fetched.',
+    steps: [
+      {
+        name: 'Copy the Threads link',
+        text: 'Open the post in Threads and tap the paper-plane icon, then Copy link. The link looks like threads.net/@user/post/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the Threads link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality you want.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip: 'bg-black text-white',
       grad: 'from-zinc-400 via-zinc-200 to-white',
@@ -683,6 +852,24 @@ export const platforms: Platform[] = [
       'Save public Snapchat Spotlight clips and public stories straight to your device.',
     intro:
       'Paste a public Snapchat link — snapchat.com/spotlight/… or story.snapchat.com/… — and the tool resolves the clip so you can preview and download the MP4. No Snapchat login, no app, no extension. Private snaps and disappearing messages are not accessible — only content Snapchat publishes publicly.',
+    steps: [
+      {
+        name: 'Copy the Snapchat link',
+        text: 'Open the public Spotlight or story in Snapchat and tap Share, then Copy link. The link looks like snapchat.com/spotlight/… or story.snapchat.com/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the Snapchat link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality you want.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip: 'bg-[#FFFC00] text-black',
       grad: 'from-yellow-300 via-yellow-400 to-amber-400',
@@ -751,6 +938,24 @@ export const platforms: Platform[] = [
       'Save Twitch clips and past broadcasts (VODs) as MP4 in their original quality.',
     intro:
       'Paste a Twitch clip or VOD link — clips.twitch.tv/…, twitch.tv/<channel>/clip/…, or twitch.tv/videos/… — and the tool resolves the stream so you can preview and download the MP4. No Twitch login, no extension, nothing installed. Sub-only VODs and content behind a paywall can’t be fetched.',
+    steps: [
+      {
+        name: 'Copy the Twitch link',
+        text: 'Open the clip on Twitch and click Share, then Copy link. The link looks like clips.twitch.tv/… or twitch.tv/channel/clip/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the Twitch link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality you want.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip: 'bg-[#9146FF] text-white',
       grad: 'from-violet-500 via-purple-500 to-fuchsia-500',
@@ -819,6 +1024,24 @@ export const platforms: Platform[] = [
       'Save public Vimeo videos as MP4 in the highest quality the source offers.',
     intro:
       'Paste any public vimeo.com/… link and the tool resolves the video through Vimeo’s own player configuration, returning a direct progressive MP4 you can preview and download. No Vimeo login, no extension, nothing installed. Password-protected, private, and domain-restricted videos can’t be fetched.',
+    steps: [
+      {
+        name: 'Copy the Vimeo link',
+        text: 'Open the video on Vimeo and click the Share icon, then copy the link. The link looks like vimeo.com/123456789.',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the Vimeo link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality you want.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
     accent: {
       chip: 'bg-[#1AB7EA] text-white',
       grad: 'from-sky-400 via-cyan-500 to-blue-500',

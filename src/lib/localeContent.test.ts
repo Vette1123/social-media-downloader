@@ -25,6 +25,7 @@ const english = {
         cards: p.cards,
         faqs: p.faqs.map(({ q, a }) => ({ q, a })),
         featureList: p.featureList,
+        steps: p.steps,
       },
     ]),
   ),

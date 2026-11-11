@@ -357,6 +357,30 @@ export function PlatformLanding({
           </ul>
         </section>
 
+        {/* HOW TO — the platform's own steps, also emitted as HowTo JSON-LD.
+            Anchors match the step urls in that graph. */}
+        <section className='defer-render mt-16 sm:mt-24'>
+          <SectionHead title={fill(landing.stepsTitle, { name: platform.name })} />
+          <ol className='mx-auto grid max-w-3xl grid-cols-1 gap-3'>
+            {platform.steps.map((step, i) => (
+              <Surface
+                key={step.name}
+                as='li'
+                id={`step-${i + 1}`}
+                className='flex items-start gap-4 p-4 text-sm text-white/80'
+              >
+                <span className='flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-400/15 text-xs font-bold text-cyan-300'>
+                  {i + 1}
+                </span>
+                <div>
+                  <h3 className='mb-1 font-semibold text-white'>{step.name}</h3>
+                  <p>{step.text}</p>
+                </div>
+              </Surface>
+            ))}
+          </ol>
+        </section>
+
         {/* HIGHLIGHT CARDS */}
         <section className='defer-render mt-16 sm:mt-24'>
           <div className='grid gap-4 md:grid-cols-3'>
