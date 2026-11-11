@@ -14,25 +14,25 @@
 
 ### 🚀 [Try it live →](https://www.socialdownloader.space)
 
-A free downloader for public posts on **TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo**. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack — no login, no install required, runs in your browser. It reaches only what a logged-out visitor can already see: no private accounts, no paywalled or subscriber-only posts, no DRM.
+A free downloader for public posts on **TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo**. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack. No login and no install are required, and it runs in your browser. It reaches only what a logged-out visitor can already see: no private accounts, no paywalled or subscriber-only posts, no DRM.
 
-It's also an **installable app (PWA)**: add it to your home screen and share links straight from the TikTok, Instagram, or YouTube app — no browser, no copy-paste.
+It's also an **installable app (PWA)**: add it to your home screen and share links straight from the TikTok, Instagram, or YouTube app, with no browser and no copy-paste.
 
-Open source, with **no popups, no redirects, no tracking, and a multi-source fallback chain** so downloads keep working when any single provider goes down.
+Open source, with no popups, no redirects, no tracking, and a multi-source fallback chain so downloads keep working when any single provider goes down.
 
-⭐ **If this tool is useful to you, please [star the repo](https://github.com/Vette1123/social-media-downloader/stargazers)** — it helps others find it.
+⭐ If this tool is useful to you, please [star the repo](https://github.com/Vette1123/social-media-downloader/stargazers). It helps others find it.
 
 Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Mohamed Gado](https://www.mohamedgado.com).
 
 ## Why use it
 
-- **11 platforms, one paste box.** TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo — auto-detected from the URL.
-- **Any other link too.** Paste a URL from anywhere else and the extractor still goes to work: it reads whatever media the page publishes (og:video, JSON-LD, player configs, download links), with a self-hosted yt-dlp resolver behind it for everything stricter. If the page serves its media to the public, this usually resolves it.
-- **Original quality, HD by default.** The source file rather than a re-encode, with a one-tap fallback to SD, plus MP3 audio extraction wherever a stream resolves — not just on the big-name platforms.
-- **No login, no API key, no daily limit.** Nothing to sign up for and nothing installed unless you want the app.
-- **Private by design.** No account needed to download and no log of what you download — a Google sign-in exists so preferences can sync and so supporters' extras can be attached to an account. Your Recent list lives in your own browser.
-- **Resilient.** A per-platform fallback chain quietly retries other sources, so a single provider outage doesn't break your download.
-- **Installable PWA.** Home-screen icon, app shortcuts, and native share-in from other apps.
+- 11 platforms, one paste box. TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo, auto-detected from the URL.
+- Any other link too. Paste a URL from anywhere else and the extractor still goes to work: it reads whatever media the page publishes (og:video, JSON-LD, player configs, download links), with a self-hosted yt-dlp resolver behind it for everything stricter. If the page serves its media to the public, this usually resolves it.
+- Original quality, HD by default. The source file with no re-encode, a one-tap fallback to SD, and MP3 audio extraction wherever a stream resolves.
+- No login, no API key, no daily limit. Nothing to sign up for and nothing installed unless you want the app.
+- Private by design. No account is needed to download and nothing logs what you download. A Google sign-in exists so preferences can sync and so supporters' extras can be attached to an account. Your Recent list lives in your own browser.
+- Resilient. A per-platform fallback chain retries other sources, so a single provider outage doesn't break your download.
+- Installable PWA. Home-screen icon, app shortcuts, and native share-in from other apps.
 
 ## Features
 
@@ -62,7 +62,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 
 - Download videos and Shorts in HD as MP4
 - Extract the audio track as MP3
-- Rich metadata (title, channel, thumbnail) pulled from YouTube's public oEmbed
+- Metadata (title, channel, thumbnail) pulled from YouTube's public oEmbed
 - Works with `youtube.com/watch?v=…`, `youtu.be/…`, `/shorts/…`, and `/embed/…`
 
 **Facebook**
@@ -98,7 +98,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 
 **Any other site**
 
-- Paste any public link — the generic chain reads the page's own media (og:video, JSON-LD `contentUrl`, `<video>` sources, inline player configs, download anchors), verifies it serves a file rather than an error page, and offers it
+- Paste any public link. The generic chain reads the page's own media (og:video, JSON-LD `contentUrl`, `<video>` sources, inline player configs, download anchors), verifies it serves a file rather than an error page, and offers it
 - Sites that wall datacenter IPs are retried at an address they do answer (host-specific recipes read the embed/player page, which usually stays open when the watch page does not); a relay chain and an optional self-hosted yt-dlp resolver (`deploy/resolver/`) sit behind that, but note the free relays now refuse Worker-origin fetches, so on Cloudflare only a configured unlocker or resolver adds anything
 - MP3 extraction works on this long tail too: when no audio-specific source answers, the resolved video stream is re-served through the audio route
 - Where native binaries exist (self-hosting, local dev), a full yt-dlp extractor runs as the final fallback for pages whose players defeat tag-scraping — automatically absent on Cloudflare, where it short-circuits to null
@@ -108,7 +108,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 - **Installable PWA** — add to your home screen and launch it like a native app (standalone, own icon, splash).
 - **Share Target (Android)** — installing registers the app as a share destination, so you can hit **Share → Social Downloader** from inside TikTok/Instagram/YouTube and land straight on a resolved download. No browser, no paste.
 - **App shortcuts / jump list** — long-press the installed icon to jump straight to the TikTok, X, Instagram, YouTube, or Facebook downloader.
-- **iOS add-to-home hint** — a quiet, on-brand nudge with the exact "Share → Add to Home Screen" steps, plus an iOS save hint on results.
+- **iOS add-to-home hint** — a nudge with the exact "Share → Add to Home Screen" steps, plus an iOS save hint on results.
 - **One-tap paste** — reads the clipboard and resolves the link in a single tap.
 - **Batch paste (supporter)** — drop a whole list of links (one per line or space-separated); every URL is pulled out, de-duplicated, and resolved in turn with live progress, across 1–3 parallel lanes.
 - **Collection import (supporter)** — paste a YouTube `playlist?list=…`, a subreddit or Reddit profile, a Pinterest board, or a Vimeo channel once and it expands into batch rows, capped and de-duplicated, no re-pasting.
@@ -124,23 +124,23 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 - Multi-source fallback chain per platform (resilient against any single provider going down)
 - Warm-instance resolve cache and direct tunnel downloads for faster, lighter fetches
 - CORS-proxied media routes so downloads (and Instagram's hotlink-protected CDN) work cross-origin, with HTTP range support for seek/preview
-- Inline URL validation, smooth motion animations, fully responsive layout, low-power/touch-aware effects
+- Inline URL validation, motion animations, responsive layout, low-power/touch-aware effects
 - Eleven dedicated, SEO-tuned landing pages (one per platform)
-- Production-grade SEO: dynamic OpenGraph and Twitter card images, per-platform OG images, JSON-LD (WebSite, Person, SoftwareApplication, HowTo, FAQPage), hreflang, sitemap, IndexNow ping on build, and a PWA-tuned manifest
+- SEO: dynamic OpenGraph and Twitter card images, per-platform OG images, JSON-LD (WebSite, Person, SoftwareApplication, HowTo, FAQPage), hreflang, sitemap, IndexNow ping on build, and a PWA-tuned manifest
 - No registration, no API keys, no daily limit
 
 ## Supporting the project
 
 The site is free and stays free. It is paid for by a single sponsor card shown
-after a download — no popups, no redirects, no interstitials, and no tracking of
-what you download.
+after a download. There are no popups, no redirects, no interstitials, and no
+tracking of what you download.
 
 Nothing here is for sale. A subscription existed briefly and was withdrawn: two
 merchants of record refused to underwrite a third-party downloader, the second
 after every fixable item on their published review checklist had been fixed, so
-the rejection was about the product category and not the paperwork. Supporting
+the rejection was about the product category. Supporting
 the project is a donation, arranged by email with booogado@gmail.com for now,
-and supporters get the extras switched on by hand — see
+and supporters get the extras switched on by hand. See
 [the support page](https://www.socialdownloader.space/pro).
 
 ## Tech stack
@@ -164,10 +164,10 @@ and supporters get the extras switched on by hand — see
 | Dynamic OG       | `next/og`, prerendered to PNG at build time |
 | App shell        | PWA manifest + Share Target + shortcuts |
 
-Four of these are *deliberate removals* rather than choices never made: **Axios**
-(~half the CPU of `/api/download` — see `src/lib/httpClient.ts`), **Cheerio**
-(too slow for the Worker CPU budget), **lucide-react** (three icons, hand-copied
-paths), and **arctic** (41% of the Worker bundle to reach one OAuth provider).
+Four of these are deliberate removals: Axios
+(~half the CPU of `/api/download`; see `src/lib/httpClient.ts`), Cheerio
+(too slow for the Worker CPU budget), lucide-react (three icons, hand-copied
+paths), and arctic (41% of the Worker bundle to reach one OAuth provider).
 Nothing in the deployed Worker comes from `node_modules` any more. Adding a
 dependency that the Worker imports is a CPU decision — run `pnpm cf:startup`.
 
@@ -192,7 +192,7 @@ pnpm build && pnpm start
 
 ### Environment variables
 
-All optional — the app runs without any config. Signing in and Pro billing are
+All optional. The app runs without any config. Signing in and Pro billing are
 themselves optional: without the accounts/billing variables below, the site
 still works as a fully anonymous, free downloader; sign-in simply is not
 offered.
@@ -250,14 +250,14 @@ Two names are defined, and keeping them separate is the point:
 **What a grant is allowed to be.** `pro` is every entitlement that is a property
 of *this site* — resolver ordering, queueing, how results are packaged. None of
 them widens what a link can reach, and none makes this service present
-credentials on a user's behalf. That line is load-bearing rather than stylistic:
+credentials on a user's behalf. That line is load-bearing:
 a downloader that sells access to login-gated content is refused by every
 merchant of record, explicitly so in some cases (Polar's acceptable-use policy
 names third-party content downloaders outright; Paddle's catch-all covers
 anything "enabling unauthorized access to data belonging to another party").
 
-`ig` is on the other side of that line, which is exactly why it is a separate
-grant rather than a flag inside `pro`. It is never offered, never bundled, and
+`ig` is on the other side of that line, which is why it is a separate
+grant and not a flag inside `pro`. It is never offered, never bundled, and
 `isEntitled` deliberately does not read it — a supporter is `pro` and is not
 `ig`, and there is a test pinning both directions. Before this existed,
 `IG_SESSIONID` alone was the whole gate, so setting it attached the cookie to
@@ -321,8 +321,8 @@ Setting this up for a fork or self-hosted deployment, in order:
 
 1. Copy a link from any supported platform.
 2. Paste it into the input on the homepage (or tap **Paste**, or share it into the installed app).
-3. Click **Process URL** — the app fetches metadata and a clean download link.
-4. Optionally preview, then click **Video** or **Extract Audio** — or re-pick **HD / SD / MP3**.
+3. Click **Process URL**. The app fetches metadata and a clean download link.
+4. Optionally preview, then click **Video** or **Extract Audio**, or re-pick **HD / SD / MP3**.
 
 **Download several at once (batch)**
 
@@ -497,7 +497,7 @@ does answer, it tunnels the media, which streams from any IP.
 
 ## Deployment
 
-Production runs on **Cloudflare Workers**. `pnpm cf:build` exports the whole site to `out/`, wrangler uploads that as Workers Static Assets, and `cloudflare/worker.js` answers only `/api/*` — a page view matches an asset before the Worker is invoked, so it costs no CPU and nothing against the free plan's request cap.
+Production runs on **Cloudflare Workers**. `pnpm cf:build` exports the whole site to `out/`, wrangler uploads that as Workers Static Assets, and `cloudflare/worker.js` answers only `/api/*`. A page view matches an asset before the Worker is invoked, so it costs no CPU and nothing against the free plan's request cap.
 
 A push to `main` deploys ([`.github/workflows/deploy-cloudflare.yml`](.github/workflows/deploy-cloudflare.yml)). The same run checks the bundle against the upload limit and the isolate startup budget (`pnpm cf:startup`), pings IndexNow with the deployed sitemap, and publishes a dated [release](../../releases) listing what that deploy carried. The Cloudflare-side setup — D1, migrations, secrets, WAF — is in [Getting started](#getting-started).
 
@@ -515,7 +515,7 @@ This tool is intended for personal use with content you have the right to save. 
 
 ## Author
 
-Built and maintained by **[Mohamed Gado](https://www.mohamedgado.com)** — [mohamedgado.com](https://www.mohamedgado.com).
+Built and maintained by [Mohamed Gado](https://www.mohamedgado.com).
 
 ## License
 
@@ -523,6 +523,6 @@ MIT — see [LICENSE](LICENSE).
 
 ## Issues and contributions
 
-Open a ticket on the [Issues](../../issues) page with a description, the URL format you tried, and any error message. Pull requests welcome. If the tool saved you time, a ⭐ goes a long way.
+Open a ticket on the [Issues](../../issues) page with a description, the URL format you tried, and any error message. Pull requests welcome. If the tool saved you time, a ⭐ is welcome.
 
 Before opening a pull request, run `pnpm verify` — typecheck, lint and tests in one command. CI does not run those separately: `next build` type-checks the whole project including test files, so a type error in a test fails the deploy rather than the test run.
