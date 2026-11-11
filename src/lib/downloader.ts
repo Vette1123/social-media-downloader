@@ -1159,6 +1159,48 @@ const IG_COOKIE_ORDER: readonly { name: string; env: string }[] = [
   { name: 'wd', env: 'IG_WD' },
 ]
 
+/** A post the API read in full and found no media on. Maps to `unavailable`. */
+export const TWEET_HAS_NO_MEDIA =
+  'This X post has no video or image to download. It is text only, or its media was removed.'
+
+/** Link shorteners and share redirectors: no media of their own, only a hop. */
+const SHORT_LINK_HOSTS = [
+  'b23.tv',
+  'share.google',
+  't.co',
+  'bit.ly',
+  'tinyurl.com',
+  'goo.gl',
+  'ow.ly',
+  'is.gd',
+  'buff.ly',
+  'cutt.ly',
+  'shorturl.at',
+  'rebrand.ly',
+  'lnkd.in',
+  'tiny.cc',
+]
+
+export function isShortLink(url: string): boolean {
+  try {
+    const host = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`).hostname.toLowerCase()
+    return SHORT_LINK_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))
+  } catch {
+    return false
+  }
+}
+
+/**
+ * The embed view of a Threads post, built from its user and post id: a shared
+ * `/post/<id>/media` view, an `m.` host or an encoded `%40` all used to have
+ * `/embed` stuck on the raw link, which Threads answers with nothing.
+ */
+export function threadsEmbedUrl(url: string): string {
+  const post = /threads\.(net|com)\/(?:@|%40)([\w.-]+)\/post\/([\w-]+)/i.exec(url)
+  if (post) return `https://www.threads.${post[1].toLowerCase()}/@${post[2]}/post/${post[3]}/embed`
+  return `${url.split(/[?#]/)[0].replace(/\/$/, '')}/embed`
+}
+
 export class Downloader {
   // Preferred video quality for the extractors that expose a quality knob
   // (Cobalt's videoQuality, tikwm's hd flag). 'hd' = best available (default);
@@ -1374,8 +1416,16 @@ export class Downloader {
   }
 
   // Main entry point: auto-detects platform and routes accordingly
-  async downloadVideo(url: string): Promise<VideoData> {
+  async downloadVideo(url: string, expanded = false): Promise<VideoData> {
     const platform = detectPlatform(url)
+
+    // A short link names no post of its own (t.co even passes as X, whose
+    // extractor needs a /status/ id), so nothing below can read it: follow it
+    // once and start over on where it lands.
+    if (!expanded && isShortLink(url)) {
+      const target = await this.resolveRedirect(url)
+      if (target !== url) return this.downloadVideo(target, true)
+    }
 
     // Audio-only mode (the "→ MP3" flow) short-circuits every platform through
     // Cobalt's audio tunnel — one path, MP3 out.
@@ -1392,16 +1442,22 @@ export class Downloader {
         () => this.tryVxTwitterMethod(url),
         () => this.tryCobaltInstances(url),
       ]
+      // The API read the post and it carries no media: a definite answer, so
+      // it outranks the "may be private" guess if nothing else resolves.
+      let textOnly = false
       for (const method of methods) {
         try {
           const result = await method()
           if (result) return result
         } catch (e) {
+          if (e instanceof Error && e.message === TWEET_HAS_NO_MEDIA) textOnly = true
           console.warn('Twitter method failed, trying next...', e)
         }
       }
       throw new Error(
-        'Could not download Twitter/X content. The post may be private, age-restricted, or unavailable.',
+        textOnly
+          ? TWEET_HAS_NO_MEDIA
+          : 'Could not download Twitter/X content. The post may be private, age-restricted, or unavailable.',
       )
     }
 
@@ -2108,7 +2164,7 @@ export class Downloader {
    * ask.
    */
   private async tryThreadsEmbed(url: string): Promise<VideoData | null> {
-    const embedUrl = `${url.split(/[?#]/)[0].replace(/\/$/, '')}/embed`
+    const embedUrl = threadsEmbedUrl(url)
     const response = await http.get(embedUrl, {
       headers: {
         'User-Agent': LINK_CRAWLER_AGENT,
@@ -2123,7 +2179,7 @@ export class Downloader {
     const media = extractMediaFromHtml(html, embedUrl)
     if (!media || media.isStream) return null
 
-    const author = /threads\.(?:net|com)\/@([\w.]+)/.exec(url)?.[1] ?? 'threads'
+    const author = /threads\.(?:net|com)\/(?:@|%40)([\w.]+)/i.exec(url)?.[1] ?? 'threads'
     return {
       id: /post\/([\w-]+)/.exec(url)?.[1] || media.mediaUrl.slice(-32),
       title: media.title === 'Threads' ? `Threads post by @${author}` : media.title,
@@ -3391,6 +3447,9 @@ export class Downloader {
     )
 
     const data = response.data
+    // "Failed to scan your link" comes back as an HTML page, not a post: that
+    // says nothing about the post, so it is no answer rather than "no media".
+    if (!data || typeof data !== 'object') return null
 
     // Find best video media
     const mediaItems = (data.media_extended ?? data.media ?? []) as Array<{
@@ -3406,7 +3465,7 @@ export class Downloader {
     const photoItems = mediaItems.filter((m) => m.type === 'image')
 
     if (!videoItem && photoItems.length === 0) {
-      throw new Error('No downloadable media found in tweet')
+      throw new Error(TWEET_HAS_NO_MEDIA)
     }
 
     const downloadUrl = videoItem?.url || ''

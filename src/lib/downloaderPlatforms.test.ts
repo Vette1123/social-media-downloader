@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Downloader, firstResult, noMediaMessage, parseTwitchClipSlug } from './downloader'
+import { Downloader, firstResult, isShortLink, noMediaMessage, parseTwitchClipSlug } from './downloader'
 import { failureCode } from './analyticsErrors'
 import { detectPlatform, unwrapLoginWall } from './validator'
 
@@ -107,6 +107,47 @@ describe('the Twitter API client', () => {
       expect(headers.has('Authorization')).toBe(false)
     },
   )
+})
+
+describe('an X post with nothing to download', () => {
+  it('says the post is text only, not that it is private', async () => {
+    stubFetch({ tweetID: '20', text: 'just setting up my twttr', media_extended: [] })
+    const error = await new Downloader()
+      .downloadVideo('https://x.com/jack/status/20')
+      .catch((e: Error) => e)
+    expect(String(error)).toMatch(/no video or image/i)
+    expect(failureCode((error as Error).message)).not.toBe('private')
+  })
+
+  it('keeps the private guess when the API could not read the post at all', async () => {
+    stubFetch('<html>Failed to scan your link!</html>')
+    const error = await new Downloader()
+      .downloadVideo('https://x.com/nasa/status/1234567890')
+      .catch((e: Error) => e)
+    expect(String(error)).toMatch(/may be private/i)
+  })
+})
+
+describe('short links', () => {
+  it('knows a shortener from a site', () => {
+    expect(isShortLink('https://b23.tv/AbC123')).toBe(true)
+    expect(isShortLink('share.google/xyz')).toBe(true)
+    expect(isShortLink('https://t.co/abc')).toBe(true)
+    expect(isShortLink('https://www.bilibili.com/video/BV1')).toBe(false)
+    expect(isShortLink('https://notbit.ly.example.com/a')).toBe(false)
+  })
+
+  it('follows a short link once and resolves where it lands', async () => {
+    const d = new Downloader()
+    const hop = vi
+      .spyOn(d as unknown as { resolveRedirect(u: string): Promise<string> }, 'resolveRedirect')
+      .mockResolvedValue('https://x.com/jack/status/20')
+    stubFetch({ tweetID: '20', text: 'hi', media_extended: [] })
+    const error = await d.downloadVideo('https://t.co/abc').catch((e: Error) => e)
+    expect(hop).toHaveBeenCalledTimes(1)
+    // It reached the X extractor, which answered for the post it landed on.
+    expect(String(error)).toMatch(/no video or image/i)
+  })
 })
 
 describe('the Twitch clip slug', () => {
@@ -391,6 +432,33 @@ describe('the Threads embed extractor', () => {
     expect(headers['User-Agent']).toContain('facebookexternalhit')
     expect(result?.downloadUrl).toBe('https://cdn.example/clip.mp4')
     expect(result?.title).toBe('Threads post by @someone')
+  })
+
+  it('asks for the post embed, whatever view of the post was shared', async () => {
+    for (const shared of [
+      'https://www.threads.com/@someone/post/Db-50iLEbpn/media',
+      'https://m.threads.com/@someone/post/Db-50iLEbpn?xmt=AQF0',
+      'https://www.threads.com/%40someone/post/Db-50iLEbpn',
+    ]) {
+      const spy = stubFetch(embed)
+      await priv(new Downloader()).tryThreadsEmbed(shared)
+      expect(String(spy.mock.calls[0][0])).toBe(
+        'https://www.threads.com/@someone/post/Db-50iLEbpn/embed',
+      )
+      vi.unstubAllGlobals()
+    }
+  })
+})
+
+describe('Threads links are recognised as Threads', () => {
+  it.each([
+    'https://www.threads.com/@someone/post/Db-50iLEbpn',
+    'https://m.threads.com/@someone/post/Db-50iLEbpn',
+    'https://www.threads.com/%40someone/post/Db-50iLEbpn',
+    'https://threads.net/@some.one/post/Db-50iLEbpn/media',
+    'https://www.threads.com/t/Db-50iLEbpn',
+  ])('%s', (url) => {
+    expect(detectPlatform(url)).toBe('threads')
   })
 })
 
