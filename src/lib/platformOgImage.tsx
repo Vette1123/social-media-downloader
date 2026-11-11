@@ -1,7 +1,8 @@
 import { ImageResponse } from 'next/og'
 import { siteConfig } from '@/config/site'
+import type { Locale } from '@/lib/i18n'
+import { headlineSize, platformOgCopy } from '@/lib/ogCopy'
 import type { PlatformSlug } from '@/lib/platforms'
-import { platformsBySlug } from '@/lib/platforms'
 
 export const ogImageSize = { width: 1200, height: 630 }
 export const ogImageContentType = 'image/png'
@@ -76,8 +77,11 @@ const PLATFORM_GLYPHS: Record<PlatformSlug, PlatformGlyph> = {
   },
 }
 
-export function renderPlatformOgImage(slug: PlatformSlug) {
-  const platform = platformsBySlug[slug]
+export function renderPlatformOgImage(
+  slug: PlatformSlug,
+  locale: Locale = 'en',
+) {
+  const copy = platformOgCopy(locale, slug)
   const glyph = PLATFORM_GLYPHS[slug]
 
   return new ImageResponse(
@@ -151,7 +155,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
                     display: 'flex',
                   }}
                 >
-                  {`${platform.name} downloader`}
+                  {copy.label}
                 </div>
                 <div
                   style={{
@@ -189,7 +193,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
                   boxShadow: '0 0 16px #4ade80',
                 }}
               />
-              Free forever
+              {copy.free}
             </div>
           </div>
 
@@ -202,7 +206,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
           >
             <div
               style={{
-                fontSize: 72,
+                fontSize: headlineSize(copy.headline),
                 fontWeight: 800,
                 letterSpacing: -2.5,
                 lineHeight: 1.02,
@@ -213,7 +217,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
                 display: 'flex',
               }}
             >
-              {platform.h1}
+              {copy.headline}
             </div>
             <div
               style={{
@@ -224,7 +228,7 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
                 display: 'flex',
               }}
             >
-              {platform.tagline}
+              {copy.tagline}
             </div>
 
             <div
@@ -237,12 +241,12 @@ export function renderPlatformOgImage(slug: PlatformSlug) {
               }}
             >
               <div style={{ display: 'flex', gap: 14 }}>
-                {[
-                  { label: 'No login', accent: '#5eead4' },
-                  { label: 'No install', accent: '#7dd3fc' },
-                  { label: 'HD', accent: '#67e8f9' },
-                  { label: 'No limits', accent: '#a5f3fc' },
-                ].map((chip) => (
+                {copy.chips
+                  .map((label, i) => ({
+                    label,
+                    accent: ['#5eead4', '#7dd3fc', '#67e8f9'][i],
+                  }))
+                  .map((chip) => (
                   <div
                     key={chip.label}
                     style={{
