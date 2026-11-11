@@ -47,7 +47,7 @@ export const platforms: Platform[] = [
     brandLabel: 'Any video downloader',
     metaTitle: 'Any Video Downloader — Paste Any Link, Save HD MP4 & MP3',
     metaDescription:
-      'Paste a link from any website and save the video in HD, extract MP3 audio, or grab embedded media — free, no login, nothing to install.',
+      'Paste a link from any website and save the video in HD, extract MP3 audio, or grab embedded media — free, no login, nothing to install, no limits.',
     h1: 'Any Video Downloader — Paste Any Link',
     tagline:
       'One paste box for every site: resolve the video, the audio, or the images from any public link.',
@@ -185,8 +185,8 @@ export const platforms: Platform[] = [
     ],
     faqs: [
       {
-        q: 'Is this TikTok downloader free?',
-        a: 'Yes — completely free, with no sign-up and no daily download limit.',
+        q: 'Does the downloaded TikTok video have a watermark?',
+        a: 'This app adds no watermark or logo of its own. It saves the file TikTok serves for the public post, without re-encoding it, and it does not claim to remove anything TikTok itself drew on the video.',
       },
       {
         q: 'What quality are downloaded TikTok videos?',
@@ -467,10 +467,6 @@ export const platforms: Platform[] = [
         q: 'Why does my video only load as a preview?',
         a: 'Some YouTube videos restrict free extraction. In that case the tool falls back to an embedded preview so you can still watch it inline.',
       },
-      {
-        q: 'Can I import a whole YouTube playlist?',
-        a: 'Yes. Supporters paste the playlist link once; every video becomes its own row in the download queue with real titles, capped per run. The queue is one of the supporter extras — downloading videos one link at a time is free and unlimited for everyone.',
-      },
     ],
     featureList: [
       'Download YouTube videos as HD MP4',
@@ -644,10 +640,6 @@ export const platforms: Platform[] = [
         a: 'No. Only publicly visible pins are accessed — no login, no extension. Private boards and secret pins are out of scope.',
       },
       {
-        q: 'Why does my Pinterest link fail to process?',
-        a: 'Make sure the pin is public and the URL is a pin link (pinterest.com/pin/… or pin.it/…). Some pins only link out to an external site and carry no downloadable media.',
-      },
-      {
         q: 'Can I back up an entire Pinterest board?',
         a: 'Yes. Supporters paste the board link and each pin becomes its own queue row via the board’s public RSS feed, so images and videos resolve together without copying links one at a time.',
       },
@@ -738,10 +730,6 @@ export const platforms: Platform[] = [
         a: 'Yes — Reddit-hosted GIFs come through as MP4, and crossposts resolve to the original hosted video.',
       },
       {
-        q: 'Do I need to log in to Reddit?',
-        a: 'No. Only publicly visible posts are accessed — no login, no app, no extension.',
-      },
-      {
         q: 'Can I save every post from a subreddit or user?',
         a: 'Yes — supporters paste the subreddit or profile link and it expands into individual post links (media posts only), then resolves them as a queue. Text-only posts are filtered out rather than failing one by one.',
       },
@@ -758,7 +746,7 @@ export const platforms: Platform[] = [
     slug: 'threads-video-downloader',
     name: 'Threads',
     brandLabel: 'Threads video & photo downloader',
-    metaTitle: 'Threads Video & Photo Downloader — Save Posts, No Login',
+    metaTitle: 'Threads Video Downloader — Save Videos & Photos, No Login',
     metaDescription:
       'Download videos and photos from Threads (threads.net) in full quality. Paste a threads.net/@user/post link and save the media instantly — free, no login.',
     h1: 'Threads Video & Photo Downloader — Free, No Login',
@@ -816,8 +804,8 @@ export const platforms: Platform[] = [
         a: 'Yes — paste a public Threads post URL and the tool resolves the video so you can preview and download the MP4.',
       },
       {
-        q: 'Does it work with photo posts?',
-        a: 'Yes. Single photos and image posts are saved at full resolution.',
+        q: 'Does it work with photo posts and carousels?',
+        a: 'Single photos and image posts are saved at full resolution. For a post with several items the tool reads the post’s embed view and saves the main video or image it finds there, so a long carousel may give you only one item.',
       },
       {
         q: 'Do I need a Threads or Instagram login?',
@@ -828,8 +816,8 @@ export const platforms: Platform[] = [
         a: 'threads.net/@user/post/…, threads.com/@user/post/…, and short threads.net/t/… links all work.',
       },
       {
-        q: 'Why does my Threads link fail to process?',
-        a: 'Make sure the post is public and the URL points at a single post. Private profiles, deleted posts, and text-only posts (no media) can’t be fetched.',
+        q: 'What quality is a downloaded Threads video, and is it watermarked?',
+        a: 'You get the file Threads serves for the post, saved as is. The app does not re-encode it or add a watermark, and the resolution is whatever the poster uploaded.',
       },
     ],
     featureList: [
@@ -1092,10 +1080,6 @@ export const platforms: Platform[] = [
       {
         q: 'Why does my Vimeo link fail to process?',
         a: 'Make sure the video is public and the URL is a vimeo.com/<id> link. Private, password-protected, or unlisted-with-restrictions videos can’t be fetched.',
-      },
-      {
-        q: 'Can I grab everything from a Vimeo channel?',
-        a: 'Yes — supporters paste the channel or user link, the public video feed expands into rows, and the batch queue resolves each one at the quality you prefer.',
       },
     ],
     featureList: [

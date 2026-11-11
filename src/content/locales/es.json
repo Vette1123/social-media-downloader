@@ -513,8 +513,8 @@
       ],
       "faqs": [
         {
-          "q": "¿Este descargador de TikTok es gratis?",
-          "a": "Sí: totalmente gratis, sin registro y sin límite diario de descargas."
+          "q": "¿El video de TikTok descargado lleva marca de agua?",
+          "a": "Esta app no añade ninguna marca de agua ni logotipo. Guarda el archivo que TikTok sirve para la publicación pública, sin recodificarlo, y no promete quitar lo que TikTok haya dibujado sobre el video."
         },
         {
           "q": "¿Qué calidad tienen los videos de TikTok descargados?",
@@ -742,10 +742,6 @@
         {
           "q": "¿Por qué mi video solo se carga como vista previa?",
           "a": "Algunos videos de YouTube restringen la extracción gratuita. En ese caso la herramienta recurre a una vista previa incrustada para que puedas verlo igualmente en la página."
-        },
-        {
-          "q": "¿Puedo importar una lista de reproducción completa de YouTube?",
-          "a": "Sí. Quienes apoyan el proyecto pegan el enlace de la lista una vez y cada video se convierte en su propia fila de la cola de descargas con títulos reales, con un tope por ejecución. La cola es uno de los extras para quienes apoyan: descargar videos enlace por enlace es gratis e ilimitado para todos."
         }
       ],
       "featureList": [
@@ -886,10 +882,6 @@
           "a": "No. Solo se accede a pines visibles públicamente, sin iniciar sesión y sin extensión. Los tableros privados y los pines secretos quedan fuera."
         },
         {
-          "q": "¿Por qué mi enlace de Pinterest no se procesa?",
-          "a": "Comprueba que el pin sea público y que la URL sea un enlace de pin (pinterest.com/pin/… o pin.it/…). Algunos pines solo enlazan a un sitio externo y no incluyen contenido descargable."
-        },
-        {
           "q": "¿Puedo hacer una copia de seguridad de un tablero completo de Pinterest?",
           "a": "Sí. Quienes apoyan el proyecto pegan el enlace del tablero y cada pin se convierte en su propia fila de la cola a través del feed RSS público del tablero, así que las imágenes y los videos se resuelven juntos sin copiar los enlaces uno a uno."
         }
@@ -963,10 +955,6 @@
           "a": "Sí: los GIF alojados en Reddit llegan como MP4 y las publicaciones cruzadas se resuelven hasta el video original alojado."
         },
         {
-          "q": "¿Necesito iniciar sesión en Reddit?",
-          "a": "No. Solo se accede a publicaciones visibles públicamente, sin iniciar sesión, sin app y sin extensión."
-        },
-        {
           "q": "¿Puedo guardar todas las publicaciones de un subreddit o usuario?",
           "a": "Sí: quienes apoyan el proyecto pegan el enlace del subreddit o del perfil y se expande en enlaces de publicaciones individuales (solo las que tienen contenido multimedia), que luego se resuelven como una cola. Las publicaciones de solo texto se filtran en lugar de fallar una por una."
         }
@@ -1024,8 +1012,8 @@
           "a": "Sí: pega la URL de una publicación pública de Threads y la herramienta resuelve el video para que lo previsualices y descargues el MP4."
         },
         {
-          "q": "¿Funciona con publicaciones de fotos?",
-          "a": "Sí. Las fotos sueltas y las publicaciones de imágenes se guardan a resolución completa."
+          "q": "¿Funciona con publicaciones de fotos y carruseles?",
+          "a": "Las fotos sueltas y las publicaciones de imagen se guardan a resolución completa. En una publicación con varios elementos, la herramienta lee la vista incrustada y guarda el video o la imagen principal que encuentra, así que un carrusel largo puede darte solo un elemento."
         },
         {
           "q": "¿Necesito iniciar sesión en Threads o en Instagram?",
@@ -1036,8 +1024,8 @@
           "a": "threads.net/@user/post/…, threads.com/@user/post/… y los enlaces cortos threads.net/t/… funcionan."
         },
         {
-          "q": "¿Por qué mi enlace de Threads no se procesa?",
-          "a": "Comprueba que la publicación sea pública y que la URL apunte a una sola publicación. Los perfiles privados, las publicaciones eliminadas y las de solo texto (sin contenido multimedia) no se pueden descargar."
+          "q": "¿Qué calidad tiene un video de Threads descargado y lleva marca de agua?",
+          "a": "Obtienes el archivo que Threads sirve para la publicación, guardado tal cual. La app no lo recodifica ni añade marca de agua, y la resolución es la que subió quien publicó."
         }
       ],
       "featureList": [
@@ -1249,10 +1237,6 @@
         {
           "q": "¿Por qué mi enlace de Vimeo no se procesa?",
           "a": "Comprueba que el video sea público y que la URL sea un enlace vimeo.com/<id>. Los videos privados, protegidos con contraseña o no listados con restricciones no se pueden descargar."
-        },
-        {
-          "q": "¿Puedo conseguir todo lo de un canal de Vimeo?",
-          "a": "Sí: quienes apoyan el proyecto pegan el enlace del canal o usuario, el feed público de videos se expande en filas y la cola por lotes resuelve cada uno en la calidad que prefieras."
         }
       ],
       "featureList": [
