@@ -6,6 +6,7 @@ import {
   renderPlatformOgImage,
 } from '@/lib/platformOgImage'
 import { PLATFORM_SLUGS, type PlatformSlug } from '@/lib/platformSlugs'
+import { ROUTE_LOCALES } from '@/lib/localeRoutes'
 import { toRouteLocale } from '@/lib/routeLocale'
 
 export const dynamic = 'force-static'
@@ -16,8 +17,10 @@ interface Props {
   params: Promise<{ lang: string; slug: string }>
 }
 
+// An image route does not inherit its parent's params under `output: export`:
+// it must name every dynamic segment itself, `lang` included.
 export function generateStaticParams() {
-  return PLATFORM_SLUGS.map((slug) => ({ slug }))
+  return ROUTE_LOCALES.flatMap((lang) => PLATFORM_SLUGS.map((slug) => ({ lang, slug })))
 }
 
 function toSlug(slug: string): PlatformSlug {

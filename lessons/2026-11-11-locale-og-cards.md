@@ -17,14 +17,19 @@ Arabic stays on the English card.
   new file-convention images. They had to go.
 - `pnpm dev` (Turbopack) cannot start in a worktree whose `node_modules` is a link; use
   `npx next dev --webpack`.
+- The cards were checked on the dev server only, and the PR build failed: under `output: export` an image route does not inherit its parent's params, so `[lang]/[slug]/opengraph-image` returned `{ slug }` without `lang`. Dev never runs `generateStaticParams` that strictly.
+- 112 new PNGs would also have broken the 100-rule `_headers` cap in `cf-postbuild.mjs`, which listed one rule per image. Cards now collapse into four `:placeholder` rules (`scripts/headerRules.mjs`).
 
 ## What worked
 - Looking at the rendered PNG, not trusting that the glyphs drew. Dev server + curl of the
-  image route is enough; no `pnpm build`.
+  image route shows the card; only the export build (CI on the PR) proves the params.
 - Keeping the language choice in a pure function (`ogCardLocale`) so "Arabic falls back" is
   tested, not just a comment.
 
 ## Rules
+
+- An image route under a dynamic segment exports its own `generateStaticParams` naming every segment.
+- Adding generated images: count the `_headers` rules the build will write before merging.
 - A share card in a script satori cannot lay out stays on the English card until a rendered
   PNG reads correctly.
 - Never set an explicit `images` in page metadata where a `[lang]` image file exists.
