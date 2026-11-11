@@ -513,8 +513,8 @@
       ],
       "faqs": [
         {
-          "q": "Apakah downloader TikTok ini gratis?",
-          "a": "Ya — sepenuhnya gratis, tanpa daftar dan tanpa batas unduhan harian."
+          "q": "Apakah video TikTok yang diunduh memiliki watermark?",
+          "a": "Aplikasi ini tidak menambahkan watermark atau logo apa pun. Ia menyimpan file yang disajikan TikTok untuk postingan publik tanpa encode ulang, dan tidak menjanjikan penghapusan apa pun yang digambar TikTok sendiri pada video."
         },
         {
           "q": "Apa kualitas video TikTok yang diunduh?",
@@ -742,10 +742,6 @@
         {
           "q": "Kenapa video saya hanya dimuat sebagai pratinjau?",
           "a": "Sebagian video YouTube membatasi ekstraksi gratis. Dalam kasus itu alat ini beralih ke pratinjau tersemat agar kamu tetap bisa menontonnya di tempat."
-        },
-        {
-          "q": "Bisakah saya mengimpor seluruh playlist YouTube?",
-          "a": "Bisa. Pendukung menempelkan link playlist sekali; setiap video menjadi barisnya sendiri di antrean unduhan dengan judul asli, dengan batas per proses. Antrean itu adalah salah satu fitur tambahan pendukung — mengunduh video satu link per satu gratis dan tanpa batas untuk semua orang."
         }
       ],
       "featureList": [
@@ -886,10 +882,6 @@
           "a": "Tidak. Hanya pin yang terlihat publik yang diakses — tanpa login, tanpa ekstensi. Board yang dikunci dan pin rahasia di luar cakupan."
         },
         {
-          "q": "Kenapa link Pinterest saya gagal diproses?",
-          "a": "Pastikan pin-nya publik dan URL-nya adalah link pin (pinterest.com/pin/… atau pin.it/…). Sebagian pin hanya mengarah ke situs eksternal dan tidak punya media yang bisa diunduh."
-        },
-        {
           "q": "Bisakah saya mencadangkan seluruh board Pinterest?",
           "a": "Bisa. Pendukung menempelkan link board dan setiap pin menjadi baris antreannya sendiri lewat feed RSS publik board, jadi gambar dan video diproses bersamaan tanpa menyalin link satu per satu."
         }
@@ -963,10 +955,6 @@
           "a": "Ya — GIF yang di-host Reddit datang sebagai MP4, dan crosspost diproses sampai ke video aslinya yang di-host."
         },
         {
-          "q": "Apakah saya perlu login ke Reddit?",
-          "a": "Tidak. Hanya postingan yang terlihat publik yang diakses — tanpa login, tanpa aplikasi, tanpa ekstensi."
-        },
-        {
           "q": "Bisakah saya menyimpan semua postingan dari sebuah subreddit atau pengguna?",
           "a": "Bisa — pendukung menempelkan link subreddit atau profil dan diurai menjadi link postingan satu per satu (hanya postingan bermedia), lalu diproses sebagai antrean. Postingan yang hanya berisi teks disaring, bukan gagal satu per satu."
         }
@@ -1024,8 +1012,8 @@
           "a": "Bisa — tempel URL postingan Threads yang publik dan alat ini memproses videonya agar kamu bisa melihat pratinjau dan mengunduh MP4-nya."
         },
         {
-          "q": "Apakah bisa untuk postingan foto?",
-          "a": "Ya. Foto tunggal dan postingan gambar disimpan dalam resolusi penuh."
+          "q": "Apakah bisa untuk postingan foto dan carousel?",
+          "a": "Foto tunggal dan postingan gambar disimpan dalam resolusi penuh. Untuk postingan dengan beberapa item, alat ini membaca tampilan embed dan menyimpan video atau gambar utama yang ditemukan, jadi carousel panjang mungkin hanya menghasilkan satu item."
         },
         {
           "q": "Apakah saya perlu login Threads atau Instagram?",
@@ -1036,8 +1024,8 @@
           "a": "threads.net/@user/post/…, threads.com/@user/post/…, dan link pendek threads.net/t/… semuanya berfungsi."
         },
         {
-          "q": "Kenapa link Threads saya gagal diproses?",
-          "a": "Pastikan postingannya publik dan URL-nya mengarah ke satu postingan. Profil yang dikunci, postingan yang dihapus, dan postingan teks saja (tanpa media) tidak bisa diambil."
+          "q": "Apa kualitas video Threads yang diunduh, dan apakah ada watermark?",
+          "a": "Anda mendapat file yang disajikan Threads untuk postingan itu, disimpan apa adanya. Aplikasi tidak melakukan encode ulang atau menambah watermark, dan resolusinya sama dengan yang diunggah pemosting."
         }
       ],
       "featureList": [
@@ -1249,10 +1237,6 @@
         {
           "q": "Kenapa link Vimeo saya gagal diproses?",
           "a": "Pastikan videonya publik dan URL-nya adalah link vimeo.com/<id>. Video yang dikunci, diproteksi kata sandi, atau tidak terdaftar dengan pembatasan tidak bisa diambil."
-        },
-        {
-          "q": "Bisakah saya mengambil semua video dari sebuah channel Vimeo?",
-          "a": "Bisa — pendukung menempelkan link channel atau pengguna, feed video publik diurai menjadi baris, dan antrean batch memproses masing-masing dalam kualitas yang kamu pilih."
         }
       ],
       "featureList": [
