@@ -81,6 +81,47 @@ export function linkHost(raw: string | null | undefined): string | undefined {
   }
 }
 
+/** Path words that name a route, never a person or a post. */
+const ROUTE_WORDS = new Set([
+  'post', 'posts', 't', 'p', 'reel', 'reels', 'video', 'videos', 'status', 'watch', 'share', 's',
+  'shorts', 'comments', 'r', 'u', 'user', 'media', 'story', 'stories', 'clip', 'clips', 'spotlight',
+  'pin', 'embed', 'photo', 'photos', 'i', 'v', 'tv', 'live', 'groups', 'permalink.php', 'watch.php',
+  'video.php', 'story.php', 'channel', 'c', 'add', 'x', 'sv',
+])
+
+/**
+ * The SHAPE of a link: its subdomain label, its route words and its query keys,
+ * e.g. `www|/@*` + `/post/*?xmt`. Names become `@*` or `*`, numbers `#`, and no
+ * query value is kept. It says which URL form a resolver missed without saying
+ * whose post it was.
+ */
+export function linkShape(raw: string | null | undefined): string | undefined {
+  const host = linkHost(raw)
+  if (!raw || !host) return undefined
+  const text = raw.trim()
+  try {
+    const u = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(text) ? text : `https://${text}`)
+    const hostname = u.hostname.toLowerCase().replace(/\.$/, '')
+    const sub = hostname === host ? '' : hostname.slice(0, -host.length - 1)
+    const path = u.pathname.split('/').filter(Boolean).map(shapeSegment).join('/')
+    const keys = [...new Set(u.searchParams.keys())]
+      .slice(0, 4)
+      .map((k) => k.replace(/[^\w-]/g, '').slice(0, 12))
+    const query = keys.length ? `?${keys.join('&')}` : ''
+    return `${sub}|/${path}${query}`.slice(0, 120)
+  } catch {
+    return undefined
+  }
+}
+
+function shapeSegment(seg: string): string {
+  const lower = seg.toLowerCase()
+  if (ROUTE_WORDS.has(lower)) return lower
+  if (lower.startsWith('@') || lower.startsWith('%40')) return '@*'
+  if (/^\d+$/.test(seg)) return '#'
+  return '*'
+}
+
 /** Any URL quoted inside free text — an error message, usually — becomes `<url>`. */
 export function scrubText(text: string): string {
   return text.replace(URL_IN_TEXT, '<url>')

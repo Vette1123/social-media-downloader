@@ -23,7 +23,7 @@ import {
   failureCode,
   isExpectedFailure,
 } from './analyticsErrors'
-import { contentLink, linkHost, scrubText } from './analyticsPrivacy'
+import { contentLink, linkHost, linkShape, scrubText } from './analyticsPrivacy'
 import { ph } from './posthogClient'
 
 export const EVENTS = {
@@ -322,6 +322,7 @@ export function trackResolveFailed(props: {
     code,
     message,
     host: linkHost(props.link),
+    shape: linkShape(props.link),
     duration_ms: props.duration_ms,
     format: props.format,
   })

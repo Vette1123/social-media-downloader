@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contentLink, linkHost, scrubEvent, scrubText, scrubUrl } from './analyticsPrivacy'
+import { contentLink, linkHost, linkShape, scrubEvent, scrubText, scrubUrl } from './analyticsPrivacy'
 
 describe('scrubUrl', () => {
   it('drops the share-target link and keeps the path', () => {
@@ -88,5 +88,26 @@ describe('linkHost', () => {
     expect(linkHost('http://192.168.0.1/x')).toBeUndefined()
     expect(linkHost('')).toBeUndefined()
     expect(linkHost(undefined)).toBeUndefined()
+  })
+})
+
+describe('linkShape', () => {
+  it('keeps the route words and hides every name and id', () => {
+    expect(linkShape('https://www.threads.com/@someone/post/Db-50iLEbpn/media?xmt=AQF0')).toBe(
+      'www|/@*/post/*/media?xmt',
+    )
+    expect(linkShape('https://m.threads.com/%40someone/post/Db-50iLEbpn')).toBe('m|/@*/post/*')
+    expect(linkShape('x.com/jack/status/20')).toBe('|/*/status/#')
+  })
+
+  it('never carries a query value or a long path', () => {
+    const shape = linkShape(`https://example.com/${'a/'.repeat(80)}?token=secret`) ?? ''
+    expect(shape).not.toContain('secret')
+    expect(shape.length).toBeLessThanOrEqual(120)
+  })
+
+  it('refuses something that is not a link', () => {
+    expect(linkShape('hello')).toBeUndefined()
+    expect(linkShape(undefined)).toBeUndefined()
   })
 })

@@ -126,3 +126,4 @@ the index for exactly that.
 | 2026-11-11 | [SEO audit: info-page snippets](2026-11-11-seo-audit-info-snippets.md) | Measure filled, decoded snippets; /terms descriptions ran 163-176 chars in es, pt, id and are now tested. |
 | 2026-11-11 | [The relay's refusals say where they were sent](2026-11-11-relay-refusal-log.md) | Log where a refusal pointed. Per-page alt on nested `[lang]` image routes is impossible under `output: export` (generateImageMetadata gets `{}`). |
 | 2026-11-11 | [The smoke suite paces itself](2026-11-11-smoke-pace.md) | A test client of a rate-limited endpoint paces below the limit; an HTML 429 is the zone block page, not the app. |
+| 2026-11-12 | [Links that reached the wrong extractor](2026-11-12-resolver-misclassified-links.md) | A share link's host is not its platform: expand shorteners before routing, and log the link's shape, not just its host. |
