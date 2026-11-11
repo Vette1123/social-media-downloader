@@ -100,9 +100,11 @@ const platformPatterns: Record<
     /^(https?:\/\/)?v\.redd\.it\/[\w]+/,
     /^(https?:\/\/)?redd\.it\/[\w]+/,
   ],
+  // Any subdomain (the app shares m. and www.) and an encoded `%40` for the @:
+  // both fell through to the generic resolver, which cannot read Threads.
   threads: [
-    /^(https?:\/\/)?(www\.)?threads\.(net|com)\/@[\w.-]+\/post\/[\w-]+/,
-    /^(https?:\/\/)?(www\.)?threads\.(net|com)\/t\/[\w-]+/,
+    /^(https?:\/\/)?([\w-]+\.)?threads\.(net|com)\/(?:@|%40)[\w.-]+\/post\/[\w-]+/i,
+    /^(https?:\/\/)?([\w-]+\.)?threads\.(net|com)\/t\/[\w-]+/i,
   ],
   snapchat: [
     /^(https?:\/\/)?(www\.)?snapchat\.com\/(?:spotlight|t|p|add|u)\/[\w.@/-]+/,
