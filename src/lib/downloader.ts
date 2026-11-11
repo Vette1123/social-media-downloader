@@ -455,6 +455,10 @@ export async function firstResult<T>(
 const LINK_CRAWLER_AGENT =
   'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
 
+/** Reddit's media through a host reddit does not block. See tryRedditMirror. */
+const REDDIT_MIRROR = 'https://vxreddit.com'
+const DISCORD_CRAWLER_AGENT = 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)'
+
 /**
  * The two link shapes Facebook's own share sheet produces — `fb.watch/<code>`
  * and `facebook.com/share/<v|r>/<code>`. Both answer a browser user agent with
@@ -2004,11 +2008,13 @@ export class Downloader {
       timeout: 20000,
       validateStatus: () => true,
     })
-    if (response.status !== 200) return null
 
-    const html = typeof response.data === 'string' ? response.data : ''
+    const html =
+      response.status === 200 && typeof response.data === 'string' ? response.data : ''
     const mp4s = redditPackagedMp4s(html)
-    if (mp4s.length === 0) return null
+    // Reddit answers 403 to every Cloudflare egress (see tryRedditMirror), so
+    // in production this is the path that runs.
+    if (mp4s.length === 0) return this.tryRedditMirror(path, permalink, url)
 
     const chosen = this.videoQuality === 'sd' ? mp4s[0] : mp4s[mp4s.length - 1]
     const slug = /comments\/[\w]+\/([\w_]+)/.exec(permalink)?.[1] ?? ''
@@ -2028,6 +2034,61 @@ export class Downloader {
       author: `r/${subreddit}`,
       description: '',
       downloadUrl: chosen.url,
+      isPhotoCarousel: false,
+    }
+  }
+
+  /**
+   * Reddit through vxreddit, for when reddit refuses us.
+   *
+   * Since 2026-10-22 reddit answers 403 to Cloudflare egress on every surface
+   * that carries media (lessons/2026-11-03-reddit-blocks-the-worker.md).
+   * vxreddit is a public link-preview fixer whose backend runs outside
+   * Cloudflare: for a link crawler it publishes `og:video`, a URL that muxes
+   * the post's v.redd.it video and audio into one mp4 and redirects to the
+   * render. Measured from the edge: page 200 in 3.7s, render 206 video/mp4.
+   *
+   * ponytail: a third party we do not run. If it goes, Reddit is down again;
+   * the self-hosted resolver in deploy/resolver is the upgrade path.
+   */
+  private async tryRedditMirror(
+    path: string,
+    permalink: string,
+    url: string,
+  ): Promise<VideoData | null> {
+    const response = await http.get(`${REDDIT_MIRROR}/${path}/`, {
+      // It serves the preview card only to a client that looks like a crawler.
+      headers: { 'User-Agent': DISCORD_CRAWLER_AGENT, Accept: 'text/html' },
+      timeout: 15000,
+      validateStatus: () => true,
+    })
+    if (response.status !== 200 || typeof response.data !== 'string') return null
+    const html = response.data
+    const meta = (property: string) =>
+      decodeEntities(
+        new RegExp(`<meta[^>]+property="${property}"[^>]+content="([^"]*)"`).exec(html)?.[1] ??
+          '',
+      )
+
+    const video = meta('og:video')
+    // Only ever a render of reddit's own media, so a hijacked or changed page
+    // cannot hand our users a file from anywhere else.
+    if (!video.startsWith(`${REDDIT_MIRROR}/redditvideo.mp4?`) || !video.includes('v.redd.it'))
+      return null
+
+    const subreddit = /\/r\/([\w.-]+)/.exec(permalink)?.[1] ?? 'reddit'
+    const slug = /comments\/[\w]+\/([\w_]+)/.exec(permalink)?.[1] ?? ''
+    return {
+      id: /comments\/([\w]+)/.exec(permalink)?.[1] ?? path,
+      title:
+        meta('og:title') ||
+        (slug ? slug.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()) : 'Reddit video'),
+      url,
+      thumbnail: meta('og:image'),
+      duration: 0,
+      author: `r/${subreddit}`,
+      description: '',
+      downloadUrl: video,
       isPhotoCarousel: false,
     }
   }

@@ -224,6 +224,78 @@ describe('the reddit embed extractor', () => {
     )
   })
 
+  // Reddit refuses Cloudflare egress on every surface that carries media
+  // (lessons/2026-11-03-reddit-blocks-the-worker.md). vxreddit fetches it from
+  // its own host and publishes a muxed mp4 as og:video.
+  describe('when reddit refuses the Worker', () => {
+    const mirrorUrl =
+      'https://vxreddit.com/redditvideo.mp4?video_url=https%3A%2F%2Fv.redd.it%2F2bbahy5bfvhh1%2FCMAF_720.m3u8&audio_url=https%3A%2F%2Fv.redd.it%2F2bbahy5bfvhh1%2FCMAF_AUDIO_128.m3u8'
+    const mirrorPage = `<html><head>
+      <meta property="og:title" content="Taking a walk in the rain" />
+      <meta property="og:image" content="https://external-preview.redd.it/thumb.png?a=1&amp;b=2" />
+      <meta property="og:video" content="${mirrorUrl.replace(/&/g, '&amp;')}" />
+      </head></html>`
+
+    function stubReddit(mirror: string, mirrorStatus = 200) {
+      const spy = vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.startsWith('https://embed.reddit.com/'))
+          return new Response('Blocked', { status: 403 })
+        if (url.startsWith('https://vxreddit.com/'))
+          return new Response(mirror, {
+            status: mirrorStatus,
+            headers: { 'Content-Type': 'text/html' },
+          })
+        throw new Error(`unexpected fetch ${url}`)
+      })
+      vi.stubGlobal('fetch', spy)
+      return spy
+    }
+
+    it('takes the muxed mp4 the mirror publishes', async () => {
+      const spy = stubReddit(mirrorPage)
+      const result = await priv(new Downloader()).tryRedditEmbed(
+        'https://www.reddit.com/r/oddlysatisfying/comments/1vhp8n5/taking_a_walk_in_the_rain/',
+      )
+      expect(String(spy.mock.calls[1][0])).toBe(
+        'https://vxreddit.com/r/oddlysatisfying/comments/1vhp8n5/',
+      )
+      expect(result?.downloadUrl).toBe(mirrorUrl)
+      expect(result?.title).toBe('Taking a walk in the rain')
+      expect(result?.author).toBe('r/oddlysatisfying')
+      expect(result?.thumbnail).toBe('https://external-preview.redd.it/thumb.png?a=1&b=2')
+    })
+
+    it('returns null when the mirror has no video either', async () => {
+      stubReddit('<html><head><meta property="og:title" content="A photo" /></head></html>')
+      await expect(
+        priv(new Downloader()).tryRedditEmbed(
+          'https://www.reddit.com/r/aww/comments/abc123/t/',
+        ),
+      ).resolves.toBeNull()
+    })
+
+    it('never hands out an og:video that is not a reddit render', async () => {
+      stubReddit(
+        '<html><head><meta property="og:video" content="https://evil.example/x.mp4" /></head></html>',
+      )
+      await expect(
+        priv(new Downloader()).tryRedditEmbed(
+          'https://www.reddit.com/r/aww/comments/abc123/t/',
+        ),
+      ).resolves.toBeNull()
+    })
+
+    it('returns null when the mirror is down', async () => {
+      stubReddit('', 502)
+      await expect(
+        priv(new Downloader()).tryRedditEmbed(
+          'https://www.reddit.com/r/aww/comments/abc123/t/',
+        ),
+      ).resolves.toBeNull()
+    })
+  })
+
   /** An image or text post carries no packaged media; that is not an error. */
   it('returns null for a post with no muxed mp4', async () => {
     stubFetch('<html><body>no media here</body></html>')
