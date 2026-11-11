@@ -107,7 +107,8 @@
       "whyEyebrow": "Kenapa ini berhasil",
       "seoTitle": "{brand} gratis — {tagline}",
       "formatsEyebrow": "Format URL {name} yang didukung",
-      "faqTitle": "Downloader {name} — Pertanyaan yang sering diajukan"
+      "faqTitle": "Downloader {name} — Pertanyaan yang sering diajukan",
+      "stepsTitle": "Cara mengunduh video {name}"
     },
     "support": {
       "compactTitle": "Situs ini gratis dan tanpa batas.",
@@ -192,12 +193,9 @@
       "step3Name": "Unduh",
       "homeStep3": "Lihat pratinjau, lalu unduh video berkualitas penuh, audio MP3, atau gambar carousel satu per satu atau sebagai ZIP.",
       "platformName": "Cara mengunduh dari {name}",
-      "platformDescription": "Simpan video, foto, atau MP3 publik {name} dalam tiga langkah — tanpa login, tanpa instal.",
+      "platformDescription": "Simpan video, foto, atau MP3 publik {name} dalam empat langkah — tanpa login, tanpa instal.",
       "platformSupply": "URL postingan publik {name}",
-      "platformTool": "URL postingan {name}",
-      "platformStep1": "Buka postingan {name} dan salin URL berbaginya.",
-      "platformStep2": "Tempel URL ke kolom di halaman ini lalu klik Unduh.",
-      "platformStep3": "Lihat pratinjau, lalu simpan video berkualitas penuh, MP3, atau gambarnya."
+      "platformTool": "URL postingan {name}"
     },
     "legal": {
       "shared": {
@@ -472,6 +470,24 @@
         "Mengurutkan beberapa versi berdasarkan resolusi dan memilih yang terbaik yang sudah terverifikasi",
         "Ekstraksi MP3 pada setiap link yang berhasil diproses sebagai video",
         "Resep khusus per situs yang membaca halaman embed saat halaman tontonnya terblokir"
+      ],
+      "steps": [
+        {
+          "name": "Salin link video",
+          "text": "Buka halaman yang memuat video. Salin alamatnya dari bilah peramban, atau pakai tombol Bagikan di situs itu jika ada."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas atau format yang tersedia."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan. Jika halaman tidak punya video publik, alat ini bilang begitu, bukan memberi file rusak."
+        }
       ]
     },
     "tiktok-downloader": {
@@ -523,6 +539,24 @@
         "Simpan carousel foto TikTok — satu per satu atau sebagai ZIP",
         "Lihat pratinjau video dan audio sebelum mengunduh",
         "Tanpa login, tanpa instal aplikasi, tanpa batas unduhan harian"
+      ],
+      "steps": [
+        {
+          "name": "Salin link TikTok",
+          "text": "Buka video di TikTok, ketuk panah Bagikan, lalu Salin tautan. Bentuk tautannya tiktok.com/@user/video/… atau vm.tiktok.com/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link TikTok ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas, atau MP3 jika kamu hanya butuh suaranya."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     },
     "twitter-video-downloader": {
@@ -574,6 +608,24 @@
         "Bisa dipakai dengan URL twitter.com maupun x.com",
         "Tanpa login, tanpa kunci API Twitter, tanpa instal",
         "Lihat pratinjau video sebelum mengunduh"
+      ],
+      "steps": [
+        {
+          "name": "Salin link X",
+          "text": "Buka kiriman di X, ketuk ikon bagikan di bawahnya, lalu Salin tautan. Bentuk tautannya x.com/user/status/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link X ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas yang kamu mau."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     },
     "instagram-downloader": {
@@ -625,6 +677,24 @@
         "Ambil semua gambar dari carousel — satu per satu atau sebagai ZIP",
         "Tanpa login Instagram",
         "Hanya postingan publik — akun yang dikunci dan story tidak didukung"
+      ],
+      "steps": [
+        {
+          "name": "Salin link Instagram",
+          "text": "Buka reel atau kiriman di Instagram, ketuk ikon pesawat kertas, lalu Salin link. Di komputer, salin alamat dari bilah peramban. Bentuknya instagram.com/reel/… atau instagram.com/p/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link Instagram ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau. Untuk carousel, pilih gambar satu per satu atau simpan semuanya sebagai ZIP. Untuk reel, pilih kualitas."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     },
     "youtube-downloader": {
@@ -684,6 +754,24 @@
         "Ekstrak audio MP3 dari video apa saja",
         "Lihat pratinjau sebelum mengunduh",
         "Tanpa ekstensi browser, tanpa instal"
+      ],
+      "steps": [
+        {
+          "name": "Salin link YouTube",
+          "text": "Buka video atau Short di YouTube, ketuk Bagikan di bawahnya, lalu Salin. Bentuk tautannya youtu.be/… atau youtube.com/shorts/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link YouTube ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas, atau MP3 jika kamu hanya butuh suaranya."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     },
     "facebook-downloader": {
@@ -735,6 +823,24 @@
         "Bisa dipakai dengan link pendek fb.watch",
         "Hanya postingan publik — tanpa login, tanpa ekstensi",
         "Lihat pratinjau video sebelum mengunduh"
+      ],
+      "steps": [
+        {
+          "name": "Salin link Facebook",
+          "text": "Buka video atau reel publik di Facebook, ketuk Bagikan, lalu Salin tautan. Bentuk tautannya fb.watch/… atau facebook.com/reel/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link Facebook ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas, atau MP3 jika kamu hanya butuh suaranya."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     },
     "pinterest-downloader": {
@@ -794,6 +900,24 @@
         "Bisa dipakai dengan link pendek pin.it",
         "Tanpa login Pinterest, tanpa ekstensi, tanpa instal",
         "Lihat pratinjau media sebelum mengunduh"
+      ],
+      "steps": [
+        {
+          "name": "Salin link Pinterest",
+          "text": "Buka pin di Pinterest, ketuk Bagikan, lalu Salin tautan. Bentuk tautannya pin.it/… atau pinterest.com/pin/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link Pinterest ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas video atau gambar ukuran penuh."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     },
     "reddit-video-downloader": {
@@ -853,6 +977,24 @@
         "Bisa dipakai dengan permalink, link berbagi /s/, dan redd.it",
         "GIF yang di-host Reddit disimpan sebagai MP4",
         "Tanpa login, tanpa aplikasi, tanpa ekstensi"
+      ],
+      "steps": [
+        {
+          "name": "Salin link Reddit",
+          "text": "Buka kiriman di Reddit, ketuk Bagikan, lalu Salin tautan. Di komputer, salin alamat dari bilah peramban. Bentuknya reddit.com/r/…/comments/… atau v.redd.it/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link Reddit ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas yang kamu mau."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan. Video dan suaranya sudah digabung dalam satu file."
+        }
       ]
     },
     "threads-video-downloader": {
@@ -904,6 +1046,24 @@
         "Bisa dipakai dengan URL threads.net dan threads.com",
         "Tanpa login Threads atau Instagram",
         "Lihat pratinjau media sebelum mengunduh"
+      ],
+      "steps": [
+        {
+          "name": "Salin link Threads",
+          "text": "Buka kiriman di Threads, ketuk ikon pesawat kertas, lalu Salin link. Bentuk tautannya threads.net/@user/post/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link Threads ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas yang kamu mau."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     },
     "snapchat-downloader": {
@@ -955,6 +1115,24 @@
         "Format vertikal asli tetap terjaga",
         "Tanpa login Snapchat, tanpa aplikasi, tanpa ekstensi",
         "Hanya konten publik — snap yang dikunci tidak pernah diakses"
+      ],
+      "steps": [
+        {
+          "name": "Salin link Snapchat",
+          "text": "Buka Spotlight atau cerita publik di Snapchat, ketuk Bagikan, lalu Salin link. Bentuk tautannya snapchat.com/spotlight/… atau story.snapchat.com/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link Snapchat ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas yang kamu mau."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     },
     "twitch-clip-downloader": {
@@ -1006,6 +1184,24 @@
         "Bisa dipakai dengan clips.twitch.tv dan link klip channel",
         "Tanpa login Twitch, tanpa ekstensi, tanpa instal",
         "Lihat pratinjau klip sebelum mengunduh"
+      ],
+      "steps": [
+        {
+          "name": "Salin link Twitch",
+          "text": "Buka klip di Twitch, klik Bagikan, lalu Salin tautan. Bentuk tautannya clips.twitch.tv/… atau twitch.tv/channel/clip/…."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link Twitch ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas yang kamu mau."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     },
     "vimeo-downloader": {
@@ -1065,6 +1261,24 @@
         "Pilihan kualitas HD atau Data saver",
         "Tanpa login Vimeo, tanpa ekstensi, tanpa instal",
         "Lihat pratinjau video sebelum mengunduh"
+      ],
+      "steps": [
+        {
+          "name": "Salin link Vimeo",
+          "text": "Buka video di Vimeo, klik ikon Bagikan, lalu salin tautannya. Bentuk tautannya vimeo.com/123456789."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link Vimeo ke kotak di bagian atas halaman ini. Alat ini membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Lihat pratinjau, lalu pilih kualitas yang kamu mau."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
       ]
     }
   }

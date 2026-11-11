@@ -107,7 +107,8 @@
       "whyEyebrow": "Por que funciona",
       "seoTitle": "{brand} grátis — {tagline}",
       "formatsEyebrow": "Formatos de URL do {name} aceitos",
-      "faqTitle": "Downloader de {name} — Perguntas frequentes"
+      "faqTitle": "Downloader de {name} — Perguntas frequentes",
+      "stepsTitle": "Como baixar vídeos de {name}"
     },
     "support": {
       "compactTitle": "Este site é grátis e não tem limites.",
@@ -192,12 +193,9 @@
       "step3Name": "Baixe",
       "homeStep3": "Veja a prévia e baixe o vídeo em qualidade total, o áudio MP3 ou as imagens do carrossel, uma a uma ou em um ZIP.",
       "platformName": "Como baixar do {name}",
-      "platformDescription": "Salve qualquer vídeo, foto ou MP3 público do {name} em três passos — sem login, sem instalar nada.",
+      "platformDescription": "Salve qualquer vídeo, foto ou MP3 público do {name} em quatro passos — sem login, sem instalar nada.",
       "platformSupply": "A URL de um post público do {name}",
-      "platformTool": "Uma URL de post do {name}",
-      "platformStep1": "Abra o post do {name} e copie a URL de compartilhamento.",
-      "platformStep2": "Cole a URL no campo desta página e clique em Baixar.",
-      "platformStep3": "Veja a prévia e salve o vídeo em qualidade total, o MP3 ou as imagens."
+      "platformTool": "Uma URL de post do {name}"
     },
     "legal": {
       "shared": {
@@ -472,6 +470,24 @@
         "Ordena várias versões por resolução e escolhe a melhor já verificada",
         "Extração de MP3 em todo link resolvido como vídeo",
         "Receitas específicas por site que leem a página de embed quando a página de exibição está bloqueada"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do vídeo",
+          "text": "Abra a página que tem o vídeo. Copie o endereço da barra do navegador ou use o botão Compartilhar do site, se houver."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade ou o formato disponível."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve. Se a página não tiver vídeo público, a ferramenta avisa em vez de entregar um arquivo quebrado."
+        }
       ]
     },
     "tiktok-downloader": {
@@ -523,6 +539,24 @@
         "Salve carrosséis de fotos do TikTok — uma a uma ou em um ZIP",
         "Veja a prévia do vídeo e do áudio antes de baixar",
         "Sem login, sem instalar app, sem limite diário de downloads"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do TikTok",
+          "text": "Abra o vídeo no TikTok, toque na seta de Compartilhar e depois em Copiar link. O link é parecido com tiktok.com/@user/video/… ou vm.tiktok.com/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do TikTok na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade, ou o MP3 se quiser só o som."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     },
     "twitter-video-downloader": {
@@ -574,6 +608,24 @@
         "Funciona com URLs do twitter.com e do x.com",
         "Sem login, sem chave da API do Twitter, sem instalar nada",
         "Veja a prévia do vídeo antes de baixar"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do X",
+          "text": "Abra a publicação no X, toque no ícone de compartilhar abaixo dela e depois em Copiar link. O link é parecido com x.com/user/status/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do X na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade que quiser."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     },
     "instagram-downloader": {
@@ -625,6 +677,24 @@
         "Pegue todas as imagens de um carrossel — uma a uma ou em ZIP",
         "Sem login no Instagram",
         "Somente posts públicos — contas privadas e stories não são compatíveis"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do Instagram",
+          "text": "Abra o reel ou a publicação no Instagram, toque no ícone de avião de papel e depois em Copiar link. No computador, copie o endereço da barra do navegador. Ele é parecido com instagram.com/reel/… ou instagram.com/p/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do Instagram na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia. Em um carrossel, escolha imagens avulsas ou salve todas em um ZIP. Em um reel, escolha a qualidade."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     },
     "youtube-downloader": {
@@ -684,6 +754,24 @@
         "Extraia áudio MP3 de qualquer vídeo",
         "Veja a prévia antes de baixar",
         "Sem extensão de navegador, sem instalar nada"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do YouTube",
+          "text": "Abra o vídeo ou o Short no YouTube, toque em Compartilhar abaixo dele e depois em Copiar. O link é parecido com youtu.be/… ou youtube.com/shorts/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do YouTube na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade, ou o MP3 se quiser só o som."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     },
     "facebook-downloader": {
@@ -735,6 +823,24 @@
         "Funciona com links curtos fb.watch",
         "Somente posts públicos — sem login, sem extensão",
         "Veja a prévia do vídeo antes de baixar"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do Facebook",
+          "text": "Abra o vídeo ou reel público no Facebook, toque em Compartilhar e depois em Copiar link. O link é parecido com fb.watch/… ou facebook.com/reel/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do Facebook na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade, ou o MP3 se quiser só o som."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     },
     "pinterest-downloader": {
@@ -794,6 +900,24 @@
         "Funciona com links curtos pin.it",
         "Sem login no Pinterest, sem extensão, sem instalar nada",
         "Veja a prévia da mídia antes de baixar"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do Pinterest",
+          "text": "Abra o pin no Pinterest, toque em Compartilhar e depois em Copiar link. O link é parecido com pin.it/… ou pinterest.com/pin/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do Pinterest na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade do vídeo ou a imagem em tamanho original."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     },
     "reddit-video-downloader": {
@@ -853,6 +977,24 @@
         "Funciona com permalinks, links de compartilhamento /s/ e redd.it",
         "GIFs hospedados no Reddit salvos como MP4",
         "Sem login, sem app, sem extensão"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do Reddit",
+          "text": "Abra a publicação no Reddit, toque em Compartilhar e depois em Copiar link. No computador, copie o endereço da barra do navegador. Ele é parecido com reddit.com/r/…/comments/… ou v.redd.it/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do Reddit na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade que quiser."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve. O vídeo e o som vêm juntos em um só arquivo."
+        }
       ]
     },
     "threads-video-downloader": {
@@ -904,6 +1046,24 @@
         "Funciona com URLs do threads.net e do threads.com",
         "Sem login no Threads nem no Instagram",
         "Veja a prévia da mídia antes de baixar"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do Threads",
+          "text": "Abra a publicação no Threads, toque no ícone de avião de papel e depois em Copiar link. O link é parecido com threads.net/@user/post/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do Threads na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade que quiser."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     },
     "snapchat-downloader": {
@@ -955,6 +1115,24 @@
         "Formato vertical nativo preservado",
         "Sem login no Snapchat, sem app, sem extensão",
         "Somente conteúdo público — snaps privados nunca são acessados"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do Snapchat",
+          "text": "Abra o Spotlight ou a história pública no Snapchat, toque em Compartilhar e depois em Copiar link. O link é parecido com snapchat.com/spotlight/… ou story.snapchat.com/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do Snapchat na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade que quiser."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     },
     "twitch-clip-downloader": {
@@ -1006,6 +1184,24 @@
         "Funciona com clips.twitch.tv e links de clipes de canais",
         "Sem login na Twitch, sem extensão, sem instalar nada",
         "Veja a prévia do clipe antes de baixar"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do Twitch",
+          "text": "Abra o clipe na Twitch, clique em Compartilhar e depois em Copiar link. O link é parecido com clips.twitch.tv/… ou twitch.tv/canal/clip/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do Twitch na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade que quiser."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     },
     "vimeo-downloader": {
@@ -1065,6 +1261,24 @@
         "Escolha de qualidade HD ou Data saver",
         "Sem login no Vimeo, sem extensão, sem instalar nada",
         "Veja a prévia do vídeo antes de baixar"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do Vimeo",
+          "text": "Abra o vídeo no Vimeo, clique no ícone de Compartilhar e copie o link. O link é parecido com vimeo.com/123456789."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do Vimeo na caixa no topo desta página. A ferramenta lê o link e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Veja a prévia e escolha a qualidade que quiser."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
       ]
     }
   }
