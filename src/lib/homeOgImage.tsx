@@ -36,11 +36,11 @@ const PLATFORMS = [
   },
 ]
 
-export function renderHomeOgImage(locale: Locale = 'en') {
+/** The card itself, so satori (`renderHomeOgImage`) and Chrome (`scripts/og-ar.mjs`) draw one design. */
+export function homeOgCard(locale: Locale = 'en') {
   const copy = homeOgCopy(locale)
   const en = locale === 'en'
-  return new ImageResponse(
-    (
+  return (
       <div
         style={{
           width: '100%',
@@ -295,7 +295,11 @@ export function renderHomeOgImage(locale: Locale = 'en') {
           </div>
         </div>
       </div>
-    ),
-    homeOgSize,
   )
+}
+
+export function renderHomeOgImage(
+  locale: Locale = 'en'
+) {
+  return new ImageResponse(homeOgCard(locale), homeOgSize)
 }

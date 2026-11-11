@@ -1,5 +1,6 @@
 import { siteConfig } from '@/config/site'
 import { homeOgSize, renderHomeOgImage } from '@/lib/homeOgImage'
+import { arOgCardResponse } from '@/lib/arOgCards'
 import { ogCardLocale } from '@/lib/ogCopy'
 import { ROUTE_LOCALES } from '@/lib/localeRoutes'
 import { toRouteLocale } from '@/lib/routeLocale'
@@ -19,5 +20,7 @@ export default async function OpenGraphImage({
 }: {
   params: Promise<{ lang: string }>
 }) {
-  return renderHomeOgImage(ogCardLocale(toRouteLocale((await params).lang)))
+  const locale = toRouteLocale((await params).lang)
+  if (locale === 'ar') return arOgCardResponse('home')
+  return renderHomeOgImage(ogCardLocale(locale))
 }

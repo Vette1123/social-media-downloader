@@ -122,3 +122,4 @@ the index for exactly that.
 | 2026-11-11 | [Reddit through vxreddit](2026-11-11-reddit-through-vxreddit.md) | Before asking for new hosting, look for a public service whose egress is already where you need it |
 | 2026-11-11 | [Locale share cards](2026-11-11-locale-og-cards.md) | Satori draws Arabic letters but mis-orders RTL words: render the PNG and read it before shipping a script, and keep the English card where it fails. |
 | 2026-11-11 | [Instagram through the page relay](2026-11-11-instagram-page-relay.md) | Our egress gets 429 on the crawler view; the Deno relay gets 200. Relay the HTML (signed, Ed25519), never the extractor or the bytes. |
+| 2026-11-11 | [Arabic share cards, drawn by Chrome](2026-11-11-arabic-share-cards.md) | Satori can't lay out RTL; Chrome can. Render the same card element in headless Chrome, quantise, commit, and pin the copy with a hash. |
