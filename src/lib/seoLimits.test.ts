@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { contentFor } from '@/lib/localeContent'
 import { ROUTE_LOCALES } from '@/lib/localeRoutes'
+import { infoMetadata } from '@/lib/pageMetadata'
 
 // What a search result shows before it truncates, and the floor below which a
 // description wastes the room Google gives it.
@@ -21,4 +22,16 @@ describe.each(['en', ...ROUTE_LOCALES] as const)('search snippets fit (%s)', (lo
       )
     },
   )
+})
+
+// /pro, /privacy and /terms: the description is filled with the site name before
+// it ships, so measure the rendered text, not the template.
+describe.each(['en', ...ROUTE_LOCALES] as const)('info page snippets fit (%s)', (locale) => {
+  it.each(['pro', 'privacy', 'terms'] as const)('%s', (page) => {
+    const meta = infoMetadata(page, locale)
+    const title = typeof meta.title === 'string' ? meta.title : ''
+    expect(title.length, title).toBeLessThanOrEqual(MAX_TITLE)
+    expect(meta.description?.length, meta.description ?? '').toBeGreaterThanOrEqual(50)
+    expect(meta.description?.length, meta.description ?? '').toBeLessThanOrEqual(MAX_DESCRIPTION)
+  })
 })
