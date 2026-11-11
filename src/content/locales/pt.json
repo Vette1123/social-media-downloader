@@ -513,8 +513,8 @@
       ],
       "faqs": [
         {
-          "q": "Este downloader de TikTok é grátis?",
-          "a": "Sim — totalmente grátis, sem cadastro e sem limite diário de downloads."
+          "q": "O vídeo do TikTok baixado tem marca d’água?",
+          "a": "Este app não adiciona marca d’água nem logotipo. Ele salva o arquivo que o TikTok serve para o post público, sem recodificar, e não promete remover o que o próprio TikTok desenhou no vídeo."
         },
         {
           "q": "Qual a qualidade dos vídeos do TikTok baixados?",
@@ -742,10 +742,6 @@
         {
           "q": "Por que meu vídeo só carrega como prévia?",
           "a": "Alguns vídeos do YouTube restringem a extração gratuita. Nesse caso, a ferramenta recorre a uma prévia incorporada, para você ainda poder assistir ali mesmo."
-        },
-        {
-          "q": "Posso importar uma playlist inteira do YouTube?",
-          "a": "Sim. Os apoiadores colam o link da playlist uma vez; cada vídeo vira uma linha na fila de downloads, com os títulos reais e limite por execução. A fila é um dos extras para apoiadores — baixar vídeos um link por vez é grátis e ilimitado para todos."
         }
       ],
       "featureList": [
@@ -886,10 +882,6 @@
           "a": "Não. Só pins visíveis publicamente são acessados — sem login, sem extensão. Quadros privados e pins secretos ficam fora do escopo."
         },
         {
-          "q": "Por que o link do meu Pinterest não é processado?",
-          "a": "Confirme que o pin é público e que a URL é um link de pin (pinterest.com/pin/… ou pin.it/…). Alguns pins só apontam para um site externo e não têm mídia para baixar."
-        },
-        {
           "q": "Dá para fazer backup de um quadro inteiro do Pinterest?",
           "a": "Sim. Os apoiadores colam o link do quadro e cada pin vira uma linha da fila pelo feed RSS público do quadro, então imagens e vídeos são resolvidos juntos, sem copiar um link de cada vez."
         }
@@ -963,10 +955,6 @@
           "a": "Sim — os GIFs hospedados no Reddit chegam como MP4, e os crossposts são resolvidos até o vídeo hospedado original."
         },
         {
-          "q": "Preciso fazer login no Reddit?",
-          "a": "Não. Só posts visíveis publicamente são acessados — sem login, sem app, sem extensão."
-        },
-        {
           "q": "Dá para salvar todos os posts de um subreddit ou usuário?",
           "a": "Sim — os apoiadores colam o link do subreddit ou do perfil e ele se expande em links de posts individuais (só posts com mídia), depois é resolvido como uma fila. Posts só de texto são filtrados, em vez de falhar um por um."
         }
@@ -1024,8 +1012,8 @@
           "a": "Sim — cole a URL de um post público do Threads e a ferramenta resolve o vídeo para você ver a prévia e baixar o MP4."
         },
         {
-          "q": "Funciona com posts de foto?",
-          "a": "Sim. Fotos avulsas e posts de imagem são salvos em resolução total."
+          "q": "Funciona com posts de foto e carrosséis?",
+          "a": "Fotos únicas e posts de imagem são salvos em resolução total. Em um post com vários itens, a ferramenta lê a visualização incorporada e salva o vídeo ou a imagem principal que encontra, então um carrossel longo pode render apenas um item."
         },
         {
           "q": "Preciso de login no Threads ou no Instagram?",
@@ -1036,8 +1024,8 @@
           "a": "threads.net/@user/post/…, threads.com/@user/post/… e links curtos threads.net/t/… funcionam."
         },
         {
-          "q": "Por que o link do meu Threads não é processado?",
-          "a": "Confirme que o post é público e que a URL aponta para um único post. Perfis privados, posts apagados e posts só de texto (sem mídia) não podem ser acessados."
+          "q": "Qual a qualidade de um vídeo do Threads baixado e ele tem marca d’água?",
+          "a": "Você recebe o arquivo que o Threads serve para o post, salvo como está. O app não recodifica nem adiciona marca d’água, e a resolução é a que a pessoa enviou."
         }
       ],
       "featureList": [
@@ -1249,10 +1237,6 @@
         {
           "q": "Por que o link do meu Vimeo não é processado?",
           "a": "Confirme que o vídeo é público e que a URL é um link vimeo.com/<id>. Vídeos privados, protegidos por senha ou não listados com restrições não podem ser acessados."
-        },
-        {
-          "q": "Dá para pegar tudo de um canal do Vimeo?",
-          "a": "Sim — os apoiadores colam o link do canal ou do usuário, o feed de vídeos públicos se expande em linhas e a fila em lote resolve cada um na qualidade que você preferir."
         }
       ],
       "featureList": [

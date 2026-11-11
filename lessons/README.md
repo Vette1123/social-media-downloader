@@ -117,6 +117,7 @@ the index for exactly that.
 | 2026-11-10 | [An idle desktop tab painted 650 times a second](2026-11-10-idle-gpu-loops.md) | Never loop a gradient repaint; rotate a static layer, run decoration only under the pointer, and make a perf probe prove it measured the real page. |
 | 2026-11-10 | [Search Console SEO pass, and the Pro auto-reply](2026-11-10-search-console-seo-pass.md) | Title for the query with the impressions; JSON-LD through `jsonLdText`; auto-reply filters exclude `-subject:re -from:me`. |
 | 2026-11-10 | [SEO finish](2026-11-10-seo-finish.md) | `nofollow` is a hint: a URL you do not want crawled stays out of the HTML and is built at click time. |
+| 2026-11-11 | [Platform FAQ, and snippet bounds in every language](2026-11-11-platform-faq.md) | The FAQ already fed the page and the JSON-LD; grep for the existing field before building one, and bound titles and descriptions per locale. |
 | 2026-11-11 | [Platform how-to steps, brand entity](2026-11-11-platform-howto.md) | The HowTo JSON-LD and the visible steps come from one field; a heading with `{name}` must read right for "Any Site" too. |
 | 2026-11-11 | [Reddit through vxreddit](2026-11-11-reddit-through-vxreddit.md) | Before asking for new hosting, look for a public service whose egress is already where you need it |
 | 2026-11-11 | [Locale share cards](2026-11-11-locale-og-cards.md) | Satori draws Arabic letters but mis-orders RTL words: render the PNG and read it before shipping a script, and keep the English card where it fails. |
