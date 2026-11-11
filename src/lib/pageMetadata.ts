@@ -36,7 +36,11 @@ function pageMetadata({
   path: string
   title: string
   description: string
-  /** Localized pages share the English card: the image limit is `_headers`. */
+  /**
+   * Only for a card that is not the page's own opengraph-image file. The home
+   * and platform pages in every language have one (src/app/[lang]), which Next
+   * wires in itself, so they pass nothing.
+   */
   images?: { og: string; twitter: string }
 }): Metadata {
   const canonical = localePath(locale, path)
@@ -114,7 +118,6 @@ export function homeMetadata(locale: Exclude<Locale, 'en'>): Metadata {
     path: '/',
     title: home.metaTitle,
     description: home.metaDescription,
-    images: { og: '/opengraph-image', twitter: '/twitter-image' },
   })
 }
 
@@ -129,9 +132,5 @@ export function platformMetadata(
     path,
     title: platform.metaTitle,
     description: platform.metaDescription,
-    images:
-      locale === 'en'
-        ? undefined
-        : { og: `${path}/opengraph-image`, twitter: `${path}/twitter-image` },
   })
 }
