@@ -4266,7 +4266,7 @@ export class Downloader {
     const mediaId = instagramMediaId(shortcode)
     if (!mediaId) return null
     const pageUrl = `https://www.instagram.com/reel/${shortcode}/`
-    let page = { status: 0, html: '' }
+    let page = { status: 0, html: '', upstreamLocation: '', region: '' }
     // Instagram is rate-limiting this address. Asking again inside the window
     // buys a doomed 731 KB request and another mark against us, so the window
     // goes straight to the relay instead (lib/pageRelay.ts).
@@ -4284,7 +4284,13 @@ export class Downloader {
       if (!relayed) return null
       page = await this.getCrawlerPage(relayed)
       if (page.status !== 200) {
-        console.warn(`instagram crawler view: the page relay answered ${page.status} for ${shortcode}`)
+        // A 302 to /accounts/login/ is Instagram walling the relay's address,
+        // not the relay breaking; the relay says where and from which region.
+        console.warn(
+          `instagram crawler view: the page relay answered ${page.status} for ${shortcode}`,
+          `→ ${page.upstreamLocation || 'no location'}`,
+          `(region ${page.region || '?'})`,
+        )
       }
     }
     // Four different silences, and telling them apart from the outside is
@@ -4328,7 +4334,7 @@ export class Downloader {
   /** One crawler-view page, from Instagram itself or the relay that signs for it. */
   private async getCrawlerPage(
     url: string,
-  ): Promise<{ status: number; html: string }> {
+  ): Promise<{ status: number; html: string; upstreamLocation: string; region: string }> {
     const response = await http.get(url, {
       headers: {
         'User-Agent': LINK_CRAWLER_AGENT,
@@ -4340,6 +4346,9 @@ export class Downloader {
     return {
       status: response.status,
       html: typeof response.data === 'string' ? response.data : '',
+      // Only the relay sets these (reely-resolver-relay page.ts).
+      upstreamLocation: response.headers.get('x-upstream-location') ?? '',
+      region: response.headers.get('x-deno-region') ?? '',
     }
   }
 
