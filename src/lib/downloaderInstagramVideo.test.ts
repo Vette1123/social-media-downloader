@@ -846,6 +846,38 @@ describe('the crawler view through the page relay', () => {
     expect(seen[0].startsWith(PAGE_RELAY)).toBe(true)
   })
 
+  // Instagram login-walls the relay's address for minutes at a time; the relay
+  // passes the 302 through and says where it pointed. A bare "answered 302"
+  // in the Worker log could not tell that wall from a broken relay.
+  it('logs where a refused relay was sent, and from which region', async () => {
+    await keyPair()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | URL | Request) => {
+        const url = String(input instanceof Request ? input.url : input)
+        return url.startsWith(PAGE_RELAY)
+          ? new Response('', {
+              status: 302,
+              headers: {
+                'x-upstream-location': 'https://www.instagram.com/accounts/login/?next=%2Freel%2FDKcalTzoftf%2F',
+                'x-deno-region': 'ams',
+              },
+            })
+          : new Response('', { status: 429, headers: { 'content-type': 'text/html' } })
+      }),
+    )
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = await priv(new Downloader()).tryInstagramCrawlerView(
+      'DKcalTzoftf',
+      'https://www.instagram.com/reel/DKcalTzoftf/',
+    )
+    expect(result).toBeNull()
+    const relayLine = warn.mock.calls.map((c) => c.join(' ')).find((l) => l.includes('page relay'))
+    expect(relayLine).toContain('302')
+    expect(relayLine).toContain('/accounts/login/')
+    expect(relayLine).toContain('ams')
+  })
+
   it('never builds a relay url without a usable key', async () => {
     expect(await pageRelayUrl('https://www.instagram.com/reel/x/', undefined)).toBeNull()
     expect(await pageRelayUrl('https://www.instagram.com/reel/x/', '  ')).toBeNull()
