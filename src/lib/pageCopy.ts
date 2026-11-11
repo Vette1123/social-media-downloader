@@ -100,6 +100,7 @@ export const pageCopy = {
     seoTitle: 'Free {brand} — {tagline}',
     formatsEyebrow: 'Supported {name} URL formats',
     faqTitle: '{name} downloader — Frequently asked questions',
+    stepsTitle: 'How to download {name} videos',
   },
   support: {
     compactTitle: 'This site is free and has no limits.',
@@ -144,13 +145,9 @@ export const pageCopy = {
       'Preview, then download the full-quality video, MP3 audio, or carousel images individually or as a ZIP.',
     platformName: 'How to download from {name}',
     platformDescription:
-      'Save any public {name} video, photo, or MP3 in three steps — no login, no install.',
+      'Save any public {name} video, photo, or MP3 in four steps — no login, no install.',
     platformSupply: 'A public {name} post URL',
     platformTool: 'A {name} post URL',
-    platformStep1: 'Open the {name} post and copy the share URL.',
-    platformStep2:
-      'Paste the URL into the input on this page and click Process URL.',
-    platformStep3: 'Preview, then save the full-quality video, MP3, or images.',
   },
 }
 

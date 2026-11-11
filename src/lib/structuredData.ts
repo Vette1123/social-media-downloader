@@ -20,6 +20,9 @@ const ogImage = siteConfig.ogImage
 const datePublished = `${siteConfig.foundingYear}-01-01`
 const dateModified = contentDay
 
+// Short name first, then the bare domain people type into a search box.
+const ALTERNATE_NAMES = [siteConfig.shortName, 'socialdownloader.space']
+
 const personNode = {
   '@type': 'Person',
   '@id': `${siteConfig.url}/#person`,
@@ -38,7 +41,7 @@ const organizationNode = {
   '@type': 'Organization',
   '@id': `${siteConfig.url}/#organization`,
   name: siteConfig.name,
-  alternateName: siteConfig.shortName,
+  alternateName: ALTERNATE_NAMES,
   url: siteConfig.url,
   logo: {
     '@type': 'ImageObject',
@@ -50,11 +53,9 @@ const organizationNode = {
   image: ogImage,
   founder: { '@id': `${siteConfig.url}/#person` },
   foundingDate: datePublished,
-  sameAs: [
-    siteConfig.links.twitter,
-    siteConfig.links.github,
-    siteConfig.links.portfolio,
-  ],
+  // The product's own profiles only. The founder's links live on the Person,
+  // or Google reads the brand as that person.
+  sameAs: [siteConfig.links.github],
 }
 
 const websiteNode = {
@@ -62,7 +63,7 @@ const websiteNode = {
   '@id': `${siteConfig.url}/#website`,
   url: siteConfig.url,
   name: siteConfig.name,
-  alternateName: siteConfig.shortName,
+  alternateName: ALTERNATE_NAMES,
   description: siteConfig.description,
   inLanguage: LOCALES,
   publisher: { '@id': `${siteConfig.url}/#organization` },
@@ -187,7 +188,7 @@ function localizedUrl(locale: Locale, path: string): string {
   return localized === '/' ? siteConfig.url : `${siteConfig.url}${localized}`
 }
 
-/** The three steps every page tells, differing only in the words. */
+/** The steps a page tells: three on the home page, the platform's own on its page. */
 function howToNode({
   url,
   locale,
@@ -204,10 +205,9 @@ function howToNode({
   description: string
   supply: string
   tool: string
-  steps: [string, string, string]
+  steps: Array<{ name: string; text: string }>
   howTo: PageCopy['howTo']
 }) {
-  const stepNames = [howTo.step1Name, howTo.step2Name, howTo.step3Name]
   // The home page's anchors sit on the bare origin, a platform's on its own URL.
   const anchor = url === siteConfig.url ? `${url}/` : url
   return {
@@ -228,10 +228,10 @@ function howToNode({
       { '@type': 'HowToTool', name: howTo.browserTool },
       { '@type': 'HowToTool', name: tool },
     ],
-    step: steps.map((text, i) => ({
+    step: steps.map(({ name, text }, i) => ({
       '@type': 'HowToStep',
       position: i + 1,
-      name: stepNames[i],
+      name,
       text,
       url: `${anchor}#step-${i + 1}`,
     })),
@@ -261,7 +261,11 @@ export function homepageStructuredData(locale: Locale = 'en') {
         description: howTo.homeDescription,
         supply: howTo.homeSupply,
         tool: howTo.homeTool,
-        steps: [howTo.homeStep1, howTo.homeStep2, howTo.homeStep3],
+        steps: [
+          { name: howTo.step1Name, text: howTo.homeStep1 },
+          { name: howTo.step2Name, text: howTo.homeStep2 },
+          { name: howTo.step3Name, text: howTo.homeStep3 },
+        ],
         howTo,
       }),
       faqPageNode(`${url}#faq`, homeFaqs, locale),
@@ -279,11 +283,7 @@ function platformHowToNode(p: Platform, url: string, locale: Locale) {
     description: fill(howTo.platformDescription, vars),
     supply: fill(howTo.platformSupply, vars),
     tool: fill(howTo.platformTool, vars),
-    steps: [
-      fill(howTo.platformStep1, vars),
-      howTo.platformStep2,
-      howTo.platformStep3,
-    ],
+    steps: p.steps,
     howTo,
   })
 }

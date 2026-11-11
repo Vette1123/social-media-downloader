@@ -21,6 +21,7 @@ export type PlatformText = Pick<
   | 'cards'
   | 'faqs'
   | 'featureList'
+  | 'steps'
 >
 
 export interface LocaleContent {
