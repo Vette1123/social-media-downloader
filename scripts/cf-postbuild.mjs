@@ -25,6 +25,7 @@
 import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, posix, relative, sep } from 'node:path'
+import { imageHeaderRules } from './headerRules.mjs'
 
 const OUT_DIR = 'out'
 
@@ -264,21 +265,15 @@ function buildHeaders(files) {
   rules.push(['/_next/static/*', [`Cache-Control: ${IMMUTABLE_CACHE}`]])
   rules.push(['/promo/*', [`Cache-Control: ${IMAGE_CACHE}`]])
 
-  // Extension-less PNGs, listed individually. A splat would be shorter, but
-  // these paths interleave with real routes (`/tiktok-downloader` is a page,
-  // `/tiktok-downloader/opengraph-image` is an image), so a wrong pattern would
-  // hand an HTML page an image/png Content-Type.
+  // Extension-less PNGs. Share cards collapse into placeholder rules, the
+  // rest are listed one by one: see scripts/headerRules.mjs.
   const images = files
     .filter((file) => !/\.[a-z0-9]+$/i.test(file) && isPng(file))
     .map(toUrlPath)
-    .sort()
 
-  for (const url of images) {
-    rules.push([
-      url,
-      [`Content-Type: image/png`, `Cache-Control: ${IMAGE_CACHE}`],
-    ])
-  }
+  rules.push(
+    ...imageHeaderRules(images, [`Content-Type: image/png`, `Cache-Control: ${IMAGE_CACHE}`]),
+  )
 
   if (rules.length > MAX_HEADER_RULES) {
     fail(`_headers would define ${rules.length} rules; the limit is ${MAX_HEADER_RULES}.`)
