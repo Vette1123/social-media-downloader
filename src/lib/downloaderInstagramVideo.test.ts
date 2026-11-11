@@ -11,6 +11,7 @@ import {
   resetInstagramCrawlerCooldown,
   stillsAreJustTheCover,
 } from './downloader'
+import { PAGE_RELAY, pageRelayUrl } from './pageRelay'
 
 /**
  * The defect this file exists for: paste a reel link, download a JPEG.
@@ -761,5 +762,94 @@ describe('the chain a reel rides', () => {
     )
     expect(result.images?.length).toBe(2)
     expect(fetchSpy.mock.calls.map((c) => String(c[0])).some((u) => u.includes('/embed/captioned/'))).toBe(true)
+  })
+})
+
+/**
+ * Production's egress gets 429 on the crawler view; the Deno relay gets 200 for
+ * the same URL (measured 2026-11-11). A 429 used to end the chain for ten
+ * minutes; now that window is served through the relay, signed so the relay is
+ * nobody else's proxy.
+ */
+describe('the crawler view through the page relay', () => {
+  const b64url = (b: ArrayBuffer) => Buffer.from(b).toString('base64url')
+  const relayPage = (mediaId: string) =>
+    `<html><head><meta property="og:title" content="Martin Garrix on Instagram: &quot;hi&quot;" /></head>` +
+    `<body><script type="application/json">{"pk":"${mediaId}","video_versions":[{"type":101,"url":"https:\/\/cdn.example\/clip.mp4"}]}</script></body></html>`
+
+  async function keyPair() {
+    const pair = (await crypto.subtle.generateKey({ name: 'Ed25519' }, true, [
+      'sign',
+      'verify',
+    ])) as CryptoKeyPair
+    vi.stubEnv('PAGE_RELAY_KEY', b64url(await crypto.subtle.exportKey('pkcs8', pair.privateKey)))
+    return pair.publicKey
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    resetInstagramCrawlerCooldown()
+  })
+
+  it('asks the relay, signed, when Instagram answers this address 429', async () => {
+    const publicKey = await keyPair()
+    const seen: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | URL | Request) => {
+        const url = String(input instanceof Request ? input.url : input)
+        seen.push(url)
+        return url.startsWith(PAGE_RELAY)
+          ? new Response(relayPage('3646906711360535391'), { status: 200, headers: { 'content-type': 'text/html' } })
+          : new Response('', { status: 429, headers: { 'content-type': 'text/html' } })
+      }),
+    )
+
+    const result = await priv(new Downloader()).tryInstagramCrawlerView(
+      'DKcalTzoftf',
+      'https://www.instagram.com/reel/DKcalTzoftf/',
+    )
+    expect(result?.downloadUrl).toBe('https://cdn.example/clip.mp4')
+    expect(seen).toHaveLength(2)
+
+    const relayed = new URL(seen[1])
+    const u = relayed.searchParams.get('u')!
+    expect(u).toBe('https://www.instagram.com/reel/DKcalTzoftf/')
+    const ok = await crypto.subtle.verify(
+      'Ed25519',
+      publicKey,
+      Buffer.from(relayed.searchParams.get('sig')!, 'base64url'),
+      new TextEncoder().encode(`${u}|${relayed.searchParams.get('exp')}`),
+    )
+    expect(ok).toBe(true)
+  })
+
+  it('goes straight to the relay while this address is cooling down', async () => {
+    await keyPair()
+    const seen: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: string | URL | Request) => {
+        const url = String(input instanceof Request ? input.url : input)
+        seen.push(url)
+        return url.startsWith(PAGE_RELAY)
+          ? new Response(relayPage('3646906711360535391'), { status: 200, headers: { 'content-type': 'text/html' } })
+          : new Response('', { status: 429, headers: { 'content-type': 'text/html' } })
+      }),
+    )
+    const d = priv(new Downloader())
+    await d.tryInstagramCrawlerView('DKcalTzoftf', 'https://www.instagram.com/reel/DKcalTzoftf/')
+    seen.length = 0
+    const again = await d.tryInstagramCrawlerView('DKcalTzoftf', 'https://www.instagram.com/reel/DKcalTzoftf/')
+    expect(again?.downloadUrl).toBe('https://cdn.example/clip.mp4')
+    expect(seen).toHaveLength(1)
+    expect(seen[0].startsWith(PAGE_RELAY)).toBe(true)
+  })
+
+  it('never builds a relay url without a usable key', async () => {
+    expect(await pageRelayUrl('https://www.instagram.com/reel/x/', undefined)).toBeNull()
+    expect(await pageRelayUrl('https://www.instagram.com/reel/x/', '  ')).toBeNull()
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(await pageRelayUrl('https://www.instagram.com/reel/x/', 'not-a-key')).toBeNull()
   })
 })

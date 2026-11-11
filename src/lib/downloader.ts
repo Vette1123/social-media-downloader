@@ -1,4 +1,5 @@
 import { http } from './httpClient'
+import { pageRelayUrl } from './pageRelay'
 import {
   decodeEntities,
   firstTagAttr,
@@ -4264,35 +4265,38 @@ export class Downloader {
   ): Promise<VideoData | null> {
     const mediaId = instagramMediaId(shortcode)
     if (!mediaId) return null
+    const pageUrl = `https://www.instagram.com/reel/${shortcode}/`
+    let page = { status: 0, html: '' }
     // Instagram is rate-limiting this address. Asking again inside the window
-    // buys a doomed 731 KB request and another mark against us.
-    if (instagramCrawlerCoolingDown()) return null
-
-    const response = await http.get(
-      `https://www.instagram.com/reel/${shortcode}/`,
-      {
-        headers: {
-          'User-Agent': LINK_CRAWLER_AGENT,
-          Accept: 'text/html,application/xhtml+xml',
-        },
-        timeout: 20000,
-        validateStatus: () => true,
-      },
-    )
+    // buys a doomed 731 KB request and another mark against us, so the window
+    // goes straight to the relay instead (lib/pageRelay.ts).
+    if (!instagramCrawlerCoolingDown()) {
+      page = await this.getCrawlerPage(pageUrl)
+      if (page.status === 429) {
+        instagramCrawlerBlockedUntil = Date.now() + IG_CRAWLER_COOLDOWN_MS
+        console.warn(
+          `instagram crawler view: ${shortcode} answered 429 — rate limited, holding off for ${IG_CRAWLER_COOLDOWN_MS / 60000} minutes`,
+        )
+      }
+    }
+    if (instagramCrawlerCoolingDown()) {
+      const relayed = await pageRelayUrl(pageUrl, process.env.PAGE_RELAY_KEY)
+      if (!relayed) return null
+      page = await this.getCrawlerPage(relayed)
+      if (page.status !== 200) {
+        console.warn(`instagram crawler view: the page relay answered ${page.status} for ${shortcode}`)
+      }
+    }
     // Four different silences, and telling them apart from the outside is
     // impossible — which is exactly the trap the 2026-08-13 lesson names about
     // a `doc_id` that started failing with a 200. One line, once, per failure.
-    const html = typeof response.data === 'string' ? response.data : ''
-    if (response.status !== 200 || !html) {
-      if (response.status === 429) {
-        instagramCrawlerBlockedUntil = Date.now() + IG_CRAWLER_COOLDOWN_MS
+    const { html } = page
+    if (page.status !== 200 || !html) {
+      if (page.status !== 429) {
+        console.warn(
+          `instagram crawler view: ${shortcode} answered ${page.status}, ${html.length} chars`,
+        )
       }
-      console.warn(
-        `instagram crawler view: ${shortcode} answered ${response.status}, ${html.length} chars`,
-        response.status === 429
-          ? `— rate limited, holding off for ${IG_CRAWLER_COOLDOWN_MS / 60000} minutes`
-          : '',
-      )
       return null
     }
 
@@ -4318,6 +4322,24 @@ export class Downloader {
       description: caption,
       downloadUrl: found.videoUrl,
       isPhotoCarousel: false,
+    }
+  }
+
+  /** One crawler-view page, from Instagram itself or the relay that signs for it. */
+  private async getCrawlerPage(
+    url: string,
+  ): Promise<{ status: number; html: string }> {
+    const response = await http.get(url, {
+      headers: {
+        'User-Agent': LINK_CRAWLER_AGENT,
+        Accept: 'text/html,application/xhtml+xml',
+      },
+      timeout: 20000,
+      validateStatus: () => true,
+    })
+    return {
+      status: response.status,
+      html: typeof response.data === 'string' ? response.data : '',
     }
   }
 
