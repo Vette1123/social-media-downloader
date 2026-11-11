@@ -287,7 +287,7 @@ Setting this up for a fork or self-hosted deployment, in order:
    (`wrangler d1 migrations apply <name> --remote` — use this rather than
    executing the SQL files directly, or the `d1_migrations` bookkeeping table
    will disagree with the schema and later migrations will fail), add the `DB`
-   binding in `wrangler.jsonc`, then set the five secrets above with
+   binding in `wrangler.jsonc`, then set the secrets above with
    `pnpm cf:setup` (reads `.env`) or `wrangler secret put`.
 
    Order matters for one of them: do not put live checkout URLs in
