@@ -118,3 +118,4 @@ the index for exactly that.
 | 2026-11-10 | [Search Console SEO pass, and the Pro auto-reply](2026-11-10-search-console-seo-pass.md) | Title for the query with the impressions; JSON-LD through `jsonLdText`; auto-reply filters exclude `-subject:re -from:me`. |
 | 2026-11-10 | [SEO finish](2026-11-10-seo-finish.md) | `nofollow` is a hint: a URL you do not want crawled stays out of the HTML and is built at click time. |
 | 2026-11-11 | [Platform how-to steps, brand entity](2026-11-11-platform-howto.md) | The HowTo JSON-LD and the visible steps come from one field; a heading with `{name}` must read right for "Any Site" too. |
+| 2026-11-11 | [Reddit through vxreddit](2026-11-11-reddit-through-vxreddit.md) | Before asking for new hosting, look for a public service whose egress is already where you need it |
