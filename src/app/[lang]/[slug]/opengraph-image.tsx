@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { arOgCardResponse } from '@/lib/arOgCards'
 import { ogCardLocale } from '@/lib/ogCopy'
 import {
   ogImageContentType,
@@ -30,5 +31,7 @@ function toSlug(slug: string): PlatformSlug {
 
 export default async function OpenGraphImage({ params }: Props) {
   const { lang, slug } = await params
-  return renderPlatformOgImage(toSlug(slug), ogCardLocale(toRouteLocale(lang)))
+  const locale = toRouteLocale(lang)
+  if (locale === 'ar') return arOgCardResponse(toSlug(slug))
+  return renderPlatformOgImage(toSlug(slug), ogCardLocale(locale))
 }

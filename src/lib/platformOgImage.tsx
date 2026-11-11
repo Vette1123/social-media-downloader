@@ -77,15 +77,15 @@ const PLATFORM_GLYPHS: Record<PlatformSlug, PlatformGlyph> = {
   },
 }
 
-export function renderPlatformOgImage(
+/** The card itself, so satori (`renderPlatformOgImage`) and Chrome (`scripts/og-ar.mjs`) draw one design. */
+export function platformOgCard(
   slug: PlatformSlug,
   locale: Locale = 'en',
 ) {
   const copy = platformOgCopy(locale, slug)
   const glyph = PLATFORM_GLYPHS[slug]
 
-  return new ImageResponse(
-    (
+  return (
       <div
         style={{
           width: '100%',
@@ -294,7 +294,12 @@ export function renderPlatformOgImage(
           </div>
         </div>
       </div>
-    ),
-    ogImageSize,
   )
+}
+
+export function renderPlatformOgImage(
+  slug: PlatformSlug,
+  locale: Locale = 'en',
+) {
+  return new ImageResponse(platformOgCard(slug, locale), ogImageSize)
 }

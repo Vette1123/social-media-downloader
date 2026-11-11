@@ -13,10 +13,11 @@ export interface OgCopy {
 }
 
 /**
- * The language a share card is drawn in. Arabic stays on the English card:
- * satori shapes the letters but mis-orders the words of a right-to-left line
- * (checked on a rendered card 2026-11-11), and a broken card is worse than a
- * foreign one. Upgrade path: drop this once satori lays out RTL runs.
+ * The language satori draws a share card in. Arabic never reaches satori: it
+ * shapes the letters but mis-orders the words of a right-to-left line (checked
+ * on a rendered card 2026-11-11), so the `[lang]` image routes serve the
+ * Chrome-drawn PNGs from `pnpm og:ar` for `ar` instead (lib/arOgCards.ts).
+ * This English fallback only guards a caller that skips that branch.
  */
 export function ogCardLocale(locale: Locale): Locale {
   return locale === 'ar' ? 'en' : locale
