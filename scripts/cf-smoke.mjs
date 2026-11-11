@@ -33,6 +33,8 @@
  * Exits non-zero if any check fails, so it can gate a deploy.
  */
 
+import { createPacer } from './lib/request-pacer.mjs'
+
 /**
  * The canonical origin, because it is the only one that serves the whole app.
  *
@@ -76,6 +78,10 @@ const BASE = (args.find((a) => a.startsWith('http')) ?? DEFAULT_BASE).replace(/\
 // is not being deliberately stress-tested (which would prove nothing about the
 // per-request CPU budget).
 const CONCURRENCY = 6
+// The zone allows 30 /api/download requests per 10 s per IP
+// (scripts/cf-setup.mjs). 24 leaves room for anything else this IP sends.
+const paceExtractor = createPacer({ limit: 24, windowMs: 10_000 })
+const isExtractorPath = (pathname) => pathname.startsWith('/api/download')
 
 const C = {
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
@@ -477,6 +483,7 @@ function buildChecks() {
         let payload = null
         for (let attempt = 0; attempt < 5; attempt++) {
           if (attempt > 0) await new Promise((r) => setTimeout(r, 150))
+          await paceExtractor()
           const repeat = await fetch(`${BASE}/api/download`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -943,6 +950,8 @@ const THIRD_PARTY_IS_ADVISORY = Boolean(process.env.CI) && !process.env.SMOKE_ST
 
 async function runCheck(check) {
   const { pathname, method = 'GET', json, timeoutMs = 20_000 } = check.request
+  // Before the timer starts, so waiting for a slot is not counted as latency.
+  if (isExtractorPath(pathname)) await paceExtractor()
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   const started = Date.now()
