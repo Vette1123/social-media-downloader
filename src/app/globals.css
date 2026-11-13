@@ -942,3 +942,8 @@ html[data-pro] [data-free-only] {
 html:not([data-pro]) [data-pro-only] {
   display: none !important;
 }
+/* Recent's box before hydration, at the height it last rendered at. The head
+   script in src/lib/recentReserve.ts sets the mark and --recent-h. */
+html:not([data-recent]) [data-recent-slot] {
+  display: none !important;
+}

@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google'
 import './globals.css'
 import { siteConfig } from '@/config/site'
 import { proFlagScript } from '@/lib/proFlag'
+import { recentReserveScript } from '@/lib/recentReserve'
 import { pageCopy } from '@/lib/pageCopy'
 import { versionedIcon } from '@/lib/appIcon'
 import { globalStructuredData, jsonLdText } from '@/lib/structuredData'
@@ -216,6 +217,9 @@ export default function RootLayout({
         {/* Supporter mark before paint: free-only elements are never painted
             for a supporter, instead of painted and pulled out. See proFlag.ts. */}
         <script dangerouslySetInnerHTML={{ __html: proFlagScript }} />
+        {/* Recent's height, reserved before paint for a returning visitor.
+            See recentReserve.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: recentReserveScript }} />
         <script
           type='application/ld+json'
           dangerouslySetInnerHTML={{

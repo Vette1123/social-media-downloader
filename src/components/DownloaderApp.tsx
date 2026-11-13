@@ -54,6 +54,7 @@ import {
   formatDate,
   nowMs,
   useHasFinePointer,
+  useHydrated,
   useIsIOSLike,
 } from '@/lib/clientEnv'
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
@@ -132,6 +133,7 @@ import {
   subscribeHistory,
   type HistoryEntry,
 } from '@/lib/history'
+import { rememberRecentHeight } from '@/lib/recentReserve'
 import { saveBlob, saveMedia } from '@/lib/blobSaver'
 import { isStaleLinkError, isTransientError, withRetry } from '@/lib/retry'
 import { imageSaveStep } from '@/lib/imageSaves'
@@ -1073,6 +1075,26 @@ export function DownloaderApp() {
   if (recentWanted && !recentRevealed) setRecentRevealed(true)
   if (history.length === 0 && recentRevealed) setRecentRevealed(false)
   const showRecent = history.length > 0 && (recentRevealed || recentWanted)
+  // Recent is not in the static HTML (it lives in localStorage), so until
+  // hydration an empty slot holds its last measured height; see recentReserve.
+  const hydrated = useHydrated()
+  // A list already stored at boot appears with the page instead of fading in on
+  // every refresh. The fade is for a list that starts during this visit.
+  const [recentFadesIn] = useState(
+    () => typeof window === 'undefined' || getHistorySnapshot().length === 0,
+  )
+  const recentRef = useRef<HTMLDivElement>(null)
+  // Only the collapsed list is measured: that is what the next visit boots into.
+  const recentCollapsed = !showAllHistory && !historyQuery.trim()
+  useEffect(() => {
+    const el = recentRef.current
+    if (!showRecent || !recentCollapsed || !el || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() =>
+      rememberRecentHeight(window.innerWidth, el.offsetHeight),
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [showRecent, recentCollapsed])
 
   // iPhone/iPad Safari: downloads land in Files, not the camera roll, so we show
   // a one-line "save to Photos" hint on video results. Set once on mount.
@@ -2988,10 +3010,20 @@ export function DownloaderApp() {
           it's least useful. A resolve in flight makes it inert rather than
           removing it, so it can't be re-tapped mid-request and the result
           below doesn't jump when it comes back. Tap to re-resolve. */}
+      {!showRecent && !hydrated && (
+        <div
+          data-recent-slot
+          aria-hidden
+          className='mt-4'
+          style={{ height: 'var(--recent-h)' }}
+        />
+      )}
       {showRecent && (
         <div
+          ref={recentRef}
+          data-recent-list
           inert={state.loading}
-          className={`ph-no-capture animate-section-in mt-4 transition-opacity duration-200 ${state.loading ? 'opacity-50' : ''}`}
+          className={`ph-no-capture ${recentFadesIn ? 'animate-section-in' : ''} mt-4 transition-opacity duration-200 ${state.loading ? 'opacity-50' : ''}`}
         >
           <div className='mb-2 flex items-center justify-between'>
             <span className='flex items-center gap-1.5 text-xs font-medium text-white/50'>

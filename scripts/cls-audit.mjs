@@ -256,10 +256,12 @@ async function measure(cdp, origin, route, scenario, viewport) {
     await load(() => s('Page.reload', { ignoreCache: false }))
     const { result } = await s('Runtime.evaluate', {
       expression:
-        "JSON.stringify({ shifts: window.__shifts || [], pro: document.documentElement.hasAttribute('data-pro') })",
+        "JSON.stringify({ shifts: window.__shifts || [], pro: document.documentElement.hasAttribute('data-pro'), " +
+        "reserved: document.documentElement.hasAttribute('data-recent') ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--recent-h')) : 0, " +
+        "list: Math.round(document.querySelector('[data-recent-list]')?.getBoundingClientRect().height ?? 0) })",
       returnByValue: true,
     })
-    const { shifts, pro } = JSON.parse(result.value)
+    const { shifts, pro, reserved, list } = JSON.parse(result.value)
     // The detector proves itself on every run: a block pushed in at the top must
     // register, or a 0 above means "could not see", not "did not move".
     const probe = await s('Runtime.evaluate', {
@@ -276,7 +278,7 @@ async function measure(cdp, origin, route, scenario, viewport) {
       returnByValue: true,
     })
     if (!(probe.result.value > 0)) throw new Error(`detector saw no shift from a 300px insert on ${route}`)
-    return { cls: shifts.reduce((a, x) => a + x.value, 0), shifts, pro, apiCalls: [...apiCalls] }
+    return { cls: shifts.reduce((a, x) => a + x.value, 0), shifts, pro, reserved, list, apiCalls: [...apiCalls] }
   } finally {
     cdp.off(handler)
     await cdp.send('Target.closeTarget', { targetId }).catch(() => {})
@@ -309,6 +311,13 @@ try {
         // A supporter run that did not boot as one would pass for the wrong reason.
         if (r.pro !== scenario.pro) failures.push(`${route} ${scenarioName}: page booted as ${r.pro ? 'pro' : 'free'}`)
         const tag = `${route} ${scenarioName} ${viewportName}`
+        // Recent is not in the static HTML. Before paint, the head script must
+        // reserve exactly the height the list renders at (src/lib/recentReserve.ts);
+        // a fast machine hydrates before painting and would hide a missing reserve.
+        if (scenario.storage['smd:history:v1'] && (r.list === 0 || Math.abs(r.reserved - r.list) > 1)) {
+          failures.push(`${tag}: Recent reserved ${r.reserved}px before paint, rendered ${r.list}px`)
+          console.log(`FAIL Recent reserve ${r.reserved}px vs list ${r.list}px  ${tag}`)
+        }
         const verdict = r.cls > MAX ? 'FAIL' : 'ok  '
         console.log(`${verdict} ${r.cls.toFixed(4)}  ${tag}`)
         if (r.cls > MAX) {
@@ -334,7 +343,7 @@ try {
 
 if (unanswered.size) console.log(`cls-audit: /api calls answered 404 (not part of this audit): ${[...unanswered].join(', ')}`)
 if (failures.length) {
-  console.error(`cls-audit: ${failures.length}/${runs} runs shifted more than ${MAX}`)
+  console.error(`cls-audit: ${failures.length}/${runs} runs failed (layout shift over ${MAX}, or a Recent reserve that does not match the list)`)
   process.exit(1)
 }
 console.log(`cls-audit: ${runs}/${runs} runs within ${MAX} (${ROUTES.length} routes x ${Object.keys(SCENARIOS).length} visitors x ${Object.keys(VIEWPORTS).length} viewports, measured on reload)`)

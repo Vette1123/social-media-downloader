@@ -9,6 +9,7 @@
 // no-op if storage is unavailable (private mode, quota, disabled).
 
 import type { SupportedPlatform } from '@/lib/validator'
+import { forgetRecentHeight } from '@/lib/recentReserve'
 
 export interface HistoryEntry {
   /** Stable key — the original post URL. */
@@ -266,6 +267,7 @@ let cache: HistoryEntry[] | null = null
 
 function commit(next: HistoryEntry[]): void {
   cache = next
+  if (next.length === 0) forgetRecentHeight()
   for (const listener of listeners) listener()
 }
 
