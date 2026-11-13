@@ -108,6 +108,13 @@ jobs:
       - name: SEO check (build)
         run: node scripts/seo-verify.mjs
 
+      # Reloads the built home page (LTR and RTL) as a free, a returning and a
+      # supporter visitor on a throttled phone and fails on any layout shift.
+      # The full sweep is `pnpm cls --routes ...`; this is the slice that runs
+      # on every push (about 3 min).
+      - name: Layout shift check (build)
+        run: node scripts/cls-audit.mjs --routes /,/ar --settle 3000
+
       # Compares each built page with the one live now, before the deploy replaces it,
       # so the ping below sends only the pages whose content changed.
       - name: Plan IndexNow (built pages vs live)

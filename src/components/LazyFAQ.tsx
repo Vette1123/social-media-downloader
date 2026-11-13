@@ -1,7 +1,6 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
+import { type ComponentType, useEffect, useRef, useState } from 'react'
 import { ChevronDownIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
 
@@ -33,15 +32,18 @@ interface InteractiveFAQProps {
   defaultOpenIndex?: number
 }
 
-// One dynamic import for the whole accordion module + the icon. ssr:false keeps
-// their JS out of the initial bundle entirely.
-const InteractiveFAQ = dynamic<InteractiveFAQProps>(
-  () => import('./InteractiveFAQ').then((m) => m.InteractiveFAQ),
-  {
-    ssr: false,
-    loading: () => null, // the native fallback below stays visible during load
-  },
-)
+/**
+ * The accordion module, fetched before anything on screen changes.
+ *
+ * next/dynamic renders its `loading` slot while the chunk downloads, and the
+ * fallback had to be gone by then, so the whole FAQ collapsed to nothing and
+ * came back: a 1,100 px shift under anyone scrolling toward it. The component
+ * is now held in state and set only once its module has arrived, so the swap
+ * is one render, fallback out and accordion in.
+ */
+export function loadInteractiveFAQ(): Promise<ComponentType<InteractiveFAQProps>> {
+  return import('./InteractiveFAQ').then((m) => m.InteractiveFAQ)
+}
 
 export function LazyFAQ({
   items,
@@ -50,7 +52,7 @@ export function LazyFAQ({
   items: FaqItem[]
   defaultOpenIndex?: number
 }) {
-  const [interactive, setInteractive] = useState(false)
+  const [Interactive, setInteractive] = useState<ComponentType<InteractiveFAQProps> | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -60,7 +62,11 @@ export function LazyFAQ({
       opened = true
       cleanup()
       const ric = idleCb()
-      ric(() => setInteractive(true))
+      ric(() => {
+        loadInteractiveFAQ()
+          .then((faq) => setInteractive(() => faq))
+          .catch(() => {}) // the native <details> below keeps working
+      })
     }
 
     let io: IntersectionObserver | null = null
@@ -88,13 +94,10 @@ export function LazyFAQ({
 
   return (
     <div ref={ref}>
-      {interactive && (
-        <InteractiveFAQ items={items} defaultOpenIndex={defaultOpenIndex} />
-      )}
-      {/* Until the interactive version mounts, the native fallback is visible.
-          Once it mounts it replaces this in place (same markup shape). To avoid
-          a double-render flash we hide the fallback once interactive is true. */}
-      {!interactive && (
+      {Interactive && <Interactive items={items} defaultOpenIndex={defaultOpenIndex} />}
+      {/* The native fallback stays until the accordion's module has arrived,
+          then both swap in the same render (same markup shape). */}
+      {!Interactive && (
         <div className='space-y-3'>
           {items.map((f, i) => (
             <Surface

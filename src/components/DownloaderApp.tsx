@@ -27,6 +27,7 @@ import {
 } from '@/lib/appReducer'
 import {
   CheckIcon,
+  ChevronDownIcon,
   ClipboardIcon,
   ClockIcon,
   DownloadIcon,
@@ -154,6 +155,8 @@ import { linkAdvice, type LinkAdvice } from '@/lib/linkAdvice'
 import {
   requestBatchLinks,
   requestCollectionImport,
+  usePendingBatchLinks,
+  usePendingCollectionImport,
 } from '@/lib/batchHandoff'
 import { MAX_BATCH_URLS } from '@/lib/batchQueue'
 
@@ -792,9 +795,41 @@ const BatchPanel = dynamic(
   { ssr: false, loading: () => null },
 )
 
+/**
+ * The batch queue's place on the page: a one-line bar until it is wanted.
+ *
+ * The full panel is a lazy chunk, so it can only appear after the JS lands, and
+ * its height depends on wrapped, translated text that also arrives late; held
+ * open on load it pushed everything below it down on every supporter's refresh.
+ * The bar is in the static HTML, one fixed-height line, shown only under the
+ * supporter mark (`data-pro-only`, see proFlag.ts), so it is there from the
+ * first paint and never moves anything. The panel opens on a press, or when
+ * Recent or the paste bar hands it links — both the visitor's own action.
+ */
 function ProBatchPanel() {
+  useDeepWords()
   const tier = useTier()
-  return tier === 'pro' ? <BatchPanel /> : null
+  const pendingLinks = usePendingBatchLinks()
+  const pendingImport = usePendingCollectionImport()
+  const [open, setOpen] = useState(false)
+  if (!open && (pendingLinks !== null || pendingImport !== null)) setOpen(true)
+
+  if (open && tier === 'pro') return <BatchPanel />
+  return (
+    <button
+      type='button'
+      data-pro-only
+      onClick={() => setOpen(true)}
+      aria-expanded={false}
+      className='card-hover btn-press mt-4 flex h-12 w-full items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 text-start'
+    >
+      <span className='shrink-0 text-sm font-semibold text-white/85'>{d('Batch download')}</span>
+      <span className='min-w-0 flex-1 truncate text-xs text-white/50'>
+        {d('Paste up to {max} links, one per line or separated by spaces/commas', { max: MAX_BATCH_URLS })}
+      </span>
+      <ChevronDownIcon className='h-4 w-4 shrink-0 text-white/50' aria-hidden />
+    </button>
+  )
 }
 
 // YouTube results only; everything else never renders it.
@@ -2944,8 +2979,7 @@ export function DownloaderApp() {
         )}
       </div>
 
-      {/* Pro-only batch queue — self-hides for free users, so no conditional
-          is needed at the call site. */}
+      {/* Pro-only batch queue: a bar until opened; hidden for everyone else. */}
       <ProBatchPanel />
 
       {/* Recent — locally-stored links (never leaves the device). Stays on
