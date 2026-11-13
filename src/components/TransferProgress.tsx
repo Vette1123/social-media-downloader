@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react'
-import { SpinnerIcon } from '@/components/icons'
+import { CheckIcon, SpinnerIcon } from '@/components/icons'
 import {
   describeProgress,
   getProgressServerSnapshot,
@@ -55,7 +55,14 @@ export function TransferButton({
   const face = (
     <span className='relative flex min-w-0 items-center gap-2 tabular-nums'>
       {pct === null && <SpinnerIcon className='h-4 w-4 flex-shrink-0' />}
-      <span className='truncate'>{label}</span>
+      {/* The label never re-centres mid-transfer: the cell is as wide as
+          its longest form, and the live text sits in the same cell. */}
+      <span className='grid min-w-0'>
+        <span aria-hidden className='invisible col-start-1 row-start-1 truncate'>
+          {progressLabel(100)}
+        </span>
+        <span className='col-start-1 row-start-1 truncate'>{label}</span>
+      </span>
     </span>
   )
   const fillStyle = { '--xfer-pct': pct ?? 0 } as CSSProperties
@@ -91,12 +98,19 @@ export function TransferStatus({
   busy,
   pct,
   onCancel,
+  note,
   idleAction,
 }: {
   busy: boolean
   pct: number | null
   onCancel: () => void
-  /** Replaces the idle hint with a follow-up, e.g. "Send to an app". */
+  /**
+   * How the last transfer ended ("Video saved", "Download canceled"). Shown
+   * here, at the button that caused it, instead of in a banner above the
+   * card that grew and pushed the result down.
+   */
+  note?: { tone: 'saved' | 'info'; text: string }
+  /** A follow-up beside the note, e.g. "Send to an app". */
   idleAction?: { label: string; onClick: () => void }
 }) {
   const detail = useSyncExternalStore(
@@ -115,23 +129,10 @@ export function TransferStatus({
   const readout = readoutText(busy, pct, describeProgress(detail, undefined, words), t)
   return (
     <div className='grid h-8 items-center text-xs'>
-      {idleAction ? (
-        <button
-          type='button'
-          data-on={!busy}
-          onClick={idleAction.onClick}
-          className='xfer-layer btn-press animate-section-in mx-auto rounded-lg border border-white/25 px-3 py-1 font-semibold text-white/85 transition-colors hover:bg-white/10'
-        >
-          {idleAction.label}
-        </button>
-      ) : (
-        <p data-on={!busy} className='xfer-layer text-center text-white/50'>
-          {t('clickToDownload')}
-        </p>
-      )}
+      <IdleFace on={!busy} note={note} action={idleAction} hint={t('clickToDownload')} />
       <div
         data-on={busy}
-        className='xfer-layer flex min-w-0 items-center justify-between gap-3'
+        className='xfer-layer flex h-full min-w-0 items-center justify-between gap-3'
       >
         <span
           role='progressbar'
@@ -160,6 +161,52 @@ export function TransferStatus({
           {t('cancelDownload')}
         </button>
       </div>
+    </div>
+  )
+}
+
+function IdleFace({
+  on,
+  note,
+  action,
+  hint,
+}: {
+  on: boolean
+  note?: { tone: 'saved' | 'info'; text: string }
+  action?: { label: string; onClick: () => void }
+  hint: string
+}) {
+  const button = action && (
+    <button
+      type='button'
+      onClick={action.onClick}
+      className='btn-press flex-shrink-0 rounded-lg border border-white/25 px-3 py-1 font-semibold text-white/85 transition-colors hover:bg-white/10'
+    >
+      {action.label}
+    </button>
+  )
+  if (!note) {
+    return (
+      <div data-on={on} className='xfer-layer flex h-full min-w-0 items-center justify-center'>
+        {button ?? <p className='truncate text-white/45'>{hint}</p>}
+      </div>
+    )
+  }
+  const saved = note.tone === 'saved'
+  return (
+    <div
+      data-on={on}
+      className={`xfer-layer flex h-full min-w-0 items-center gap-3 ${button ? 'justify-between' : 'justify-center'}`}
+    >
+      {/* key: a new outcome replays the entrance, the same text doesn't. */}
+      <p
+        key={note.text}
+        className={`animate-section-in flex min-w-0 items-center gap-1.5 ${saved ? 'text-emerald-300' : 'text-white/60'}`}
+      >
+        {saved && <CheckIcon className='h-3.5 w-3.5 flex-shrink-0' aria-hidden />}
+        <span className='truncate'>{note.text}</span>
+      </p>
+      {button}
     </div>
   )
 }

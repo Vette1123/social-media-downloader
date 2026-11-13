@@ -203,6 +203,24 @@ export function autoOpensPreview({
  * longest, so a label missing here would resize it mid-transfer.
  */
 /**
+ * How the last transfer ended, for the line under the download buttons. A
+ * resolve's own "processed" message has nothing to add there: the card is
+ * the confirmation.
+ */
+export function transferNote(
+  message: AppMessage | null,
+  text: string,
+  savedText: string,
+): { tone: 'saved' | 'info'; text: string } | undefined {
+  // A save reads as the short "Saved": the full sentence
+  // ("Video downloaded successfully! 🎉") truncated beside "Send to an app"
+  // on a phone. Screen readers still get the sentence from the live region.
+  if (message?.kind === 'saved') return { tone: 'saved', text: savedText }
+  if (message?.kind === 'info') return { tone: 'info', text }
+  return undefined
+}
+
+/**
  * Whether the Recent list may appear now. It sits above the results, so a
  * list that first appears while a result is on screen (the very first save
  * adds the first row) pushes that result down under the visitor's eyes. It

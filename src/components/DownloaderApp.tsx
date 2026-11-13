@@ -18,6 +18,7 @@ import {
   MAIN_BUTTON_LABELS,
   mainButtonLabel,
   mayRevealRecent,
+  transferNote,
   retryTarget,
   type AppMessage,
   type VideoMetadata,
@@ -2518,6 +2519,13 @@ export function DownloaderApp() {
   } else if (state.originalUrl && resultOpened.url !== state.originalUrl) {
     setResultOpened({ url: state.originalUrl, at: nowMs() })
   }
+  // The fixed line under the download buttons exists whenever there is
+  // something to download; it also carries how the last transfer ended.
+  const hasTransferSlot = !!(
+    state.downloadUrl ||
+    state.audioUrl ||
+    (state.videoMetadata?.images?.length ?? 0) > 0
+  )
   const savedNote = (() => {
     if (!state.originalUrl) return null
     const savedAt = history.find((e) => e.url === state.originalUrl)?.savedAt
@@ -3065,6 +3073,22 @@ export function DownloaderApp() {
           if (!message) return null
           const { kind, text } = message
           const isError = kind === 'error'
+          // With a result on screen, everything but a failure speaks from the
+          // card: the card itself confirms a resolve, and the line under the
+          // download buttons reports a save or a cancel. The banner above the
+          // card added a row and pushed the result down on a phone. Screen
+          // readers still hear it from this hidden live region.
+          if (
+            !isError &&
+            state.videoMetadata &&
+            (kind === 'success' || hasTransferSlot)
+          ) {
+            return (
+              <p key={text} role='status' aria-live='polite' className='sr-only'>
+                {displayMessage(t, message)}
+              </p>
+            )
+          }
           const isDone = kind === 'success' || kind === 'saved'
           return (
             <div
@@ -3143,24 +3167,6 @@ export function DownloaderApp() {
               {missesRetryLabel(batchMisses.length)}
             </button>
           </Surface>
-        )}
-
-        {/* Attached to the success line, and only ever to that one, and only
-            when its turn comes (attachedNudgeDue) — the ask is a plus, so it
-            must read as a footnote and not a drumbeat. This is the single
-            point in the flow where the visitor has what they came for and is
-            not waiting on anything. */}
-        {state.message?.kind === 'success' && attachedNudgeDue(resolvesToday) && (
-          <ProNudge
-            id='post-download'
-            tone='attached'
-            action={t('supportCta', { price: SUPPORT_PRICES.monthly })}
-            lede={
-              <>
-                {d('Saved you some time? This site is free to use and not free to run — supporters get links that save themselves as soon as they resolve, a clipboard that is watched while they work, the batch queue, downloads named the way they file things, priority on every link and no sponsor card.')}
-              </>
-            }
-          />
         )}
 
         {/* Batch mode: show a compact per-link progress line instead of the
@@ -3329,6 +3335,229 @@ export function DownloaderApp() {
                     })()}
                 </div>
               </div>
+
+              {/* Order: what it is, how to get it, then a look at it. The
+                  preview used to come first and pushed the download button
+                  more than a screen below the header on a phone. */}
+              {/* Re-pick rendition — re-resolve the SAME link as HD / Data
+                  saver / MP3 without making the user re-paste. Hidden for photo
+                  carousels and embed-only results (no single stream to swap). */}
+              {(() => {
+                const meta = state.videoMetadata
+                const hasStream = !!state.downloadUrl || !!state.audioUrl
+                const isGallery =
+                  meta?.isPhotoCarousel || (meta?.images?.length ?? 0) > 0
+                if (!hasStream || isGallery) return null
+                const active: 'hd' | 'sd' | 'audio' =
+                  format === 'audio' ? 'audio' : quality
+                const options: Array<{
+                  key: 'hd' | 'sd' | 'audio'
+                  label: string
+                  onPick: () => void
+                }> = [
+                  { key: 'hd', label: 'HD', onPick: () => reResolve('video', 'hd') },
+                  {
+                    key: 'sd',
+                    label: t('dataSaver'),
+                    onPick: () => reResolve('video', 'sd'),
+                  },
+                  {
+                    key: 'audio',
+                    label: 'MP3',
+                    onPick: () => reResolve('audio', quality),
+                  },
+                ]
+                return (
+                  // Wraps as a whole: in Arabic at 360px the label and "Data
+                  // saver" each broke onto two lines inside the row.
+                  <div className='flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 text-xs'>
+                    <span className='whitespace-nowrap text-white/50'>{t('getItAs')}</span>
+                    <div
+                      role='group'
+                      aria-label={t('getItAsAria')}
+                      className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
+                    >
+                      {options.map((o) => {
+                        const isActive = active === o.key
+                        const isPending = repicking === o.key
+                        return (
+                          <button
+                            key={o.key}
+                            type='button'
+                            onClick={o.onPick}
+                            disabled={repicking !== null}
+                            aria-pressed={isActive}
+                            className={`flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed ${
+                              isActive
+                                ? 'bg-cyan-400/90 text-[#04171b]'
+                                : 'text-white/55 hover:text-white disabled:opacity-50'
+                            }`}
+                          >
+                            {isPending && <SpinnerIcon className='h-3 w-3' />}
+                            {o.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Download Buttons */}
+              {(() => {
+                const hasImagesForSlideshow =
+                  slideshowRenderOffered(process.env.NEXT_PUBLIC_DEPLOY_TARGET) &&
+                  state.videoMetadata?.isPhotoCarousel &&
+                  (state.videoMetadata?.images?.length ?? 0) > 0
+                const showVideoButton =
+                  !!state.downloadUrl || hasImagesForSlideshow
+                const showAudioButton = !!state.audioUrl
+                const isRendering =
+                  !!state.videoMetadata?.isPhotoCarousel && !state.downloadUrl
+                if (!showVideoButton && !showAudioButton) return null
+                return (
+                  <div
+                    className={`grid gap-3 ${
+                      showVideoButton && showAudioButton
+                        ? 'grid-cols-1 md:grid-cols-2'
+                        : 'grid-cols-1'
+                    }`}
+                  >
+                    {showVideoButton && (
+                      <TransferButton
+                        onClick={
+                          state.downloadUrl
+                            ? handleVideoDownload
+                            : handleSlideshowRender
+                        }
+                        busy={state.downloading}
+                        pct={state.progress}
+                        waitingLabel={
+                          isRendering ? t('renderingBtn') : t('downloadingBtn')
+                        }
+                        progressLabel={(pct) =>
+                          isRendering
+                            ? `${t('renderingBtn')} ${pct}%`
+                            : t('progressLine', { pct })
+                        }
+                        disabled={state.downloadingImages}
+                        className='btn-grad btn-press group py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2'
+                      >
+                        <span
+                          className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out'
+                          aria-hidden
+                        />
+                        <span className='relative flex items-center gap-2'>
+                          <DownloadIcon className='flex-shrink-0 h-5 w-5' />
+                          <span>
+                            {state.videoMetadata?.isPhotoCarousel
+                              ? t('videoSlideshowBtn')
+                              : t('videoBtn')}
+                          </span>
+                        </span>
+                      </TransferButton>
+                    )}
+
+                    {showAudioButton && (
+                      <TransferButton
+                        onClick={handleAudioDownload}
+                        busy={state.downloadingAudio}
+                        pct={state.progress}
+                        waitingLabel={t('downloadingBtn')}
+                        progressLabel={(pct) => t('progressLine', { pct })}
+                        disabled={state.downloadingImages}
+                        className='btn-ghost btn-press py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2'
+                      >
+                        <span className='relative flex items-center gap-2'>
+                          <MusicIcon className='flex-shrink-0 h-5 w-5' />
+                          <span>
+                            {state.videoMetadata?.isPhotoCarousel
+                              ? t('downloadAudioBtn')
+                              : t('extractAudio')}
+                          </span>
+                        </span>
+                      </TransferButton>
+                    )}
+                  </div>
+                )
+              })()}
+
+              {/* Both files, one tap. Only where there are genuinely two files
+                  to get — a video AND a separate audio track — and only for
+                  supporters, because what it removes is the second tap and the
+                  wait between, never access to anything. A carousel is excluded
+                  for the same reason auto-save excludes it: the gallery is a
+                  selection, not a file. */}
+              {canSaveBoth && (
+                <button
+                  onClick={handleSaveBoth}
+                  disabled={isResolvingOrDownloading(state)}
+                  className='btn-ghost btn-press w-full rounded-xl px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50'
+                >
+                  <span className='relative inline-flex items-center gap-2'>
+                    <DownloadIcon className='h-4 w-4 flex-shrink-0' />
+                    {t('saveBoth')}
+                  </span>
+                </button>
+              )}
+
+              {hasTransferSlot && (
+                <TransferStatus
+                  busy={
+                    state.downloading ||
+                    state.downloadingAudio ||
+                    state.downloadingImages
+                  }
+                  pct={state.progress}
+                  onCancel={cancelTransfer}
+                  note={
+                    state.message
+                      ? transferNote(
+                          state.message,
+                          displayMessage(t, state.message),
+                          t('savedShort'),
+                        )
+                      : undefined
+                  }
+                  // The other half of a download on a phone. The file is on
+                  // the device now, but what somebody came to do is put it in
+                  // a chat, and finding it again in Downloads is where people
+                  // give up. Rendered only where the OS really takes this file
+                  // (lib/shareFile). It lives in this fixed-height slot rather
+                  // than under the banner, where it grew the banner by a row
+                  // and pushed the whole card down the moment a save finished.
+                  idleAction={
+                    isDoneMessage(state.message) && canSendToApp
+                      ? {
+                          label: lastSaved.failed
+                            ? t('sendFailed')
+                            : t('sendToApp'),
+                          onClick: () => void handleSendToApp(),
+                        }
+                      : undefined
+                  }
+                />
+              )}
+
+              {/* iOS: video downloads land in Files, not the camera roll, so
+                  point users at the shortest route to Photos. Only for a real
+                  video stream (MP3/Files-only downloads don't need it).
+
+                  Two routes now, and the hint has to name the one that is
+                  actually on screen. Before a save there is only the long way
+                  round — Files, open, Share, Save Video. Once a file is in hand
+                  the share sheet is one tap away in the banner above, and
+                  telling somebody to go hunting in Files while that button sits
+                  there is teaching the worse path. */}
+              {isIOS &&
+                !!state.downloadUrl &&
+                !state.videoMetadata?.isPhotoCarousel && (
+                  <p className='text-center text-[11px] leading-relaxed text-white/50'>
+                    {canSendToApp
+                      ? t('iosSavedFiles')
+                      : t('iosSaveHint')}
+                  </p>
+                )}
 
               {/* Preview Toggle (downloadable video or embed-only fallback) */}
               {(state.downloadUrl || state.videoMetadata?.embedUrl) && (
@@ -3653,175 +3882,17 @@ export function DownloaderApp() {
                   </div>
                 )}
 
-              {/* Re-pick rendition — re-resolve the SAME link as HD / Data
-                  saver / MP3 without making the user re-paste. Hidden for photo
-                  carousels and embed-only results (no single stream to swap). */}
-              {(() => {
-                const meta = state.videoMetadata
-                const hasStream = !!state.downloadUrl || !!state.audioUrl
-                const isGallery =
-                  meta?.isPhotoCarousel || (meta?.images?.length ?? 0) > 0
-                if (!hasStream || isGallery) return null
-                const active: 'hd' | 'sd' | 'audio' =
-                  format === 'audio' ? 'audio' : quality
-                const options: Array<{
-                  key: 'hd' | 'sd' | 'audio'
-                  label: string
-                  onPick: () => void
-                }> = [
-                  { key: 'hd', label: 'HD', onPick: () => reResolve('video', 'hd') },
-                  {
-                    key: 'sd',
-                    label: t('dataSaver'),
-                    onPick: () => reResolve('video', 'sd'),
-                  },
-                  {
-                    key: 'audio',
-                    label: 'MP3',
-                    onPick: () => reResolve('audio', quality),
-                  },
-                ]
-                return (
-                  <div className='flex items-center justify-center gap-2 text-xs'>
-                    <span className='text-white/50'>{t('getItAs')}</span>
-                    <div
-                      role='group'
-                      aria-label={t('getItAsAria')}
-                      className='inline-flex rounded-full border border-white/10 bg-white/[0.03] p-0.5'
-                    >
-                      {options.map((o) => {
-                        const isActive = active === o.key
-                        const isPending = repicking === o.key
-                        return (
-                          <button
-                            key={o.key}
-                            type='button'
-                            onClick={o.onPick}
-                            disabled={repicking !== null}
-                            aria-pressed={isActive}
-                            className={`flex items-center gap-1 rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed ${
-                              isActive
-                                ? 'bg-cyan-400/90 text-[#04171b]'
-                                : 'text-white/55 hover:text-white disabled:opacity-50'
-                            }`}
-                          >
-                            {isPending && <SpinnerIcon className='h-3 w-3' />}
-                            {o.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })()}
-
-              {/* Download Buttons */}
-              {(() => {
-                const hasImagesForSlideshow =
-                  slideshowRenderOffered(process.env.NEXT_PUBLIC_DEPLOY_TARGET) &&
-                  state.videoMetadata?.isPhotoCarousel &&
-                  (state.videoMetadata?.images?.length ?? 0) > 0
-                const showVideoButton =
-                  !!state.downloadUrl || hasImagesForSlideshow
-                const showAudioButton = !!state.audioUrl
-                const isRendering =
-                  !!state.videoMetadata?.isPhotoCarousel && !state.downloadUrl
-                if (!showVideoButton && !showAudioButton) return null
-                return (
-                  <div
-                    className={`grid gap-3 ${
-                      showVideoButton && showAudioButton
-                        ? 'grid-cols-1 md:grid-cols-2'
-                        : 'grid-cols-1'
-                    }`}
-                  >
-                    {showVideoButton && (
-                      <TransferButton
-                        onClick={
-                          state.downloadUrl
-                            ? handleVideoDownload
-                            : handleSlideshowRender
-                        }
-                        busy={state.downloading}
-                        pct={state.progress}
-                        waitingLabel={
-                          isRendering ? t('renderingBtn') : t('downloadingBtn')
-                        }
-                        progressLabel={(pct) =>
-                          isRendering
-                            ? `${t('renderingBtn')} ${pct}%`
-                            : t('progressLine', { pct })
-                        }
-                        disabled={state.downloadingImages}
-                        className='btn-grad btn-press group py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2'
-                      >
-                        <span
-                          className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out'
-                          aria-hidden
-                        />
-                        <span className='relative flex items-center gap-2'>
-                          <DownloadIcon className='flex-shrink-0 h-5 w-5' />
-                          <span>
-                            {state.videoMetadata?.isPhotoCarousel
-                              ? t('videoSlideshowBtn')
-                              : t('videoBtn')}
-                          </span>
-                        </span>
-                      </TransferButton>
-                    )}
-
-                    {showAudioButton && (
-                      <TransferButton
-                        onClick={handleAudioDownload}
-                        busy={state.downloadingAudio}
-                        pct={state.progress}
-                        waitingLabel={t('downloadingBtn')}
-                        progressLabel={(pct) => t('progressLine', { pct })}
-                        disabled={state.downloadingImages}
-                        className='btn-ghost btn-press py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2'
-                      >
-                        <span className='relative flex items-center gap-2'>
-                          <MusicIcon className='flex-shrink-0 h-5 w-5' />
-                          <span>
-                            {state.videoMetadata?.isPhotoCarousel
-                              ? t('downloadAudioBtn')
-                              : t('extractAudio')}
-                          </span>
-                        </span>
-                      </TransferButton>
-                    )}
-                  </div>
-                )
-              })()}
-
-              {/* Both files, one tap. Only where there are genuinely two files
-                  to get — a video AND a separate audio track — and only for
-                  supporters, because what it removes is the second tap and the
-                  wait between, never access to anything. A carousel is excluded
-                  for the same reason auto-save excludes it: the gallery is a
-                  selection, not a file. */}
-              {canSaveBoth && (
-                <button
-                  onClick={handleSaveBoth}
-                  disabled={isResolvingOrDownloading(state)}
-                  className='btn-ghost btn-press w-full rounded-xl px-4 py-2.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50'
-                >
-                  <span className='relative inline-flex items-center gap-2'>
-                    <DownloadIcon className='h-4 w-4 flex-shrink-0' />
-                    {t('saveBoth')}
-                  </span>
-                </button>
-              )}
-
               {/* Extras row. Share and Copy-link apply to every resolved
                   result, so the row's own condition is "there is a result" —
                   gating it on the thumbnail would have hidden both from every
                   long-tail link that resolves without a cover image. The two
                   conditional members (cover image, caption picker) each render
                   nothing when they do not apply, so the common path gains no
-                  noise. */}
+                  noise. On a phone it is a two-column grid (an odd last member
+                  spans the row): wrapped pills left one stranded on a line of its
+                  own, and "Copy link" → "Copied" re-flowed the row. */}
               {state.originalUrl && (
-                <div className='flex flex-wrap items-center justify-center gap-2'>
+                <div className='grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2 sm:flex sm:flex-wrap sm:items-center sm:justify-center'>
                   {state.videoMetadata?.thumbnail && (
                     <ThumbnailButton
                       url={state.videoMetadata.thumbnail}
@@ -3840,57 +3911,6 @@ export function DownloaderApp() {
                     })()}
                 </div>
               )}
-
-              {/* iOS: video downloads land in Files, not the camera roll, so
-                  point users at the shortest route to Photos. Only for a real
-                  video stream (MP3/Files-only downloads don't need it).
-
-                  Two routes now, and the hint has to name the one that is
-                  actually on screen. Before a save there is only the long way
-                  round — Files, open, Share, Save Video. Once a file is in hand
-                  the share sheet is one tap away in the banner above, and
-                  telling somebody to go hunting in Files while that button sits
-                  there is teaching the worse path. */}
-              {isIOS &&
-                !!state.downloadUrl &&
-                !state.videoMetadata?.isPhotoCarousel && (
-                  <p className='text-center text-[11px] leading-relaxed text-white/50'>
-                    {canSendToApp
-                      ? t('iosSavedFiles')
-                      : t('iosSaveHint')}
-                  </p>
-                )}
-
-              {(state.downloadUrl ||
-                state.audioUrl ||
-                (state.videoMetadata?.images?.length ?? 0) > 0) && (
-                <TransferStatus
-                  busy={
-                    state.downloading ||
-                    state.downloadingAudio ||
-                    state.downloadingImages
-                  }
-                  pct={state.progress}
-                  onCancel={cancelTransfer}
-                  // The other half of a download on a phone. The file is on
-                  // the device now, but what somebody came to do is put it in
-                  // a chat, and finding it again in Downloads is where people
-                  // give up. Rendered only where the OS really takes this file
-                  // (lib/shareFile). It lives in this fixed-height slot rather
-                  // than under the banner, where it grew the banner by a row
-                  // and pushed the whole card down the moment a save finished.
-                  idleAction={
-                    isDoneMessage(state.message) && canSendToApp
-                      ? {
-                          label: lastSaved.failed
-                            ? t('sendFailed')
-                            : t('sendToApp'),
-                          onClick: () => void handleSendToApp(),
-                        }
-                      : undefined
-                  }
-                />
-              )}
             </Surface>
           )}
         </div>
@@ -3898,6 +3918,28 @@ export function DownloaderApp() {
       {/* Sponsor card — only after a result exists, never while resolving,
           and always below the download controls. It stays through a download:
           unmounting it on start and back on finish moved the page twice. */}
+      {/* Under the result, never above it: above, it pushed the download
+          buttons below the fold on a phone. Only after a resolve, and only
+          when its turn comes (attachedNudgeDue) — the ask is a plus, so it
+          must read as a footnote and not a drumbeat. This is the single
+          point in the flow where the visitor has what they came for and is
+          not waiting on anything. Keyed to the result, not the message, so a
+          save doesn't unmount it and move everything under it. */}
+      {state.videoMetadata && !state.loading && attachedNudgeDue(resolvesToday) && (
+        <div className='mt-4'>
+          <ProNudge
+            id='post-download'
+            tone='attached'
+            action={t('supportCta', { price: SUPPORT_PRICES.monthly })}
+            lede={
+              <>
+                {d('Saved you some time? This site is free to use and not free to run — supporters get links that save themselves as soon as they resolve, a clipboard that is watched while they work, the batch queue, downloads named the way they file things, priority on every link and no sponsor card.')}
+              </>
+            }
+          />
+        </div>
+      )}
+
       {state.videoMetadata && !state.loading && (
         <PromoSlot placement='post-result' platform={state.videoMetadata.platform} />
       )}
