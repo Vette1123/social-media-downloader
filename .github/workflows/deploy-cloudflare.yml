@@ -108,11 +108,24 @@ jobs:
       - name: SEO check (build)
         run: node scripts/seo-verify.mjs
 
+      # Skips the check below when nothing that can move a pixel changed (docs,
+      # tests, tooling); the step log says which files decided it. A scheduled
+      # rebuild compares against itself and skips; a manual run always checks.
+      - name: Did anything layout-relevant change?
+        id: layout
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; echo "manual run: check"; exit 0; fi
+          node scripts/layout-changed.mjs "${BASE:-$GITHUB_SHA}" "$GITHUB_SHA"
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.before || github.event.pull_request.base.sha }}
+
       # Reloads the built home page (LTR and RTL) as a free, a returning and a
       # supporter visitor on a throttled phone and fails on any layout shift.
       # The full sweep is `pnpm cls --routes ...`; this is the slice that runs
-      # on every push (about 3 min).
+      # on a push that can affect layout (about 2.5 min).
       - name: Layout shift check (build)
+        if: steps.layout.outputs.run == 'true'
         run: node scripts/cls-audit.mjs --routes /,/ar --settle 3000
 
       # Compares each built page with the one live now, before the deploy replaces it,
