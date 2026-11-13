@@ -223,5 +223,6 @@
   "Page not found": "Halaman tidak ditemukan",
   "Something went wrong resolving the media. Try again in a moment.": "Terjadi kesalahan saat memproses media. Coba lagi sebentar lagi.",
   "This video won’t play in this browser, but the download still works.": "Video ini tidak bisa diputar di browser ini, tetapi unduhannya tetap berfungsi.",
-  "Your clipboard is empty. Copy a link first.": "Clipboard kamu kosong. Salin tautan dulu."
+  "Your clipboard is empty. Copy a link first.": "Clipboard kamu kosong. Salin tautan dulu.",
+  "Could not save those {noun}. The links may have expired: paste the post again to refresh them.": "Tidak bisa menyimpan. Tautannya mungkin sudah kedaluwarsa: tempel lagi postingannya untuk memperbaruinya."
 }

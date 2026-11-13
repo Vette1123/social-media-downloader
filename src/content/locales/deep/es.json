@@ -223,5 +223,6 @@
   "Page not found": "Página no encontrada",
   "Something went wrong resolving the media. Try again in a moment.": "Algo salió mal al procesar el contenido. Inténtalo de nuevo en un momento.",
   "This video won’t play in this browser, but the download still works.": "Este video no se reproduce en este navegador, pero la descarga sigue funcionando.",
-  "Your clipboard is empty. Copy a link first.": "Tu portapapeles está vacío. Copia un enlace primero."
+  "Your clipboard is empty. Copy a link first.": "Tu portapapeles está vacío. Copia un enlace primero.",
+  "Could not save those {noun}. The links may have expired: paste the post again to refresh them.": "No se pudieron guardar. Puede que los enlaces hayan caducado: vuelve a pegar la publicación para renovarlos."
 }

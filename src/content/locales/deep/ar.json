@@ -223,5 +223,6 @@
   "Page not found": "الصفحة غير موجودة",
   "Something went wrong resolving the media. Try again in a moment.": "حدث خطأ أثناء معالجة الوسائط. حاول مرة أخرى بعد قليل.",
   "This video won’t play in this browser, but the download still works.": "لا يعمل هذا الفيديو في هذا المتصفح، لكن التنزيل ما زال يعمل.",
-  "Your clipboard is empty. Copy a link first.": "الحافظة فارغة. انسخ رابطًا أولًا."
+  "Your clipboard is empty. Copy a link first.": "الحافظة فارغة. انسخ رابطًا أولًا.",
+  "Could not save those {noun}. The links may have expired: paste the post again to refresh them.": "تعذّر الحفظ. ربما انتهت صلاحية الروابط: الصق المنشور مرة أخرى لتحديثها."
 }

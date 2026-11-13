@@ -688,6 +688,7 @@
  "deep:Could not expand that playlist.": "c89bf7273be3",
  "deep:Could not fetch that subtitle track.": "248e816e0706",
  "deep:Could not load subtitles.": "1405e6bbf754",
+ "deep:Could not save those {noun}. The links may have expired: paste the post again to refresh them.": "0cba953a67e2",
  "deep:Couldn’t process this link": "3c09b23daf1e",
  "deep:Couldn’t resolve any of those {total} links. Check they’re public post URLs and try again.": "06567763ceb9",
  "deep:Cover frame of video {n}": "56020622d2de",
