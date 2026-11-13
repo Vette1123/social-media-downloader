@@ -102,6 +102,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # Every sitemap page must be indexable as built: title, description,
+      # self-canonical, no noindex, hreflang inside the sitemap. Runs on PRs too,
+      # so a broken head fails before it can ship.
+      - name: SEO check (build)
+        run: node scripts/seo-verify.mjs
+
       # Compares each built page with the one live now, before the deploy replaces it,
       # so the ping below sends only the pages whose content changed.
       - name: Plan IndexNow (built pages vs live)
@@ -121,6 +127,12 @@ jobs:
       - name: Ping IndexNow
         if: github.event_name != 'pull_request'
         run: node scripts/indexnow.mjs --submit .indexnow-plan.json
+
+      # The deploy is live; the edge must now serve the head we built, for every
+      # sitemap URL, with no redirect. Retries for propagation before failing.
+      - name: SEO verify (live)
+        if: github.event_name != 'pull_request'
+        run: node scripts/seo-verify.mjs --live
 
   # The deploy is not the verification. This is: 148 assertions against the
   # live origin — every API route, the static-asset headers that prove pages are
