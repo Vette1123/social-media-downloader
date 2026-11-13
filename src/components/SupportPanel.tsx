@@ -39,6 +39,7 @@ export function SupportPanel({
     return (
       <HiddenForPro>
       <Surface
+        data-free-only
         tone='accent'
         interaction='lift'
         className='flex flex-col items-start justify-between gap-4 p-5 sm:flex-row sm:items-center'
@@ -65,6 +66,7 @@ export function SupportPanel({
   return (
     <HiddenForPro>
     <Surface
+      data-free-only
       tone='accent'
       radius='3xl'
       className='animate-section-in grid items-center gap-8 p-6 sm:p-9 lg:grid-cols-12 lg:gap-12'

@@ -202,7 +202,7 @@ export function PromoSlot({
   // suppressed, so the SEO/FAQ section below it never shifts. Measured with both
   // cards across all five languages; the Spanish and Portuguese copy sets it.
   if (reservesHeight(placement)) {
-    return <div className='mt-4 min-h-[440px] sm:min-h-[264px] md:min-h-[219px] lg:min-h-[196px] xl:min-h-[174px]'>{cardContent}</div>
+    return <div data-free-only className='mt-4 min-h-[440px] sm:min-h-[264px] md:min-h-[219px] lg:min-h-[196px] xl:min-h-[174px]'>{cardContent}</div>
   }
 
   // `post-result` reserves nothing: with no in-flow content of its own after

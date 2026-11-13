@@ -929,3 +929,11 @@ dialog[open]::backdrop {
 :lang(ar) [class*='tracking-'] {
   letter-spacing: 0;
 }
+
+/* A supporter's page, before paint: free-only elements (the "free, no limits"
+   hero line, support panel, nudges, the promo slot's reserved box) are never
+   painted, instead of painted and then pulled out from under the paste bar.
+   The mark is set by the head script in src/lib/proFlag.ts. */
+html[data-pro] [data-free-only] {
+  display: none !important;
+}

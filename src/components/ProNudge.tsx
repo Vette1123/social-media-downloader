@@ -69,6 +69,7 @@ export function ProNudge({
     // shrink-0 button the row does not wrap, it squeezes the sentence into a
     // four-word-wide column beside the button.
     <Surface
+      data-free-only
       tone='accent'
       radius={tone === 'attached' ? '2xl' : '3xl'}
       className={`animate-section-in relative flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 ${
@@ -133,7 +134,7 @@ export function ProHeroLine() {
   if (tier === 'pro') return null
 
   return (
-    <p className='mb-7 text-xs text-white/50 md:text-sm'>
+    <p data-free-only className='mb-7 text-xs text-white/50 md:text-sm'>
       {t('proHeroFree')}{' '}
       <Link
         href={to('/pro')}
