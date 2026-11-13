@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { offerHref, offerRel, selectOffers } from './promo'
 import { OFFERS } from '../config/offers'
@@ -77,10 +78,12 @@ describe('our own apps', () => {
     expect(own.map((o) => o.id)).toEqual(['masareef', 'rafiq'])
   })
 
-  it.each(own)('$id links to a clean, followed /go', (o) => {
-    expect(offerHref(o, 'in-content')).toBe(
-      `https://vette1123.github.io/${o.id}-privacy/go`,
-    )
+  it.each(own)('$id links to its own short domain, clean and followed', (o) => {
+    // The app's own short domain with a source tag, never the long github.io
+    // chooser or /go (owner's rule, 2026-11-05, same as Reely).
+    expect(
+      offerHref(o, 'in-content').startsWith(`https://${o.id}.mohamedgado.com/?s=socialdownloader`),
+    ).toBe(true)
     expect(offerRel(o)).not.toMatch(/sponsored|nofollow/)
   })
 
@@ -150,5 +153,14 @@ describe('the shipped offer catalogue', () => {
   it('keeps offer ids unique, since the id is the React key and the subid', () => {
     const ids = OFFERS.map((o) => o.id)
     expect(ids).toEqual([...new Set(ids)])
+  })
+})
+
+describe('own-app links', () => {
+  it('never link the long chooser anywhere live', () => {
+    for (const file of ['lib/apps.ts', 'config/offers.ts'])
+      expect(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8'), file).not.toMatch(
+        /github\.io\/[a-z]+-privacy\/go|mohamedgado\.com\/go|\/projects\/[a-z]+\/go/,
+      )
   })
 })
