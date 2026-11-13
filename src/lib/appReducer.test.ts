@@ -7,6 +7,7 @@ import {
   MAIN_BUTTON_LABELS,
   mainButtonLabel,
   mayRevealRecent,
+  transferNote,
   retryTarget,
   type ImageData,
 } from './appReducer'
@@ -299,5 +300,22 @@ describe('mayRevealRecent', () => {
   })
   it('never appears with an empty history', () => {
     expect(mayRevealRecent({ historyCount: 0, hasResult: false, url: 'https://x' })).toBe(false)
+  })
+})
+
+describe('transferNote', () => {
+  const SHORT = 'Saved'
+  it('shows the short saved line, not the long banner sentence', () => {
+    const msg = { kind: 'saved' as const, text: 'Video downloaded successfully! 🎉' }
+    expect(transferNote(msg, msg.text, SHORT)).toEqual({ tone: 'saved', text: SHORT })
+  })
+  it('passes a status such as a cancel through as info', () => {
+    const msg = { kind: 'info' as const, text: 'Download canceled' }
+    expect(transferNote(msg, msg.text, SHORT)).toEqual({ tone: 'info', text: 'Download canceled' })
+  })
+  it('has nothing to add after a resolve or an error', () => {
+    expect(transferNote({ kind: 'success', text: 'x' }, 'x', SHORT)).toBeUndefined()
+    expect(transferNote({ kind: 'error', text: 'x' }, 'x', SHORT)).toBeUndefined()
+    expect(transferNote(null, '', SHORT)).toBeUndefined()
   })
 })
