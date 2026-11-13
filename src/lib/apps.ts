@@ -31,11 +31,23 @@ export type PlayApp = {
   installUrl?: string
 }
 
+/**
+ * The app's own short domain, tagged with where the reader came from (`s`
+ * reaches the app's dashboard as utm_source). It lands on the same store
+ * chooser the long github.io link did, and it is the only install link a
+ * reader should ever see (owner's rule, 2026-11-05). Rafiq's tracking also
+ * reads a medium. Ported from Reely's lib/apps.ts.
+ */
+export function installLink(slug: string, source: string, medium = 'site'): string {
+  const m = slug === 'rafiq' ? `&m=${medium}` : ''
+  return `https://${slug}.mohamedgado.com/?s=${source}${m}`
+}
+
 const playApp = (
   name: string,
   tagline: string,
   androidPackage: string,
-  /** App Store numeric id and privacy-repo slug, for apps on both stores. */
+  /** App Store numeric id and the app's subdomain on mohamedgado.com, for apps on both stores. */
   apple?: { id: string; slug: string },
 ): PlayApp => {
   const app: PlayApp = {
@@ -48,7 +60,7 @@ const playApp = (
   return {
     ...app,
     appStoreUrl: `https://apps.apple.com/app/id${apple.id}`,
-    installUrl: `https://vette1123.github.io/${apple.slug}-privacy/go`,
+    installUrl: installLink(apple.slug, 'socialdownloader'),
   }
 }
 

@@ -1,3 +1,5 @@
+import { installLink } from '@/lib/apps'
+
 /**
  * The commercial catalogue. This file is the entire process for adding,
  * reweighting, or killing an offer — no component changes, no deploy-time
@@ -56,8 +58,8 @@ export const OFFERS: readonly Offer[] = [
     headline: 'Know where your money went',
     body: 'Masareef is an offline-first, multi-currency spending tracker, from the people behind this site.',
     cta: 'Get Masareef',
-    // The app's own store chooser, the same link as the footer's "Our apps".
-    href: 'https://vette1123.github.io/masareef-privacy/go',
+    // The app's own short domain, tagged apart from the footer's "Our apps" link.
+    href: installLink('masareef', 'socialdownloader-promo'),
     weight: 1,
     platforms: 'all',
     placements: ['post-result', 'in-content'],
@@ -70,7 +72,7 @@ export const OFFERS: readonly Offer[] = [
     headline: 'Prayer, Qur’an and adhkar in one place',
     body: 'Rafiq is a private companion for prayer, Qur’an, adhkar and qibla, from the people behind this site.',
     cta: 'Get Rafiq',
-    href: 'https://vette1123.github.io/rafiq-privacy/go',
+    href: installLink('rafiq', 'socialdownloader', 'promo'),
     weight: 1,
     platforms: 'all',
     placements: ['post-result', 'in-content'],

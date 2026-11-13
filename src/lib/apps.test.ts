@@ -23,7 +23,7 @@ describe('the companion app list', () => {
       if (app.appStoreUrl) {
         expect(app.appStoreUrl).toMatch(/^https:\/\/apps\.apple\.com\/app\/id\d+$/)
         expect(app.installUrl).toMatch(
-          /^https:\/\/vette1123\.github\.io\/[a-z-]+-privacy\/go$/,
+          /^https:\/\/[a-z]+\.mohamedgado\.com\/\?s=socialdownloader(&m=site)?$/,
         )
       }
     }
