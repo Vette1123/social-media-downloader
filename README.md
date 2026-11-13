@@ -136,7 +136,7 @@ after a download. There are no popups, no redirects, no interstitials, and no
 tracking of what you download.
 
 <!-- sponsor:proxy-seller until=2026-12-13T12:00:00Z -->
-This month's sponsor is [Proxy-Seller](https://proxy-seller.com/): residential, mobile, ISP and datacenter proxies with HTTP(S) and SOCKS5. Code `SMD15` takes 15% off.
+This month's sponsor is [Proxy-Seller](https://proxy-seller.com/?partner=YCKV39B16YFQUX): residential, mobile, ISP and datacenter proxies with HTTP(S) and SOCKS5. Code `SMD15` takes 15% off.
 <!-- /sponsor:proxy-seller -->
 
 Nothing here is for sale. A subscription existed briefly and was withdrawn: two
