@@ -13,9 +13,21 @@
  * against a signed token.
  */
 
-import { useEffect } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { currentAccessToken, ensureFreshToken, useAccount } from './account'
 import { usePrefs } from './prefs'
+import { PRO_ATTR, tierFrom } from './proFlag'
+
+const neverChanges = () => () => {}
+
+/** The head script's verdict (see proFlag.ts), for renders before the server answers. */
+function useBootPro(): boolean {
+  return useSyncExternalStore(
+    neverChanges,
+    () => document.documentElement.hasAttribute(PRO_ATTR),
+    () => false,
+  )
+}
 
 /**
  * Free on the server and during hydration, so the markup never differs.
@@ -26,10 +38,11 @@ import { usePrefs } from './prefs'
  */
 export function useTier(): 'free' | 'pro' {
   const account = useAccount()
+  const bootPro = useBootPro()
   useEffect(() => {
     ensureFreshToken()
   }, [])
-  return account.pro ? 'pro' : 'free'
+  return tierFrom(account, bootPro)
 }
 
 /**

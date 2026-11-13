@@ -135,3 +135,4 @@ the index for exactly that.
 | 2026-11-13 | [Dead and rage clicks, read by what happened around them](2026-11-13-dead-clicks-read-by-sequence.md) | Read the element and the next events before the count |
 | 2026-11-13 | [The English home title change never shipped](2026-11-13-english-home-title-never-shipped.md) | Verify SEO copy on the served HTML, not the source |
 | 2026-11-13 | [SEO head verified by CD](2026-11-13-seo-head-verified-by-cd.md) | Check the exported HTML against the sitemap before deploy and the live head after it |
+| 2026-11-13 | [Pro refresh layout shift](2026-11-13-pro-refresh-layout-shift.md) | Mark supporters on <html> before paint; never gate first-screen layout on a network answer |

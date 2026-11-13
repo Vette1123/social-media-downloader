@@ -16,6 +16,7 @@
 import { trackCaughtError } from './analytics'
 import { useSyncExternalStore } from 'react'
 import { HINT_COOKIE } from './auth/cookies'
+import { PROFILE_CACHE_KEY, syncProFlag } from './proFlag'
 
 /** Refresh this far before expiry, so a resolve never races the deadline. */
 const REFRESH_MARGIN_MS = 30_000
@@ -70,8 +71,6 @@ export interface CachedProfile {
   pro: boolean
 }
 
-const PROFILE_CACHE_KEY = 'smd_profile'
-
 /** Synchronous, never throws: Safari private mode makes localStorage a trap. */
 export function cachedProfile(): CachedProfile | null {
   try {
@@ -91,6 +90,7 @@ export function cachedProfile(): CachedProfile | null {
 }
 
 function writeProfileCache(profile: CachedProfile | null): void {
+  syncProFlag(profile?.pro === true)
   try {
     if (!profile) window.localStorage.removeItem(PROFILE_CACHE_KEY)
     else window.localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile))

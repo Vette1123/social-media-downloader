@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
 import { siteConfig } from '@/config/site'
+import { proFlagScript } from '@/lib/proFlag'
 import { pageCopy } from '@/lib/pageCopy'
 import { versionedIcon } from '@/lib/appIcon'
 import { globalStructuredData, jsonLdText } from '@/lib/structuredData'
@@ -212,6 +213,9 @@ export default function RootLayout({
             tablets keep the full effect set; only genuinely weak hardware (≤4
             cores / ≤4GB RAM), Save-Data, or a slow connection opt down. */}
         <script dangerouslySetInnerHTML={{ __html: lowPowerScript }} />
+        {/* Supporter mark before paint: free-only elements are never painted
+            for a supporter, instead of painted and pulled out. See proFlag.ts. */}
+        <script dangerouslySetInnerHTML={{ __html: proFlagScript }} />
         <script
           type='application/ld+json'
           dangerouslySetInnerHTML={{
