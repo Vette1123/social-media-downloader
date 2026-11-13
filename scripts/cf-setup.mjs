@@ -898,7 +898,7 @@ async function stepWaf(ctx) {
  *   come off at the registrar FIRST, or the domain stops resolving.
  * - Notifications: the free alerts that warn before we lose the site — an abuse
  *   report or a Trust & Safety block (the realistic threat to a downloader), an
- *   L7 DDoS, a certificate problem, and the origin erroring. Each is created
+ *   L7 DDoS, and the origin erroring. Each is created
  *   once, by name, so re-running adds nothing.
  *
  * Deliberately NOT here: an edge-cache rule for HTML. The token cannot purge,
@@ -910,7 +910,8 @@ const TUNE_ALERTS = [
   ['abuse_report_alert', 'Abuse report filed'],
   ['block_notification_new_block', 'Trust & Safety block placed'],
   ['dos_attack_l7', 'HTTP DDoS attack'],
-  ['universal_ssl_event_type', 'Universal SSL certificate event'],
+  // No universal_ssl_event_type: it mails on every routine issue/renew/deploy
+  // of a certificate, not only on failure (removed 2026-11-13 as noise).
   ['real_origin_monitoring', 'Origin unreachable'],
 ]
 const TUNE_PREFIX = 'smd: '
