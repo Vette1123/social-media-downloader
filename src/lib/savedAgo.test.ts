@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { savedAgo } from './savedAgo'
+import { savedAgo, savedBeforeOpening } from './savedAgo'
 
 const NOW = Date.UTC(2026, 8, 7, 12, 0, 0)
 const MINUTE = 60_000
@@ -50,5 +50,17 @@ describe('how long ago a file was saved', () => {
 
   it('speaks the language it is given', () => {
     expect(savedAgo(NOW - 2 * HOUR, NOW, 'es')).toContain('hace')
+  })
+})
+
+describe('savedBeforeOpening', () => {
+  it('notes a file saved on an earlier visit', () => {
+    expect(savedBeforeOpening(NOW - DAY, NOW)).toBe(true)
+  })
+  it('stays quiet for a save made from the result on screen', () => {
+    expect(savedBeforeOpening(NOW + 5 * MINUTE, NOW)).toBe(false)
+  })
+  it('stays quiet for a link never saved', () => {
+    expect(savedBeforeOpening(undefined, NOW)).toBe(false)
   })
 })

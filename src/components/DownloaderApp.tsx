@@ -17,6 +17,7 @@ import {
   isResolvingOrDownloading,
   MAIN_BUTTON_LABELS,
   mainButtonLabel,
+  mayRevealRecent,
   retryTarget,
   type AppMessage,
   type VideoMetadata,
@@ -143,7 +144,7 @@ import {
 } from '@/lib/lastSaved'
 import { autoSaveTarget } from '@/lib/autoSave'
 import { clipboardDecision } from '@/lib/clipboardWatch'
-import { savedAgo } from '@/lib/savedAgo'
+import { savedAgo, savedBeforeOpening } from '@/lib/savedAgo'
 import { carriesText, droppedLink, isEditableTarget } from '@/lib/linkDrop'
 import { linkAdvice, type LinkAdvice } from '@/lib/linkAdvice'
 import {
@@ -1008,6 +1009,19 @@ export function DownloaderApp() {
         : history.slice(0, 5),
     [filteredHistory, history, historyQuery, showAllHistory],
   )
+  // Recent's first appearance waits for a calm moment (see mayRevealRecent);
+  // once shown it stays, so a later save only grows a list already there.
+  // Latched during render, React's "state from previous renders" pattern.
+  const [recentRevealed, setRecentRevealed] = useState(false)
+  const recentWanted = mayRevealRecent({
+    historyCount: history.length,
+    hasResult: state.videoMetadata !== null,
+    url: state.url,
+  })
+  if (recentWanted && !recentRevealed) setRecentRevealed(true)
+  if (history.length === 0 && recentRevealed) setRecentRevealed(false)
+  const showRecent = history.length > 0 && (recentRevealed || recentWanted)
+
   // iPhone/iPad Safari: downloads land in Files, not the camera roll, so we show
   // a one-line "save to Photos" hint on video results. Set once on mount.
   // Read straight from the browser rather than via an effect — see lib/clientEnv.
@@ -2496,10 +2510,18 @@ export function DownloaderApp() {
     [history],
   )
 
+  // When the result on screen was opened, so a save made from it doesn't
+  // suddenly add "saved just now" to its header. Latched per link in render.
+  const [resultOpened, setResultOpened] = useState({ url: '', at: 0 })
+  if (state.loading) {
+    if (resultOpened.url) setResultOpened({ url: '', at: 0 })
+  } else if (state.originalUrl && resultOpened.url !== state.originalUrl) {
+    setResultOpened({ url: state.originalUrl, at: nowMs() })
+  }
   const savedNote = (() => {
     if (!state.originalUrl) return null
     const savedAt = history.find((e) => e.url === state.originalUrl)?.savedAt
-    if (!savedAt) return null
+    if (!savedBeforeOpening(savedAt, resultOpened.at)) return null
     const ago = savedAgo(savedAt, nowMs(), locale)
     return ago ? t('savedAgo', { ago }) : t('savedOn', { date: formatDate(savedAt) })
   })()
@@ -2857,10 +2879,14 @@ export function DownloaderApp() {
       {/* Recent — locally-stored links (never leaves the device). Stays on
           screen alongside a result: it is the way back to an earlier link, and
           hiding it exactly when you have something to compare against is when
-          it's least useful. Only a resolve in flight hides it, so the list
-          can't be re-tapped mid-request. Tap to re-resolve. */}
-      {history.length > 0 && !state.loading && (
-        <div className='ph-no-capture animate-section-in mt-4'>
+          it's least useful. A resolve in flight makes it inert rather than
+          removing it, so it can't be re-tapped mid-request and the result
+          below doesn't jump when it comes back. Tap to re-resolve. */}
+      {showRecent && (
+        <div
+          inert={state.loading}
+          className={`ph-no-capture animate-section-in mt-4 transition-opacity duration-200 ${state.loading ? 'opacity-50' : ''}`}
+        >
           <div className='mb-2 flex items-center justify-between'>
             <span className='flex items-center gap-1.5 text-xs font-medium text-white/50'>
               <ClockIcon className='h-3.5 w-3.5' />
