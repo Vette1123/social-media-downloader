@@ -117,6 +117,8 @@ export type AppAction =
         metadata: VideoMetadata
         audioUrl?: string
         originalUrl: string
+        /** Phone-width screen at resolve time (see autoOpensPreview). */
+        compact?: boolean
       }
     }
 
@@ -169,12 +171,20 @@ export function autoOpensPreview({
   hasVideo,
   hasEmbed,
   isCarousel,
+  compact = false,
 }: {
   platform: SupportedPlatform | undefined
   hasVideo: boolean
   hasEmbed: boolean
   isCarousel: boolean
+  /**
+   * Phone width. Shut there: a 350 px player under the buttons pushed
+   * everything after the result (our own apps' cards) a full screen down,
+   * and the header's thumbnail already shows which post this is.
+   */
+  compact?: boolean
 }): boolean {
+  if (compact) return false
   if (isCarousel) return false
   if (hasEmbed) return false
   if (!hasVideo) return false
@@ -407,6 +417,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
           hasVideo: !!action.payload.downloadUrl,
           hasEmbed: !!meta.embedUrl,
           isCarousel: meta.isPhotoCarousel || hasImages,
+          compact: action.payload.compact,
         }),
         showImageGallery: hasImages,
       }

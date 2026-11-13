@@ -130,3 +130,4 @@ the index for exactly that.
 | 2026-11-13 | [Download progress that does not move the page](2026-11-13-download-progress-no-shift.md) | The button is the bar and the status line is a fixed slot that crossfades; per-chunk dispatches bail out on an unchanged value. |
 | 2026-11-13 | [Resolve and first save without moving the result](2026-11-13-resolve-and-first-save-no-shift.md) | Measure the journey from the visitor's starting state, with and without stored data |
 | 2026-11-13 | [Result card: the download button in the first screen](2026-11-13-result-card-actions-first.md) | Action before preview; feedback at the control, banners for failures |
+| 2026-11-13 | [Our apps' cards in the first screen after a result](2026-11-13-app-cards-in-first-screen.md) | Mounted is not seen; clear what is in front instead of shrinking the card |

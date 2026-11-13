@@ -1,10 +1,11 @@
 'use client'
 
 import { trackFeatureUsed } from '@/lib/analytics'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Surface } from '@/components/Surface'
 import { OFFERS, type Offer, type OfferPlacement } from '@/config/offers'
 import { useHydrated } from '@/lib/clientEnv'
+import { createDwell } from '@/lib/dwell'
 import { useTier } from '@/lib/entitlements'
 import type { TKey } from '@/lib/i18n'
 import { useLocale, useT } from '@/lib/i18nStore'
@@ -73,13 +74,31 @@ function OfferCard({
   const locale = useLocale()
   const copy = locale !== 'en' ? OWN_APP_COPY[offer.id] : undefined
 
-  // Only mounts for a visitor who can see it, so this counts real impressions.
+  // promo_shown: mounted for a visitor who may see it. promo_seen: at least
+  // half the card on screen for a full second, once. The gap between the two
+  // is how many visitors never scrolled to it.
+  const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     trackFeatureUsed('promo_shown', { action: offer.id, outcome: placement })
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const dwell = createDwell(
+      () => trackFeatureUsed('promo_seen', { action: offer.id, outcome: placement }),
+      1000,
+    )
+    const io = new IntersectionObserver(
+      ([entry]) => dwell.update(entry.intersectionRatio >= 0.5),
+      { threshold: [0, 0.5] },
+    )
+    io.observe(el)
+    return () => {
+      io.disconnect()
+      dwell.stop()
+    }
   }, [offer.id, placement])
 
   return (
-    <Surface className='animate-section-in group flex min-w-0 flex-col gap-4 overflow-hidden p-4 sm:p-5'>
+    <Surface ref={ref} className='animate-section-in group flex min-w-0 flex-col gap-4 overflow-hidden p-4 sm:p-5'>
       <div className='flex min-w-0 items-start gap-3.5'>
         {offer.image && (
           <img

@@ -12,7 +12,8 @@
  *
  * Attribution is via the `subid` query parameter appended by offerHref(), read
  * back in each affiliate network's own dashboard. Shown and clicked counts per
- * offer are in PostHog, as `promo_shown` and `promo_click`.
+ * offer are in PostHog, as `promo_shown` (mounted), `promo_seen` (half on
+ * screen for a second) and `promo_click`.
  */
 
 export type OfferPlacement = 'post-result' | 'in-content'
