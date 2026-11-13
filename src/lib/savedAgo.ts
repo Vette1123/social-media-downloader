@@ -66,3 +66,16 @@ function relative(
     unit,
   )
 }
+
+/**
+ * Whether a result should carry the "saved 3 days ago" note. Only for a file
+ * saved before this result was opened: that is the "you already have this
+ * one" answer. A save made from this very result already has its banner, and
+ * the note appearing then grew the card header under the visitor's eyes.
+ */
+export function savedBeforeOpening(
+  savedAt: number | undefined,
+  openedAt: number,
+): savedAt is number {
+  return savedAt !== undefined && savedAt < openedAt
+}

@@ -128,3 +128,4 @@ the index for exactly that.
 | 2026-11-11 | [The smoke suite paces itself](2026-11-11-smoke-pace.md) | A test client of a rate-limited endpoint paces below the limit; an HTML 429 is the zone block page, not the app. |
 | 2026-11-12 | [Links that reached the wrong extractor](2026-11-12-resolver-misclassified-links.md) | A share link's host is not its platform: expand shorteners before routing, and log the link's shape, not just its host. |
 | 2026-11-13 | [Download progress that does not move the page](2026-11-13-download-progress-no-shift.md) | The button is the bar and the status line is a fixed slot that crossfades; per-chunk dispatches bail out on an unchanged value. |
+| 2026-11-13 | [Resolve and first save without moving the result](2026-11-13-resolve-and-first-save-no-shift.md) | Measure the journey from the visitor's starting state, with and without stored data |

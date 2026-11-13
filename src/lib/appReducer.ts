@@ -202,6 +202,22 @@ export function autoOpensPreview({
  * Every label the main button can wear. The button reserves the width of the
  * longest, so a label missing here would resize it mid-transfer.
  */
+/**
+ * Whether the Recent list may appear now. It sits above the results, so a
+ * list that first appears while a result is on screen (the very first save
+ * adds the first row) pushes that result down under the visitor's eyes. It
+ * waits for a moment where nothing below it is being read: no result on
+ * screen, or the visitor is typing the next link.
+ */
+export function mayRevealRecent(input: {
+  historyCount: number
+  hasResult: boolean
+  url: string
+}): boolean {
+  if (input.historyCount === 0) return false
+  return !input.hasResult || input.url.trim() !== ''
+}
+
 export const MAIN_BUTTON_LABELS = [
   'downloadBtn',
   'processing',

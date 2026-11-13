@@ -6,6 +6,7 @@ import {
   isResolvingOrDownloading,
   MAIN_BUTTON_LABELS,
   mainButtonLabel,
+  mayRevealRecent,
   retryTarget,
   type ImageData,
 } from './appReducer'
@@ -283,5 +284,20 @@ describe('MAIN_BUTTON_LABELS', () => {
                 downloadingImages,
               }),
             )
+  })
+})
+
+describe('mayRevealRecent', () => {
+  it('stays hidden when the first save lands while a result is on screen', () => {
+    expect(mayRevealRecent({ historyCount: 1, hasResult: true, url: '' })).toBe(false)
+  })
+  it('appears once the visitor types the next link', () => {
+    expect(mayRevealRecent({ historyCount: 1, hasResult: true, url: 'https://x' })).toBe(true)
+  })
+  it('appears when no result is on screen', () => {
+    expect(mayRevealRecent({ historyCount: 3, hasResult: false, url: '' })).toBe(true)
+  })
+  it('never appears with an empty history', () => {
+    expect(mayRevealRecent({ historyCount: 0, hasResult: false, url: 'https://x' })).toBe(false)
   })
 })
