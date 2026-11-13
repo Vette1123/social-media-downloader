@@ -28,6 +28,8 @@ concurrency:
 # lockfile — never holds a token that can write to the repo.
 permissions:
   contents: read
+  # Read-only: scripts/layout-changed.mjs finds the last commit the layout check passed on.
+  actions: read
 
 env:
   # youtube-dl-exec's preinstall hard-fails when it can't find a Python
@@ -109,16 +111,17 @@ jobs:
         run: node scripts/seo-verify.mjs
 
       # Skips the check below when nothing that can move a pixel changed (docs,
-      # tests, tooling); the step log says which files decided it. A scheduled
-      # rebuild compares against itself and skips; a manual run always checks.
+      # tests, tooling) since the last commit the check PASSED on, read from this
+      # workflow's run history; the step log names the files that decided it. A
+      # manual run always checks.
       - name: Did anything layout-relevant change?
         id: layout
         run: |
           if [ "$EVENT" = "workflow_dispatch" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; echo "manual run: check"; exit 0; fi
-          node scripts/layout-changed.mjs "${BASE:-$GITHUB_SHA}" "$GITHUB_SHA"
+          node scripts/layout-changed.mjs "" "$GITHUB_SHA"
         env:
           EVENT: ${{ github.event_name }}
-          BASE: ${{ github.event.before || github.event.pull_request.base.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
 
       # Reloads the built home page (LTR and RTL) as a free, a returning and a
       # supporter visitor on a throttled phone and fails on any layout shift.

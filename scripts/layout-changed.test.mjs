@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { touchesLayout } from './layout-changed.mjs'
+import { CHECK_STEP, lastCheckedSha, touchesLayout } from './layout-changed.mjs'
 
 describe('touchesLayout', () => {
   it('skips a push of only docs, lessons, tests, tooling and side workflows', () => {
@@ -28,5 +28,22 @@ describe('touchesLayout', () => {
 
   it('treats nested script folders as source, since app code imports some of them', () => {
     expect(touchesLayout(['scripts/lib/shared.mjs'])).toEqual(['scripts/lib/shared.mjs'])
+  })
+})
+
+describe('lastCheckedSha', () => {
+  const run = (sha, conclusion) => ({
+    head_sha: sha,
+    jobs: [{ steps: [{ name: 'Build static site', conclusion: 'success' }, { name: CHECK_STEP, conclusion }] }],
+  })
+
+  // 2026-11-13: a scheduled run superseded the push that changed the deploy
+  // workflow, skipped the check, and the next push diffed from it.
+  it('ignores runs that skipped the check, so a superseded push is still checked', () => {
+    expect(lastCheckedSha([run('sched', 'skipped'), run('older', 'success')])).toBe('older')
+  })
+
+  it('returns null when no run in the window really checked, which means run', () => {
+    expect(lastCheckedSha([run('a', 'skipped'), { head_sha: 'b', jobs: [] }])).toBeNull()
   })
 })
