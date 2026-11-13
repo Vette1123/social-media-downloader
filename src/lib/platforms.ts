@@ -1004,7 +1004,7 @@ export const platforms: Platform[] = [
     slug: 'vimeo-downloader',
     name: 'Vimeo',
     brandLabel: 'Vimeo video downloader',
-    metaTitle: 'Vimeo Video Downloader — Save HD Videos as MP4, No Login',
+    metaTitle: 'Vimeo to MP4 Downloader — Save HD Vimeo Videos, No Login',
     metaDescription:
       'Download public Vimeo videos in HD as MP4. Paste a vimeo.com link and save the progressive video file instantly — free, no login, no app install.',
     h1: 'Vimeo Video Downloader — HD MP4, No Login',

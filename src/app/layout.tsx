@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
 import './globals.css'
 import { siteConfig } from '@/config/site'
+import { pageCopy } from '@/lib/pageCopy'
 import { versionedIcon } from '@/lib/appIcon'
 import { globalStructuredData, jsonLdText } from '@/lib/structuredData'
 import { SPLASH_DEVICES, splashMedia, splashPath } from '@/lib/splashDevices'
@@ -17,11 +18,12 @@ const geistSans = Geist({
   preload: true,
 })
 
-// The <title> is its own string rather than name + tagline: together those
-// ran to 106 characters, so a result showed neither of them whole. The
-// tagline is unchanged in the description and the OG tags, where nothing
-// is clipped at 60.
-const title = `${siteConfig.name} — Save Any Public Video in HD`
+// The English home page's title and description: the same `pageCopy.home`
+// the four translated homes read. This used to be its own literal here, so
+// the 2026-11-10 title change (the query with the impressions) reached every
+// home page except the English one, which takes 95% of them.
+const title = pageCopy.home.metaTitle
+const description = pageCopy.home.metaDescription
 
 // Runs synchronously in <head>, before paint. Flags low-power devices and writes
 // a .low-power class to <html> so CSS can swap to the cheap variant with no
@@ -60,7 +62,7 @@ export const metadata: Metadata = {
     // prints it above the title in its own right.
     template: `%s`,
   },
-  description: siteConfig.description,
+  description,
   applicationName: siteConfig.name,
   authors: [{ name: siteConfig.author.name, url: siteConfig.author.url }],
   creator: siteConfig.author.name,
@@ -80,7 +82,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title,
-    description: siteConfig.description,
+    description,
     url: siteConfig.url,
     siteName: siteConfig.name,
     locale: siteConfig.locale,
@@ -98,7 +100,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title,
-    description: siteConfig.description,
+    description,
     creator: siteConfig.twitterTag,
     site: siteConfig.twitterTag,
     images: [
