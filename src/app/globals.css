@@ -937,3 +937,8 @@ dialog[open]::backdrop {
 html[data-pro] [data-free-only] {
   display: none !important;
 }
+/* The other half: supporter-only elements live in the static HTML too, so they
+   are present from the first paint instead of arriving and pushing the page. */
+html:not([data-pro]) [data-pro-only] {
+  display: none !important;
+}

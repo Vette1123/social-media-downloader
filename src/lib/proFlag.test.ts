@@ -61,4 +61,12 @@ describe('wiring', () => {
   ])('%s marks its free-only element', (file) => {
     expect(src(file)).toMatch(/data-free-only/)
   })
+  it('keeps the batch queue in the static HTML as a supporter-only bar', () => {
+    // The lazy panel popping in on load pushed the rest of the page down.
+    expect(src('app/globals.css')).toMatch(/html:not\(\[data-pro\]\) \[data-pro-only\]\s*\{\s*display: none !important/)
+    const app = src('components/DownloaderApp.tsx')
+    const bar = app.slice(app.indexOf('function ProBatchPanel'))
+    expect(bar).toMatch(/data-pro-only/)
+    expect(bar).toMatch(/open && tier === 'pro'/)
+  })
 })
