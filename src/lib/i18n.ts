@@ -50,6 +50,10 @@ export type TKey =
   | 'cancelDownload'
   | 'downloadCanceled'
   | 'progressLine'
+  | 'preparingShort'
+  | 'renderingBtn'
+  | 'etaSeconds'
+  | 'etaMinutes'
   | 'clickToDownload'
   | 'videoBtn'
   | 'videoSlideshowBtn'
@@ -171,6 +175,10 @@ const en: Record<TKey, string> = {
   cancelDownload: 'Cancel',
   downloadCanceled: 'Download canceled.',
   progressLine: 'Downloading… {pct}%',
+  preparingShort: 'Preparing…',
+  renderingBtn: 'Rendering…',
+  etaSeconds: 'about {n}s left',
+  etaMinutes: 'about {n} min left',
   clickToDownload: 'Click to download your content',
   videoBtn: 'Video',
   videoSlideshowBtn: 'Video (slideshow)',

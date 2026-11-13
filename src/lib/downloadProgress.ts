@@ -69,6 +69,9 @@ export function getProgressServerSnapshot(): ProgressDetail | null {
 
 const MB = 1024 * 1024
 
+/** Between readout segments; the UI splits on it to bidi-isolate each one. */
+export const READOUT_SEPARATOR = ' · '
+
 /** `8.4 MB`, or `840 KB` below a megabyte — one decimal, never `.0 MB`. */
 export function formatBytes(bytes: number): string {
   if (bytes >= MB) {
@@ -103,9 +106,21 @@ const ETA_MIN_ELAPSED_MS = 3000
 const ETA_MIN_SECONDS = 5
 const ETA_MAX_SECONDS = 60 * 60
 
+/** How the wait is worded; the caller passes its locale's, English otherwise. */
+export interface EtaWords {
+  seconds: (n: number) => string
+  minutes: (n: number) => string
+}
+
+const ENGLISH_ETA: EtaWords = {
+  seconds: (n) => `about ${n}s left`,
+  minutes: (n) => `about ${n} min left`,
+}
+
 export function describeRemaining(
   detail: ProgressDetail | null,
   now: number = Date.now(),
+  words: EtaWords = ENGLISH_ETA,
 ): string {
   if (!detail || detail.total <= 0 || detail.received <= 0) return ''
   const elapsedMs = now - detail.startedAt
@@ -116,9 +131,8 @@ export function describeRemaining(
   const seconds = Math.round((detail.total - detail.received) / bytesPerMs / 1000)
   if (seconds < ETA_MIN_SECONDS || seconds > ETA_MAX_SECONDS) return ''
 
-  if (seconds < 60) return `about ${seconds}s left`
-  const minutes = Math.round(seconds / 60)
-  return `about ${minutes} min left`
+  if (seconds < 60) return words.seconds(seconds)
+  return words.minutes(Math.round(seconds / 60))
 }
 
 /**
@@ -130,6 +144,7 @@ export function describeRemaining(
 export function describeProgress(
   detail: ProgressDetail | null,
   now: number = Date.now(),
+  words: EtaWords = ENGLISH_ETA,
 ): string {
   if (!detail || detail.total <= 0) return ''
   const elapsedS = Math.max(0.5, (now - detail.startedAt) / 1000)
@@ -138,7 +153,7 @@ export function describeProgress(
   const parts = [
     `${formatBytes(detail.received)} / ${formatBytes(detail.total)}`,
     speed,
-    describeRemaining(detail, now),
+    describeRemaining(detail, now, words),
   ]
-  return parts.filter(Boolean).join(' · ')
+  return parts.filter(Boolean).join(READOUT_SEPARATOR)
 }

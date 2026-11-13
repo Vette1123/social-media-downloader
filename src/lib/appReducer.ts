@@ -198,12 +198,22 @@ export function autoOpensPreview({
  * plain "Download" during a transfer read as a broken button: people kept
  * tapping it (rage and dead clicks on /). Every busy state gets a spinner.
  */
+/**
+ * Every label the main button can wear. The button reserves the width of the
+ * longest, so a label missing here would resize it mid-transfer.
+ */
+export const MAIN_BUTTON_LABELS = [
+  'downloadBtn',
+  'processing',
+  'downloadingBtn',
+] as const
+
 export function mainButtonLabel(
   state: Pick<
     AppState,
     'loading' | 'downloading' | 'downloadingAudio' | 'downloadingImages'
   >,
-): 'processing' | 'downloadingBtn' | 'downloadBtn' {
+): (typeof MAIN_BUTTON_LABELS)[number] {
   if (state.loading) return 'processing'
   if (isResolvingOrDownloading(state)) return 'downloadingBtn'
   return 'downloadBtn'
@@ -280,6 +290,10 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, downloadImagesAsZip: action.payload }
 
     case 'SET_PROGRESS':
+      // Dispatched once per network chunk — hundreds per megabyte — while the
+      // rounded percentage moves far less often. Same value, same state, so
+      // React skips the re-render of the whole app.
+      if (state.progress === action.payload) return state
       return { ...state, progress: action.payload }
 
     case 'TOGGLE_PREVIEW':

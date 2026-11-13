@@ -450,6 +450,17 @@ describe('the Threads embed extractor', () => {
   })
 })
 
+describe('Pinterest pins are recognised on any country subdomain', () => {
+  it.each([
+    'https://www.pinterest.com/pin/123456789012345678/',
+    'https://fr.pinterest.com/pin/123456789012345678/',
+    'https://in.pinterest.com/pin/123456789012345678/',
+    'https://pinterest.co.uk/pin/123456789012345678/',
+  ])('%s', (url) => {
+    expect(detectPlatform(url)).toBe('pinterest')
+  })
+})
+
 describe('Threads links are recognised as Threads', () => {
   it.each([
     'https://www.threads.com/@someone/post/Db-50iLEbpn',
