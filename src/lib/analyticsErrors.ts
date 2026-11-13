@@ -41,5 +41,14 @@ export function isExpectedFailure(code: FailureCode): boolean {
 }
 
 export function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
+  if (error instanceof Error) return error.message
+  if (typeof error !== 'object' || error === null) return String(error)
+  // A promise rejected with a plain object read as "[object Object]" on the
+  // board (2026-11-12) and could never be traced. Its own message if it has
+  // one, else its shape: constructor and key names, never values (privacy).
+  const { message } = error as { message?: unknown }
+  if (typeof message === 'string' && message) return message
+  const kind = (error as object).constructor?.name || 'Object'
+  const keys = Object.keys(error).slice(0, 6)
+  return `[${kind}]${keys.length ? ` keys: ${keys.join(', ')}` : ' (no keys)'}`
 }

@@ -11,7 +11,7 @@
 import type { CaptureResult } from 'posthog-js'
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
-import { useAccount } from '@/lib/account'
+import { hasAccountHint, useAccount } from '@/lib/account'
 import {
   identifyAccount,
   registerAnalyticsContext,
@@ -21,6 +21,7 @@ import {
   trackPwaInstalled,
   trackSignedIn,
 } from '@/lib/analytics'
+import { accountContextFor } from '@/lib/analyticsContext'
 import { isForeignEarlyError, shouldDropException } from '@/lib/analyticsNoise'
 import { scrubEvent } from '@/lib/analyticsPrivacy'
 import { getLocaleSnapshot, subscribeLocale } from '@/lib/i18nStore'
@@ -211,8 +212,9 @@ export function AnalyticsContext() {
   }, [])
 
   useEffect(() => {
-    if (signedIn === undefined) return
-    if (signedIn && userId) {
+    const context = accountContextFor(signedIn, hasAccountHint())
+    if (context === 'wait') return
+    if (context === 'signed_in' && userId) {
       identifyAccount(userId, { pro: pro === true, plan: plan?.status })
       if (latchSignedIn()) trackSignedIn()
       return

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { mergeEntries } from './history'
 import type { HistoryEntry } from './history'
 
@@ -83,5 +83,26 @@ describe('the saved mark', () => {
     const { list } = mergeEntries([{ ...NEWER, savedAt: 42 }], [OLDER])
     expect(list.find((e) => e.url === NEWER.url)?.savedAt).toBe(42)
     expect(list.find((e) => e.url === OLDER.url)?.savedAt).toBeUndefined()
+  })
+})
+
+// An in-app browser with storage disabled throws from the `localStorage`
+// GETTER itself, not from getItem. Read during render, that crashed the page
+// (PostHog early_crash, Android Chrome, 2026-11-12).
+describe('storage that refuses access', () => {
+  it('reads as empty instead of throwing', async () => {
+    const denied = {}
+    Object.defineProperty(denied, 'localStorage', {
+      get() {
+        throw new DOMException('Access is denied for this document.', 'SecurityError')
+      },
+    })
+    vi.stubGlobal('window', denied)
+    try {
+      const { loadHistory } = await import('./history')
+      expect(loadHistory()).toEqual([])
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

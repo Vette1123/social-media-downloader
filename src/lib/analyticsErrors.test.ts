@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { failureCode, isExpectedFailure } from './analyticsErrors'
+import { errorMessage, failureCode, isExpectedFailure } from './analyticsErrors'
 
 describe('failureCode', () => {
   it.each([
@@ -28,5 +28,16 @@ describe('isExpectedFailure', () => {
     expect(isExpectedFailure('private')).toBe(true)
     expect(isExpectedFailure('upstream')).toBe(false)
     expect(isExpectedFailure('server')).toBe(false)
+  })
+})
+
+// "[early_rejection] [object Object]", 2026-11-12: untraceable.
+describe('errorMessage on a plain-object rejection', () => {
+  it('names it by its message, else its shape, never its values', () => {
+    expect(errorMessage(new Error('boom'))).toBe('boom')
+    expect(errorMessage('plain')).toBe('plain')
+    expect(errorMessage({ message: 'quota exceeded', code: 22 })).toBe('quota exceeded')
+    expect(errorMessage({ type: 'abort', token: 'secret-value' })).toBe('[Object] keys: type, token')
+    expect(errorMessage({})).toBe('[Object] (no keys)')
   })
 })

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  accountContextFor,
   isPriorUseKey,
   milestonesFor,
   nextVisit,
@@ -79,5 +80,21 @@ describe('isPriorUseKey', () => {
     expect(isPriorUseKey('smd_ph_signed_in')).toBe(false)
     expect(isPriorUseKey('other')).toBe(false)
     expect(isPriorUseKey(null)).toBe(false)
+  })
+})
+
+describe('accountContextFor', () => {
+  it('registers a browser with no session hint as signed out right away', () => {
+    // The store never asks the server without the hint, so it stays undefined
+    // for good: 92% of events carried no `pro` at all before this.
+    expect(accountContextFor(undefined, false)).toBe('signed_out')
+  })
+  it('waits for the server while a hinted browser is still settling', () => {
+    expect(accountContextFor(undefined, true)).toBe('wait')
+  })
+  it('follows the server once it answers', () => {
+    expect(accountContextFor(true, true)).toBe('signed_in')
+    expect(accountContextFor(false, true)).toBe('signed_out')
+    expect(accountContextFor(false, false)).toBe('signed_out')
   })
 })
