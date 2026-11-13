@@ -15,6 +15,9 @@
  *                                       Bot Fight Mode off, TLS. See stepWaf —
  *                                       this is the step that decides whether
  *                                       search crawlers reach the site
+ *   node scripts/cf-setup.mjs tune      HTML-rewriting zone features off,
+ *                                       DNSSEC on, free alert emails. See
+ *                                       stepTune
  *   node scripts/cf-setup.mjs health    who the edge stopped in the last 24h,
  *                                       and whether any of it was a crawler or
  *                                       one of our own senders. Run it after
@@ -880,6 +883,115 @@ async function stepWaf(ctx) {
   }
 }
 
+// --- zone tune --------------------------------------------------------------
+
+/**
+ * The free-plan settings the 2026-11-13 audit found worth changing, applied as
+ * code so a dashboard click can't silently undo them.
+ *
+ * - Email obfuscation and server-side excludes both rewrite the HTML at the
+ *   edge. The pages are a static export whose markup React hydrates and whose
+ *   head CI checks byte-for-byte; nothing should edit it on the way out.
+ * - DNSSEC signs the zone. Turning it on here is safe on its own: resolvers only
+ *   start validating once the DS record printed below is added at the
+ *   registrar. Removing it later is the dangerous direction — the DS record must
+ *   come off at the registrar FIRST, or the domain stops resolving.
+ * - Notifications: the free alerts that warn before we lose the site — an abuse
+ *   report or a Trust & Safety block (the realistic threat to a downloader), an
+ *   L7 DDoS, a certificate problem, and the origin erroring. Each is created
+ *   once, by name, so re-running adds nothing.
+ *
+ * Deliberately NOT here: an edge-cache rule for HTML. The token cannot purge,
+ * so a cached page could outlive the deploy that removed the chunks it loads,
+ * and the post-deploy SEO check would read the old head.
+ */
+const TUNE_SETTINGS = { email_obfuscation: 'off', server_side_exclude: 'off' }
+const TUNE_ALERTS = [
+  ['abuse_report_alert', 'Abuse report filed'],
+  ['block_notification_new_block', 'Trust & Safety block placed'],
+  ['dos_attack_l7', 'HTTP DDoS attack'],
+  ['universal_ssl_event_type', 'Universal SSL certificate event'],
+  ['real_origin_monitoring', 'Origin unreachable'],
+]
+const TUNE_PREFIX = 'smd: '
+
+async function stepTune(ctx) {
+  step('Zone tune: HTML-rewriting features off, DNSSEC, notifications')
+  const zone = await findZone(ctx.token, ctx.accountId)
+  if (!zone) throw new SetupError(`Zone ${APEX} is not on this account. Run the \`zone\` step first.`)
+  const failed = []
+  const task = async (label, fn) => {
+    try {
+      ok(`${label}${(await fn()) ?? ''}`)
+    } catch (error) {
+      warn(`${label} — failed: ${error.message}`)
+      failed.push(label)
+    }
+  }
+
+  for (const [id, value] of Object.entries(TUNE_SETTINGS)) {
+    await task(`${id} = ${value}`, async () => {
+      const current = await cf(ctx.token, `/zones/${zone.id}/settings/${id}`)
+      if (current.value === value) return ' (already)'
+      await cf(ctx.token, `/zones/${zone.id}/settings/${id}`, { method: 'PATCH', body: { value } })
+      return ` (was ${current.value})`
+    })
+  }
+
+  await task('DNSSEC signing', async () => {
+    let dnssec = await cf(ctx.token, `/zones/${zone.id}/dnssec`)
+    const was = dnssec.status
+    if (was === 'disabled') {
+      dnssec = await cf(ctx.token, `/zones/${zone.id}/dnssec`, { method: 'PATCH', body: { status: 'active' } })
+    }
+    if (dnssec.status !== 'active' && dnssec.ds) {
+      info('Add this DS record at the registrar of ' + APEX + ' (it finishes DNSSEC):')
+      console.log(`    Key tag ${dnssec.key_tag}  Algorithm ${dnssec.algorithm}  Digest type ${dnssec.digest_type}`)
+      console.log(`    Digest  ${dnssec.digest}`)
+    }
+    return ` (${was} -> ${dnssec.status})`
+  })
+
+  await task(`${TUNE_ALERTS.length} notification policies`, async () => {
+    const me = await cf(ctx.token, '/user')
+    if (!me.email) throw new SetupError('the token cannot read the account email to send alerts to')
+    const existing = new Set(
+      (await cf(ctx.token, `/accounts/${ctx.accountId}/alerting/v3/policies`)).map((p) => p.name),
+    )
+    let added = 0
+    for (const [alertType, title] of TUNE_ALERTS) {
+      const name = TUNE_PREFIX + title
+      if (existing.has(name)) continue
+      // Which filters a type accepts isn't published per type, and a wrong one
+      // is a 17007. Scoped to this zone where the type allows it, else
+      // account-wide (this account has one zone).
+      const body = { name, alert_type: alertType, enabled: true, mechanisms: { email: [{ id: me.email }] } }
+      const attempts = [{ ...body, filters: { zones: [zone.id] } }, body]
+      let lastError = null
+      for (const attempt of attempts) {
+        const res = await cf(ctx.token, `/accounts/${ctx.accountId}/alerting/v3/policies`, {
+          method: 'POST',
+          body: attempt,
+          allowFailure: true,
+        })
+        if (res.success) {
+          lastError = null
+          break
+        }
+        lastError = (res.errors ?? []).map((e) => `[${e.code}] ${e.message}`).join('; ')
+      }
+      if (lastError) throw new SetupError(`${alertType}: ${lastError}`)
+      added++
+    }
+    return ` (${added} added, ${TUNE_ALERTS.length - added} already there; emailed to the account owner)`
+  })
+
+  if (failed.length) {
+    warn(`${failed.length} item(s) not applied; the rest stand.`)
+    process.exitCode = 1
+  }
+}
+
 // --- edge health ----------------------------------------------------------
 
 /**
@@ -1074,6 +1186,10 @@ async function main() {
     await stepWaf(ctx)
     return
   }
+  if (command === 'tune') {
+    await stepTune(ctx)
+    return
+  }
   if (command === 'health') {
     await stepHealth(ctx)
     return
@@ -1094,7 +1210,7 @@ async function main() {
   }
 
   throw new SetupError(
-    `Unknown command "${command}". Expected one of: check, deploy, secrets, zone, domain, waf, all`,
+    `Unknown command "${command}". Expected one of: check, deploy, secrets, zone, domain, waf, tune, health, all`,
   )
 }
 
