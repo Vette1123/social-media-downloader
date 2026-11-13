@@ -315,6 +315,32 @@ export function retryTarget(
   return state.originalUrl || state.url.trim()
 }
 
+/**
+ * What pressing the ALREADY-selected Video/Audio/HD/Data saver chip does.
+ *
+ * Every one of 53 dead clicks on these chips (PostHog, 30 days) was on the
+ * selected one, and the sessions show why: right after a failed resolve the
+ * visitor re-taps their choice to say "again, like this". When a failure is on
+ * screen and nothing is running, that tap re-runs the link; otherwise it stays
+ * the no-op it always was.
+ */
+export function chipRetryLink(
+  state: Pick<
+    AppState,
+    | 'message'
+    | 'originalUrl'
+    | 'url'
+    | 'loading'
+    | 'downloading'
+    | 'downloadingAudio'
+    | 'downloadingImages'
+  >,
+): string | null {
+  if (state.message?.kind !== 'error') return null
+  if (isResolvingOrDownloading(state)) return null
+  return retryTarget(state) || null
+}
+
 export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case 'SET_URL':

@@ -8,6 +8,7 @@ import {
   mainButtonLabel,
   mayRevealRecent,
   emptyBoxDownload,
+  chipRetryLink,
   transferNote,
   retryTarget,
   type ImageData,
@@ -334,5 +335,29 @@ describe('emptyBoxDownload', () => {
   it('asks for a link with nothing on screen, or for a gallery', () => {
     expect(emptyBoxDownload({ videoMetadata: null, downloadUrl: '', audioUrl: '' })).toBeNull()
     expect(emptyBoxDownload({ videoMetadata: meta, downloadUrl: '', audioUrl: '' })).toBeNull()
+  })
+})
+
+describe('chipRetryLink', () => {
+  const failed = {
+    ...initialState,
+    originalUrl: 'https://www.tiktok.com/@a/video/1',
+    message: { kind: 'error' as const, text: 'Could not fetch' },
+  }
+
+  it('re-runs the failed link', () => {
+    expect(chipRetryLink(failed)).toBe('https://www.tiktok.com/@a/video/1')
+  })
+
+  it('stays a no-op without a failure on screen', () => {
+    expect(chipRetryLink({ ...failed, message: null })).toBeNull()
+    expect(
+      chipRetryLink({ ...failed, message: { kind: 'saved', text: 'Saved' } }),
+    ).toBeNull()
+  })
+
+  it('never restarts work that is running, or retries nothing', () => {
+    expect(chipRetryLink({ ...failed, loading: true })).toBeNull()
+    expect(chipRetryLink({ ...failed, originalUrl: '', url: '  ' })).toBeNull()
   })
 })

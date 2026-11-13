@@ -132,3 +132,4 @@ the index for exactly that.
 | 2026-11-13 | [Result card: the download button in the first screen](2026-11-13-result-card-actions-first.md) | Action before preview; feedback at the control, banners for failures |
 | 2026-11-13 | [Our apps' cards in the first screen after a result](2026-11-13-app-cards-in-first-screen.md) | Mounted is not seen; clear what is in front instead of shrinking the card |
 | 2026-11-13 | [The main Download button downloads the result on screen](2026-11-13-empty-box-download.md) | Read what was on screen around a rage click, not just the count |
+| 2026-11-13 | [Dead and rage clicks, read by what happened around them](2026-11-13-dead-clicks-read-by-sequence.md) | Read the element and the next events before the count |

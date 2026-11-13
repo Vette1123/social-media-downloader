@@ -21,6 +21,7 @@ import {
   emptyBoxDownload,
   transferNote,
   retryTarget,
+  chipRetryLink,
   type AppMessage,
   type VideoMetadata,
 } from '@/lib/appReducer'
@@ -132,6 +133,7 @@ import {
 } from '@/lib/history'
 import { saveBlob, saveMedia } from '@/lib/blobSaver'
 import { isStaleLinkError, isTransientError, withRetry } from '@/lib/retry'
+import { imageSaveStep } from '@/lib/imageSaves'
 import { canShareFile, fileFromBlob, shareFile } from '@/lib/shareFile'
 import { audioTagsFor } from '@/lib/audioTags'
 import { slideshowRenderOffered } from '@/lib/nativeMedia'
@@ -915,6 +917,10 @@ export function DownloaderApp() {
   // (PostHog dead clicks, 2026-11). The counter keys the message, which replays
   // its entrance, and the caret goes where the link belongs.
   const [urlErrorAttempt, setUrlErrorAttempt] = useState(0)
+  // The Paste chip while the clipboard read is pending. On iOS that wait is the
+  // system "Paste" bubble, often seconds; without a visible change the chip
+  // read as dead (PostHog: 5 of 16 dead Paste clicks were reads still pending).
+  const [pasting, setPasting] = useState(false)
   const setUrlError = (text: string | null) => {
     setUrlErrorText(text)
     if (text === null) return
@@ -1480,6 +1486,7 @@ export function DownloaderApp() {
       setUrlError(t('errorLongPress'))
       return
     }
+    setPasting(true)
     try {
       const text = await navigator.clipboard.readText()
       const found = extractFirstUrl(text)
@@ -1500,6 +1507,8 @@ export function DownloaderApp() {
       trackFeatureUsed('paste_chip', { outcome: 'denied' })
       inputRef.current?.focus()
       setUrlError(t('errorClipboard'))
+    } finally {
+      setPasting(false)
     }
   }
 
@@ -2355,6 +2364,7 @@ export function DownloaderApp() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ items }),
+          signal: cancelRef.current.signal,
         })
 
         if (!response.ok) {
@@ -2394,7 +2404,11 @@ export function DownloaderApp() {
             const keep = totalImages === 1 ? deliver : saveMedia
             await keep(blob, filename)
 
-            await new Promise((resolve) => setTimeout(resolve, 500))
+            const step = imageSaveStep(i, totalImages)
+            if (totalImages > 1) dispatch({ type: 'SET_PROGRESS', payload: step.pct })
+            if (step.pauseMs) {
+              await new Promise((resolve) => setTimeout(resolve, step.pauseMs))
+            }
           } catch (error) {
             // The save loop's per-item tolerance stops at a cancel: carrying on
             // would keep writing files after the visitor asked it to stop.
@@ -2431,7 +2445,7 @@ export function DownloaderApp() {
           type: 'SET_MESSAGE',
           payload: {
             kind: 'error',
-            text: `Could not save those ${galleryNoun} — the links may have expired. Paste the post again to refresh them.`,
+            text: d('Could not save those {noun}. The links may have expired: paste the post again to refresh them.', { noun: galleryNoun }),
           },
         })
       }
@@ -2515,6 +2529,16 @@ export function DownloaderApp() {
   // until this was derived rather than read straight off `originalUrl`, was
   // every failed resolve. See lib/appReducer.
   const retryLink = retryTarget(state)
+
+  // A format/quality chip: picks its value, or — pressed while already
+  // selected with a failure on screen — retries (see chipRetryLink).
+  const pressChip = (active: boolean, pick: () => void) => {
+    if (!active) return pick()
+    const link = chipRetryLink(state)
+    if (!link) return
+    trackRetryClicked({ surface: 'active_chip' })
+    void handleProcess(link, 'retry')
+  }
 
   /**
    * "Saved 2 hours ago", when this exact link has been downloaded before.
@@ -2697,9 +2721,15 @@ export function DownloaderApp() {
               type='button'
               onClick={handlePaste}
               aria-label={t('pasteAria')}
-              className='card-hover absolute right-1.5 flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 py-1.5 text-xs font-medium text-white/70 hover:text-white active:scale-95'
+              aria-busy={pasting}
+              className={`card-hover absolute right-1.5 flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium hover:text-white active:scale-95 ${pasting ? 'border-cyan-400/40 bg-cyan-400/10 text-white' : 'border-white/10 bg-white/[0.06] text-white/70'}`}
             >
-              <ClipboardIcon className='h-3.5 w-3.5' />
+              {/* Same box either way, so the swap cannot nudge the field. */}
+              {pasting ? (
+                <SpinnerIcon className='h-3.5 w-3.5' />
+              ) : (
+                <ClipboardIcon className='h-3.5 w-3.5' />
+              )}
               {t('paste')}
             </button>
           )}
@@ -2822,7 +2852,7 @@ export function DownloaderApp() {
               <button
                 key={f}
                 type='button'
-                onClick={() => changeFormat(f)}
+                onClick={() => pressChip(format === f, () => changeFormat(f))}
                 aria-pressed={format === f}
                 className={`rounded-full px-3 py-1 font-medium transition-colors ${
                   format === f
@@ -2849,7 +2879,7 @@ export function DownloaderApp() {
                   <button
                     key={q}
                     type='button'
-                    onClick={() => changeQuality(q)}
+                    onClick={() => pressChip(quality === q, () => changeQuality(q))}
                     aria-pressed={quality === q}
                     className={`rounded-full px-3 py-1 font-medium transition-colors ${
                       quality === q

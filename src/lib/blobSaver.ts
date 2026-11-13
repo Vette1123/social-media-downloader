@@ -34,6 +34,10 @@ export function saveBlob(blob: Blob, filename: string): void {
   const link = document.createElement('a')
   link.href = blobUrl
   link.download = filename
+  // A programmatic click, not the visitor's: autocapture recorded it, and a
+  // gallery's three saves in ~1 s read as a rage click (85 of 89 "rage
+  // clicks" in PostHog were this link).
+  link.className = 'ph-no-capture'
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
