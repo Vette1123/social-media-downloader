@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { pageCopy } from './pageCopy'
 import { LOCALES } from './i18n'
 import { platformFor } from './localeContent'
 import { platforms } from './platforms'
@@ -81,5 +84,26 @@ describe('brand entity', () => {
     const expected = ['Social Downloader', 'socialdownloader.space']
     expect(node('Organization').alternateName).toEqual(expected)
     expect(node('WebSite').alternateName).toEqual(expected)
+  })
+})
+
+// The English home had two titles: the layout's own literal (what Google
+// showed) and pageCopy.home (what the 2026-11-10 title change edited). Every
+// English home surface now reads pageCopy.home, like the four translations.
+describe('English home title and description', () => {
+  const webPage = (homepageStructuredData('en')['@graph'] as Array<Record<string, unknown>>).find(
+    (node) => node['@type'] === 'WebPage',
+  )
+
+  it('JSON-LD WebPage uses pageCopy.home', () => {
+    expect(webPage?.name).toBe(pageCopy.home.metaTitle)
+    expect(webPage?.description).toBe(pageCopy.home.metaDescription)
+  })
+
+  it('the root layout <title> and description come from pageCopy.home', () => {
+    const layout = readFileSync(join(process.cwd(), 'src/app/layout.tsx'), 'utf8')
+    expect(layout).toContain('const title = pageCopy.home.metaTitle')
+    expect(layout).toContain('const description = pageCopy.home.metaDescription')
+    expect(layout).not.toContain('siteConfig.description')
   })
 })

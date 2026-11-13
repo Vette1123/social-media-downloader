@@ -242,14 +242,13 @@ export function homepageStructuredData(locale: Locale = 'en') {
   const url = localizedUrl(locale, '/')
   const { copy, homeFaqs } = contentFor(locale)
   const { howTo, home, nav } = copy
-  const english = locale === 'en'
   return {
     '@context': 'https://schema.org',
     '@graph': [
       webPageNode({
         url,
-        name: english ? `${siteConfig.name} — ${siteConfig.tagline}` : home.metaTitle,
-        description: english ? siteConfig.description : home.metaDescription,
+        name: home.metaTitle,
+        description: home.metaDescription,
         isPartOfId: `${siteConfig.url}/#website`,
         locale,
       }),
