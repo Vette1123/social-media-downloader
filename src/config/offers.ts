@@ -45,6 +45,12 @@ export interface Offer {
   label?: string
   /** Our link, not an affiliate's: a clean URL, followed by crawlers. */
   ownApp?: boolean
+  /**
+   * ISO instant the placement ends, checked in the visitor's browser, so a
+   * paid month stops on time with no deploy. Required on every live paid offer
+   * (promo.test.ts). Leave the entry in place afterwards as the record.
+   */
+  until?: string
 }
 
 /**
@@ -79,6 +85,23 @@ export const OFFERS: readonly Offer[] = [
     image: '/promo/rafiq.png',
     label: 'Our app',
     ownApp: true,
+  },
+  {
+    // Paid flat fee: $100 for one month, on every download (post-result only;
+    // the in-content box's reserved height was measured for the apps' copy).
+    // Copy and SMD15 are the sponsor's own, used verbatim as agreed. Live
+    // 2026-11-13; ends itself 30 days later. Swap href for their custom
+    // tracking link when it arrives; keep `until` as it is.
+    // Weight 2 holds one card for them; the other stays Masareef.
+    id: 'proxy-seller',
+    headline: 'Proxies for any workflow, 15% off',
+    body: 'Proxy-Seller gives you reliable proxy infrastructure for any workflow: private residential, mobile (4G/5G/LTE), ISP, and datacenter IPv4/IPv6 proxies, all with HTTP(S) and SOCKS5 support. Tap into 47M+ residential IPs across 220+ locations, target exactly the country, city, or ISP you need, and count on 99.7% uptime backed by 24/7 support. Get 15% off with promo code SMD15.',
+    cta: 'Get 15% off',
+    href: 'https://proxy-seller.com/',
+    weight: 2,
+    platforms: 'all',
+    placements: ['post-result'],
+    until: '2026-12-13T12:00:00Z',
   },
   {
     id: 'hitpaw-converter',

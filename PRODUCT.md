@@ -23,8 +23,9 @@ presses, with nothing between the visitor and the Download button. The site is a
 
 - Free, no login, no limits: downloading never needs an account or a payment. Pro and Sponsors add extras;
   they never widen what can be reached.
-- No popups, no redirects, no ads. The only promotions are the owner's own apps, labelled "Our app", and the
-  Sponsors link.
+- No popups, no redirects, no ad networks or ad scripts. Promotions are the owner's own apps, labelled "Our app",
+  the Sponsors link, and at most one paid card under a finished download, labelled "Sponsored", served from our
+  own site, hidden from Pro, and ending itself on its paid-up date (`until` in `src/config/offers.ts`).
 
 ## Operating Context
 

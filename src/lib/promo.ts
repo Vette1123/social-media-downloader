@@ -1,6 +1,7 @@
 import type { Offer, OfferPlacement } from '@/config/offers'
 
-function matchesPlacement(offer: Offer, placement: OfferPlacement): boolean {
+function matchesPlacement(offer: Offer, placement: OfferPlacement, now: number): boolean {
+  if (offer.until && now >= Date.parse(offer.until)) return false
   return offer.placements.includes(placement) && offer.weight > 0
 }
 
@@ -19,8 +20,9 @@ function candidatesFor(
   offers: readonly Offer[],
   placement: OfferPlacement,
   platform: string | undefined,
+  now: number,
 ): Offer[] {
-  const eligible = offers.filter((o) => matchesPlacement(o, placement))
+  const eligible = offers.filter((o) => matchesPlacement(o, placement, now))
   const targeted = eligible.filter((o) => targetsPlatform(o, platform))
   if (targeted.length > 0) return targeted
   return eligible.filter((o) => o.platforms === 'all')
@@ -32,9 +34,9 @@ export const MAX_OFFERS = 2
 /** Every offer the slot shows, heaviest first. A tie keeps catalogue order. */
 export function selectOffers(
   offers: readonly Offer[],
-  opts: { placement: OfferPlacement; platform?: string },
+  opts: { placement: OfferPlacement; platform?: string; now?: number },
 ): Offer[] {
-  return candidatesFor(offers, opts.placement, opts.platform)
+  return candidatesFor(offers, opts.placement, opts.platform, opts.now ?? Date.now())
     .sort((a, b) => b.weight - a.weight)
     .slice(0, MAX_OFFERS)
 }

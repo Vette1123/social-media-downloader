@@ -135,6 +135,10 @@ The site is free and stays free. It is paid for by a single sponsor card shown
 after a download. There are no popups, no redirects, no interstitials, and no
 tracking of what you download.
 
+<!-- sponsor:proxy-seller until=2026-12-13T12:00:00Z -->
+This month's sponsor is [Proxy-Seller](https://proxy-seller.com/): residential, mobile, ISP and datacenter proxies with HTTP(S) and SOCKS5. Code `SMD15` takes 15% off.
+<!-- /sponsor:proxy-seller -->
+
 Nothing here is for sale. A subscription existed briefly and was withdrawn: two
 merchants of record refused to underwrite a third-party downloader, the second
 after every fixable item on their published review checklist had been fixed, so
