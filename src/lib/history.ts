@@ -37,8 +37,13 @@ const KEY = 'smd:history:v1'
 // a handful by default and expands to the rest.
 const MAX = 30
 
+/** Never throws: a browser with storage disabled throws from the getter itself. */
 function canUse(): boolean {
-  return typeof window !== 'undefined' && !!window.localStorage
+  try {
+    return typeof window !== 'undefined' && !!window.localStorage
+  } catch {
+    return false
+  }
 }
 
 export function loadHistory(): HistoryEntry[] {

@@ -184,3 +184,17 @@ export function claim(key: string, now = Date.now()): void {
     // isClaimed already answers true for this browser.
   }
 }
+
+/**
+ * Which account context to register. The account store only asks the server
+ * when the session hint cookie is set, so for everyone else `signedIn` stays
+ * undefined forever. Without the hint, that browser is signed out now.
+ */
+export function accountContextFor(
+  signedIn: boolean | undefined,
+  hasHint: boolean,
+): 'wait' | 'signed_in' | 'signed_out' {
+  if (signedIn === true) return 'signed_in'
+  if (signedIn === false || !hasHint) return 'signed_out'
+  return 'wait'
+}

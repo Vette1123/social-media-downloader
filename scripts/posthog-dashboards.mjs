@@ -319,7 +319,7 @@ export const DASHBOARDS = [
       {
         name: 'Handled failures — api_error by source',
         query: hogql(
-          `SELECT toString(properties.source) AS source, properties.status AS status,
+          `SELECT toString(properties.source) AS source, coalesce(toString(properties.status), 'none') AS status,
                   properties.expected AS expected, uniq(person_id) AS people, count() AS events
            FROM events WHERE ${HUMANS} AND event = 'api_error' AND timestamp > now() - INTERVAL 7 DAY
            GROUP BY source, status, expected ORDER BY people DESC LIMIT 20`

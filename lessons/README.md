@@ -138,3 +138,4 @@ the index for exactly that.
 | 2026-11-13 | [Pro refresh layout shift](2026-11-13-pro-refresh-layout-shift.md) | Mark supporters on <html> before paint; never gate first-screen layout on a network answer |
 | 2026-11-13 | [Zero layout shift audit](2026-11-13-zero-layout-shift-audit.md) | Never swap on-screen content through an empty next/dynamic loading slot; load, then swap |
 | 2026-11-13 | [Cloudflare free-tier tune](2026-11-13-cloudflare-free-tier-tune.md) | Nothing at the edge may rewrite the HTML; DNSSEC off = DS off at the registrar first |
+| 2026-11-13 | [PostHog board fixes](2026-11-13-posthog-board-fixes.md) | Anonymous visitors never settle the account store, so super properties gated on it were never sent |

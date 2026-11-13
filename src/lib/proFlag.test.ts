@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { PRO_ATTR, PROFILE_CACHE_KEY, proBootSource, tierFrom } from './proFlag'
+import { PRO_ATTR, PROFILE_CACHE_KEY, proBootSource, proFlagScript, tierFrom } from './proFlag'
 
 function boot(cookie: string, cached: unknown) {
   const attrs = new Set<string>()
@@ -9,7 +9,7 @@ function boot(cookie: string, cached: unknown) {
     getItem: (key: string) =>
       key === PROFILE_CACHE_KEY && cached !== undefined ? JSON.stringify(cached) : null,
   }
-  new Function(`return (${proBootSource})`)()(doc, store)
+  new Function(`return (${proBootSource})`)()({ document: doc, localStorage: store })
   return attrs.has(PRO_ATTR)
 }
 
@@ -26,7 +26,20 @@ describe('head script', () => {
   it('never throws on a corrupt cache', () => {
     const doc = { cookie: 'smd_account=1', documentElement: { setAttribute: () => {} } }
     const store = { getItem: () => '{nope' }
-    expect(() => new Function(`return (${proBootSource})`)()(doc, store)).not.toThrow()
+    expect(() =>
+      new Function(`return (${proBootSource})`)()({ document: doc, localStorage: store }),
+    ).not.toThrow()
+  })
+  it('never throws when the browser denies storage outright', () => {
+    const doc = { cookie: 'smd_account=1', documentElement: { setAttribute: () => {} } }
+    const w = { document: doc }
+    Object.defineProperty(w, 'localStorage', {
+      get() {
+        throw new Error('Access is denied for this document.')
+      },
+    })
+    // The shipped script text, run against this window.
+    expect(() => new Function('window', proFlagScript)(w)).not.toThrow()
   })
 })
 

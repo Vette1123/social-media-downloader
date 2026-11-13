@@ -23,13 +23,16 @@ export const PRO_ATTR = 'data-pro'
 export const PROFILE_CACHE_KEY = 'smd_profile'
 
 /** One source for the head script and its test: a function expression, as text. */
-export const proBootSource = `function(d,s){try{
+// Takes the window, not its localStorage: with storage disabled the getter
+// itself throws, and an argument is evaluated outside the function's try.
+export const proBootSource = `function(w){try{
+var d=w.document;
 var hint=d.cookie.split(';').some(function(p){return p.trim().indexOf('${HINT_COOKIE}=1')===0});
-var cached=hint&&JSON.parse(s.getItem('${PROFILE_CACHE_KEY}')||'null');
+var cached=hint&&JSON.parse(w.localStorage.getItem('${PROFILE_CACHE_KEY}')||'null');
 if(cached&&cached.pro===true)d.documentElement.setAttribute('${PRO_ATTR}','');
 }catch(e){}}`
 
-export const proFlagScript = `(${proBootSource})(document,window.localStorage);`
+export const proFlagScript = `(${proBootSource})(window);`
 
 /** Called with every answer the server gives, so the mark never outlives the plan. */
 export function syncProFlag(pro: boolean): void {
