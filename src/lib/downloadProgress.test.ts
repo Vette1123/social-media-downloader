@@ -117,6 +117,20 @@ describe('how much longer', () => {
    * estimate built on them is wildly pessimistic — the same reason the download
    * path waits before judging the rate at all.
    */
+  it("speaks the caller's language when given its words", () => {
+    // The readout shipped English on /es, /pt, /id and /ar.
+    const words = {
+      seconds: (n: number) => `unos ${n} s restantes`,
+      minutes: (n: number) => `unos ${n} min restantes`,
+    }
+    expect(
+      describeRemaining(detail(1_000_000, 4_000_000), START + 10_000, words),
+    ).toBe('unos 30 s restantes')
+    expect(
+      describeProgress(detail(1_000_000, 19_000_000), START + 10_000, words),
+    ).toContain('unos 3 min restantes')
+  })
+
   it('says nothing until the rate has settled', () => {
     expect(describeRemaining(detail(100_000, 50_000_000), START + 500)).toBe('')
   })

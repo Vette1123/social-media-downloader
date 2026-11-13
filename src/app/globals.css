@@ -644,6 +644,73 @@ summary {
   animation: progress-indeterminate 1.1s ease-in-out infinite;
 }
 
+/* In-button download progress (TransferProgress.tsx). The busy button turns
+   into a quiet track, full opacity rather than the dimmed disabled look, and a
+   copy of the gradient fills it from the reading edge. The fill is clipped,
+   not scaled, so its label stays put and only the colour boundary moves. */
+.xfer[data-busy='true'] {
+  background: rgba(255, 255, 255, 0.06);
+  background-image: none;
+  border-color: var(--line);
+  color: #cffafe;
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: progress;
+  opacity: 1;
+}
+.xfer-fill {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: inset(0 calc(100% - var(--xfer-pct, 0) * 1%) 0 0);
+  transition: clip-path 240ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+[dir='rtl'] .xfer-fill {
+  clip-path: inset(0 0 0 calc(100% - var(--xfer-pct, 0) * 1%));
+}
+/* Waiting for the first byte: one soft light crossing the track, not a
+   bouncing bar. */
+.xfer-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34, 211, 238, 0.16),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: xfer-sheen 1.6s cubic-bezier(0.77, 0, 0.175, 1) infinite;
+  pointer-events: none;
+}
+@keyframes xfer-sheen {
+  to {
+    transform: translateX(100%);
+  }
+}
+/* Two faces in one grid cell. Hiding delays `visibility` until the fade ends
+   so the hidden face's Cancel cannot take focus; showing flips it at once. */
+.xfer-layer {
+  grid-area: 1 / 1;
+  transition:
+    opacity 160ms ease,
+    visibility 0s linear 0s;
+}
+.xfer-layer[data-on='false'] {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 160ms ease,
+    visibility 0s linear 160ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .xfer-sheen {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 /* Modal entrance. Short on purpose: a confirmation is a response to something
    the user just clicked, so it has to feel like an answer, not a scene. The
    backdrop and the panel are separate animations because `::backdrop` cannot

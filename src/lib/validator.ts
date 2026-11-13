@@ -89,8 +89,10 @@ const platformPatterns: Record<
   // The platforms below are resolved through the generic Cobalt/yt-dlp path
   // (see Downloader.downloadGeneric) — no bespoke extractor, so the patterns
   // only need to recognise a shareable post/clip URL.
+  // Any country subdomain (fr., de., br., in.): a localized pin fell through
+  // to the generic resolver, which cannot read Pinterest.
   pinterest: [
-    /^(https?:\/\/)?(www\.)?pinterest\.[a-z.]+\/pin\/\d+/,
+    /^(https?:\/\/)?([\w-]+\.)?pinterest\.[a-z.]+\/pin\/\d+/i,
     /^(https?:\/\/)?pin\.it\/[\w]+/,
   ],
   reddit: [

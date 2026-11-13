@@ -4,6 +4,7 @@ import {
   autoOpensPreview,
   initialState,
   isResolvingOrDownloading,
+  MAIN_BUTTON_LABELS,
   mainButtonLabel,
   retryTarget,
   type ImageData,
@@ -254,5 +255,33 @@ describe('what a retry re-runs', () => {
   it('offers nothing to retry when there is nothing', () => {
     expect(retryTarget({ originalUrl: '', url: '' })).toBe('')
     expect(retryTarget({ originalUrl: '', url: '   ' })).toBe('')
+  })
+})
+
+describe('SET_PROGRESS', () => {
+  it('returns the same state when the percentage has not moved', () => {
+    // Chunks arrive hundreds of times per megabyte; a fresh object each time
+    // re-rendered the whole downloader for a number nobody could see change.
+    const at42 = appReducer(initialState, { type: 'SET_PROGRESS', payload: 42 })
+    expect(appReducer(at42, { type: 'SET_PROGRESS', payload: 42 })).toBe(at42)
+    expect(appReducer(at42, { type: 'SET_PROGRESS', payload: 43 }).progress).toBe(43)
+  })
+})
+
+describe('MAIN_BUTTON_LABELS', () => {
+  it('reserves room for every label the main button can show', () => {
+    const flags = [false, true]
+    for (const loading of flags)
+      for (const downloading of flags)
+        for (const downloadingAudio of flags)
+          for (const downloadingImages of flags)
+            expect(MAIN_BUTTON_LABELS).toContain(
+              mainButtonLabel({
+                loading,
+                downloading,
+                downloadingAudio,
+                downloadingImages,
+              }),
+            )
   })
 })

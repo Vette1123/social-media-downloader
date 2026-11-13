@@ -15,6 +15,7 @@ import {
   appReducer,
   initialState,
   isResolvingOrDownloading,
+  MAIN_BUTTON_LABELS,
   mainButtonLabel,
   retryTarget,
   type AppMessage,
@@ -103,13 +104,8 @@ import {
   shortLink,
 } from '@/lib/missedLinks'
 import { resolve } from '@/lib/resolve'
-import {
-  describeProgress,
-  getProgressServerSnapshot,
-  getProgressSnapshot,
-  reportProgress,
-  subscribeProgress,
-} from '@/lib/downloadProgress'
+import { reportProgress } from '@/lib/downloadProgress'
+import { TransferButton, TransferStatus } from '@/components/TransferProgress'
 import {
   useAudioTags,
   useAutoSave,
@@ -688,27 +684,9 @@ async function downloadDirectWithProgress(
   }
 }
 
-/**
- * The text under the progress bar: percentage from the reducer, bytes and
- * rate from the progress store. Two sources on one line because they move at
- * different rates — the percentage is throttled by chunk cadence, the store
- * by its own clock — and neither is derived from the other.
- */
-function ProgressLine({ pct }: { pct: number | null }) {
-  const detail = useSyncExternalStore(
-    subscribeProgress,
-    getProgressSnapshot,
-    getProgressServerSnapshot,
-  )
-  const t = useT()
-  const readout = describeProgress(detail)
-  return (
-    <p className='text-center text-xs text-white/50'>
-      {pct === null
-        ? t('preparingDownload')
-        : t('progressLine', { pct }) + (readout ? ` · ${readout}` : '')}
-    </p>
-  )
+/** A banner that confirms something finished, as opposed to an error or a status. */
+function isDoneMessage(message: AppMessage | null): boolean {
+  return message?.kind === 'success' || message?.kind === 'saved'
 }
 
 /**
@@ -1891,10 +1869,6 @@ export function DownloaderApp() {
       // "preparing" state until the stream starts reporting.
       dispatch({ type: 'SET_DOWNLOADING', payload: true })
       dispatch({ type: 'SET_PROGRESS', payload: null })
-      dispatch({
-        type: 'SET_MESSAGE',
-        payload: { kind: 'info', text: t('preparingDownload') },
-      })
       const outcome = await downloadDirectWithProgress(
         direct,
         filename,
@@ -2076,10 +2050,6 @@ export function DownloaderApp() {
       const filename = nameFile('mp3')
       dispatch({ type: 'SET_DOWNLOADING_AUDIO', payload: true })
       dispatch({ type: 'SET_PROGRESS', payload: null })
-      dispatch({
-        type: 'SET_MESSAGE',
-        payload: { kind: 'info', text: t('preparingDownload') },
-      })
       const outcome = await downloadDirectWithProgress(
         direct,
         filename,
@@ -2679,14 +2649,26 @@ export function DownloaderApp() {
             className='pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out group-hover:translate-x-full'
             aria-hidden
           />
-          {isResolvingOrDownloading(state) ? (
-            <span className='relative flex items-center'>
-              <SpinnerIcon className='-ml-1 mr-2 h-4 w-4 md:h-5 md:w-5' />
-              {t(mainButtonLabel(state))}
-            </span>
-          ) : (
-            <span className='relative'>{t('downloadBtn')}</span>
-          )}
+          {/* Every label this button can wear, stacked in one cell with only
+              the current one visible: the button is always as wide as its
+              longest label, so "Download" → "Downloading..." no longer
+              squeezes the input beside it mid-transfer, in any language. */}
+          <span className='relative grid'>
+            {MAIN_BUTTON_LABELS.map((key) => (
+              <span
+                key={key}
+                aria-hidden={key !== mainButtonLabel(state)}
+                className={`col-start-1 row-start-1 flex items-center justify-center ${
+                  key === mainButtonLabel(state) ? '' : 'invisible'
+                }`}
+              >
+                {key !== 'downloadBtn' && (
+                  <SpinnerIcon className='-ml-1 mr-2 h-4 w-4 md:h-5 md:w-5' />
+                )}
+                {t(key)}
+              </span>
+            ))}
+          </span>
         </button>
       </Surface>
 
@@ -3098,21 +3080,6 @@ export function DownloaderApp() {
                   className='btn-press mx-auto mt-2 block rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold transition-colors hover:bg-white/10'
                 >
                   {t('tryAgain')}
-                </button>
-              )}
-              {isDone && canSendToApp && (
-                // The other half of a download on a phone. The file is on the
-                // device now, but what somebody actually came to do is put it in
-                // a chat — and finding it again in a Downloads folder is the part
-                // that makes people give up. Rendered only where the OS really
-                // takes this file (see lib/shareFile), so it never appears as a
-                // button that does nothing on a desktop.
-                <button
-                  type='button'
-                  onClick={() => void handleSendToApp()}
-                  className='btn-press mx-auto mt-2 block rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold transition-colors hover:bg-white/10'
-                >
-                  {lastSaved.failed ? t('sendFailed') : t('sendToApp')}
                 </button>
               )}
             </div>
@@ -3633,34 +3600,28 @@ export function DownloaderApp() {
                             </p>
                           </div>
 
-                        <button
+                        <TransferButton
                           onClick={handleImageDownload}
+                          busy={state.downloadingImages}
+                          pct={state.progress}
+                          waitingLabel={t('downloadingBtn')}
+                          progressLabel={(pct) => t('progressLine', { pct })}
                           disabled={
-                            state.downloadingImages ||
                             !state.videoMetadata?.images?.some(
                               (img) => img.selected,
                             )
                           }
                           className='btn-grad w-full py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl transition-[box-shadow,transform] duration-200 flex items-center justify-center text-sm md:text-base gap-2'
                         >
-                          {state.downloadingImages ? (
-                            <>
-                              <SpinnerIcon className='flex-shrink-0 h-4 w-4' />
-                              <span>{t('downloadingBtn')}</span>
-                            </>
-                          ) : (
-                            <>
-                              <DownloadIcon className='flex-shrink-0 h-5 w-5' />
-                              <span>
-                                {t('downloadSelected')} (
-                                {state.videoMetadata?.images?.filter(
-                                  (img) => img.selected,
-                                ).length || 0}
-                                )
-                              </span>
-                            </>
-                          )}
-                        </button>
+                          <DownloadIcon className='flex-shrink-0 h-5 w-5' />
+                          <span>
+                            {t('downloadSelected')} (
+                            {state.videoMetadata?.images?.filter(
+                              (img) => img.selected,
+                            ).length || 0}
+                            )
+                          </span>
+                        </TransferButton>
                       </div>
                     )}
                   </div>
@@ -3737,6 +3698,8 @@ export function DownloaderApp() {
                 const showVideoButton =
                   !!state.downloadUrl || hasImagesForSlideshow
                 const showAudioButton = !!state.audioUrl
+                const isRendering =
+                  !!state.videoMetadata?.isPhotoCarousel && !state.downloadUrl
                 if (!showVideoButton && !showAudioButton) return null
                 return (
                   <div
@@ -3747,68 +3710,59 @@ export function DownloaderApp() {
                     }`}
                   >
                     {showVideoButton && (
-                      <button
+                      <TransferButton
                         onClick={
                           state.downloadUrl
                             ? handleVideoDownload
                             : handleSlideshowRender
                         }
-                        disabled={
-                          state.downloading || state.downloadingImages
+                        busy={state.downloading}
+                        pct={state.progress}
+                        waitingLabel={
+                          isRendering ? t('renderingBtn') : t('downloadingBtn')
                         }
-                        className='btn-grad btn-press group relative py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2 overflow-hidden'
+                        progressLabel={(pct) =>
+                          isRendering
+                            ? `${t('renderingBtn')} ${pct}%`
+                            : t('progressLine', { pct })
+                        }
+                        disabled={state.downloadingImages}
+                        className='btn-grad btn-press group py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2'
                       >
                         <span
                           className='pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-out'
                           aria-hidden
                         />
-                        {state.downloading ? (
-                          <span className='relative flex items-center gap-2'>
-                            <SpinnerIcon className='flex-shrink-0 h-4 w-4' />
-                            <span>
-                              {state.videoMetadata?.isPhotoCarousel &&
-                              !state.downloadUrl
-                                ? 'Rendering...'
-                                : 'Downloading...'}
-                            </span>
+                        <span className='relative flex items-center gap-2'>
+                          <DownloadIcon className='flex-shrink-0 h-5 w-5' />
+                          <span>
+                            {state.videoMetadata?.isPhotoCarousel
+                              ? t('videoSlideshowBtn')
+                              : t('videoBtn')}
                           </span>
-                        ) : (
-                          <span className='relative flex items-center gap-2'>
-                            <DownloadIcon className='flex-shrink-0 h-5 w-5' />
-                            <span>
-                              {state.videoMetadata?.isPhotoCarousel
-                                ? t('videoSlideshowBtn')
-                                : t('videoBtn')}
-                            </span>
-                          </span>
-                        )}
-                      </button>
+                        </span>
+                      </TransferButton>
                     )}
 
                     {showAudioButton && (
-                      <button
+                      <TransferButton
                         onClick={handleAudioDownload}
-                        disabled={
-                          state.downloadingAudio || state.downloadingImages
-                        }
+                        busy={state.downloadingAudio}
+                        pct={state.progress}
+                        waitingLabel={t('downloadingBtn')}
+                        progressLabel={(pct) => t('progressLine', { pct })}
+                        disabled={state.downloadingImages}
                         className='btn-ghost btn-press py-3 px-4 disabled:opacity-50 disabled:cursor-not-allowed font-semibold rounded-xl flex items-center justify-center text-sm md:text-base gap-2'
                       >
-                        {state.downloadingAudio ? (
-                          <span className='relative flex items-center gap-2'>
-                            <SpinnerIcon className='flex-shrink-0 h-4 w-4' />
-                            <span>{t('downloadingBtn')}</span>
+                        <span className='relative flex items-center gap-2'>
+                          <MusicIcon className='flex-shrink-0 h-5 w-5' />
+                          <span>
+                            {state.videoMetadata?.isPhotoCarousel
+                              ? t('downloadAudioBtn')
+                              : t('extractAudio')}
                           </span>
-                        ) : (
-                          <span className='relative flex items-center gap-2'>
-                            <MusicIcon className='flex-shrink-0 h-5 w-5' />
-                            <span>
-                              {state.videoMetadata?.isPhotoCarousel
-                                ? t('downloadAudioBtn')
-                                : t('extractAudio')}
-                            </span>
-                          </span>
-                        )}
-                      </button>
+                        </span>
+                      </TransferButton>
                     )}
                   </div>
                 )
@@ -3881,58 +3835,44 @@ export function DownloaderApp() {
                   </p>
                 )}
 
-              {(state.downloadUrl || state.audioUrl) &&
-                (() => {
-                  const isDownloading =
+              {(state.downloadUrl ||
+                state.audioUrl ||
+                (state.videoMetadata?.images?.length ?? 0) > 0) && (
+                <TransferStatus
+                  busy={
                     state.downloading ||
                     state.downloadingAudio ||
                     state.downloadingImages
-                  if (!isDownloading) {
-                    return (
-                      <p className='text-white/50 text-xs text-center'>
-                        {t('clickToDownload')}
-                      </p>
-                    )
                   }
-                  const pct = state.progress
-                  return (
-                    <div
-                      className='space-y-1.5'
-                      role='status'
-                      aria-live='polite'
-                    >
-                      <div className='h-1.5 w-full overflow-hidden rounded-full bg-white/10'>
-                        {pct === null ? (
-                          <div className='animate-progress-indeterminate h-full w-1/3 rounded-full bg-gradient-to-r from-cyan-400 to-sky-400' />
-                        ) : (
-                          <div
-                            className='h-full rounded-full bg-gradient-to-r from-cyan-400 to-sky-400 transition-[width] duration-150 ease-out'
-                            style={{ width: `${pct}%` }}
-                          />
-                        )}
-                      </div>
-                      <ProgressLine pct={pct} />
-                      {/* Cancel owns the transfer: for a long file (or a big
-                          carousel) stopping is not an edge case, it is the
-                          second-most-likely action. An undo is: cancelling is
-                          free to undo — press the button again. */}
-                      <button
-                        type='button'
-                        onClick={cancelTransfer}
-                        className='btn-press mx-auto mt-1 block rounded-lg border border-white/20 px-3 py-1 text-xs font-semibold text-white/70 transition-colors hover:bg-white/10 hover:text-white'
-                      >
-                        {t('cancelDownload')}
-                      </button>
-                    </div>
-                  )
-                })()}
+                  pct={state.progress}
+                  onCancel={cancelTransfer}
+                  // The other half of a download on a phone. The file is on
+                  // the device now, but what somebody came to do is put it in
+                  // a chat, and finding it again in Downloads is where people
+                  // give up. Rendered only where the OS really takes this file
+                  // (lib/shareFile). It lives in this fixed-height slot rather
+                  // than under the banner, where it grew the banner by a row
+                  // and pushed the whole card down the moment a save finished.
+                  idleAction={
+                    isDoneMessage(state.message) && canSendToApp
+                      ? {
+                          label: lastSaved.failed
+                            ? t('sendFailed')
+                            : t('sendToApp'),
+                          onClick: () => void handleSendToApp(),
+                        }
+                      : undefined
+                  }
+                />
+              )}
             </Surface>
           )}
         </div>
 
-      {/* Sponsor card — only after a result exists, never while resolving or
-          downloading, and always below the download controls. */}
-      {state.videoMetadata && !isResolvingOrDownloading(state) && (
+      {/* Sponsor card — only after a result exists, never while resolving,
+          and always below the download controls. It stays through a download:
+          unmounting it on start and back on finish moved the page twice. */}
+      {state.videoMetadata && !state.loading && (
         <PromoSlot placement='post-result' platform={state.videoMetadata.platform} />
       )}
 
