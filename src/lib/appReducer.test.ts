@@ -20,6 +20,10 @@ const base = {
 }
 
 describe('autoOpensPreview', () => {
+  it('stays shut on a phone-width screen', () => {
+    expect(autoOpensPreview({ ...base, compact: true })).toBe(false)
+  })
+
   it('opens for a known platform with a downloadable video', () => {
     expect(autoOpensPreview(base)).toBe(true)
   })

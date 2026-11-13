@@ -686,6 +686,15 @@ async function downloadDirectWithProgress(
   }
 }
 
+/**
+ * A phone-width screen, where an auto-opened preview stands between the
+ * download buttons and everything under the result. Read at resolve time:
+ * it only decides the preview's starting state.
+ */
+function isCompactViewport(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
+}
+
 /** A banner that confirms something finished, as opposed to an error or a status. */
 function isDoneMessage(message: AppMessage | null): boolean {
   return message?.kind === 'success' || message?.kind === 'saved'
@@ -1213,6 +1222,7 @@ export function DownloaderApp() {
             // marks it optional because the failure branch has none.
             metadata: data.metadata as VideoMetadata,
             originalUrl: target,
+            compact: isCompactViewport(),
           },
         })
         void rememberInHistory(target, data.metadata)
@@ -1330,6 +1340,7 @@ export function DownloaderApp() {
             // See reResolve: success implies metadata, the type does not.
             metadata: data.metadata as VideoMetadata,
             originalUrl: target,
+            compact: isCompactViewport(),
           },
         })
 
@@ -1426,6 +1437,7 @@ export function DownloaderApp() {
           audioUrl: data.audioUrl,
           metadata: data.metadata,
           originalUrl: last.target,
+          compact: isCompactViewport(),
         },
       })
     }
@@ -3918,9 +3930,14 @@ export function DownloaderApp() {
       {/* Sponsor card — only after a result exists, never while resolving,
           and always below the download controls. It stays through a download:
           unmounting it on start and back on finish moved the page twice. */}
-      {/* Under the result, never above it: above, it pushed the download
-          buttons below the fold on a phone. Only after a resolve, and only
-          when its turn comes (attachedNudgeDue) — the ask is a plus, so it
+      {state.videoMetadata && !state.loading && (
+        <PromoSlot placement='post-result' platform={state.videoMetadata.platform} />
+      )}
+
+      {/* Under the result and under our apps' cards, never above either:
+          above the result it pushed the download buttons below the fold on a
+          phone, and the apps' cards come first by the owner's call. Only
+          after a resolve, and only when its turn comes (attachedNudgeDue) — the ask is a plus, so it
           must read as a footnote and not a drumbeat. This is the single
           point in the flow where the visitor has what they came for and is
           not waiting on anything. Keyed to the result, not the message, so a
@@ -3938,10 +3955,6 @@ export function DownloaderApp() {
             }
           />
         </div>
-      )}
-
-      {state.videoMetadata && !state.loading && (
-        <PromoSlot placement='post-result' platform={state.videoMetadata.platform} />
       )}
 
       {lightboxIndex !== null && state.videoMetadata?.images && (

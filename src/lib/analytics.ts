@@ -152,6 +152,7 @@ export const FEATURE_AREA = {
   app_store: 'pro',
   promo_click: 'pro',
   promo_shown: 'pro',
+  promo_seen: 'pro',
 } as const satisfies Record<string, EventArea>
 
 export type Feature = keyof typeof FEATURE_AREA
