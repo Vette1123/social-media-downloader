@@ -18,12 +18,22 @@ const offer = (over: Partial<Offer> & { id: string }): Offer => ({
 describe('our own apps in the offer slot', () => {
   const platforms = ['tiktok', 'instagram', 'facebook', 'twitter', 'youtube', 'reddit', 'vimeo', 'pinterest', undefined]
 
-  it('shows Masareef and Rafiq together on every platform and placement', () => {
-    for (const placement of ['post-result', 'in-content'] as const) {
-      for (const platform of platforms) {
-        const ids = selectOffers(OFFERS, { placement, platform }).map((o) => o.id)
-        expect(ids, `${placement} on ${platform}`).toEqual(['masareef', 'rafiq'])
-      }
+  it('shows Masareef and Rafiq together in the landing-page slot on every platform', () => {
+    for (const platform of platforms) {
+      const ids = selectOffers(OFFERS, { placement: 'in-content', platform }).map((o) => o.id)
+      expect(ids, `in-content on ${platform}`).toEqual(['masareef', 'rafiq'])
+    }
+  })
+
+  // The paid month agreed with Proxy-Seller: one card on every download beside
+  // Masareef, until 2026-12-13 12:00 UTC, then both apps again with no deploy.
+  it('gives Proxy-Seller one download card for its paid month, then hands it back', () => {
+    for (const platform of platforms) {
+      const at = (iso: string) =>
+        selectOffers(OFFERS, { placement: 'post-result', platform, now: Date.parse(iso) }).map((o) => o.id)
+      expect(at('2026-11-13T13:00:00Z'), `live on ${platform}`).toEqual(['proxy-seller', 'masareef'])
+      expect(at('2026-12-13T11:59:59Z'), `last second on ${platform}`).toEqual(['proxy-seller', 'masareef'])
+      expect(at('2026-12-13T12:00:00Z'), `ended on ${platform}`).toEqual(['masareef', 'rafiq'])
     }
   })
 })
@@ -59,6 +69,14 @@ describe('selectOffers', () => {
       offer({ id: 'live', weight: 1 }),
     ]
     expect(ids(offers)).toEqual(['live'])
+  })
+
+  it('drops an offer once its until date has passed, with no deploy', () => {
+    const offers = [offer({ id: 'paid', weight: 2, until: '2026-12-14T00:00:00Z' }), offer({ id: 'own' })]
+    const at = (iso: string) =>
+      selectOffers(offers, { placement: 'post-result', now: Date.parse(iso) }).map((o) => o.id)
+    expect(at('2026-12-13T23:59:59Z')).toEqual(['paid', 'own'])
+    expect(at('2026-12-14T00:00:00Z')).toEqual(['own'])
   })
 
   it('caps the slot at the two heaviest, keeping catalogue order on a tie', () => {
@@ -148,6 +166,11 @@ describe('the shipped offer catalogue', () => {
     const live = OFFERS.filter((o) => o.weight > 0)
     const insecure = live.filter((o) => !o.href.startsWith('https://'))
     expect(insecure.map((o) => o.id)).toEqual([])
+  })
+
+  it('gives every paid placement an end date, so none runs past what was paid for', () => {
+    const paid = OFFERS.filter((o) => o.weight > 0 && !o.ownApp)
+    expect(paid.filter((o) => !o.until || Number.isNaN(Date.parse(o.until))).map((o) => o.id)).toEqual([])
   })
 
   it('keeps offer ids unique, since the id is the React key and the subid', () => {

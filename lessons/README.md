@@ -140,3 +140,4 @@ the index for exactly that.
 | 2026-11-13 | [Cloudflare free-tier tune](2026-11-13-cloudflare-free-tier-tune.md) | Nothing at the edge may rewrite the HTML; DNSSEC off = DS off at the registrar first |
 | 2026-11-13 | [PostHog board fixes](2026-11-13-posthog-board-fixes.md) | Anonymous visitors never settle the account store, so super properties gated on it were never sent |
 | 2026-11-13 | [Recent refresh flash](2026-11-13-recent-refresh-flash.md) | Headless audits hydrate before paint: assert the pre-paint reserve directly, not only the CLS number |
+| 2026-11-13 | [Paid sponsor card that ends itself](2026-11-13-paid-sponsor-auto-expiry.md) | A paid placement ends by data (`until` + dated README markers), never by someone remembering. |
