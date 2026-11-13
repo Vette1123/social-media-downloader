@@ -231,6 +231,23 @@ export function transferNote(
 }
 
 /**
+ * What the main Download button does with an empty box. The box clears
+ * itself after a resolve, so a visitor looking at a result and pressing the
+ * big "Download" got "Enter a link" and pressed again, four or five times
+ * (PostHog rage clicks, 2026-11-10/11, every cluster with a result on
+ * screen). With a result there, the button downloads it. A gallery has no
+ * single obvious file, so it keeps the prompt.
+ */
+export function emptyBoxDownload(
+  state: Pick<AppState, 'videoMetadata' | 'downloadUrl' | 'audioUrl'>,
+): 'video' | 'audio' | null {
+  if (!state.videoMetadata) return null
+  if (state.downloadUrl) return 'video'
+  if (state.audioUrl) return 'audio'
+  return null
+}
+
+/**
  * Whether the Recent list may appear now. It sits above the results, so a
  * list that first appears while a result is on screen (the very first save
  * adds the first row) pushes that result down under the visitor's eyes. It

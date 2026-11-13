@@ -7,6 +7,7 @@ import {
   MAIN_BUTTON_LABELS,
   mainButtonLabel,
   mayRevealRecent,
+  emptyBoxDownload,
   transferNote,
   retryTarget,
   type ImageData,
@@ -321,5 +322,17 @@ describe('transferNote', () => {
     expect(transferNote({ kind: 'success', text: 'x' }, 'x', SHORT)).toBeUndefined()
     expect(transferNote({ kind: 'error', text: 'x' }, 'x', SHORT)).toBeUndefined()
     expect(transferNote(null, '', SHORT)).toBeUndefined()
+  })
+})
+
+describe('emptyBoxDownload', () => {
+  const meta = { title: 't' } as unknown as NonNullable<typeof initialState.videoMetadata>
+  it('downloads the result on screen instead of asking for a link', () => {
+    expect(emptyBoxDownload({ videoMetadata: meta, downloadUrl: 'v', audioUrl: 'a' })).toBe('video')
+    expect(emptyBoxDownload({ videoMetadata: meta, downloadUrl: '', audioUrl: 'a' })).toBe('audio')
+  })
+  it('asks for a link with nothing on screen, or for a gallery', () => {
+    expect(emptyBoxDownload({ videoMetadata: null, downloadUrl: '', audioUrl: '' })).toBeNull()
+    expect(emptyBoxDownload({ videoMetadata: meta, downloadUrl: '', audioUrl: '' })).toBeNull()
   })
 })

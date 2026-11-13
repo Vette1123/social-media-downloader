@@ -18,6 +18,7 @@ import {
   MAIN_BUTTON_LABELS,
   mainButtonLabel,
   mayRevealRecent,
+  emptyBoxDownload,
   transferNote,
   retryTarget,
   type AppMessage,
@@ -1262,6 +1263,11 @@ export function DownloaderApp() {
   // `overrideUrl` lets the paste button, the PWA share target, and the recent
   // list kick off a resolve without waiting for a state round-trip through the
   // input. When omitted we use whatever's in the field.
+  // handleProcess runs before the download handlers are declared; this ref
+  // reaches them (assigned in an effect below their declarations).
+  const startDownloadRef = useRef<
+    ((kind: 'video' | 'audio') => Promise<void>) | null
+  >(null)
   const handleProcess = async (
     overrideUrl?: string,
     source: LinkSource = 'typed',
@@ -1270,6 +1276,17 @@ export function DownloaderApp() {
     // Shared text with a link in it, or a link with no scheme, is still a link.
     const target = extractLink(typed) ?? typed
     if (!target) {
+      // A result is on screen and the box cleared itself after resolving it:
+      // "Download" means that result (see emptyBoxDownload).
+      const pending = overrideUrl === undefined ? emptyBoxDownload(state) : null
+      if (pending && !isResolvingOrDownloading(state)) {
+        trackFeatureUsed('empty_box_download', { action: pending })
+        containerRef.current
+          ?.querySelector('.results-section')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        void startDownloadRef.current?.(pending)
+        return
+      }
       trackLinkRejected({ platform: 'none', reason: 'empty' })
       setUrlError(t('errorEmpty'))
       return
@@ -2171,6 +2188,11 @@ export function DownloaderApp() {
    * re-arm it — which is right, because the visitor asked for a different file,
    * and is why this tracks the URL rather than a boolean.
    */
+  useEffect(() => {
+    startDownloadRef.current = (kind) =>
+      kind === 'video' ? handleVideoDownload() : handleAudioDownload()
+  })
+
   const autoSavedFor = useRef<string | null>(null)
 
   useEffect(() => {
