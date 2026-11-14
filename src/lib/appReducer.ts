@@ -70,6 +70,8 @@ export type MessageKind = 'info' | 'success' | 'saved' | 'error'
 export interface AppMessage {
   kind: MessageKind
   text: string
+  /** False when "Try again" cannot help (see errorMessages.failureRetry). Absent = offer it. */
+  retry?: boolean
 }
 
 export interface AppState {

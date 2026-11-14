@@ -107,3 +107,20 @@ describe('English home title and description', () => {
     expect(layout).not.toContain('siteConfig.description')
   })
 })
+
+describe('primaryImageOfPage', () => {
+  const pageNode = (graph: { '@graph': Array<Record<string, unknown>> }) =>
+    graph['@graph'].find((n) => n['@type'] === 'WebPage')
+
+  it('names each page its own share image, not the home one', () => {
+    expect(pageNode(platformStructuredData('tiktok-downloader', 'ar'))?.primaryImageOfPage).toBe(
+      'https://www.socialdownloader.space/ar/tiktok-downloader/opengraph-image',
+    )
+    expect(pageNode(homepageStructuredData('es'))?.primaryImageOfPage).toBe(
+      'https://www.socialdownloader.space/es/opengraph-image',
+    )
+    expect(pageNode(homepageStructuredData('en'))?.primaryImageOfPage).toBe(
+      'https://www.socialdownloader.space/opengraph-image',
+    )
+  })
+})

@@ -154,6 +154,7 @@ export const FEATURE_AREA = {
   promo_shown: 'pro',
   promo_seen: 'pro',
   empty_box_download: 'download',
+  feature_card: 'resolve',
 } as const satisfies Record<string, EventArea>
 
 export type Feature = keyof typeof FEATURE_AREA

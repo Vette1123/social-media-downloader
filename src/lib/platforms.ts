@@ -746,7 +746,7 @@ export const platforms: Platform[] = [
     slug: 'threads-video-downloader',
     name: 'Threads',
     brandLabel: 'Threads video & photo downloader',
-    metaTitle: 'Threads Video Downloader — Save Videos & Photos, No Login',
+    metaTitle: 'Threads Video Downloader — Videos & Photos, No Login',
     metaDescription:
       'Download videos and photos from Threads (threads.net) in full quality. Paste a threads.net/@user/post link and save the media instantly — free, no login.',
     h1: 'Threads Video & Photo Downloader — Free, No Login',

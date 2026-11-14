@@ -172,7 +172,6 @@
   "The grace period ends": "O período de carência termina",
   "The platform gates this behind an age check, so it can’t be resolved without a logged-in account.": "A plataforma exige uma verificação de idade para isso, então não dá para resolver sem uma conta logada.",
   "The request timed out. Check your connection and try again.": "A solicitação expirou. Confira sua conexão e tente de novo.",
-  "The source is throttling requests right now. Wait a minute and try again.": "A fonte está limitando as requisições agora. Espere um minuto e tente de novo.",
   "The source restricts this by country and blocks our server’s region.": "A fonte restringe isso por país e bloqueia a região do nosso servidor.",
   "There is no subscription on this account, so there is nothing to manage yet.": "Não há assinatura nesta conta, então ainda não há nada para gerenciar.",
   "There is no {token} — use {list}.": "Não existe {token} — use {list}.",
@@ -224,5 +223,9 @@
   "Something went wrong resolving the media. Try again in a moment.": "Algo deu errado ao processar a mídia. Tente novamente em instantes.",
   "This video won’t play in this browser, but the download still works.": "Este vídeo não reproduz neste navegador, mas o download continua funcionando.",
   "Your clipboard is empty. Copy a link first.": "Sua área de transferência está vazia. Copie um link primeiro.",
-  "Could not save those {noun}. The links may have expired: paste the post again to refresh them.": "Não foi possível salvar. Os links podem ter expirado: cole a publicação de novo para renová-los."
+  "Could not save those {noun}. The links may have expired: paste the post again to refresh them.": "Não foi possível salvar. Os links podem ter expirado: cole a publicação de novo para renová-los.",
+  "Same result twice — retrying won’t change it. Try another post, or check this one opens in a private browser window.": "Mesmo resultado duas vezes — tentar de novo não vai mudar. Tente outra publicação ou veja se esta abre numa janela anônima do navegador.",
+  "The site didn’t say why. Posts that only open for signed-in accounts fail this way. Check it opens in a private browser window.": "O site não disse o motivo. Publicações que só abrem com uma conta conectada falham assim. Veja se ela abre numa janela anônima do navegador.",
+  "The site is limiting how fast we can read posts. Your link is fine — try again in a few minutes.": "O site está limitando a velocidade com que lemos publicações. Seu link está certo — tente de novo em alguns minutos.",
+  "We couldn’t download this one": "Não conseguimos baixar esta"
 }

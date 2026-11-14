@@ -177,7 +177,8 @@ function webPageNode({
     description,
     inLanguage: locale,
     isPartOf: { '@id': isPartOfId },
-    primaryImageOfPage: ogImage,
+    // Every home and platform route renders its own share card beside it.
+    primaryImageOfPage: `${url.replace(/\/$/, '')}/opengraph-image`,
     publisher: { '@id': `${siteConfig.url}/#organization` },
     breadcrumb: { '@id': `${url}#breadcrumb` },
   }
