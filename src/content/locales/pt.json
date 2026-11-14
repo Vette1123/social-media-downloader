@@ -28,7 +28,7 @@
       },
       "h1Lead": "Baixe qualquer vídeo público,",
       "h1Accent": "na qualidade original",
-      "intro": "Salve o vídeo, extraia o áudio em MP3 ou pegue galerias de imagens completas de posts públicos do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch e Vimeo.",
+      "intro": "Salve o vídeo, extraia o áudio em MP3 ou pegue galerias de imagens completas de posts públicos do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion e LinkedIn.",
       "featuresTitle": "Tudo a partir de um único link",
       "featuresSub": "Um só colar, quatro formas de salvar. Sem app, sem conta, nada para instalar.",
       "features": {
@@ -178,7 +178,7 @@
       "support": "Apoio",
       "languages": "Idiomas",
       "questions": "Dúvidas ou avisos de remoção:",
-      "disclaimer": "Somente posts públicos. {site} é uma ferramenta independente, sem afiliação nem aprovação do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch ou Vimeo; os nomes e logotipos pertencem aos seus donos e indicam quais links esta ferramenta aceita."
+      "disclaimer": "Somente posts públicos. {site} é uma ferramenta independente, sem afiliação nem aprovação do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion ou LinkedIn; os nomes e logotipos pertencem aos seus donos e indicam quais links esta ferramenta aceita."
     },
     "howTo": {
       "homeName": "Como baixar um vídeo público do TikTok, X, Instagram, Facebook ou YouTube",
@@ -317,7 +317,7 @@
           {
             "heading": "Marcas e afiliação",
             "paragraphs": [
-              "O {site} é uma ferramenta independente e {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo ou qualquer outra plataforma citada neste site. Esses nomes e logotipos pertencem aos seus respectivos donos e são usados apenas para descrever quais links esta ferramenta aceita."
+              "O {site} é uma ferramenta independente e {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn ou qualquer outra plataforma citada neste site. Esses nomes e logotipos pertencem aos seus respectivos donos e são usados apenas para descrever quais links esta ferramenta aceita."
             ]
           },
           {
@@ -392,8 +392,8 @@
       "a": "Sim. Roda inteiramente no navegador, em qualquer dispositivo moderno — iPhone, iPad, celular ou tablet Android, Mac, Windows ou Linux. Não precisa instalar app."
     },
     {
-      "q": "Funciona com sites além das onze plataformas?",
-      "a": "Sim — cole qualquer link de vídeo público e o app tenta resolvê-lo. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch e Vimeo; fora dessas, o extrator lê a mídia que a página publica, então links de hospedagens de vídeo menores, blogs e sites de notícias costumam funcionar também. Sites que exigem login ou escondem a mídia não podem ser acessados."
+      "q": "Funciona com sites além das treze plataformas?",
+      "a": "Sim — cole qualquer link de vídeo público e o app tenta resolvê-lo. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion e LinkedIn; fora dessas, o extrator lê a mídia que a página publica, então links de hospedagens de vídeo menores, blogs e sites de notícias costumam funcionar também. Sites que exigem login ou escondem a mídia não podem ser acessados."
     },
     {
       "q": "Posso importar uma playlist ou coleção inteira de uma vez?",
@@ -427,10 +427,10 @@
       "metaDescription": "Cole o link de qualquer site e salve o vídeo em HD, extraia o áudio em MP3 ou pegue a mídia incorporada — grátis, sem login, sem instalar nada.",
       "h1": "Baixar vídeo de qualquer site — cole qualquer link",
       "tagline": "Um só campo para todos os sites: obtenha o vídeo, o áudio ou as imagens de qualquer link público.",
-      "intro": "Cole qualquer link de vídeo público — das onze plataformas dedicadas ou de qualquer outro lugar. O extrator lê o que a própria página publica (og:video, JSON-LD, configurações de player, arquivos diretos) e verifica se ela entrega mídia de verdade antes de oferecer, então você recebe um arquivo que toca, e não uma página de erro renomeada para .mp4. Se uma página entrega o vídeo ao público, em geral isso resolve. Sem login, sem instalar nada.",
+      "intro": "Cole qualquer link de vídeo público — das treze plataformas dedicadas ou de qualquer outro lugar. O extrator lê o que a própria página publica (og:video, JSON-LD, configurações de player, arquivos diretos) e verifica se ela entrega mídia de verdade antes de oferecer, então você recebe um arquivo que toca, e não uma página de erro renomeada para .mp4. Se uma página entrega o vídeo ao público, em geral isso resolve. Sem login, sem instalar nada.",
       "cards": [
         {
-          "title": "🌐 Além das onze grandes",
+          "title": "🌐 Além das treze grandes",
           "body": "Hospedagens de vídeo pequenas, blogs, sites de notícias, fóruns — se a página publica a mídia, o extrator genérico encontra a melhor versão e entrega o arquivo."
         },
         {
@@ -445,7 +445,7 @@
       "faqs": [
         {
           "q": "Funciona com qualquer site?",
-          "a": "Funciona onde quer que uma página entregue sua mídia publicamente. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch e Vimeo; fora dessas, o extrator lê o que a página publica, o que resolve a maioria das hospedagens de vídeo menores, blogs e páginas de notícias."
+          "a": "Funciona onde quer que uma página entregue sua mídia publicamente. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion e LinkedIn; fora dessas, o extrator lê o que a página publica, o que resolve a maioria das hospedagens de vídeo menores, blogs e páginas de notícias."
         },
         {
           "q": "E se um site bloquear o acesso automatizado?",
@@ -1262,6 +1262,144 @@
         {
           "name": "Salve o arquivo",
           "text": "Salve no celular ou no computador. Sem login e sem instalar nada."
+        }
+      ]
+    },
+    "dailymotion-downloader": {
+      "brandLabel": "Downloader de vídeos do Dailymotion",
+      "metaTitle": "Baixar vídeos do Dailymotion em MP4, sem login",
+      "metaDescription": "Baixe vídeos públicos do Dailymotion em MP4. Cole um link de dailymotion.com ou dai.ly e salve o arquivo na hora: grátis, sem login e sem instalar app.",
+      "h1": "Baixar vídeos do Dailymotion: MP4, sem login",
+      "tagline": "Salve vídeos públicos do Dailymotion como arquivos MP4 no celular ou no computador.",
+      "intro": "Cole qualquer link público de dailymotion.com/video/… ou dai.ly/… e a ferramenta resolve o vídeo, mostra uma prévia e deixa você salvá-lo como arquivo. Sem conta no Dailymotion, sem extensão e sem instalar nada. Vídeos que exigem login ou que são restritos a certos espectadores não podem ser obtidos.",
+      "cards": [
+        {
+          "title": "🎬 Vídeo salvo em MP4",
+          "body": "Vídeos públicos do Dailymotion são resolvidos em um único arquivo de vídeo que você pode ver na prévia e depois salvar."
+        },
+        {
+          "title": "🔗 Links curtos também funcionam",
+          "body": "Tanto o endereço completo dailymotion.com/video/… quanto o link curto dai.ly/… do botão Compartilhar são reconhecidos."
+        },
+        {
+          "title": "🎚️ Atento à qualidade",
+          "body": "Escolha HD para a melhor versão que a fonte oferece ou Economia de dados para um arquivo mais leve."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Posso baixar qualquer vídeo do Dailymotion?",
+          "a": "Vídeos públicos podem ser salvos. Os que exigem login, ou que o autor restringe a certos espectadores ou regiões, não podem ser obtidos."
+        },
+        {
+          "q": "Quais links do Dailymotion funcionam?",
+          "a": "Links no formato dailymotion.com/video/<id> e os links curtos dai.ly/<id>. A página de um canal ou uma playlist não é um vídeo único, então cole o link de um só vídeo."
+        },
+        {
+          "q": "Que qualidade eu recebo?",
+          "a": "A melhor qualidade que o vídeo oferece quando você escolhe HD. Use a opção Economia de dados para um arquivo menor."
+        },
+        {
+          "q": "Preciso de uma conta no Dailymotion?",
+          "a": "Não. Só vídeos visíveis publicamente são acessados: sem login, sem extensão, sem instalação."
+        },
+        {
+          "q": "Por que meu link do Dailymotion não é processado?",
+          "a": "Confira se o vídeo é público e se o link aponta para um único vídeo. Se ele for restrito a certos espectadores ou regiões, não pode ser obtido."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos públicos do Dailymotion em MP4",
+        "Funciona com links de dailymotion.com e dai.ly",
+        "Seleção de qualidade HD ou Economia de dados",
+        "Sem login no Dailymotion, sem extensão e sem instalação",
+        "Veja a prévia do vídeo antes de baixar"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do Dailymotion",
+          "text": "Abra o vídeo no Dailymotion, toque em Compartilhar e copie o link. Ele se parece com dailymotion.com/video/x8abc12 ou dai.ly/x8abc12."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do Dailymotion na caixa no topo desta página. A ferramenta o lê e mostra uma prévia."
+        },
+        {
+          "name": "Escolha qualidade ou formato",
+          "text": "Confira a prévia e escolha a qualidade que quiser."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Não precisa de login nem de app."
+        }
+      ]
+    },
+    "linkedin-video-downloader": {
+      "brandLabel": "Downloader de vídeos do LinkedIn",
+      "metaTitle": "Baixar vídeos do LinkedIn de posts públicos",
+      "metaDescription": "Baixe vídeos de posts públicos do LinkedIn. Cole um link de linkedin.com/posts ou feed/update e salve o arquivo: grátis, sem login e sem instalar app.",
+      "h1": "Baixar vídeos do LinkedIn: posts públicos, sem login",
+      "tagline": "Salve o vídeo de um post público do LinkedIn como um arquivo que você pode guardar.",
+      "intro": "Cole o link de um post público do LinkedIn (linkedin.com/posts/…, linkedin.com/feed/update/… ou um link compartilhado lnkd.in) e a ferramenta lê o vídeo que a própria página publica, mostra uma prévia e deixa você salvá-lo. Posts que só aparecem com a sessão iniciada não podem ser obtidos.",
+      "cards": [
+        {
+          "title": "🎬 Vídeo de posts públicos",
+          "body": "Quando um post público traz um vídeo, a ferramenta o lê da página que o publica e o salva como arquivo."
+        },
+        {
+          "title": "🔗 Links compartilhados também funcionam",
+          "body": "Links de post, de feed/update e links lnkd.in da opção Copiar link são reconhecidos."
+        },
+        {
+          "title": "🚪 Clara sobre os limites",
+          "body": "O LinkedIn mostra alguns vídeos só a membros com sessão iniciada. Esses não podem ser obtidos, e a ferramenta avisa em vez de falhar em silêncio."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Posso baixar qualquer vídeo do LinkedIn?",
+          "a": "Só vídeos de posts públicos que a própria página publica. Posts que só aparecem com a sessão iniciada não podem ser obtidos."
+        },
+        {
+          "q": "Quais links do LinkedIn funcionam?",
+          "a": "linkedin.com/posts/…, linkedin.com/feed/update/…, artigos de linkedin.com/pulse/… com vídeo de abertura e links compartilhados lnkd.in."
+        },
+        {
+          "q": "Preciso de uma conta no LinkedIn?",
+          "a": "Não. A ferramenta nunca pede seu login do LinkedIn nem usa sua conta. Ela só lê o que um post público publica."
+        },
+        {
+          "q": "Por que meu link do LinkedIn diz que nenhum vídeo foi encontrado?",
+          "a": "O post pode não ter vídeo, ou o LinkedIn pode mostrá-lo só a membros com sessão iniciada. Abra o link em uma janela do navegador sem login: se você não vê o vídeo lá, a ferramenta também não consegue obtê-lo."
+        },
+        {
+          "q": "O que recebo quando funciona?",
+          "a": "O arquivo de vídeo que o post publica, com prévia antes. O LinkedIn define a resolução, então a ferramenta não oferece escolha de qualidade."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos de posts públicos do LinkedIn",
+        "Funciona com links de post, feed/update e lnkd.in",
+        "Sem login no LinkedIn, sem extensão e sem instalação",
+        "Mensagem clara quando um post exige login",
+        "Veja a prévia do vídeo antes de baixar"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do post",
+          "text": "No post, abra o menu de três pontos e escolha Copiar link da publicação. O link se parece com linkedin.com/posts/… ou lnkd.in/…."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link do LinkedIn na caixa no topo desta página. A ferramenta o lê e mostra uma prévia."
+        },
+        {
+          "name": "Confira a prévia",
+          "text": "Se o post for público e tiver um vídeo, a prévia aparece. Se não, você verá uma mensagem explicando o motivo."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve no celular ou no computador. Não precisa de login nem de app."
         }
       ]
     }

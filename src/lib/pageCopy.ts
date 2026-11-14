@@ -39,7 +39,7 @@ export const pageCopy = {
     h1Lead: 'Download any public video,',
     h1Accent: 'in original quality',
     intro:
-      'Save the video, extract MP3 audio, or grab full image galleries from public posts on TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch & Vimeo.',
+      'Save the video, extract MP3 audio, or grab full image galleries from public posts on TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion & LinkedIn.',
     featuresTitle: 'Everything from one link',
     featuresSub:
       'One paste, four ways to save it. No app, no account, nothing installed.',
@@ -123,7 +123,7 @@ export const pageCopy = {
     languages: 'Languages',
     questions: 'Questions or takedown notices:',
     disclaimer:
-      'Public posts only. {site} is an independent tool, not affiliated with or endorsed by TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch or Vimeo; their names and logos belong to their owners and identify which links this tool accepts.',
+      'Public posts only. {site} is an independent tool, not affiliated with or endorsed by TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion or LinkedIn; their names and logos belong to their owners and identify which links this tool accepts.',
   },
   legal: legalCopy,
   howTo: {

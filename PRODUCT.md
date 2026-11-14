@@ -36,7 +36,7 @@ presses, with nothing between the visitor and the Download button. The site is a
 
 ## Capabilities and Constraints
 
-- Platforms: TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, plus
+- Platforms: TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn, plus
   generic pages that publish their media. Reach is limited to what a logged-out visitor can see: no private,
   paywalled or DRM content.
 - Outputs: original-quality video with SD fallback, MP3 audio, image carousels (single or ZIP), rendered

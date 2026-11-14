@@ -1,6 +1,6 @@
 # Social Media Downloader
 
-> Download public TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch & Vimeo posts in their original quality — HD video, reels, Shorts, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits. Installs as an app.
+> Download public TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion & LinkedIn posts in their original quality — HD video, reels, Shorts, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits. Installs as an app.
 
 ![Social Media Downloader — download HD video, reels, Shorts, MP3 audio and photos from public posts on TikTok, X, Instagram, Facebook, YouTube and more](docs/social-preview.png)
 
@@ -14,7 +14,7 @@
 
 ### 🚀 [Try it live →](https://www.socialdownloader.space)
 
-A free downloader for public posts on **TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo**. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack. No login and no install are required, and it runs in your browser. It reaches only what a logged-out visitor can already see: no private accounts, no paywalled or subscriber-only posts, no DRM.
+A free downloader for public posts on **TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion and LinkedIn**. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack. No login and no install are required, and it runs in your browser. It reaches only what a logged-out visitor can already see: no private accounts, no paywalled or subscriber-only posts, no DRM.
 
 It's also an **installable app (PWA)**: add it to your home screen and share links straight from the TikTok, Instagram, or YouTube app, with no browser and no copy-paste.
 
@@ -26,7 +26,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 
 ## Why use it
 
-- 11 platforms, one paste box. TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, and Vimeo, auto-detected from the URL.
+- 13 platforms, one paste box. TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion and LinkedIn, auto-detected from the URL.
 - Any other link too. Paste a URL from anywhere else and the extractor still goes to work: it reads whatever media the page publishes (og:video, JSON-LD, player configs, download links), with a self-hosted yt-dlp resolver behind it for everything stricter. If the page serves its media to the public, this usually resolves it.
 - Original quality, HD by default. The source file with no re-encode, a one-tap fallback to SD, and MP3 audio extraction wherever a stream resolves.
 - No login, no API key, no daily limit. Nothing to sign up for and nothing installed unless you want the app.
@@ -96,6 +96,14 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 
 - Download videos from `vimeo.com/…` and `player.vimeo.com/…` via a dedicated extractor
 
+**Dailymotion**
+
+- Download videos from `dailymotion.com/video/…` and `dai.ly/…`
+
+**LinkedIn**
+
+- Download videos from public posts at `linkedin.com/posts/…`, `linkedin.com/feed/update/…` and `lnkd.in/…`; posts that need a login can't be fetched
+
 **Any other site**
 
 - Paste any public link. The generic chain reads the page's own media (og:video, JSON-LD `contentUrl`, `<video>` sources, inline player configs, download anchors), verifies it serves a file rather than an error page, and offers it
@@ -125,7 +133,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 - Warm-instance resolve cache and direct tunnel downloads for faster, lighter fetches
 - CORS-proxied media routes so downloads (and Instagram's hotlink-protected CDN) work cross-origin, with HTTP range support for seek/preview
 - Inline URL validation, motion animations, responsive layout, low-power/touch-aware effects
-- Eleven dedicated, SEO-tuned landing pages (one per platform)
+- Thirteen dedicated, SEO-tuned landing pages (one per platform)
 - SEO: dynamic OpenGraph and Twitter card images, per-platform OG images, JSON-LD (WebSite, Person, SoftwareApplication, HowTo, FAQPage), hreflang, sitemap, IndexNow ping on build, and a PWA-tuned manifest
 - No registration, no API keys, no daily limit
 
@@ -371,7 +379,7 @@ src/
 ├── app/
 │   ├── page.tsx                 # Home page
 │   ├── layout.tsx               # Root layout, metadata, JSON-LD injection
-│   ├── <platform>-downloader/   # 11 per-platform landing pages (SEO)
+│   ├── <platform>-downloader/   # 13 per-platform landing pages (SEO)
 │   ├── opengraph-image.tsx      # Dynamic 1200x630 OG image (edge runtime)
 │   ├── twitter-image.tsx        # Twitter card image (delegates to OG)
 │   ├── robots.ts                # robots.txt (incl. AI crawler policy)
@@ -397,7 +405,7 @@ src/
 │   └── site.ts                  # Single source of truth for site metadata
 └── lib/
     ├── downloader.ts            # Core resolve logic + per-platform fallbacks
-    ├── validator.ts             # URL validation and platform detection (11 platforms)
+    ├── validator.ts             # URL validation and platform detection (13 platforms)
     ├── platforms.ts             # Per-platform copy, colors, landing config
     ├── proxyHeaders.ts          # Per-CDN Referer resolution shared by proxy routes
     ├── responseCache.ts         # Warm-instance resolve cache

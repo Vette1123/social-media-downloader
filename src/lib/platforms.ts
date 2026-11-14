@@ -52,7 +52,7 @@ export const platforms: Platform[] = [
     tagline:
       'One paste box for every site: resolve the video, the audio, or the images from any public link.',
     intro:
-      'Paste any public video link — from the eleven dedicated platforms or anywhere else. The extractor reads what the page itself publishes (og:video, JSON-LD, player configs, direct files) and verifies it serves real media before offering it, so what you get is a file that plays rather than an error page renamed .mp4. If a page serves its video to the public, this usually resolves it. No login, nothing installed.',
+      'Paste any public video link — from the thirteen dedicated platforms or anywhere else. The extractor reads what the page itself publishes (og:video, JSON-LD, player configs, direct files) and verifies it serves real media before offering it, so what you get is a file that plays rather than an error page renamed .mp4. If a page serves its video to the public, this usually resolves it. No login, nothing installed.',
     steps: [
       {
         name: 'Copy the video link',
@@ -85,7 +85,7 @@ export const platforms: Platform[] = [
     ],
     cards: [
       {
-        title: '🌐 Beyond the big eleven',
+        title: '🌐 Beyond the big thirteen',
         body: 'Small video hosts, blogs, news sites, forums — if the page publishes its media, the generic extractor finds the best rendition and hands you the file.',
       },
       {
@@ -100,7 +100,7 @@ export const platforms: Platform[] = [
     faqs: [
       {
         q: 'Does this work with any website?',
-        a: 'It works wherever a page serves its media publicly. Dedicated support covers TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch and Vimeo; beyond those, the extractor reads whatever the page publishes, which resolves most smaller video hosts, blogs and news pages.',
+        a: 'It works wherever a page serves its media publicly. Dedicated support covers TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion and LinkedIn; beyond those, the extractor reads whatever the page publishes, which resolves most smaller video hosts, blogs and news pages.',
       },
       {
         q: 'What if a site blocks automated access?',
@@ -1087,6 +1087,176 @@ export const platforms: Platform[] = [
       'Direct progressive file via Vimeo’s player config',
       'HD or Data-saver quality selection',
       'No Vimeo login, no extension, no install',
+      'Preview the video before downloading',
+    ],
+  },
+  {
+    slug: 'dailymotion-downloader',
+    name: 'Dailymotion',
+    brandLabel: 'Dailymotion video downloader',
+    metaTitle: 'Dailymotion Video Downloader — Save Videos as MP4',
+    metaDescription:
+      'Download public Dailymotion videos as MP4. Paste a dailymotion.com or dai.ly link and save the video file instantly — free, no login, no app install.',
+    h1: 'Dailymotion Video Downloader — Save as MP4, No Login',
+    tagline:
+      'Save public Dailymotion videos as MP4 files you can keep on your phone or computer.',
+    intro:
+      'Paste any public dailymotion.com/video/… or dai.ly/… link and the tool resolves the video, shows a preview, and lets you save it as a file. No Dailymotion account, no extension, nothing installed. Videos that need a login or are restricted to certain viewers can’t be fetched.',
+    steps: [
+      {
+        name: 'Copy the Dailymotion link',
+        text: 'Open the video on Dailymotion and click Share, then copy the link. It looks like dailymotion.com/video/x8abc12 or dai.ly/x8abc12.',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the Dailymotion link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Pick quality or format',
+        text: 'Check the preview, then pick the quality you want.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
+    accent: {
+      chip: 'bg-[#0D0D0D] text-[#00AAFF]',
+      grad: 'from-sky-400 via-blue-500 to-slate-900',
+      ring: 'ring-sky-500/30',
+      glow: 'shadow-sky-500/30',
+    },
+    urlExamples: [
+      'dailymotion.com/video/x8abc12',
+      'dai.ly/x8abc12',
+      'www.dailymotion.com/video/…',
+    ],
+    cards: [
+      {
+        title: '🎬 Video saved as MP4',
+        body: 'Public Dailymotion videos are resolved to a single video file you can preview first and then save.',
+      },
+      {
+        title: '🔗 Short links work too',
+        body: 'Both the full dailymotion.com/video/… address and the dai.ly/… short link from the Share button are recognised.',
+      },
+      {
+        title: '🎚️ Quality aware',
+        body: 'Choose HD for the best version the source offers or Data saver for a lighter file.',
+      },
+    ],
+    faqs: [
+      {
+        q: 'Can I download any Dailymotion video?',
+        a: 'Public videos can be saved. Videos that need a login, or that the uploader restricts to certain viewers or regions, can’t be fetched.',
+      },
+      {
+        q: 'Which Dailymotion links work?',
+        a: 'Links in the form dailymotion.com/video/<id> and the dai.ly/<id> short links. A channel page or playlist address isn’t a single video, so paste the link to one video.',
+      },
+      {
+        q: 'What quality do I get?',
+        a: 'The best quality the video offers when you choose HD. Use the Data saver option for a smaller file.',
+      },
+      {
+        q: 'Do I need a Dailymotion account?',
+        a: 'No. Only publicly viewable videos are accessed — no login, no extension, no install.',
+      },
+      {
+        q: 'Why does my Dailymotion link fail to process?',
+        a: 'Make sure the video is public and the link points to one video. If the video is restricted to certain viewers or regions, it can’t be fetched.',
+      },
+    ],
+    featureList: [
+      'Download public Dailymotion videos as MP4',
+      'Works with dailymotion.com and dai.ly links',
+      'HD or Data-saver quality selection',
+      'No Dailymotion login, no extension, no install',
+      'Preview the video before downloading',
+    ],
+  },
+  {
+    slug: 'linkedin-video-downloader',
+    name: 'LinkedIn',
+    brandLabel: 'LinkedIn video downloader',
+    metaTitle: 'LinkedIn Video Downloader — Save Public Post Videos',
+    metaDescription:
+      'Download videos from public LinkedIn posts. Paste a linkedin.com/posts or feed/update link and save the video file — free, no login, no app install.',
+    h1: 'LinkedIn Video Downloader — Public Posts, No Login',
+    tagline:
+      'Save the video from a public LinkedIn post as a file you can keep.',
+    intro:
+      'Paste the link of a public LinkedIn post — linkedin.com/posts/…, linkedin.com/feed/update/… or a lnkd.in share link — and the tool reads the video the post publishes, shows a preview, and lets you save it. Posts that can only be viewed while signed in can’t be fetched.',
+    steps: [
+      {
+        name: 'Copy the post link',
+        text: 'On the post, open the three-dot menu and choose Copy link to post. The link looks like linkedin.com/posts/… or lnkd.in/….',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the LinkedIn link into the box at the top of this page. The tool reads it and shows a preview.',
+      },
+      {
+        name: 'Check the preview',
+        text: 'If the post is public and carries a video, the preview appears. If not, you will see a message saying why.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save it to your phone or computer. No login and no app needed.',
+      },
+    ],
+    accent: {
+      chip: 'bg-[#0A66C2] text-white',
+      grad: 'from-sky-500 via-blue-600 to-blue-800',
+      ring: 'ring-blue-500/30',
+      glow: 'shadow-blue-500/30',
+    },
+    urlExamples: [
+      'linkedin.com/posts/name_title-activity-123…',
+      'linkedin.com/feed/update/urn:li:activity:…',
+      'lnkd.in/…',
+    ],
+    cards: [
+      {
+        title: '🎬 Video from public posts',
+        body: 'When a public post carries a video, the tool reads it from the page the post publishes and saves it as a file.',
+      },
+      {
+        title: '🔗 Share links work too',
+        body: 'Post links, feed update links and lnkd.in share links from the Copy link option are all recognised.',
+      },
+      {
+        title: '🚪 Honest about limits',
+        body: 'LinkedIn shows some videos only to signed-in members. Those can’t be fetched, and the tool says so instead of failing silently.',
+      },
+    ],
+    faqs: [
+      {
+        q: 'Can I download any LinkedIn video?',
+        a: 'Only videos in public posts that the post page itself publishes. Posts that can be viewed only while signed in can’t be fetched.',
+      },
+      {
+        q: 'Which LinkedIn links work?',
+        a: 'linkedin.com/posts/…, linkedin.com/feed/update/…, linkedin.com/pulse/… articles with a lead video, and lnkd.in share links.',
+      },
+      {
+        q: 'Do I need a LinkedIn account?',
+        a: 'No. The tool never asks for your LinkedIn login and doesn’t use your account. It only reads what a public post publishes.',
+      },
+      {
+        q: 'Why does my LinkedIn link say no video was found?',
+        a: 'The post may not contain a video, or LinkedIn may show it only to signed-in members. Open the link in a logged-out browser window: if you can’t see the video there, the tool can’t fetch it either.',
+      },
+      {
+        q: 'What do I get when it works?',
+        a: 'The video file the post publishes, with a preview first. LinkedIn decides the resolution, so the tool doesn’t offer a choice of quality.',
+      },
+    ],
+    featureList: [
+      'Download videos from public LinkedIn posts',
+      'Works with post, feed update and lnkd.in links',
+      'No LinkedIn login, no extension, no install',
+      'Clear message when a post needs a login',
       'Preview the video before downloading',
     ],
   },
