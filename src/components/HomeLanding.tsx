@@ -4,6 +4,7 @@ import { Surface } from '@/components/Surface'
 import { InteractiveBackground } from '@/components/InteractiveBackground'
 import { LazyFAQ } from '@/components/LazyFAQ'
 import { ProHeroLine } from '@/components/ProNudge'
+import { homeHeroChips } from '@/lib/heroLayout'
 import { SupportPanel } from '@/components/SupportPanel'
 import { PromoSlot } from '@/components/PromoSlot'
 import {
@@ -142,7 +143,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 export function HomeLanding({ locale = 'en' }: { locale?: Locale }) {
   const { copy, homeFaqs, platforms } = contentFor(locale)
   const { home, chips } = copy
-  const heroChips = [chips.free, chips.noLoginToDownload, chips.noLimits, chips.hd]
+  const heroChips = homeHeroChips(chips)
   return (
     <>
       <script

@@ -25,6 +25,7 @@ export function PlayAppPromoCard({ app }: { app: PlayApp }) {
       href={storeHref(app)}
       label={app.name}
       Icon={AppsIcon}
+      phoneWidth='third'
       iconHoverClass='group-hover:text-white'
       title={t('appCardTitle', { app: app.name, stores: storesLabel(app) })}
       onClick={(e: React.MouseEvent) => onStoreLinkClick(e, app)}
