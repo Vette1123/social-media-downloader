@@ -58,6 +58,8 @@ import {
   useIsIOSLike,
 } from '@/lib/clientEnv'
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
+import { PASTE_INPUT_ID } from '@/lib/featureCard'
+import { createFailureStreak } from '@/lib/failureStreak'
 import { buildDownloadFilename, formatBytes } from '@/lib/filename'
 import { parseYouTubeId } from '@/lib/validator'
 import { ThumbnailButton } from '@/components/ThumbnailButton'
@@ -71,7 +73,7 @@ import { namedAuthor } from '@/lib/byline'
 import Link from '@/components/IntentLink'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { d, dKnown, useDeepWords } from '@/lib/i18nDeep'
-import { failureLine, failureTitle } from '@/lib/errorMessages'
+import { failureLine, failureRetry, failureTitle } from '@/lib/errorMessages'
 import { useLocale, useT, useLocalePath } from '@/lib/i18nStore'
 import {
   clearPlatformQuality,
@@ -611,11 +613,18 @@ function browserIsOffline(): boolean {
 }
 
 /**
- * One banner line from a raw failure — the four copies of this that had drifted
- * apart across two handlers, plus the connection check none of them made.
+ * One banner message from a raw failure — the four copies of this that had
+ * drifted apart across two handlers, plus the connection check none of them
+ * made. `repeats` is how many times in a row this link has failed: from the
+ * second, a failure retrying cannot fix says so and stops offering the retry.
  */
-function explain(raw: string | undefined, url?: string): string {
-  return failureLine(raw, url, { online: !browserIsOffline() })
+function explain(raw: string | undefined, url?: string, repeats = 1): AppMessage {
+  const context = { online: !browserIsOffline() }
+  return {
+    kind: 'error',
+    text: failureLine(raw, url, context, repeats),
+    retry: failureRetry(raw, url, context, repeats),
+  }
 }
 
 /**
@@ -1136,6 +1145,11 @@ export function DownloaderApp() {
 
   // Thin aliases: the store already persists and notifies, so these exist only
   // to keep the call sites in this file reading the same as before.
+  // Same-link failure count: the second identical failure stops offering a
+  // futile retry. useState keeps one instance without a render-time ref read.
+  const [failureStreak] = useState(createFailureStreak)
+  const countFailure = (link: string) => failureStreak.count(link)
+
   const changeQuality = setQuality
   const changeFormat = setFormat
 
@@ -1290,6 +1304,7 @@ export function DownloaderApp() {
           },
         })
         void rememberInHistory(target, data.metadata)
+        failureStreak.reset()
         // A deliberate pick on a result is taste for that platform, not for
         // that post — remembered locally so the next link from it resolves the
         // same way. Both knobs, because "MP3 from YouTube, video from TikTok"
@@ -1306,7 +1321,7 @@ export function DownloaderApp() {
       } else {
         dispatch({
         type: 'SET_MESSAGE',
-        payload: { kind: 'error', text: explain(data.error, target) },
+        payload: explain(data.error, target, countFailure(target)),
       })
       }
     } catch (err) {
@@ -1316,7 +1331,7 @@ export function DownloaderApp() {
       })
       dispatch({
         type: 'SET_MESSAGE',
-        payload: { kind: 'error', text: explain(errorText(err), target) },
+        payload: explain(errorText(err), target, countFailure(target)),
       })
     } finally {
       setRepicking(null)
@@ -1400,7 +1415,7 @@ export function DownloaderApp() {
       dispatch({ type: 'SET_URL', payload: target })
       dispatch({
         type: 'SET_MESSAGE',
-        payload: { kind: 'error', text: explain('', target) },
+        payload: explain('', target),
       })
       return
     }
@@ -1426,6 +1441,7 @@ export function DownloaderApp() {
 
         // Remember it locally (one-tap re-open), off the main flow.
         void rememberInHistory(target, data.metadata)
+        failureStreak.reset()
 
         dispatch({ type: 'SET_URL', payload: '' })
 
@@ -1444,14 +1460,14 @@ export function DownloaderApp() {
       } else {
         dispatch({
         type: 'SET_MESSAGE',
-        payload: { kind: 'error', text: explain(data.error, target) },
+        payload: explain(data.error, target, countFailure(target)),
       })
       }
     } catch (err) {
       console.error('Processing error:', err)
       dispatch({
         type: 'SET_MESSAGE',
-        payload: { kind: 'error', text: explain(errorText(err), target) },
+        payload: explain(errorText(err), target, countFailure(target)),
       })
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false })
@@ -2724,6 +2740,7 @@ export function DownloaderApp() {
           <input
             dir='auto'
             ref={inputRef}
+            id={PASTE_INPUT_ID}
             type='url'
             inputMode='url'
             enterKeyHint='go'
@@ -3244,7 +3261,7 @@ export function DownloaderApp() {
               }`}
             >
               {displayMessage(t, message)}
-              {isError && !isResolvingOrDownloading(state) && retryLink && (
+              {isError && message.retry !== false && !isResolvingOrDownloading(state) && retryLink && (
                 // A failed resolve usually means "the source hiccuped", not
                 // "give up" — offer the retry where the failure is, instead
                 // of making someone scroll up and re-click Process. Gated on

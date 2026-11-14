@@ -24,6 +24,7 @@ import {
   YouTubeIcon,
 } from '@/components/icons'
 import { DevAppLinks } from '@/components/DevAppLinks'
+import { FeatureCardButton } from '@/components/FeatureCardButton'
 import { SiteFooter } from '@/components/SiteFooter'
 import type { Locale } from '@/lib/i18n'
 import { contentFor } from '@/lib/localeContent'
@@ -251,17 +252,13 @@ export function HomeLanding({ locale = 'en' }: { locale?: Locale }) {
                 // four-across band you're meant to skim. `.card-lift` carries
                 // the shared geometry (see globals.css); only the copy and icon
                 // response, which are specific to this card, live here.
-                <Surface
-                  key={t.label}
-                  interaction='lift'
-                  className='group p-5'
-                >
-                  <Icon className='mb-4 h-6 w-6 text-cyan-300 drop-shadow-[0_2px_6px_rgba(34,211,238,0.35)] transition-transform duration-200 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100' />
-                  <p className='font-semibold text-white'>{t.label}</p>
-                  <p className='mt-1 text-sm text-white/60 transition-colors duration-200 group-hover:text-white/85'>
+                <FeatureCardButton key={t.label} id={id}>
+                  <Icon className='mb-4 block h-6 w-6 text-cyan-300 drop-shadow-[0_2px_6px_rgba(34,211,238,0.35)] transition-transform duration-200 group-hover:scale-110 motion-reduce:transition-none motion-reduce:group-hover:scale-100' />
+                  <span className='block font-semibold text-white'>{t.label}</span>
+                  <span className='mt-1 block text-sm text-white/60 transition-colors duration-200 group-hover:text-white/85'>
                     {t.sub}
-                  </p>
-                </Surface>
+                  </span>
+                </FeatureCardButton>
                 )
               })}
             </div>
