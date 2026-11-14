@@ -1194,11 +1194,11 @@
     },
     "vimeo-downloader": {
       "brandLabel": "Baixar vídeos do Vimeo",
-      "metaTitle": "Baixar vídeo do Vimeo — salve vídeos HD em MP4, sem login",
-      "metaDescription": "Baixe vídeos públicos do Vimeo em HD como MP4. Cole um link vimeo.com e salve o arquivo de vídeo progressivo na hora — grátis, sem login, sem instalar app.",
-      "h1": "Baixar vídeo do Vimeo — MP4 HD, sem login",
+      "metaTitle": "Vimeo para MP4: baixar vídeo do Vimeo em HD",
+      "metaDescription": "Transforme um link público do Vimeo em arquivo MP4. Cole o link vimeo.com, escolha HD ou Economia de dados e salve: grátis, sem login, sem instalar nada.",
+      "h1": "Vimeo para MP4: baixar vídeos do Vimeo em HD",
       "tagline": "Salve vídeos públicos do Vimeo em MP4, na maior qualidade que a fonte oferece.",
-      "intro": "Cole qualquer link público vimeo.com/… e a ferramenta resolve o vídeo pela própria configuração do player do Vimeo, devolvendo um MP4 progressivo direto que você pode ver na prévia e baixar. Sem login no Vimeo, sem extensão, nada para instalar. Vídeos protegidos por senha, privados e restritos a domínios não podem ser acessados.",
+      "intro": "Cole um link público vimeo.com e receba o vídeo como um MP4 que você pode ver na prévia e salvar. A ferramenta lê a configuração do próprio player do Vimeo e devolve o MP4 progressivo direto, na melhor qualidade que o vídeo oferece (geralmente até 1080p). Sem login no Vimeo, sem extensão, nada para instalar. Vídeos privados, protegidos por senha ou restritos a domínios não podem ser baixados, nem os poucos que o Vimeo só transmite por streaming.",
       "cards": [
         {
           "title": "🎬 Downloads em MP4 HD",
@@ -1219,16 +1219,16 @@
       ],
       "faqs": [
         {
+          "q": "Como transformo um link do Vimeo em MP4?",
+          "a": "Cole acima o link vimeo.com, confira a prévia, escolha HD ou Economia de dados e salve. Não há etapa de conversão: o Vimeo publica um MP4 pronto para a maioria dos vídeos públicos e a ferramenta baixa esse arquivo. Se o vídeo não tiver um, ele só pode ser reproduzido, não salvo."
+        },
+        {
           "q": "Dá para baixar qualquer vídeo do Vimeo?",
           "a": "Vídeos públicos que expõem um MP4 progressivo (não DASH) podem ser baixados. Vídeos protegidos por senha, privados e bloqueados por domínio não podem ser acessados."
         },
         {
           "q": "Que qualidade eu recebo?",
           "a": "A maior versão progressiva que o vídeo oferece — muitas vezes até 1080p. Use a opção Data saver para um arquivo menor."
-        },
-        {
-          "q": "Preciso de uma conta no Vimeo?",
-          "a": "Não. Só vídeos de visualização pública são acessados — sem login, sem extensão, sem instalar nada."
         },
         {
           "q": "Por que um vídeo do Vimeo só faz streaming e não baixa?",
@@ -1257,7 +1257,7 @@
         },
         {
           "name": "Escolha qualidade ou formato",
-          "text": "Veja a prévia e escolha a qualidade que quiser."
+          "text": "Confira a prévia e escolha HD para a maior qualidade em MP4 ou Economia de dados para um arquivo menor."
         },
         {
           "name": "Salve o arquivo",

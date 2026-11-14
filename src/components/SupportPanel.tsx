@@ -1,4 +1,5 @@
 import Link from '@/components/IntentLink'
+import { TemplateText } from '@/components/TemplateText'
 import { HiddenForPro } from '@/components/HiddenForPro'
 import { CheckIcon, MailIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
@@ -108,7 +109,7 @@ export function SupportPanel({
             <CheckIcon className='mt-0.5 h-4 w-4 shrink-0 text-cyan-300' />
             <span className='text-sm text-white/75'>
               <strong className='font-semibold text-white'>{benefit.title}.</strong>{' '}
-              {benefit.body}
+              <TemplateText text={benefit.body} />
             </span>
           </li>
         ))}
