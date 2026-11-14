@@ -20,8 +20,8 @@ describe('translate', () => {
     // Every dictionary here is complete for these keys, so prove the
     // fallback with a key only English defines by construction: ask in ar
     // and expect readable Arabic; the mechanism is shared.
-    expect(translate('es', 'pastePlaceholder')).toBe('Pega un enlace de video.')
-    expect(translate('en', 'pastePlaceholder')).toBe('Paste a video link.')
+    expect(translate('es', 'pastePlaceholder')).toBe('Pega un enlace de video')
+    expect(translate('en', 'pastePlaceholder')).toBe('Paste a video link')
   })
 
   it('substitutes {n}-style variables', () => {

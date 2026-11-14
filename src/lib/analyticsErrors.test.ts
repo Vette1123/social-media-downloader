@@ -6,7 +6,12 @@ describe('failureCode', () => {
     ['Failed to fetch', 'network'],
     ['The operation timed out', 'timeout'],
     ['Too many requests', 'rate_limited'],
-    ['The post may be private', 'private'],
+    // Every extractor's last-resort text lists guesses. Reading the word "private" in it
+    // filed 147 X failures from 7 people as private (2026-11-14): no answer is not an answer.
+    ['Could not download Twitter/X content. The post may be private, age-restricted, or unavailable.', 'inconclusive'],
+    ['All download methods failed. TikTok might be blocking requests or the video is private.', 'inconclusive'],
+    ['This post is private', 'private'],
+    ['SoundCloud delivers its audio as an HLS stream through its player, which this extractor cannot repackage as a single file yet.', 'unsupported'],
     ['This site is not supported', 'unsupported'],
     ['Video unavailable', 'unavailable'],
     ['HTTP 500', 'server'],
@@ -26,6 +31,7 @@ describe('failureCode', () => {
 describe('isExpectedFailure', () => {
   it('only our own faults become issues', () => {
     expect(isExpectedFailure('private')).toBe(true)
+    expect(isExpectedFailure('inconclusive')).toBe(true)
     expect(isExpectedFailure('upstream')).toBe(false)
     expect(isExpectedFailure('server')).toBe(false)
   })

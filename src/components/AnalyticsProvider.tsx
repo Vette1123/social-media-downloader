@@ -22,7 +22,7 @@ import {
   trackSignedIn,
 } from '@/lib/analytics'
 import { accountContextFor } from '@/lib/analyticsContext'
-import { isFocusDeadClick, isForeignEarlyError, shouldDropException } from '@/lib/analyticsNoise'
+import { isInertDeadClick, isForeignEarlyError, shouldDropException } from '@/lib/analyticsNoise'
 import { scrubEvent } from '@/lib/analyticsPrivacy'
 import { getLocaleSnapshot, subscribeLocale } from '@/lib/i18nStore'
 import { localeFromPath } from '@/lib/localeRoutes'
@@ -67,7 +67,7 @@ function deviceContext() {
 
 function beforeSend(event: CaptureResult | null): CaptureResult | null {
   if (!event) return event
-  if (isFocusDeadClick(event)) return null
+  if (isInertDeadClick(event)) return null
   if (event.event === '$exception') {
     if (shouldDropException(event)) return null
     event.properties = { ...event.properties, ...deviceContext() }

@@ -52,3 +52,4 @@ next-env.d.ts
 
 # IndexNow plan written before a deploy
 /.indexnow-plan.json
+.ui-shots/

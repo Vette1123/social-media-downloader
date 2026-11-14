@@ -7,6 +7,7 @@ import { ProHeroLine } from '@/components/ProNudge'
 import { SupportPanel } from '@/components/SupportPanel'
 import { PromoSlot } from '@/components/PromoSlot'
 import {
+  CheckIcon,
   FacebookIcon,
   FilmIcon,
   InstagramIcon,
@@ -104,13 +105,16 @@ const heroPlatforms = [
 ] as const
 
 // Centered section header (title + one-line sub). Used by the full-width bands.
-const HERO_CHIP =
-  'inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-3.5 py-1.5 text-xs text-white/70 transition-colors hover:text-white md:text-sm'
+// Reassurance points under the paste bar. Plain text with a check, never a
+// pill: as bordered rounded-full chips they sat under the real Format/Quality
+// pills looking like more toggles, and drew dead taps (14 Nov). The one that
+// IS a link reads as a link.
+const HERO_POINT = 'inline-flex items-center gap-1.5 text-xs text-white/60 md:text-sm'
+const HERO_POINT_LINK =
+  'inline-flex items-center gap-1.5 text-xs font-medium text-cyan-300 underline decoration-cyan-300/40 underline-offset-4 transition-colors hover:decoration-cyan-300 md:text-sm'
 
-function ChipDot() {
-  return (
-    <span className='h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.6)]' />
-  )
+function PointCheck() {
+  return <CheckIcon className='h-3.5 w-3.5 shrink-0 text-cyan-400' aria-hidden />
 }
 
 function SectionHead({ title, sub }: { title: string; sub: string }) {
@@ -209,18 +213,17 @@ export function HomeLanding({ locale = 'en' }: { locale?: Locale }) {
                 also a link: it names the universal downloader page, which is
                 both where a curious visitor goes next and an internal link to
                 it from every page that shows this hero. */}
-            <div className='mt-7 flex flex-wrap justify-center gap-2'>
+            <div className='mt-7 flex flex-wrap justify-center gap-x-4 gap-y-2'>
               {heroChips.map((chip) => (
-                <span key={chip} className={HERO_CHIP}>
-                  <ChipDot />
+                <span key={chip} className={HERO_POINT}>
+                  <PointCheck />
                   {chip}
                 </span>
               ))}
               <Link
                 href={localePath(locale, '/video-downloader')}
-                className={HERO_CHIP}
+                className={HERO_POINT_LINK}
               >
-                <ChipDot />
                 {chips.anyLink}
               </Link>
             </div>
