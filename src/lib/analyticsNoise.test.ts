@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isForeignEarlyError, shouldDropException } from './analyticsNoise'
+import { isForeignEarlyError, shouldDropException, isFocusDeadClick } from './analyticsNoise'
 
 const exception = (value: string, filenames: string[] = []) => ({
   properties: {
@@ -118,5 +118,18 @@ describe('isForeignEarlyError, by message alone', () => {
 
   it('keeps an ordinary message', () => {
     expect(isForeignEarlyError('', 'boom')).toBe(false)
+  })
+})
+
+describe('isFocusDeadClick', () => {
+  it('drops a dead click that only focused the link box', () => {
+    expect(isFocusDeadClick({ event: '$dead_click', properties: { $elements: [{ tag_name: 'input' }] } })).toBe(true)
+    expect(isFocusDeadClick({ event: '$dead_click', properties: { $elements_chain: 'textarea.x:attr__a="b"' } })).toBe(true)
+  })
+  it('keeps dead buttons, rage clicks on the box, and other events', () => {
+    expect(isFocusDeadClick({ event: '$dead_click', properties: { $elements: [{ tag_name: 'button' }] } })).toBe(false)
+    expect(isFocusDeadClick({ event: '$rageclick', properties: { $elements: [{ tag_name: 'input' }] } })).toBe(false)
+    expect(isFocusDeadClick({ event: '$dead_click', properties: {} })).toBe(false)
+    expect(isFocusDeadClick({ event: '$dead_click', properties: { $elements_chain: 'input-group.x' } })).toBe(false)
   })
 })

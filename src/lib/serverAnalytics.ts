@@ -15,16 +15,20 @@ export interface ServerFailure {
   route: string
   status: number
   error?: unknown
+  /** A 5xx the handler caught and answered itself: its JSON `error` is the only reason left. */
+  response?: Response
+  /** Read from `response` off the critical path; set by reportServerFailure, not callers. */
+  reason?: string
 }
 
 /** Pure, so the wire format is pinned without a network. */
 export function serverFailureBatch(
   key: string,
-  { route, status, error }: ServerFailure,
+  { route, status, error, reason }: ServerFailure,
   country: string | undefined,
 ) {
   const message = scrubText(
-    error instanceof Error ? error.message : `HTTP ${status}`,
+    error instanceof Error ? error.message : (reason ?? `HTTP ${status}`),
   ).slice(0, 200)
   const properties = {
     // One shared id: a server has no person, and must never create one.
@@ -71,10 +75,23 @@ export function reportServerFailure(
   if (!key || failure.status === 501 || failure.status === 502) return
   const country = (request as Request & { cf?: { country?: string } }).cf?.country
   ctx.waitUntil(
-    fetch(CAPTURE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(serverFailureBatch(key, failure, country)),
-    }).catch(() => undefined),
+    responseReason(failure.response)
+      .then((reason) =>
+        fetch(CAPTURE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(serverFailureBatch(key, { ...failure, reason }, country)),
+        }),
+      )
+      .catch(() => undefined),
   )
+}
+
+/**
+ * The `error` text of a JSON failure body. A caught 500 reached PostHog as only
+ * "HTTP 500" (13 Nov), with nothing to say which extractor threw.
+ */
+async function responseReason(response: Response | undefined): Promise<string | undefined> {
+  const body = (await response?.json().catch(() => undefined)) as { error?: unknown } | undefined
+  return typeof body?.error === 'string' && body.error ? body.error : undefined
 }

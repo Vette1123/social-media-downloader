@@ -118,7 +118,11 @@ const worker = {
       try {
         const response = await route.handler(request, ctx, env)
         if (response.status >= 500) {
-          reportServerFailure(request, env, ctx, { route: url.pathname, status: response.status })
+          reportServerFailure(request, env, ctx, {
+            route: url.pathname,
+            status: response.status,
+            response: response.clone(),
+          })
         }
         return response
       } catch (error) {
