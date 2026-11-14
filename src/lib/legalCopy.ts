@@ -133,7 +133,7 @@ export const legalCopy = {
       {
         heading: 'Trademarks and affiliation',
         paragraphs: [
-          '{site} is an independent tool and is {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, or any other platform named on this site. Those names and logos belong to their respective owners and are used only to describe which links this tool accepts.',
+          '{site} is an independent tool and is {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn, or any other platform named on this site. Those names and logos belong to their respective owners and are used only to describe which links this tool accepts.',
         ],
       },
       {

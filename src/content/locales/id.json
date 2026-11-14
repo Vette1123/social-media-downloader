@@ -28,7 +28,7 @@
       },
       "h1Lead": "Download video publik apa saja,",
       "h1Accent": "dalam kualitas asli",
-      "intro": "Simpan video, ekstrak audio MP3, atau ambil galeri gambar lengkap dari postingan publik di TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch & Vimeo.",
+      "intro": "Simpan video, ekstrak audio MP3, atau ambil galeri gambar lengkap dari postingan publik di TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion & LinkedIn.",
       "featuresTitle": "Semua dari satu link",
       "featuresSub": "Sekali tempel, empat cara menyimpan. Tanpa aplikasi, tanpa akun, tidak ada yang perlu dipasang.",
       "features": {
@@ -178,7 +178,7 @@
       "support": "Dukungan",
       "languages": "Bahasa",
       "questions": "Pertanyaan atau pemberitahuan penghapusan:",
-      "disclaimer": "Hanya postingan publik. {site} adalah alat independen, tidak berafiliasi dengan atau didukung oleh TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch atau Vimeo; nama dan logo mereka milik pemiliknya masing-masing dan menunjukkan link mana yang diterima alat ini."
+      "disclaimer": "Hanya postingan publik. {site} adalah alat independen, tidak berafiliasi dengan atau didukung oleh TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion atau LinkedIn; nama dan logo mereka milik pemiliknya masing-masing dan menunjukkan link mana yang diterima alat ini."
     },
     "howTo": {
       "homeName": "Cara mengunduh video publik TikTok, X, Instagram, Facebook atau YouTube",
@@ -317,7 +317,7 @@
           {
             "heading": "Merek dagang dan afiliasi",
             "paragraphs": [
-              "{site} adalah alat independen dan {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, atau platform lain mana pun yang disebut di situs ini. Nama dan logo tersebut milik pemiliknya masing-masing dan hanya dipakai untuk menjelaskan link mana yang diterima alat ini."
+              "{site} adalah alat independen dan {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn, atau platform lain mana pun yang disebut di situs ini. Nama dan logo tersebut milik pemiliknya masing-masing dan hanya dipakai untuk menjelaskan link mana yang diterima alat ini."
             ]
           },
           {
@@ -392,8 +392,8 @@
       "a": "Ya. Berjalan sepenuhnya di browser pada perangkat modern apa saja — iPhone, iPad, ponsel Android, tablet, Mac, Windows atau Linux. Tidak perlu instal aplikasi."
     },
     {
-      "q": "Apakah bisa dipakai untuk situs selain sebelas platform itu?",
-      "a": "Ya — tempel link video publik apa saja dan aplikasi akan mencoba memprosesnya. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch dan Vimeo; di luar itu, ekstraktor membaca media apa pun yang dipublikasikan halaman, jadi link dari situs hosting video kecil, blog, dan situs berita biasanya juga bisa diproses. Situs yang mewajibkan login atau menyembunyikan medianya tidak bisa diambil."
+      "q": "Apakah bisa dipakai untuk situs selain tiga belas platform itu?",
+      "a": "Ya — tempel link video publik apa saja dan aplikasi akan mencoba memprosesnya. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion dan LinkedIn; di luar itu, ekstraktor membaca media apa pun yang dipublikasikan halaman, jadi link dari situs hosting video kecil, blog, dan situs berita biasanya juga bisa diproses. Situs yang mewajibkan login atau menyembunyikan medianya tidak bisa diambil."
     },
     {
       "q": "Bisakah saya mengimpor seluruh playlist atau koleksi sekaligus?",
@@ -427,10 +427,10 @@
       "metaDescription": "Tempel link dari situs apa saja dan simpan videonya dalam HD, ekstrak audio MP3, atau ambil media tersemat — gratis, tanpa login, tanpa instal.",
       "h1": "Download Video dari Situs Apa Saja — Tempel Link",
       "tagline": "Satu kolom tempel untuk semua situs: ambil video, audio, atau gambar dari link publik apa saja.",
-      "intro": "Tempel link video publik apa saja — dari sebelas platform khusus atau dari mana pun. Ekstraktor membaca apa yang dipublikasikan halaman itu sendiri (og:video, JSON-LD, konfigurasi player, file langsung) dan memastikan link itu benar-benar menyajikan media sebelum menawarkannya, jadi yang kamu dapat adalah file yang bisa diputar, bukan halaman error yang namanya diganti jadi .mp4. Jika sebuah halaman menyajikan videonya ke publik, biasanya ini bisa memprosesnya. Tanpa login, tidak ada yang dipasang.",
+      "intro": "Tempel link video publik apa saja — dari tiga belas platform khusus atau dari mana pun. Ekstraktor membaca apa yang dipublikasikan halaman itu sendiri (og:video, JSON-LD, konfigurasi player, file langsung) dan memastikan link itu benar-benar menyajikan media sebelum menawarkannya, jadi yang kamu dapat adalah file yang bisa diputar, bukan halaman error yang namanya diganti jadi .mp4. Jika sebuah halaman menyajikan videonya ke publik, biasanya ini bisa memprosesnya. Tanpa login, tidak ada yang dipasang.",
       "cards": [
         {
-          "title": "🌐 Di luar sebelas platform besar",
+          "title": "🌐 Di luar tiga belas platform besar",
           "body": "Situs hosting video kecil, blog, situs berita, forum — jika halamannya mempublikasikan medianya, ekstraktor umum menemukan versi terbaiknya dan menyerahkan filenya."
         },
         {
@@ -445,7 +445,7 @@
       "faqs": [
         {
           "q": "Apakah ini bisa dipakai di situs apa saja?",
-          "a": "Bisa selama halamannya menyajikan medianya secara publik. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch dan Vimeo; di luar itu, ekstraktor membaca apa pun yang dipublikasikan halaman, yang cukup untuk sebagian besar situs hosting video kecil, blog, dan halaman berita."
+          "a": "Bisa selama halamannya menyajikan medianya secara publik. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion dan LinkedIn; di luar itu, ekstraktor membaca apa pun yang dipublikasikan halaman, yang cukup untuk sebagian besar situs hosting video kecil, blog, dan halaman berita."
         },
         {
           "q": "Bagaimana jika sebuah situs memblokir akses otomatis?",
@@ -1258,6 +1258,144 @@
         {
           "name": "Pilih kualitas atau format",
           "text": "Lihat pratinjau, lalu pilih kualitas yang kamu mau."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
+      ]
+    },
+    "dailymotion-downloader": {
+      "brandLabel": "Pengunduh video Dailymotion",
+      "metaTitle": "Unduh Video Dailymotion sebagai MP4, Tanpa Login",
+      "metaDescription": "Unduh video publik Dailymotion sebagai MP4. Tempel link dailymotion.com atau dai.ly lalu simpan filenya seketika: gratis, tanpa login, tanpa pasang aplikasi.",
+      "h1": "Unduh Video Dailymotion: MP4, Tanpa Login",
+      "tagline": "Simpan video publik Dailymotion sebagai file MP4 di ponsel atau komputer Anda.",
+      "intro": "Tempel link publik dailymotion.com/video/… atau dai.ly/… dan alat ini memproses videonya, menampilkan pratinjau, lalu membiarkan Anda menyimpannya sebagai file. Tanpa akun Dailymotion, tanpa ekstensi, tanpa pemasangan apa pun. Video yang memerlukan login atau dibatasi untuk penonton tertentu tidak bisa diambil.",
+      "cards": [
+        {
+          "title": "🎬 Video disimpan sebagai MP4",
+          "body": "Video publik Dailymotion diproses menjadi satu file video yang bisa Anda lihat dulu pratinjaunya lalu simpan."
+        },
+        {
+          "title": "🔗 Link pendek juga bisa",
+          "body": "Alamat lengkap dailymotion.com/video/… maupun link pendek dai.ly/… dari tombol Bagikan sama-sama dikenali."
+        },
+        {
+          "title": "🎚️ Peka kualitas",
+          "body": "Pilih HD untuk versi terbaik dari sumbernya atau Hemat data untuk file yang lebih ringan."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh video Dailymotion apa pun?",
+          "a": "Video publik bisa disimpan. Video yang memerlukan login, atau yang dibatasi pengunggah untuk penonton atau wilayah tertentu, tidak bisa diambil."
+        },
+        {
+          "q": "Link Dailymotion mana yang berfungsi?",
+          "a": "Link berbentuk dailymotion.com/video/<id> dan link pendek dai.ly/<id>. Halaman kanal atau daftar putar bukan satu video, jadi tempel link satu video saja."
+        },
+        {
+          "q": "Kualitas apa yang saya dapat?",
+          "a": "Kualitas terbaik yang ditawarkan video saat Anda memilih HD. Gunakan opsi Hemat data untuk file yang lebih kecil."
+        },
+        {
+          "q": "Apakah saya perlu akun Dailymotion?",
+          "a": "Tidak. Hanya video yang bisa dilihat publik yang diakses: tanpa login, tanpa ekstensi, tanpa pemasangan."
+        },
+        {
+          "q": "Mengapa link Dailymotion saya gagal diproses?",
+          "a": "Pastikan videonya publik dan link mengarah ke satu video. Jika video dibatasi untuk penonton atau wilayah tertentu, video itu tidak bisa diambil."
+        }
+      ],
+      "featureList": [
+        "Unduh video publik Dailymotion sebagai MP4",
+        "Bekerja dengan link dailymotion.com dan dai.ly",
+        "Pilihan kualitas HD atau Hemat data",
+        "Tanpa login Dailymotion, tanpa ekstensi, tanpa pemasangan",
+        "Pratinjau video sebelum mengunduh"
+      ],
+      "steps": [
+        {
+          "name": "Salin link Dailymotion",
+          "text": "Buka video di Dailymotion, ketuk Bagikan, lalu salin linknya. Bentuknya seperti dailymotion.com/video/x8abc12 atau dai.ly/x8abc12."
+        },
+        {
+          "name": "Tempel ke kotak",
+          "text": "Tempel link Dailymotion ke kotak di bagian atas halaman ini. Alat membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Pilih kualitas atau format",
+          "text": "Periksa pratinjau, lalu pilih kualitas yang Anda mau."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
+      ]
+    },
+    "linkedin-video-downloader": {
+      "brandLabel": "Pengunduh video LinkedIn",
+      "metaTitle": "Unduh Video LinkedIn dari Postingan Publik",
+      "metaDescription": "Unduh video dari postingan publik LinkedIn. Tempel link linkedin.com/posts atau feed/update lalu simpan filenya: gratis, tanpa login, tanpa pasang aplikasi.",
+      "h1": "Unduh Video LinkedIn: Postingan Publik, Tanpa Login",
+      "tagline": "Simpan video dari postingan publik LinkedIn sebagai file yang bisa Anda simpan.",
+      "intro": "Tempel link postingan publik LinkedIn (linkedin.com/posts/…, linkedin.com/feed/update/…, atau link bagikan lnkd.in) dan alat ini membaca video yang dipublikasikan halaman itu sendiri, menampilkan pratinjau, lalu membiarkan Anda menyimpannya. Postingan yang hanya bisa dilihat saat sudah login tidak bisa diambil.",
+      "cards": [
+        {
+          "title": "🎬 Video dari postingan publik",
+          "body": "Saat postingan publik memuat video, alat ini membacanya dari halaman yang mempublikasikannya lalu menyimpannya sebagai file."
+        },
+        {
+          "title": "🔗 Link bagikan juga bisa",
+          "body": "Link postingan, link feed/update, dan link lnkd.in dari opsi Salin link sama-sama dikenali."
+        },
+        {
+          "title": "🚪 Jujur soal batasan",
+          "body": "LinkedIn menampilkan sebagian video hanya kepada anggota yang sudah login. Video itu tidak bisa diambil, dan alat ini menyatakannya, bukan gagal diam-diam."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh video LinkedIn apa pun?",
+          "a": "Hanya video di postingan publik yang dipublikasikan halaman itu sendiri. Postingan yang hanya bisa dilihat saat sudah login tidak bisa diambil."
+        },
+        {
+          "q": "Link LinkedIn mana yang berfungsi?",
+          "a": "linkedin.com/posts/…, linkedin.com/feed/update/…, artikel linkedin.com/pulse/… dengan video pembuka, dan link bagikan lnkd.in."
+        },
+        {
+          "q": "Apakah saya perlu akun LinkedIn?",
+          "a": "Tidak. Alat ini tidak pernah meminta login LinkedIn Anda dan tidak memakai akun Anda. Ia hanya membaca apa yang dipublikasikan postingan publik."
+        },
+        {
+          "q": "Mengapa link LinkedIn saya menyatakan video tidak ditemukan?",
+          "a": "Postingan mungkin tidak memuat video, atau LinkedIn hanya menampilkannya kepada anggota yang sudah login. Buka link di jendela peramban tanpa login: jika video tidak terlihat di sana, alat ini juga tidak bisa mengambilnya."
+        },
+        {
+          "q": "Apa yang saya dapat saat berhasil?",
+          "a": "File video yang dipublikasikan postingan, dengan pratinjau lebih dulu. LinkedIn yang menentukan resolusinya, jadi alat ini tidak menawarkan pilihan kualitas."
+        }
+      ],
+      "featureList": [
+        "Unduh video dari postingan publik LinkedIn",
+        "Bekerja dengan link postingan, feed/update, dan lnkd.in",
+        "Tanpa login LinkedIn, tanpa ekstensi, tanpa pemasangan",
+        "Pesan jelas saat postingan memerlukan login",
+        "Pratinjau video sebelum mengunduh"
+      ],
+      "steps": [
+        {
+          "name": "Salin link postingan",
+          "text": "Di postingan, buka menu tiga titik lalu pilih Salin link ke postingan. Bentuk linknya seperti linkedin.com/posts/… atau lnkd.in/…."
+        },
+        {
+          "name": "Tempel ke kotak",
+          "text": "Tempel link LinkedIn ke kotak di bagian atas halaman ini. Alat membacanya dan menampilkan pratinjau."
+        },
+        {
+          "name": "Periksa pratinjau",
+          "text": "Jika postingannya publik dan memuat video, pratinjau muncul. Jika tidak, Anda akan melihat pesan yang menjelaskan alasannya."
         },
         {
           "name": "Simpan file",

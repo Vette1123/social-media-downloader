@@ -44,8 +44,8 @@ export const homepageFaqs: HomepageFaq[] = [
     a: 'Yes. It runs entirely in the browser on any modern device — iPhone, iPad, Android phone, tablet, Mac, Windows or Linux. No app install required.',
   },
   {
-    q: 'Does it work with sites other than the eleven platforms?',
-    a: 'Yes — paste any public video link and the app will try to resolve it. Dedicated support covers TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch and Vimeo; beyond those, the extractor reads whatever media the page publishes, so links from smaller video hosts, blogs and news sites usually resolve too. Sites that require a login or hide their media cannot be fetched.',
+    q: 'Does it work with sites other than the thirteen platforms?',
+    a: 'Yes — paste any public video link and the app will try to resolve it. Dedicated support covers TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion and LinkedIn; beyond those, the extractor reads whatever media the page publishes, so links from smaller video hosts, blogs and news sites usually resolve too. Sites that require a login or hide their media cannot be fetched.',
   },
   {
     q: 'Can I import a whole playlist or collection at once?',

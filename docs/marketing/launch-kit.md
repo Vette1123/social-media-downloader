@@ -28,7 +28,7 @@ Save any public video in HD
 Paste a link, save the video in its original quality
 
 **One-liner, 100 chars.**
-A free downloader for public posts on 11 platforms — HD video, MP3 audio and photo carousels.
+A free downloader for public posts on 13 platforms — HD video, MP3 audio and photo carousels.
 
 **Short description, 160 chars.** (also the meta description)
 Free downloader for public TikTok, X, Instagram, Facebook & YouTube posts — save
@@ -62,7 +62,7 @@ I built this because every downloader I tried wanted an install, an account, or
 three ad redirects before it would give me a file I was allowed to keep anyway.
 
 This one is a web page. Paste a link from TikTok, X, Instagram, Facebook,
-YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch or Vimeo — or any other
+YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion or LinkedIn — or any other
 site — and it detects the platform, resolves what that public post publishes,
 checks the stream actually plays before offering it, and hands you the file: an
 HD MP4, an MP3 extracted from it, single images from a carousel, or the whole

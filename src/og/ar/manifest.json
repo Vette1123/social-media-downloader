@@ -11,5 +11,7 @@
   "threads-video-downloader": "d82259f18bed7afd",
   "snapchat-downloader": "50c7799c585b56eb",
   "twitch-clip-downloader": "3b6f92e917633284",
-  "vimeo-downloader": "0aff1451c0a8f47d"
+  "vimeo-downloader": "0aff1451c0a8f47d",
+  "dailymotion-downloader": "aed07e6bb21dcf80",
+  "linkedin-video-downloader": "5e071cb9f19b849a"
 }

@@ -117,8 +117,12 @@ function localizeHtml(files) {
     writeFileSync(file, html.replace(opening, `<html lang="${locale}" dir="${dir}"`))
     rewritten++
   }
-  // 4 languages × (home + 12 platforms + pro, privacy, terms, account).
-  if (rewritten !== 68) fail(`expected 68 localized pages, found ${rewritten}.`)
+  // 4 languages × (home + every platform + pro, privacy, terms, account). The
+  // platform count is read from the slug registry, so a new page needs no edit here.
+  const slugs = readFileSync('src/lib/platformSlugs.ts', 'utf8').match(/^\s+'[a-z-]+',\s*$/gm) ?? []
+  if (slugs.length < 12) fail(`read ${slugs.length} slugs from src/lib/platformSlugs.ts; the parse broke.`)
+  const expected = 4 * (1 + slugs.length + 4)
+  if (rewritten !== expected) fail(`expected ${expected} localized pages, found ${rewritten}.`)
   console.log(`  localized <html> on ${rewritten} pages`)
 }
 

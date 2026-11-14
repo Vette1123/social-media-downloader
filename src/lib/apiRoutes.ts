@@ -191,7 +191,7 @@ export async function handleDownload(
         {
           success: false,
           error:
-            'Invalid URL. Paste a public post or video link — TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, or any other site.',
+            'Invalid URL. Paste a public post or video link — TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn, or any other site.',
         },
         { status: 400 },
       )

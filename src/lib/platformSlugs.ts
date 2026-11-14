@@ -12,6 +12,8 @@ export const PLATFORM_SLUGS = [
   'snapchat-downloader',
   'twitch-clip-downloader',
   'vimeo-downloader',
+  'dailymotion-downloader',
+  'linkedin-video-downloader',
 ] as const
 
 export type PlatformSlug = (typeof PLATFORM_SLUGS)[number]
