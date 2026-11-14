@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isForeignEarlyError, shouldDropException, isFocusDeadClick } from './analyticsNoise'
+import { isForeignEarlyError, shouldDropException, isInertDeadClick } from './analyticsNoise'
 
 const exception = (value: string, filenames: string[] = []) => ({
   properties: {
@@ -121,15 +121,24 @@ describe('isForeignEarlyError, by message alone', () => {
   })
 })
 
-describe('isFocusDeadClick', () => {
+describe('isInertDeadClick', () => {
   it('drops a dead click that only focused the link box', () => {
-    expect(isFocusDeadClick({ event: '$dead_click', properties: { $elements: [{ tag_name: 'input' }] } })).toBe(true)
-    expect(isFocusDeadClick({ event: '$dead_click', properties: { $elements_chain: 'textarea.x:attr__a="b"' } })).toBe(true)
+    expect(isInertDeadClick({ event: '$dead_click', properties: { $elements: [{ tag_name: 'input' }] } })).toBe(true)
+    expect(isInertDeadClick({ event: '$dead_click', properties: { $elements_chain: 'textarea.x:attr__a="b"' } })).toBe(true)
+  })
+  // 14 Nov: the Video/HD chip that is already on drew 16 people's dead clicks.
+  it('drops a re-tap on a toggle that is already pressed', () => {
+    expect(isInertDeadClick({ event: '$dead_click', properties: { $elements: [{ tag_name: 'button', attributes: { 'attr__aria-pressed': 'true' } }] } })).toBe(true)
+    expect(isInertDeadClick({ event: '$dead_click', properties: { $elements_chain: 'button.rounded-full:attr__aria-pressed="true"attr__class="x";div.inline-flex' } })).toBe(true)
+  })
+  it('keeps an unpressed toggle, and a pressed one further up the chain', () => {
+    expect(isInertDeadClick({ event: '$dead_click', properties: { $elements: [{ tag_name: 'button', attributes: { 'attr__aria-pressed': 'false' } }] } })).toBe(false)
+    expect(isInertDeadClick({ event: '$dead_click', properties: { $elements_chain: 'span.x:text="a";button:attr__aria-pressed="true"' } })).toBe(false)
   })
   it('keeps dead buttons, rage clicks on the box, and other events', () => {
-    expect(isFocusDeadClick({ event: '$dead_click', properties: { $elements: [{ tag_name: 'button' }] } })).toBe(false)
-    expect(isFocusDeadClick({ event: '$rageclick', properties: { $elements: [{ tag_name: 'input' }] } })).toBe(false)
-    expect(isFocusDeadClick({ event: '$dead_click', properties: {} })).toBe(false)
-    expect(isFocusDeadClick({ event: '$dead_click', properties: { $elements_chain: 'input-group.x' } })).toBe(false)
+    expect(isInertDeadClick({ event: '$dead_click', properties: { $elements: [{ tag_name: 'button' }] } })).toBe(false)
+    expect(isInertDeadClick({ event: '$rageclick', properties: { $elements: [{ tag_name: 'input' }] } })).toBe(false)
+    expect(isInertDeadClick({ event: '$dead_click', properties: {} })).toBe(false)
+    expect(isInertDeadClick({ event: '$dead_click', properties: { $elements_chain: 'input-group.x' } })).toBe(false)
   })
 })

@@ -166,7 +166,7 @@ export type TKey =
 export type Dictionary = Partial<Record<TKey, string>>
 
 const en: Record<TKey, string> = {
-  pastePlaceholder: 'Paste a video link.',
+  pastePlaceholder: 'Paste a video link',
   paste: 'Paste',
   pasteAria: 'Paste link from clipboard',
   downloadBtn: 'Download',

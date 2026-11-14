@@ -17,6 +17,7 @@
     "pro": "node scripts/grant-pro.mjs",
     "perf": "node scripts/perf-audit.mjs",
     "cls": "node scripts/cls-audit.mjs",
+    "shots": "node scripts/ui-shots.mjs",
     "perf:idle": "node scripts/idle-paint-probe.mjs",
     "i18n:deep": "node scripts/i18n-deep.mjs",
     "i18n:lock": "cross-env I18N_LOCK=1 vitest run src/lib/localeContent.test.ts",

@@ -3,7 +3,7 @@ import type { RouteLocale } from './localeRoutes'
 
 /** Everything but English, loaded on demand. See loadDictionaries in i18n.ts. */
 const es: Record<TKey, string> = {
-  pastePlaceholder: 'Pega un enlace de video.',
+  pastePlaceholder: 'Pega un enlace de video',
   paste: 'Pegar',
   pasteAria: 'Pegar enlace del portapapeles',
   downloadBtn: 'Descargar',
@@ -128,7 +128,7 @@ const es: Record<TKey, string> = {
 }
 
 const pt: Record<TKey, string> = {
-  pastePlaceholder: 'Cole um link de vídeo.',
+  pastePlaceholder: 'Cole um link de vídeo',
   paste: 'Colar',
   pasteAria: 'Colar link da área de transferência',
   downloadBtn: 'Baixar',
@@ -253,7 +253,7 @@ const pt: Record<TKey, string> = {
 }
 
 const id: Record<TKey, string> = {
-  pastePlaceholder: 'Tempel tautan video.',
+  pastePlaceholder: 'Tempel tautan video',
   paste: 'Tempel',
   pasteAria: 'Tempel tautan dari papan klip',
   downloadBtn: 'Unduh',
@@ -378,7 +378,7 @@ const id: Record<TKey, string> = {
 }
 
 const ar: Record<TKey, string> = {
-  pastePlaceholder: 'الصق رابط الفيديو.',
+  pastePlaceholder: 'الصق رابط الفيديو',
   paste: 'لصق',
   pasteAria: 'لصق الرابط من الحافظة',
   downloadBtn: 'تنزيل',

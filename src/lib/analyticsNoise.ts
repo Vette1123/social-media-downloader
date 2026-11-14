@@ -128,15 +128,26 @@ const FOCUSABLE = /^(input|textarea|select)(?![\w-])/i
  * PostHog watches, so it waits 1-3 s and calls the click dead. The link box drew 55
  * of the home page's "frustrated" people in a week (14 Nov) and buried the real
  * dead buttons. Rage clicks on it are kept: those are repeated taps, not one.
+ *
+ * The same goes for a re-tap on a toggle that is already on (`aria-pressed="true"`,
+ * the Video/HD chips): picking what is picked changes nothing by design, and drew
+ * 16 people's dead clicks the same week. Only the clicked element counts, never
+ * an ancestor.
  */
-export function isFocusDeadClick(event: {
+export function isInertDeadClick(event: {
   event?: string
   properties?: Record<string, unknown>
 }): boolean {
   if (event.event !== '$dead_click') return false
   const elements = event.properties?.$elements
-  const first = Array.isArray(elements) ? (elements[0] as { tag_name?: unknown } | undefined) : undefined
-  if (typeof first?.tag_name === 'string') return FOCUSABLE.test(first.tag_name)
+  const first = Array.isArray(elements)
+    ? (elements[0] as { tag_name?: unknown; attributes?: Record<string, unknown> } | undefined)
+    : undefined
+  if (typeof first?.tag_name === 'string') {
+    return FOCUSABLE.test(first.tag_name) || first.attributes?.['attr__aria-pressed'] === 'true'
+  }
   const chain = event.properties?.$elements_chain
-  return typeof chain === 'string' && FOCUSABLE.test(chain)
+  if (typeof chain !== 'string') return false
+  const clicked = chain.split(';')[0]
+  return FOCUSABLE.test(clicked) || clicked.includes('attr__aria-pressed="true"')
 }
