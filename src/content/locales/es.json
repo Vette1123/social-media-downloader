@@ -119,6 +119,7 @@
       "monthly": "Apoyar: ${monthly}/mes",
       "lifetime": "O ${lifetime} una sola vez, para siempre",
       "note": "Por ahora el apoyo se gestiona por correo. Cancela cuando quieras con un solo correo.",
+      "allBenefits": "Ver las {count} funciones",
       "benefits": [
         {
           "title": "La cola por lotes",

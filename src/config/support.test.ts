@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-import { PRO_EMAIL, proMailto } from './support'
+import { panelBenefits, PRO_EMAIL, proMailto } from './support'
 
 // The old payment provider suspended the account on 2026-11-06. Every link to
 // it now sends a supporter to a dead page, so nothing live may name it.
@@ -40,5 +40,17 @@ describe('proMailto', () => {
   it('leaves the sign-in address blank for the sender to fill when unknown', () => {
     const params = new URLSearchParams(proMailto('Monthly or yearly').split('?')[1])
     expect(params.get('body')).toContain('The email I sign in with: \n')
+  })
+})
+
+describe('panelBenefits', () => {
+  it('shows exactly the four the copy promises, in every locale', async () => {
+    const { LOCALES } = await import('@/lib/i18n')
+    const { contentFor } = await import('@/lib/localeContent')
+    for (const locale of LOCALES) {
+      const { support } = contentFor(locale).copy
+      expect(panelBenefits(support.benefits)).toHaveLength(4)
+      expect(support.benefits.length).toBeGreaterThan(4)
+    }
   })
 })

@@ -43,3 +43,15 @@ export function proMailto(plan: ProPlan, accountEmail: string | null = null): st
  * and pays for itself inside a year.
  */
 export const SUPPORT_PRICES = { monthly: 5, yearly: 50, lifetime: 99 } as const
+
+/**
+ * The four benefits the home/platform support panel shows, by position in the
+ * benefit list (every locale keeps the same order). The panel's copy says
+ * "switches these four on", and it used to list all twelve under that sentence
+ * (14 Nov), eight screens of bullets on a phone. The full list lives on /pro.
+ */
+export const PANEL_BENEFIT_INDEXES = [0, 5, 6, 9] as const
+
+export function panelBenefits<T>(all: readonly T[]): T[] {
+  return PANEL_BENEFIT_INDEXES.map((i) => all[i]).filter((b): b is T => b !== undefined)
+}

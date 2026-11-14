@@ -112,6 +112,7 @@ export const pageCopy = {
     monthly: 'Support this — ${monthly}/month',
     lifetime: 'Or ${lifetime} once, forever',
     note: 'Support is arranged by email for now. Cancel any time with one email.',
+    allBenefits: 'See all {count} features',
     benefits: PRO_BENEFITS.map(({ title, body }) => ({ title, body })),
   },
   footer: {

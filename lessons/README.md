@@ -148,3 +148,4 @@ the index for exactly that.
 | 2026-11-14 | [Honest banner, feature cards, share image](2026-11-14-honest-banner-feature-cards-seo.md) | A banner that can't be fixed by retrying must stop offering the retry; a card that lifts must act on tap. |
 | 2026-11-14 | [Paste, batch retry, scroll, SEO floor](2026-11-14-paste-batch-scroll-seo-floor.md) | Scroll from an effect on the committed state, never a guessed timer; test floors equal the target range. |
 | 2026-11-14 | [Tap targets, tokens, Vimeo intent](2026-11-14-tap-targets-tokens-vimeo-intent.md) | A div turned button centres its content; template tokens render as LTR code. |
+| 2026-11-14 | [Embed notice, empty-submit paste, panel count](2026-11-14-embed-notice-empty-submit-panel.md) | A result that cannot be saved says so on the card, never only inside a collapsed preview. |

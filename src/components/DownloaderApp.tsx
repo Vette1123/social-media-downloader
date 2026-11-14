@@ -61,7 +61,11 @@ import {
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { PASTE_INPUT_ID } from '@/lib/featureCard'
 import { createFailureStreak } from '@/lib/failureStreak'
-import { clipboardReadDenied, pasteDeniedKey } from '@/lib/pasteChip'
+import {
+  clipboardReadDenied,
+  emptySubmitReadsClipboard,
+  pasteDeniedKey,
+} from '@/lib/pasteChip'
 import { buildDownloadFilename, formatBytes } from '@/lib/filename'
 import { parseYouTubeId } from '@/lib/validator'
 import { ThumbnailButton } from '@/components/ThumbnailButton'
@@ -72,6 +76,7 @@ import {
   shouldOfferAudioPreview,
 } from '@/lib/audioPreview'
 import { namedAuthor } from '@/lib/byline'
+import { embedNotice } from '@/lib/embedNotice'
 import Link from '@/components/IntentLink'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { d, dKnown, useDeepWords } from '@/lib/i18nDeep'
@@ -1363,6 +1368,11 @@ export function DownloaderApp() {
   const startDownloadRef = useRef<
     ((kind: 'video' | 'audio') => Promise<void>) | null
   >(null)
+  // The empty-box Download reads the clipboard through the Paste chip's path,
+  // declared after this; same reach-forward as startDownloadRef.
+  const handlePasteRef = useRef<
+    ((via: 'empty_submit_paste') => Promise<void>) | null
+  >(null)
   const handleProcess = async (
     overrideUrl?: string,
     source: LinkSource = 'typed',
@@ -1383,6 +1393,13 @@ export function DownloaderApp() {
         return
       }
       trackLinkRejected({ platform: 'none', reason: 'empty' })
+      if (
+        overrideUrl === undefined &&
+        emptySubmitReadsClipboard(!!navigator.clipboard?.readText, pasteBlocked)
+      ) {
+        void handlePasteRef.current?.('empty_submit_paste')
+        return
+      }
       setUrlError(t('errorEmpty'))
       return
     }
@@ -1559,7 +1576,9 @@ export function DownloaderApp() {
   // One-tap paste: read the clipboard, and if it holds a link, resolve it
   // immediately. Falls back to filling the field (or focusing it, when the
   // browser blocks programmatic clipboard reads) so the user is never stuck.
-  const handlePaste = async () => {
+  const handlePaste = async (
+    via: 'paste_chip' | 'empty_submit_paste' = 'paste_chip',
+  ) => {
     if (!navigator.clipboard?.readText) {
       inputRef.current?.focus()
       setUrlError(t(pasteDeniedKey(finePointer)))
@@ -1570,20 +1589,20 @@ export function DownloaderApp() {
       const text = await navigator.clipboard.readText()
       const found = extractFirstUrl(text)
       if (found) {
-        trackFeatureUsed('paste_chip', { outcome: 'link' })
-        handleProcess(found, 'paste_chip')
+        trackFeatureUsed(via, { outcome: 'link' })
+        handleProcess(found, via === 'paste_chip' ? 'paste_chip' : 'empty_submit')
       } else if (text.trim()) {
-        trackFeatureUsed('paste_chip', { outcome: 'not_a_link' })
+        trackFeatureUsed(via, { outcome: 'not_a_link' })
         dispatch({ type: 'SET_URL', payload: text.trim() })
         inputRef.current?.focus()
         setUrlError(t('errorNotLink'))
       } else {
-        trackFeatureUsed('paste_chip', { outcome: 'empty' })
+        trackFeatureUsed(via, { outcome: 'empty' })
         inputRef.current?.focus()
         setUrlError(d('Your clipboard is empty. Copy a link first.'))
       }
     } catch {
-      trackFeatureUsed('paste_chip', { outcome: 'denied' })
+      trackFeatureUsed(via, { outcome: 'denied' })
       inputRef.current?.focus()
       setUrlError(t(pasteDeniedKey(finePointer)))
       void clipboardReadDenied().then(setPasteBlocked)
@@ -1591,6 +1610,10 @@ export function DownloaderApp() {
       setPasting(false)
     }
   }
+
+  useEffect(() => {
+    handlePasteRef.current = handlePaste
+  })
 
   const handleClearHistory = () => {
     trackFeatureUsed('history_clear', { count: history.length })
@@ -2598,6 +2621,12 @@ export function DownloaderApp() {
       isCarousel: !!state.videoMetadata?.isPhotoCarousel,
       imageCount: state.videoMetadata?.images?.length ?? 0,
     })
+  // Said on the card itself, not inside the collapsed preview: see lib/embedNotice.
+  const limitNotice = embedNotice({
+    hasEmbed: !!state.videoMetadata?.embedUrl,
+    hasVideo: !!state.downloadUrl,
+    hasAudio: !!state.audioUrl,
+  })
   const audioLabel = audioPreviewLabel(
     state.videoMetadata,
     state.videoMetadata?.title,
@@ -2800,7 +2829,7 @@ export function DownloaderApp() {
           {!state.url && !pasteBlocked && (
             <button
               type='button'
-              onClick={handlePaste}
+              onClick={() => void handlePaste()}
               aria-label={t('pasteAria')}
               aria-busy={pasting}
               className={`card-hover absolute right-1.5 flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium hover:text-white active:scale-95 md:px-2.5 md:py-1.5 ${pasting ? 'border-cyan-400/40 bg-cyan-400/10 text-white' : 'border-white/10 bg-white/[0.06] text-white/70'}`}
@@ -3557,6 +3586,15 @@ export function DownloaderApp() {
                 )
               })()}
 
+              {limitNotice && (
+                <p
+                  role='status'
+                  className='rounded-xl bg-white/5 px-4 py-3 text-sm leading-relaxed text-white/75 ring-1 ring-inset ring-white/10'
+                >
+                  {embedCaption(false, limitNotice === 'audio_only')}
+                </p>
+              )}
+
               {/* Download Buttons */}
               {(() => {
                 const hasImagesForSlideshow =
@@ -3799,9 +3837,11 @@ export function DownloaderApp() {
                       className='absolute inset-0 h-full w-full'
                     />
                   </div>
-                  <p className='text-white/50 text-xs text-center'>
-                    {embedCaption(!!state.downloadUrl, !!state.audioUrl)}
-                  </p>
+                  {!limitNotice && (
+                    <p className='text-white/50 text-xs text-center'>
+                      {embedCaption(!!state.downloadUrl, !!state.audioUrl)}
+                    </p>
+                  )}
                 </div>
               )}
 
