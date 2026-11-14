@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { clipboardReadDenied, pasteDeniedKey } from './pasteChip'
+import { clipboardReadDenied, emptySubmitReadsClipboard, pasteDeniedKey } from './pasteChip'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -28,5 +28,13 @@ describe('clipboardReadDenied', () => {
     expect(await clipboardReadDenied()).toBe(false)
     vi.stubGlobal('navigator', {})
     expect(await clipboardReadDenied()).toBe(false)
+  })
+})
+
+describe('emptySubmitReadsClipboard', () => {
+  it('pastes for the visitor unless the browser already refused', () => {
+    expect(emptySubmitReadsClipboard(true, false)).toBe(true)
+    expect(emptySubmitReadsClipboard(true, true)).toBe(false)
+    expect(emptySubmitReadsClipboard(false, false)).toBe(false)
   })
 })

@@ -117,6 +117,7 @@ export const EVENT_AREA = {
 /** The long tail of controls: one event, a feature, and the area it belongs to. */
 export const FEATURE_AREA = {
   paste_chip: 'resolve',
+  empty_submit_paste: 'resolve',
   paste_anywhere: 'resolve',
   clipboard_watch: 'resolve',
   quality_repick: 'resolve',
@@ -270,6 +271,8 @@ export function contentProps(
 export type LinkSource =
   | 'typed'
   | 'paste_chip'
+  /** Download pressed on an empty box, and the clipboard held the link. */
+  | 'empty_submit'
   | 'paste_anywhere'
   | 'clipboard_watch'
   | 'share_target'

@@ -119,6 +119,7 @@
       "monthly": "Dukung — ${monthly}/bulan",
       "lifetime": "Atau ${lifetime} sekali bayar, selamanya",
       "note": "Untuk saat ini dukungan diatur lewat email. Batalkan kapan saja cukup dengan satu email.",
+      "allBenefits": "Lihat semua {count} fitur",
       "benefits": [
         {
           "title": "Antrean batch",

@@ -119,6 +119,7 @@
       "monthly": "Apoie — ${monthly}/mês",
       "lifetime": "Ou ${lifetime} uma única vez, para sempre",
       "note": "Por enquanto, o apoio é combinado por e-mail. Cancele quando quiser com um único e-mail.",
+      "allBenefits": "Ver os {count} recursos",
       "benefits": [
         {
           "title": "A fila em lote",

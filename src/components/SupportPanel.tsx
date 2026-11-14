@@ -3,7 +3,7 @@ import { TemplateText } from '@/components/TemplateText'
 import { HiddenForPro } from '@/components/HiddenForPro'
 import { CheckIcon, MailIcon } from '@/components/icons'
 import { Surface } from '@/components/Surface'
-import { SUPPORT_PRICES } from '@/config/support'
+import { panelBenefits, SUPPORT_PRICES } from '@/config/support'
 import { fill, type Locale } from '@/lib/i18n'
 import { contentFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
@@ -103,8 +103,9 @@ export function SupportPanel({
         </p>
       </div>
 
-      <ul className='space-y-3 lg:col-span-5'>
-        {support.benefits.map((benefit) => (
+      <div className='lg:col-span-5'>
+      <ul className='space-y-3'>
+        {panelBenefits(support.benefits).map((benefit) => (
           <li key={benefit.title} className='flex items-start gap-3'>
             <CheckIcon className='mt-0.5 h-4 w-4 shrink-0 text-cyan-300' />
             <span className='text-sm text-white/75'>
@@ -114,6 +115,14 @@ export function SupportPanel({
           </li>
         ))}
       </ul>
+      <Link
+        href={localePath(locale, '/pro')}
+        data-pro-cta='support_all_benefits'
+        className='mt-4 inline-flex min-h-11 items-center text-sm font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-white hover:underline'
+      >
+        {fill(support.allBenefits, { count: support.benefits.length })}
+      </Link>
+      </div>
     </Surface>
     </HiddenForPro>
   )
