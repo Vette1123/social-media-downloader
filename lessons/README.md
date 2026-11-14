@@ -142,3 +142,4 @@ the index for exactly that.
 | 2026-11-13 | [Recent refresh flash](2026-11-13-recent-refresh-flash.md) | Headless audits hydrate before paint: assert the pre-paint reserve directly, not only the CLS number |
 | 2026-11-13 | [Paid sponsor card that ends itself](2026-11-13-paid-sponsor-auto-expiry.md) | A paid placement ends by data (`until` + dated README markers), never by someone remembering. |
 | 2026-11-13 | [Skip CLS on inert pushes](2026-11-13-skip-cls-on-inert-pushes.md) | Gate a slow CI check on an allow-list of inert paths; unknown files still run it. |
+| 2026-11-14 | [500 reason + focus dead clicks](2026-11-14-posthog-500-reason-and-focus-dead-clicks.md) | A failure report carries its reason, read after the response is sent; a tap that focuses a field is not a dead click. |

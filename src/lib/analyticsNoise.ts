@@ -120,3 +120,23 @@ export function shouldDropException(event: ExceptionEvent): boolean {
   )
   return noisy || isForeignException(event)
 }
+
+const FOCUSABLE = /^(input|textarea|select)(?![\w-])/i
+
+/**
+ * A $dead_click on a text field is a tap that focused it: focus changes nothing
+ * PostHog watches, so it waits 1-3 s and calls the click dead. The link box drew 55
+ * of the home page's "frustrated" people in a week (14 Nov) and buried the real
+ * dead buttons. Rage clicks on it are kept: those are repeated taps, not one.
+ */
+export function isFocusDeadClick(event: {
+  event?: string
+  properties?: Record<string, unknown>
+}): boolean {
+  if (event.event !== '$dead_click') return false
+  const elements = event.properties?.$elements
+  const first = Array.isArray(elements) ? (elements[0] as { tag_name?: unknown } | undefined) : undefined
+  if (typeof first?.tag_name === 'string') return FOCUSABLE.test(first.tag_name)
+  const chain = event.properties?.$elements_chain
+  return typeof chain === 'string' && FOCUSABLE.test(chain)
+}
