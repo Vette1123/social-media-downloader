@@ -26,6 +26,7 @@ import {
   categorizeResult,
   displayOrder,
   isCancelled,
+  isRetryableFailure,
   isZippable,
   rowStatusColorClass,
   rowStatusText,
@@ -436,7 +437,8 @@ export function BatchPanel() {
   ])
 
   /**
-   * Re-run only the failed rows. Cancelled ones are deliberately excluded —
+   * Re-run only the failed rows a retry can help (see isRetryableFailure).
+   * Cancelled ones are deliberately excluded —
    * the visitor said stop; a retry button must not override them. Done rows
    * are left exactly as they are (their files already saved), which is why
    * the update path merges rather than replaces.
@@ -444,7 +446,7 @@ export function BatchPanel() {
   const failedUrls = useMemo(
     () =>
       items
-        .filter((it) => it.status === 'failed' && !isCancelled(it))
+        .filter(isRetryableFailure)
         .map((it) => it.url),
     [items],
   )

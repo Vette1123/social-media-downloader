@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CANCELLED_ERROR, type BatchItem } from './batchQueue'
 import {
+  isRetryableFailure,
   categorizeResult,
   displayOrder,
   isCancelled,
@@ -129,5 +130,21 @@ describe('displayOrder', () => {
     expect(list.map((it) => it.url)).toEqual(['a', 'b'])
     list = displayOrder(list.map((it) => (it.url === 'a' ? at('a', 'done') : it)), settled)
     expect(list.map((it) => it.url)).toEqual(['b', 'a'])
+  })
+})
+
+describe('isRetryableFailure', () => {
+  const failed = (url: string, error: string) =>
+    ({ url, status: 'failed', error }) as BatchItem
+
+  it('retries a passing condition and an unknown failure', () => {
+    expect(isRetryableFailure(failed('https://x.com/a/status/1', 'Rate limited (429)'))).toBe(true)
+    expect(isRetryableFailure(failed('https://x.com/a/status/1', 'Something odd'))).toBe(true)
+  })
+
+  it('skips a link that cannot work as pasted, and a cancelled row', () => {
+    expect(isRetryableFailure(failed('https://instagram.com/stories/a/1', 'login required'))).toBe(false)
+    expect(isRetryableFailure(failed('https://example.com/x', 'Unsupported URL'))).toBe(false)
+    expect(isRetryableFailure(failed('https://x.com/a/status/1', CANCELLED_ERROR))).toBe(false)
   })
 })

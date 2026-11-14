@@ -1,4 +1,4 @@
-import { failureTitle } from '@/lib/errorMessages'
+import { failureRetry, failureTitle } from '@/lib/errorMessages'
 import { d } from '@/lib/i18nDeep'
 /**
  * Pure presentation logic for the Pro batch panel — kept out of
@@ -36,6 +36,16 @@ export function isZippable(kind: ResultKind): boolean {
 
 export function isCancelled(item: BatchItem): boolean {
   return item.status === 'failed' && item.error === CANCELLED_ERROR
+}
+
+/**
+ * A failed row "Retry failed" should re-run: not one the visitor cancelled, and
+ * not one that cannot work as pasted (an unsupported link, an Instagram story) —
+ * re-running those only repeats the same red row.
+ */
+export function isRetryableFailure(item: BatchItem): boolean {
+  if (item.status !== 'failed' || isCancelled(item)) return false
+  return failureRetry(item.error, item.url)
 }
 
 export function rowStatusText(item: BatchItem): string {

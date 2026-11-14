@@ -246,7 +246,7 @@ const en: Record<TKey, string> = {
   errorEmpty: 'Please paste a TikTok, Twitter/X, Instagram, Facebook, or YouTube URL first',
   errorLongPress: 'Long-press the field and choose Paste.',
   errorNotLink: 'That doesn’t look like a link — paste a post URL.',
-  errorClipboard: 'Couldn’t read the clipboard — paste the link manually.',
+  errorClipboard: 'Your browser blocked the clipboard. Click the field and press Ctrl+V (⌘V on a Mac).',
   narrateReading: 'Reading the link…',
   narrateSlow: 'Still working — some sources answer slowly.',
   narrateLong: 'Still going. You can leave this open — it will finish or say why.',
