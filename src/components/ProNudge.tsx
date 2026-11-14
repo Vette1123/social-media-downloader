@@ -139,7 +139,7 @@ export function ProHeroLine() {
       <Link
         href={to('/pro')}
         data-pro-cta='hero_line'
-        className='font-medium text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
+        className='font-medium whitespace-nowrap text-cyan-300 underline-offset-4 transition-colors hover:text-cyan-200 hover:underline'
       >
         {t('proHeroLink')}
       </Link>

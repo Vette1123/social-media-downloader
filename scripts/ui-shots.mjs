@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * `pnpm shots [--url https://live.site] [--routes /,/ar] [--out dir]`
+ * `pnpm shots [--url https://live.site] [--routes /,/ar] [--out dir] [--phone-width 320]`
  *
  * Phone and desktop screenshots of each route, first screen and full page, plus
  * the one layout check a screenshot can hide: nothing may be wider than the
@@ -27,7 +27,8 @@ const LIVE = arg('url', null)
 const ROUTES = arg('routes', '/,/ar,/tiktok-downloader,/pro').split(',')
 const OUT = resolve(arg('out', '.ui-shots'))
 const VIEWPORTS = [
-  { name: 'phone', width: 390, height: 844, mobile: true },
+  // --phone-width 320 is the narrowest phone still sold (iPhone SE 1st gen).
+  { name: 'phone', width: Number(arg('phone-width', 390)), height: 844, mobile: true },
   { name: 'desktop', width: 1440, height: 900, mobile: false },
 ]
 
