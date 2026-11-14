@@ -1194,11 +1194,11 @@
     },
     "vimeo-downloader": {
       "brandLabel": "Download video Vimeo",
-      "metaTitle": "Download Video Vimeo — Simpan Video HD MP4, Tanpa Login",
-      "metaDescription": "Unduh video Vimeo publik dalam HD sebagai MP4. Tempel link vimeo.com dan simpan file video progresif — gratis, tanpa login, tanpa instal aplikasi.",
-      "h1": "Download Video Vimeo — MP4 HD, Tanpa Login",
+      "metaTitle": "Vimeo ke MP4: Download Video Vimeo dalam HD",
+      "metaDescription": "Ubah link Vimeo publik jadi file MP4. Tempel link vimeo.com, pilih HD atau Hemat data, lalu simpan — gratis, tanpa login, tanpa instal apa pun.",
+      "h1": "Vimeo ke MP4: Download Video Vimeo dalam HD",
       "tagline": "Simpan video Vimeo publik sebagai MP4 dalam kualitas tertinggi yang ditawarkan sumbernya.",
-      "intro": "Tempel link vimeo.com/… yang publik dan alat ini memproses video lewat konfigurasi player Vimeo sendiri, lalu mengembalikan MP4 progresif langsung yang bisa kamu lihat pratinjaunya dan unduh. Tanpa login Vimeo, tanpa ekstensi, tidak ada yang dipasang. Video yang diproteksi kata sandi, dikunci, dan dibatasi domain tidak bisa diambil.",
+      "intro": "Tempel link vimeo.com yang publik dan dapatkan videonya sebagai MP4 yang bisa kamu pratinjau dan simpan. Alat ini membaca konfigurasi player Vimeo sendiri dan mengembalikan MP4 progresif langsung dalam kualitas terbaik yang ditawarkan video (umumnya hingga 1080p). Tanpa login Vimeo, tanpa ekstensi, tidak ada yang dipasang. Video privat, yang dilindungi kata sandi, atau dibatasi domain tidak bisa diambil, begitu juga sedikit video yang hanya di-streaming Vimeo.",
       "cards": [
         {
           "title": "🎬 Unduhan MP4 HD",
@@ -1219,16 +1219,16 @@
       ],
       "faqs": [
         {
+          "q": "Bagaimana mengubah link Vimeo menjadi MP4?",
+          "a": "Tempel link vimeo.com di atas, periksa pratinjau, pilih HD atau Hemat data, lalu simpan. Tidak ada langkah konversi: Vimeo menyediakan MP4 jadi untuk sebagian besar video publik dan alat ini mengunduh file itu. Jika video tidak punya MP4, video hanya bisa diputar, tidak bisa disimpan."
+        },
+        {
           "q": "Bisakah saya mengunduh video Vimeo apa saja?",
           "a": "Video publik yang menyediakan MP4 progresif (non-DASH) bisa diunduh. Video yang diproteksi kata sandi, bersifat pribadi, dan dibatasi per domain tidak bisa diambil."
         },
         {
           "q": "Kualitas apa yang saya dapat?",
           "a": "Versi progresif tertinggi yang ditawarkan videonya — sering kali hingga 1080p. Pakai opsi Data saver untuk file yang lebih kecil."
-        },
-        {
-          "q": "Apakah saya perlu akun Vimeo?",
-          "a": "Tidak. Hanya video yang bisa ditonton publik yang diakses — tanpa login, tanpa ekstensi, tanpa instal."
         },
         {
           "q": "Kenapa video Vimeo hanya bisa di-stream dan tidak bisa diunduh?",
@@ -1257,7 +1257,7 @@
         },
         {
           "name": "Pilih kualitas atau format",
-          "text": "Lihat pratinjau, lalu pilih kualitas yang kamu mau."
+          "text": "Periksa pratinjau, lalu pilih HD untuk MP4 kualitas tertinggi atau Hemat data untuk file lebih kecil."
         },
         {
           "name": "Simpan file",

@@ -1,4 +1,5 @@
 import Link from '@/components/IntentLink'
+import { TemplateText } from '@/components/TemplateText'
 import { AccountPanel } from '@/components/AccountPanel'
 import { Rich } from '@/components/Rich'
 import { SiteFooter } from '@/components/SiteFooter'
@@ -290,7 +291,9 @@ export function ProPage({ locale = 'en' }: { locale?: Locale }) {
                   <CheckIcon className='mt-0.5 h-4 w-4 shrink-0 text-cyan-300' aria-hidden />
                   <div>
                     <p className='text-sm font-semibold text-white'>{benefit.title}</p>
-                    <p className='mt-1 text-sm leading-relaxed text-white/60'>{benefit.body}</p>
+                    <p className='mt-1 text-sm leading-relaxed text-white/60'>
+                      <TemplateText text={benefit.body} />
+                    </p>
                   </div>
                 </div>
               </li>

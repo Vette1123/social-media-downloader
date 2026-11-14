@@ -2803,7 +2803,7 @@ export function DownloaderApp() {
               onClick={handlePaste}
               aria-label={t('pasteAria')}
               aria-busy={pasting}
-              className={`card-hover absolute right-1.5 flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium hover:text-white active:scale-95 ${pasting ? 'border-cyan-400/40 bg-cyan-400/10 text-white' : 'border-white/10 bg-white/[0.06] text-white/70'}`}
+              className={`card-hover absolute right-1.5 flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium hover:text-white active:scale-95 md:px-2.5 md:py-1.5 ${pasting ? 'border-cyan-400/40 bg-cyan-400/10 text-white' : 'border-white/10 bg-white/[0.06] text-white/70'}`}
             >
               {/* Same box either way, so the swap cannot nudge the field. */}
               {pasting ? (
@@ -2923,7 +2923,7 @@ export function DownloaderApp() {
           in audio mode. */}
       <div className='mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs'>
         <div className='flex items-center gap-2'>
-          <span className='text-white/50'>{t('format')}</span>
+          <span className='text-white/65'>{t('format')}</span>
           <div
             role='group'
             aria-label={t('formatAria')}
@@ -2935,7 +2935,7 @@ export function DownloaderApp() {
                 type='button'
                 onClick={() => pressChip(format === f, () => changeFormat(f))}
                 aria-pressed={format === f}
-                className={`rounded-full px-3 py-1 font-medium transition-colors ${
+                className={`rounded-full px-3.5 py-1.5 font-medium transition-colors md:px-3 md:py-1 ${
                   format === f
                     ? 'bg-cyan-400/90 text-[#04171b]'
                     : 'text-white/55 hover:text-white'
@@ -2950,7 +2950,7 @@ export function DownloaderApp() {
         {format === 'video' && (
           <div className='flex flex-col gap-1'>
             <div className='flex items-center gap-2'>
-              <span className='text-white/50'>{t('quality')}</span>
+              <span className='text-white/65'>{t('quality')}</span>
               <div
                 role='group'
                 aria-label={t('qualityAria')}
@@ -2962,7 +2962,7 @@ export function DownloaderApp() {
                     type='button'
                     onClick={() => pressChip(quality === q, () => changeQuality(q))}
                     aria-pressed={quality === q}
-                    className={`rounded-full px-3 py-1 font-medium transition-colors ${
+                    className={`rounded-full px-3.5 py-1.5 font-medium transition-colors md:px-3 md:py-1 ${
                       quality === q
                         ? 'bg-cyan-400/90 text-[#04171b]'
                         : 'text-white/55 hover:text-white'
@@ -3156,7 +3156,7 @@ export function DownloaderApp() {
                     <span className='block truncate text-xs text-white/80'>
                       {h.title}
                     </span>
-                    <span className='block truncate text-[10px] text-white/50'>
+                    <span className='block truncate text-[11px] text-white/60'>
                       {h.author ||
                         (h.platform ? PLATFORM_DISPLAY[h.platform] : '') ||
                         t('savedLink')}
@@ -3525,7 +3525,7 @@ export function DownloaderApp() {
                   // Wraps as a whole: in Arabic at 360px the label and "Data
                   // saver" each broke onto two lines inside the row.
                   <div className='flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 text-xs'>
-                    <span className='whitespace-nowrap text-white/50'>{t('getItAs')}</span>
+                    <span className='whitespace-nowrap text-white/65'>{t('getItAs')}</span>
                     <div
                       role='group'
                       aria-label={t('getItAsAria')}
@@ -3541,7 +3541,7 @@ export function DownloaderApp() {
                             onClick={o.onPick}
                             disabled={repicking !== null}
                             aria-pressed={isActive}
-                            className={`flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed ${
+                            className={`flex items-center gap-1 whitespace-nowrap rounded-full px-3.5 py-1.5 font-medium transition-colors disabled:cursor-not-allowed md:px-3 md:py-1 ${
                               isActive
                                 ? 'bg-cyan-400/90 text-[#04171b]'
                                 : 'text-white/55 hover:text-white disabled:opacity-50'

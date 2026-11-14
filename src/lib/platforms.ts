@@ -1004,14 +1004,14 @@ export const platforms: Platform[] = [
     slug: 'vimeo-downloader',
     name: 'Vimeo',
     brandLabel: 'Vimeo video downloader',
-    metaTitle: 'Vimeo to MP4 Downloader — Save HD Vimeo Videos, No Login',
+    metaTitle: 'Vimeo to MP4 Downloader — Vimeo Link to HD MP4',
     metaDescription:
-      'Download public Vimeo videos in HD as MP4. Paste a vimeo.com link and save the progressive video file instantly — free, no login, no app install.',
-    h1: 'Vimeo Video Downloader — HD MP4, No Login',
+      'Turn a public Vimeo link into an MP4 file. Paste the vimeo.com link, pick HD or Data saver and save the video — free, no login, nothing to install.',
+    h1: 'Vimeo to MP4 Downloader — Download Vimeo Videos in HD',
     tagline:
       'Save public Vimeo videos as MP4 in the highest quality the source offers.',
     intro:
-      'Paste any public vimeo.com/… link and the tool resolves the video through Vimeo’s own player configuration, returning a direct progressive MP4 you can preview and download. No Vimeo login, no extension, nothing installed. Password-protected, private, and domain-restricted videos can’t be fetched.',
+      'Paste a public vimeo.com link and get the video as an MP4 you can preview and save. The tool reads Vimeo’s own player configuration and returns the direct progressive MP4, in the best rendition the video offers (commonly up to 1080p). No Vimeo login, no extension, nothing installed. Private, password-protected and domain-restricted videos can’t be fetched, and neither can the few videos Vimeo only streams.',
     steps: [
       {
         name: 'Copy the Vimeo link',
@@ -1023,7 +1023,7 @@ export const platforms: Platform[] = [
       },
       {
         name: 'Pick quality or format',
-        text: 'Check the preview, then pick the quality you want.',
+        text: 'Check the preview, then pick HD for the highest MP4 rendition or Data saver for a smaller file.',
       },
       {
         name: 'Save the file',
@@ -1062,16 +1062,16 @@ export const platforms: Platform[] = [
     ],
     faqs: [
       {
+        q: 'How do I turn a Vimeo link into an MP4?',
+        a: 'Paste the vimeo.com link above, check the preview, choose HD or Data saver and save. There is no conversion step: Vimeo publishes a ready-made MP4 for most public videos and the tool downloads that file. If a video has none, it can only be played, not saved.',
+      },
+      {
         q: 'Can I download any Vimeo video?',
         a: 'Public videos that expose a progressive (non-DASH) MP4 can be downloaded. Password-protected, private, and domain-locked videos can’t be fetched.',
       },
       {
         q: 'What quality do I get?',
         a: 'The highest progressive rendition the video offers — often up to 1080p. Use the Data saver option for a smaller file.',
-      },
-      {
-        q: 'Do I need a Vimeo account?',
-        a: 'No. Only publicly viewable videos are accessed — no login, no extension, no install.',
       },
       {
         q: 'Why does a Vimeo video only stream and not download?',

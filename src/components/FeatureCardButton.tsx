@@ -27,7 +27,7 @@ export function FeatureCardButton({ id, children }: { id: FeatureCardId; childre
       type='button'
       interaction='lift'
       onClick={onClick}
-      className='group p-5 text-start'
+      className='group flex h-full flex-col items-start p-5 text-start'
     >
       {children}
     </Surface>

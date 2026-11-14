@@ -772,11 +772,11 @@
     },
     "facebook-downloader": {
       "brandLabel": "Descargador de videos y reels de Facebook",
-      "metaTitle": "Descargar videos y reels de Facebook: HD, sin login",
-      "metaDescription": "Guarda cualquier video, clip de Watch o reel público de Facebook en HD. Pega una URL de facebook.com/.../videos/, fb.watch o /reel/, sin login ni extensión.",
-      "h1": "Descargar videos y reels de Facebook: HD, sin iniciar sesión",
+      "metaTitle": "Descargar reels y videos de Facebook online, HD",
+      "metaDescription": "Descarga reels y videos públicos de Facebook online, en HD. Pega el enlace de facebook.com, fb.watch o /reel/: gratis, sin login ni extensión.",
+      "h1": "Descargar reels de Facebook y videos online en HD",
       "tagline": "Descarga videos, clips de Watch y reels de Facebook en HD directo a tu dispositivo.",
-      "intro": "Pega cualquier URL pública de un video, clip de Watch o reel de Facebook (facebook.com/…/videos/…, fb.watch/… o facebook.com/reel/…) y la herramienta extrae el flujo HD para previsualizarlo y descargarlo. Sin iniciar sesión en Facebook, sin extensión y sin app. Las publicaciones privadas y los videos de grupos privados no se pueden descargar.",
+      "intro": "Descarga reels de Facebook y videos públicos online: pega la URL (facebook.com/…/videos/…, fb.watch/… o facebook.com/reel/…) y la herramienta extrae el flujo HD para previsualizarlo y guardarlo. Sin iniciar sesión, sin extensión y sin app. Las publicaciones privadas y los videos de grupos privados no se pueden descargar.",
       "cards": [
         {
           "title": "🎬 Video HD y clips de Watch",
@@ -793,8 +793,8 @@
       ],
       "faqs": [
         {
-          "q": "¿Funciona con Reels de Facebook?",
-          "a": "Sí: pega una URL facebook.com/reel/… y la herramienta extrae el video en su formato vertical nativo."
+          "q": "¿Cómo descargar reels de Facebook?",
+          "a": "Copia el enlace del reel (facebook.com/reel/… o fb.watch/…), pégalo en la caja de arriba y guarda el video en HD y en formato vertical nativo. Es online: no hay que instalar nada."
         },
         {
           "q": "¿Puedo descargar videos de Facebook Watch?",
@@ -1194,11 +1194,11 @@
     },
     "vimeo-downloader": {
       "brandLabel": "Descargador de videos de Vimeo",
-      "metaTitle": "Descargar videos de Vimeo en HD como MP4, sin login",
-      "metaDescription": "Descarga videos públicos de Vimeo en HD como MP4. Pega un enlace de vimeo.com y guarda el archivo de video progresivo al instante: gratis, sin login ni app.",
-      "h1": "Descargar videos de Vimeo: MP4 HD, sin iniciar sesión",
+      "metaTitle": "Vimeo a MP4: descargar videos de Vimeo en HD",
+      "metaDescription": "Convierte un enlace público de Vimeo en un archivo MP4. Pega el enlace de vimeo.com, elige HD o Ahorro de datos y guarda: gratis, sin login ni instalar nada.",
+      "h1": "Vimeo a MP4: descargar videos de Vimeo en HD",
       "tagline": "Guarda videos públicos de Vimeo como MP4 en la mayor calidad que ofrezca la fuente.",
-      "intro": "Pega cualquier enlace público de vimeo.com/… y la herramienta resuelve el video a través de la propia configuración del reproductor de Vimeo y devuelve un MP4 progresivo directo que puedes previsualizar y descargar. Sin iniciar sesión en Vimeo, sin extensión y sin instalar nada. Los videos protegidos con contraseña, privados o restringidos a un dominio no se pueden descargar.",
+      "intro": "Pega un enlace público de vimeo.com y obtén el video como un MP4 que puedes previsualizar y guardar. La herramienta lee la configuración del propio reproductor de Vimeo y devuelve el MP4 progresivo directo, en la mejor calidad que ofrezca el video (normalmente hasta 1080p). Sin iniciar sesión en Vimeo, sin extensión y sin instalar nada. Los videos privados, protegidos con contraseña o restringidos a un dominio no se pueden descargar, ni tampoco los pocos que Vimeo solo transmite en streaming.",
       "cards": [
         {
           "title": "🎬 Descargas MP4 en HD",
@@ -1219,16 +1219,16 @@
       ],
       "faqs": [
         {
+          "q": "¿Cómo convierto un enlace de Vimeo a MP4?",
+          "a": "Pega arriba el enlace de vimeo.com, revisa la vista previa, elige HD o Ahorro de datos y guarda. No hay paso de conversión: Vimeo publica un MP4 ya hecho para la mayoría de los videos públicos y la herramienta descarga ese archivo. Si un video no lo tiene, solo se puede reproducir, no guardar."
+        },
+        {
           "q": "¿Puedo descargar cualquier video de Vimeo?",
           "a": "Se pueden descargar los videos públicos que exponen un MP4 progresivo (no DASH). Los videos protegidos con contraseña, privados o bloqueados a un dominio no se pueden descargar."
         },
         {
           "q": "¿Qué calidad obtengo?",
           "a": "La mayor versión progresiva que ofrece el video, a menudo hasta 1080p. Usa la opción Ahorro de datos para un archivo más pequeño."
-        },
-        {
-          "q": "¿Necesito una cuenta de Vimeo?",
-          "a": "No. Solo se accede a videos visibles públicamente, sin iniciar sesión, sin extensión y sin instalar nada."
         },
         {
           "q": "¿Por qué un video de Vimeo solo se reproduce y no se descarga?",
@@ -1257,7 +1257,7 @@
         },
         {
           "name": "Elige calidad o formato",
-          "text": "Revisa la vista previa y elige la calidad que quieras."
+          "text": "Revisa la vista previa y elige HD para la mayor calidad MP4 o Ahorro de datos para un archivo más ligero."
         },
         {
           "name": "Guarda el archivo",
