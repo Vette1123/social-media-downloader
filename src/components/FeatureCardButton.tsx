@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { Surface } from '@/components/Surface'
 import { trackFeatureUsed } from '@/lib/analytics'
+import { motionScrollBehavior } from '@/lib/clientEnv'
 import { featureCardFormat, PASTE_INPUT_ID, type FeatureCardId } from '@/lib/featureCard'
 import { setFormat } from '@/lib/prefs'
 
@@ -17,8 +18,7 @@ export function FeatureCardButton({ id, children }: { id: FeatureCardId; childre
     trackFeatureUsed('feature_card', { action: id })
     const input = document.getElementById(PASTE_INPUT_ID)
     if (!(input instanceof HTMLInputElement)) return
-    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    input.scrollIntoView({ block: 'center', behavior: still ? 'auto' : 'smooth' })
+    input.scrollIntoView({ block: 'center', behavior: motionScrollBehavior() })
     input.focus({ preventScroll: true })
   }
   return (

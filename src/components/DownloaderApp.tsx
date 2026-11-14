@@ -54,12 +54,14 @@ import {
   formatDate,
   nowMs,
   useHasFinePointer,
+  motionScrollBehavior,
   useHydrated,
   useIsIOSLike,
 } from '@/lib/clientEnv'
 import { setFormat, setQuality, usePrefs } from '@/lib/prefs'
 import { PASTE_INPUT_ID } from '@/lib/featureCard'
 import { createFailureStreak } from '@/lib/failureStreak'
+import { clipboardReadDenied, pasteDeniedKey } from '@/lib/pasteChip'
 import { buildDownloadFilename, formatBytes } from '@/lib/filename'
 import { parseYouTubeId } from '@/lib/validator'
 import { ThumbnailButton } from '@/components/ThumbnailButton'
@@ -967,6 +969,21 @@ export function DownloaderApp() {
   // system "Paste" bubble, often seconds; without a visible change the chip
   // read as dead (PostHog: 5 of 16 dead Paste clicks were reads still pending).
   const [pasting, setPasting] = useState(false)
+  // A remembered clipboard denial (Chromium) makes the chip a dead button.
+  const [pasteBlocked, setPasteBlocked] = useState(false)
+  // Bumped by a fresh resolve; the effect below scrolls once the result has
+  // committed. It used to wait a guessed 500 ms, which on a fast answer left
+  // the card sitting below the fold for half a second before the page moved.
+  const [resultScroll, setResultScroll] = useState(0)
+  useEffect(() => {
+    if (resultScroll === 0) return
+    containerRef.current
+      ?.querySelector('.results-section')
+      ?.scrollIntoView({ behavior: motionScrollBehavior(), block: 'start' })
+  }, [resultScroll])
+  useEffect(() => {
+    void clipboardReadDenied().then(setPasteBlocked)
+  }, [])
   const setUrlError = (text: string | null) => {
     setUrlErrorText(text)
     if (text === null) return
@@ -1361,7 +1378,7 @@ export function DownloaderApp() {
         trackFeatureUsed('empty_box_download', { action: pending })
         containerRef.current
           ?.querySelector('.results-section')
-          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          ?.scrollIntoView({ behavior: motionScrollBehavior(), block: 'start' })
         void startDownloadRef.current?.(pending)
         return
       }
@@ -1445,18 +1462,7 @@ export function DownloaderApp() {
 
         dispatch({ type: 'SET_URL', payload: '' })
 
-        setTimeout(() => {
-          if (containerRef.current) {
-            const resultsSection =
-              containerRef.current.querySelector('.results-section')
-            if (resultsSection) {
-              resultsSection.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-              })
-            }
-          }
-        }, 500)
+        setResultScroll((n) => n + 1)
       } else {
         dispatch({
         type: 'SET_MESSAGE',
@@ -1556,7 +1562,7 @@ export function DownloaderApp() {
   const handlePaste = async () => {
     if (!navigator.clipboard?.readText) {
       inputRef.current?.focus()
-      setUrlError(t('errorLongPress'))
+      setUrlError(t(pasteDeniedKey(finePointer)))
       return
     }
     setPasting(true)
@@ -1579,7 +1585,8 @@ export function DownloaderApp() {
     } catch {
       trackFeatureUsed('paste_chip', { outcome: 'denied' })
       inputRef.current?.focus()
-      setUrlError(t('errorClipboard'))
+      setUrlError(t(pasteDeniedKey(finePointer)))
+      void clipboardReadDenied().then(setPasteBlocked)
     } finally {
       setPasting(false)
     }
@@ -2785,12 +2792,12 @@ export function DownloaderApp() {
                width. The right-edge fade mask feathers an overflowing URL out
                instead of clipping it on a hard vertical edge. */
             className={`min-w-0 flex-1 rounded-xl bg-transparent py-3 pl-4 text-base text-white placeholder-white/40 outline-none [mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] ${
-              state.url ? 'pr-3' : 'pr-[4.75rem]'
+              state.url || pasteBlocked ? 'pr-3' : 'pr-[4.75rem]'
             }`}
           />
           {/* One-tap paste — only while the field is empty, so it never overlaps
               a link the user is typing. Reads the clipboard and auto-resolves. */}
-          {!state.url && (
+          {!state.url && !pasteBlocked && (
             <button
               type='button'
               onClick={handlePaste}
@@ -2845,7 +2852,7 @@ export function DownloaderApp() {
           key={urlErrorAttempt}
           id='url-error'
           role='alert'
-          className='animate-section-in mt-2 flex items-center gap-1.5 text-xs text-red-300 md:text-sm'
+          className='animate-section-in mt-2 flex items-start gap-1.5 text-xs text-red-300 md:text-sm'
         >
           <span aria-hidden>⚠</span>
           {urlError}

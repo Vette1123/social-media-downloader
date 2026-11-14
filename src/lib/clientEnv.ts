@@ -59,6 +59,14 @@ function detectIOSLike(): boolean {
 }
 
 /**
+ * How a programmatic scroll should move: a jump for people who asked the OS
+ * for less motion, a glide for everyone else.
+ */
+export function motionScrollBehavior(): ScrollBehavior {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+}
+
+/**
  * `Date.now()`, wrapped.
  *
  * `react-hooks/purity` flags a bare `Date.now()` anywhere reachable from a
