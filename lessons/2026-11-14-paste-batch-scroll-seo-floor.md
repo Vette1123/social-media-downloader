@@ -25,3 +25,16 @@
 ## Rules
 - A delay that waits for React to render is a guess; scroll from an effect keyed on the state change.
 - An info-page description floor of 50 hid a 113-char one; floors match the target range (120–160).
+
+## Search Console (read in the owner's Chrome, 14 Nov; data ends 10 Nov)
+- 28 days: 2.58k clicks, 22.7k impressions, 11.3% CTR, position 5.9. The home page has 2,501 of the clicks.
+- Platform pages rank 15–70 (an authority gap, not a markup one). The home
+  title rewrite of 10 Nov has no data yet — judge it after 24 Nov, don't churn it.
+- "Crawled – currently not indexed" (19) is mostly images. Of the pages, only
+  /pt/video-downloader is really out; the Reddit pages were already indexed
+  (the report lags). Indexing requested for /pt/video-downloader,
+  /dailymotion-downloader and /linkedin-video-downloader (LinkedIn was "unknown to Google").
+- The sitemap had last been read 10 Nov with 80 URLs; resubmitted, read on 14 Nov.
+- Apex socialdownloader.space 301s to www for browsers and Googlebot; bare curl
+  gets the CF challenge, so test redirects with a browser UA.
+- GSC deep links like /search-console/inspect?id=… 404; type the URL into the inspect box.
