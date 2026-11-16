@@ -227,5 +227,13 @@
   "Same result twice — retrying won’t change it. Try another post, or check this one opens in a private browser window.": "النتيجة نفسها مرتين، وإعادة المحاولة لن تغيّرها. جرّب منشورًا آخر، أو تأكد أن هذا المنشور يفتح في نافذة تصفح خاصة.",
   "The site didn’t say why. Posts that only open for signed-in accounts fail this way. Check it opens in a private browser window.": "لم يذكر الموقع السبب. المنشورات التي لا تفتح إلا لحساب مسجّل الدخول تفشل بهذه الطريقة. تأكد أنه يفتح في نافذة تصفح خاصة.",
   "The site is limiting how fast we can read posts. Your link is fine — try again in a few minutes.": "الموقع يحدّ من سرعة قراءتنا للمنشورات. رابطك سليم، أعد المحاولة بعد بضع دقائق.",
-  "We couldn’t download this one": "تعذّر تنزيل هذا المنشور"
+  "We couldn’t download this one": "تعذّر تنزيل هذا المنشور",
+  "items": "العناصر",
+  "images": "الصور",
+  "Hide {noun}": "إخفاء {noun}",
+  "Show {noun} ({n})": "عرض {noun} ({n})",
+  "Slide {n}": "الشريحة {n}",
+  "Slide {n} of {total}": "الشريحة {n} من {total}",
+  "Saved {k} of {n} {noun} as ZIP. Paste the post again to retry the rest.": "حُفظ {k} من {n} من {noun} في ملف ZIP. الصق المنشور مرة أخرى لإعادة محاولة الباقي.",
+  "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "حُفظ {k} من {n} من {noun}. الصق المنشور مرة أخرى لإعادة محاولة الباقي."
 }

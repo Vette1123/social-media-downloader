@@ -227,5 +227,13 @@
   "Same result twice — retrying won’t change it. Try another post, or check this one opens in a private browser window.": "Hasilnya sama dua kali — mencoba lagi tidak akan mengubahnya. Coba postingan lain, atau pastikan postingan ini terbuka di jendela penyamaran browser.",
   "The site didn’t say why. Posts that only open for signed-in accounts fail this way. Check it opens in a private browser window.": "Situsnya tidak memberi tahu alasannya. Postingan yang hanya terbuka untuk akun yang masuk gagal seperti ini. Pastikan postingan terbuka di jendela penyamaran browser.",
   "The site is limiting how fast we can read posts. Your link is fine — try again in a few minutes.": "Situs sedang membatasi seberapa cepat kami membaca postingan. Tautanmu baik-baik saja — coba lagi dalam beberapa menit.",
-  "We couldn’t download this one": "Kami tidak bisa mengunduh yang ini"
+  "We couldn’t download this one": "Kami tidak bisa mengunduh yang ini",
+  "items": "item",
+  "images": "gambar",
+  "Hide {noun}": "Sembunyikan {noun}",
+  "Show {noun} ({n})": "Tampilkan {noun} ({n})",
+  "Slide {n}": "Slide {n}",
+  "Slide {n} of {total}": "Slide {n} dari {total}",
+  "Saved {k} of {n} {noun} as ZIP. Paste the post again to retry the rest.": "{k} dari {n} {noun} tersimpan sebagai ZIP. Tempel postingannya lagi untuk mencoba sisanya.",
+  "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "{k} dari {n} {noun} tersimpan. Tempel postingannya lagi untuk mencoba sisanya."
 }

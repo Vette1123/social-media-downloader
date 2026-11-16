@@ -154,3 +154,4 @@ the index for exactly that.
 | 2026-11-16 | [Threads share links + photos](2026-11-16-threads-share-links.md) | Probe with real ids; Threads and Facebook share links redirect only for a crawler. |
 | 2026-11-16 | [Telegram bot](2026-11-16-telegram-bot.md) | A webhook path must be exempt from the scripted-client WAF challenge before Telegram can reach it |
 | 2026-11-16 | [Brand mark E](2026-11-16-brand-mark-e.md) | Every icon renders from brandMark.ts; generated files get a drift test. |
+| 2026-11-16 | [Full app audit](2026-11-16-full-app-audit.md) | A same-origin proxy allow-lists the content type; success messages count real writes. |

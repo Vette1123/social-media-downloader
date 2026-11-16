@@ -145,7 +145,7 @@ import {
 import { rememberRecentHeight } from '@/lib/recentReserve'
 import { saveBlob, saveMedia } from '@/lib/blobSaver'
 import { isStaleLinkError, isTransientError, withRetry } from '@/lib/retry'
-import { imageSaveStep } from '@/lib/imageSaves'
+import { gallerySaveOutcome, imageSaveStep } from '@/lib/imageSaves'
 import { canShareFile, fileFromBlob, shareFile } from '@/lib/shareFile'
 import { audioTagsFor } from '@/lib/audioTags'
 import { slideshowRenderOffered } from '@/lib/nativeMedia'
@@ -1366,7 +1366,7 @@ export function DownloaderApp() {
   // handleProcess runs before the download handlers are declared; this ref
   // reaches them (assigned in an effect below their declarations).
   const startDownloadRef = useRef<
-    ((kind: 'video' | 'audio') => Promise<void>) | null
+    ((kind: 'video' | 'audio') => Promise<unknown>) | null
   >(null)
   // The empty-box Download reads the clipboard through the Paste chip's path,
   // declared after this; same reach-forward as startDownloadRef.
@@ -1377,6 +1377,10 @@ export function DownloaderApp() {
     overrideUrl?: string,
     source: LinkSource = 'typed',
   ) => {
+    // The button is disabled while busy, but Enter, the paste chip and the
+    // Recent list are not: a second resolve mid-transfer raced the first, and
+    // its `finally` cleared `loading` under the one still running.
+    if (isResolvingOrDownloading(state)) return
     const typed = (overrideUrl ?? state.url).trim()
     // Shared text with a link in it, or a link with no scheme, is still a link.
     const target = extractLink(typed) ?? typed
@@ -2003,8 +2007,10 @@ export function DownloaderApp() {
   /** What is on the result card, as the download events record it. */
   const content = () => contentProps(state.videoMetadata, state.originalUrl)
 
-  const handleVideoDownload = async () => {
-    if (!state.downloadUrl) return
+  /** Resolves true once the video has gone out (saved, or handed to the
+   * browser's downloader); false on a cancel or a failure. */
+  const handleVideoDownload = async (): Promise<boolean> => {
+    if (!state.downloadUrl) return false
 
     // Direct path: a Cobalt tunnel downloads browser→Cobalt, skipping our proxy
     // (saves the function's egress). No progress bar — the browser's own
@@ -2040,7 +2046,7 @@ export function DownloaderApp() {
         dispatch({ type: 'SET_PROGRESS', payload: null })
         canceledNote()
         transfer.canceled()
-        return
+        return false
       }
       if (outcome === 'saved') {
         transfer.completed({ delivery: 'direct' })
@@ -2051,7 +2057,7 @@ export function DownloaderApp() {
           payload: { kind: 'saved', text: t('msgVideoDone') },
         })
         dispatch({ type: 'SET_URL', payload: '' })
-        return
+        return true
       }
       const handoff = downloadManagerUrl(
         outcome,
@@ -2073,7 +2079,7 @@ export function DownloaderApp() {
             payload: { kind: 'info', text: t('msgDownloadStarted') },
           })
         }, 2800)
-        return
+        return true
       }
       // Nothing to hand off to — retry through the proxy below, which still
       // shows a progress bar.
@@ -2096,6 +2102,7 @@ export function DownloaderApp() {
         payload: { kind: 'saved', text: t('msgVideoDone') },
       })
       dispatch({ type: 'SET_URL', payload: '' })
+      return true
     } catch (error) {
       console.error('Download failed:', error)
       if (isAbortError(error)) {
@@ -2108,6 +2115,7 @@ export function DownloaderApp() {
           payload: { kind: 'error', text: d('Failed to download video file') },
         })
       }
+      return false
     } finally {
       dispatch({ type: 'SET_DOWNLOADING', payload: false })
       dispatch({ type: 'SET_PROGRESS', payload: null })
@@ -2410,6 +2418,7 @@ export function DownloaderApp() {
           })
         }
 
+        let zipped = 0
         await Promise.all(
           entries.map(async (entry) => {
             const signal = cancelRef.current?.signal
@@ -2419,6 +2428,7 @@ export function DownloaderApp() {
                 throw new Error(`HTTP ${imageResponse.status}`)
               }
               zip.file(entry.filename, await imageResponse.arrayBuffer())
+              zipped += 1
             } catch (error) {
               // A cancel must tear the whole archive build down, not become a
               // "-failed.txt" note inside a file the visitor just stopped.
@@ -2449,6 +2459,9 @@ export function DownloaderApp() {
               payload: 90 + Math.round(meta.percent * 0.1),
             }),
         )
+        const zipOutcome = gallerySaveOutcome(zipped, entries.length)
+        // An archive of nothing but "-failed.txt" notes is a failure, not a save.
+        if (zipOutcome === 'none') throw new Error(`all ${entries.length} gallery files failed`)
         await deliver(blob, nameFile('zip'))
         transfer.completed({ size_bytes: blob.size, delivery: 'zip' })
 
@@ -2456,10 +2469,13 @@ export function DownloaderApp() {
           type: 'SET_MESSAGE',
           payload: {
             kind: 'saved',
-            text: d('{n} {noun} downloaded as ZIP! 🗜️', { n: selectedImages.length, noun: galleryNoun }),
+            text:
+              zipOutcome === 'all'
+                ? d('{n} {noun} downloaded as ZIP! 🗜️', { n: zipped, noun: galleryNoun })
+                : d('Saved {k} of {n} {noun} as ZIP. Paste the post again to retry the rest.', { k: zipped, n: entries.length, noun: galleryNoun }),
           },
         })
-        dispatch({ type: 'SET_URL', payload: '' })
+        if (zipOutcome === 'all') dispatch({ type: 'SET_URL', payload: '' })
       } else {
         const response = await fetch('/api/images', {
           method: 'POST',
@@ -2481,6 +2497,7 @@ export function DownloaderApp() {
         }
 
         const totalImages = data.images.length
+        let saved = 0
         for (let i = 0; i < data.images.length; i++) {
           if (cancelRef.current.signal.aborted) {
             transfer.canceled()
@@ -2506,6 +2523,7 @@ export function DownloaderApp() {
             // last one would send the wrong picture confidently.
             const keep = totalImages === 1 ? deliver : saveMedia
             await keep(blob, filename)
+            saved += 1
 
             const step = imageSaveStep(i, totalImages)
             if (totalImages > 1) dispatch({ type: 'SET_PROGRESS', payload: step.pct })
@@ -2527,12 +2545,20 @@ export function DownloaderApp() {
           transfer.canceled()
           return
         }
+        const outcome = gallerySaveOutcome(saved, totalImages)
+        if (outcome === 'none') throw new Error(`all ${totalImages} gallery files failed`)
         transfer.completed({ delivery: 'images' })
         dispatch({
           type: 'SET_MESSAGE',
-          payload: { kind: 'saved', text: t('msgImagesDone', { n: selectedImages.length }) },
+          payload: {
+            kind: 'saved',
+            text:
+              outcome === 'all'
+                ? t('msgImagesDone', { n: saved })
+                : d('Saved {k} of {n} {noun}. Paste the post again to retry the rest.', { k: saved, n: totalImages, noun: galleryNoun }),
+          },
         })
-        dispatch({ type: 'SET_URL', payload: '' })
+        if (outcome === 'all') dispatch({ type: 'SET_URL', payload: '' })
       }
     } catch (error) {
       console.error('Image download failed:', error)
@@ -2564,7 +2590,7 @@ export function DownloaderApp() {
   const galleryHasVideo = (state.videoMetadata?.images ?? []).some(
     (item) => item.kind === 'video',
   )
-  const galleryNoun = galleryHasVideo ? 'items' : 'images'
+  const galleryNoun = galleryHasVideo ? d('items') : d('images')
 
   /**
    * Whether "Save both" is worth offering.
@@ -2592,8 +2618,9 @@ export function DownloaderApp() {
    */
   const handleSaveBoth = async () => {
     trackFeatureUsed('save_both')
-    await handleVideoDownload()
-    await handleAudioDownload()
+    // Only after a video that went out: a cancel or a failure stops here, or
+    // the MP3 would start anyway and paint over the "canceled" banner.
+    if (await handleVideoDownload()) await handleAudioDownload()
   }
 
   /**
@@ -3875,8 +3902,8 @@ export function DownloaderApp() {
                     >
                       <span className='relative'>
                         {state.showImageGallery
-                          ? `Hide ${galleryNoun}`
-                          : `Show ${galleryNoun} (${state.videoMetadata.images.length})`}
+                          ? d('Hide {noun}', { noun: galleryNoun })
+                          : d('Show {noun} ({n})', { noun: galleryNoun, n: state.videoMetadata.images.length })}
                       </span>
                     </button>
 
@@ -3959,7 +3986,7 @@ export function DownloaderApp() {
                                   alt={
                                     image.kind === 'video'
                                       ? d('Cover frame of video {n}', { n: index + 1 })
-                                      : `Slide ${index + 1}`
+                                      : d('Slide {n}', { n: index + 1 })
                                   }
                                   className='h-full w-full object-contain'
                                   loading='lazy'

@@ -29,8 +29,10 @@ export function ShareButton({
     try {
       await navigator.share({ title, url })
       trackShared({ surface: 'result', method: 'web_share', outcome: 'done' })
-    } catch {
-      // A dismissed sheet throws too — only mark real failures visible.
+    } catch (error) {
+      // A dismissed sheet throws AbortError: the visitor changed their mind,
+      // nothing failed. Only a real failure is tracked and shown.
+      if ((error as Error)?.name === 'AbortError') return
       trackShared({ surface: 'result', method: 'web_share', outcome: 'failed' })
       setFailed(true)
     }

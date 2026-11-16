@@ -18,3 +18,10 @@ export function imageSaveStep(
     pauseMs: last ? 0 : IMAGE_SAVE_GAP_MS,
   }
 }
+
+/** How a gallery save went, counted off the files actually written, never the
+ * selection size: expired links write nothing, and saying "5 saved" then is a lie. */
+export function gallerySaveOutcome(saved: number, total: number): 'all' | 'some' | 'none' {
+  if (saved <= 0) return 'none'
+  return saved >= total ? 'all' : 'some'
+}

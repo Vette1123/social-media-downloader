@@ -104,3 +104,17 @@ describe('image proxy serving our own origin', () => {
     },
   )
 })
+
+describe.each([
+  ['audio', handleAudioProxy],
+  ['video', handleVideoProxy],
+  ['image', handleImageProxy],
+])('%s proxy given a URL that is not http(s)', (_name, handler) => {
+  it('answers 400 without fetching it', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const res = await handler(new Request('https://x.space/api/x?url=' + encodeURIComponent('file:///etc/passwd')))
+    expect(res.status).toBe(400)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
