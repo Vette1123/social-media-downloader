@@ -11,12 +11,10 @@ export const metadata: Metadata = {
   title: { absolute: `Page not found — ${siteConfig.name}` },
   description:
     'The page you are looking for does not exist. Head back to the downloader or pick a platform-specific tool.',
-  // Required, not redundant. The root layout declares `index, follow` for the
-  // whole site, and without an override here that value is inherited and
-  // rendered alongside the `noindex` Next emits for the not-found page — two
-  // robots tags saying opposite things. Next's own tag is not suppressible, so
-  // the goal is for both to agree.
-  robots: { index: false, follow: true },
+  // The root layout's `index, follow` would be inherited and sit beside the
+  // `noindex` Next emits for every not-found page. `null` drops the inherited
+  // tag (and its googlebot twin), leaving Next's single `noindex`.
+  robots: null,
 }
 
 export default function NotFound() {

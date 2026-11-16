@@ -187,12 +187,6 @@
       "homeSupply": "URL de um post do TikTok, Twitter/X, Instagram, Facebook ou YouTube",
       "homeTool": "Uma URL do TikTok, Twitter/X, Instagram, Facebook ou YouTube",
       "browserTool": "Qualquer navegador moderno",
-      "step1Name": "Copie o link",
-      "homeStep1": "Abra o post do TikTok, Twitter/X, Instagram, Facebook ou YouTube e copie a URL de compartilhamento.",
-      "step2Name": "Cole e processe",
-      "homeStep2": "Cole a URL no campo desta página e clique em Baixar para buscar a mídia.",
-      "step3Name": "Baixe",
-      "homeStep3": "Veja a prévia e baixe o vídeo em qualidade total, o áudio MP3 ou as imagens do carrossel, uma a uma ou em um ZIP.",
       "platformName": "Como baixar do {name}",
       "platformDescription": "Salve qualquer vídeo, foto ou MP3 público do {name} em quatro passos — sem login, sem instalar nada.",
       "platformSupply": "A URL de um post público do {name}",
@@ -357,20 +351,39 @@
         "h1Accent": "Sua decisão.",
         "intro": "Gerencie sua assinatura, suas preferências de download e os dispositivos com login ativo nesta conta."
       }
+    },
+    "webApp": {
+      "description": "Downloader gratuito de posts públicos do TikTok, X, Instagram, Facebook e YouTube: salve vídeos em HD, Reels e Shorts, extraia áudio MP3 ou baixe carrosséis de fotos.",
+      "browserRequirements": "Requer JavaScript. Requer HTML5.",
+      "featureList": [
+        "Baixe vídeos públicos do TikTok em HD",
+        "Baixe vídeos do Twitter/X em HD (incluindo vídeos GIF)",
+        "Baixe reels, vídeos e fotos do Instagram",
+        "Baixe vídeos e Shorts do YouTube em HD",
+        "Baixe vídeos, clipes do Watch e reels do Facebook em HD",
+        "Extraia áudio MP3 de vídeos do TikTok, YouTube e Facebook",
+        "Baixe slideshows do TikTok (carrosséis de fotos) com a música original",
+        "Baixe carrosséis de fotos do Instagram: cada imagem separada ou em um ZIP",
+        "Veja a prévia de vídeo, áudio e imagens antes de baixar",
+        "Salve as imagens uma a uma ou em um arquivo ZIP",
+        "Funciona em desktop, iPhone, iPad e Android, sem instalar app",
+        "Sem login, sem limite diário e sem cadastro"
+      ],
+      "dedicated": "Downloaders dedicados para {platforms}"
     }
   },
   "homeFaqs": [
     {
-      "q": "Este downloader de TikTok é grátis?",
+      "q": "Este downloader de vídeos é grátis?",
       "a": "Sim. A ferramenta é totalmente grátis, não exige cadastro nem conta e não tem limite diário de downloads."
     },
     {
-      "q": "Qual a qualidade dos vídeos do TikTok baixados?",
-      "a": "O arquivo original, como o TikTok o entrega para um post público — até 1080p HD, sem recompressão e sem gravação de tela."
+      "q": "Qual a qualidade dos vídeos baixados?",
+      "a": "O arquivo original, como a plataforma o entrega para um post público — até 1080p HD, sem recompressão e sem gravação de tela."
     },
     {
-      "q": "Dá para baixar um carrossel de fotos (slideshow) do TikTok?",
-      "a": "Sim. Cole a URL do slideshow e o app mostra todas as imagens e a música de fundo original — baixe uma a uma, em um arquivo ZIP, ou salve o áudio como MP3."
+      "q": "Dá para baixar carrosséis de fotos e slideshows?",
+      "a": "Sim. Cole a URL de um slideshow do TikTok ou de um carrossel do Instagram e o app mostra todas as imagens e a música de fundo original, quando o post tem uma — baixe uma a uma, em um arquivo ZIP, ou salve o áudio como MP3."
     },
     {
       "q": "Funciona com vídeos do Twitter/X?",
@@ -417,8 +430,8 @@
       "a": "Baixar vídeos públicos para uso pessoal e não comercial geralmente é permitido, mas você deve respeitar os direitos do criador original e os termos de serviço da plataforma. Não redistribua nem monetize conteúdo que não é seu."
     },
     {
-      "q": "Por que o link do meu TikTok não é processado?",
-      "a": "Confirme que o post é público e que a URL é o link de compartilhamento (tiktok.com/@user/video/... ou vm.tiktok.com/...). Posts privados, apagados, bloqueados na sua região ou com restrição de idade não podem ser acessados."
+      "q": "Por que o meu link não é processado?",
+      "a": "Confirme que o post é público e que a URL é o link de compartilhamento (por exemplo tiktok.com/@user/video/..., youtu.be/... ou x.com/.../status/...). Posts privados, apagados, bloqueados na sua região ou com restrição de idade não podem ser acessados."
     }
   ],
   "platforms": {

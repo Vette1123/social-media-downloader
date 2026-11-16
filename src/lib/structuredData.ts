@@ -3,6 +3,7 @@ import { siteConfig } from '@/config/site'
 import { fill, LOCALES, type Locale } from '@/lib/i18n'
 import { contentFor, platformFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
+import { versionedIcon } from '@/lib/appIcon'
 import type { PageCopy } from '@/lib/pageCopy'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
 
@@ -44,6 +45,8 @@ const personNode = {
   ],
 }
 
+const LOGO_PATH = versionedIcon('/icons/512')
+
 const organizationNode = {
   '@type': 'Organization',
   '@id': `${siteConfig.url}/#organization`,
@@ -52,8 +55,9 @@ const organizationNode = {
   url: siteConfig.url,
   logo: {
     '@type': 'ImageObject',
-    url: `${siteConfig.url}/favicon.svg`,
-    contentUrl: `${siteConfig.url}/favicon.svg`,
+    // Google wants a raster logo: the 512px PNG the manifest already ships.
+    url: `${siteConfig.url}${LOGO_PATH}`,
+    contentUrl: `${siteConfig.url}${LOGO_PATH}`,
     width: 512,
     height: 512,
   },
@@ -79,57 +83,51 @@ const websiteNode = {
   // ("/?url={search_term_string}", "/?url={url}" in Search Console, 2026-11).
 }
 
-const webApplicationNode = {
-  '@type': ['WebApplication', 'SoftwareApplication'],
-  '@id': `${siteConfig.url}/#webapp`,
-  name: siteConfig.name,
-  alternateName: siteConfig.shortName,
-  url: siteConfig.url,
-  description: siteConfig.description,
-  applicationCategory: 'MultimediaApplication',
-  applicationSubCategory: 'VideoDownloader',
-  operatingSystem: 'Any',
-  browserRequirements: 'Requires JavaScript. Requires HTML5.',
-  softwareVersion: '1.0',
-  datePublished,
-  dateModified,
-  isAccessibleForFree: true,
-  inLanguage: LOCALES,
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'USD',
-    priceValidUntil: '2099-12-31',
-    availability: 'https://schema.org/InStock',
+/** The tool itself, in the language of the page that describes it. */
+function webApplicationNode(locale: Locale) {
+  const { webApp } = contentFor(locale).copy
+  return {
+    '@type': ['WebApplication', 'SoftwareApplication'],
+    '@id': `${siteConfig.url}/#webapp`,
+    name: siteConfig.name,
+    alternateName: siteConfig.shortName,
     url: siteConfig.url,
-  },
-  featureList: [
-    'Download public TikTok videos in HD',
-    'Download Twitter/X videos in HD (including GIF videos)',
-    'Download Instagram reels, videos and photos',
-    'Download YouTube videos and Shorts in HD',
-    'Download Facebook videos, watch clips and reels in HD',
-    'Extract MP3 audio from TikTok, YouTube and Facebook videos',
-    'Download TikTok slideshows (photo carousels) with original music',
-    'Download Instagram photo carousels — every image individually or as a ZIP',
-    'Preview video, audio and images before downloading',
-    'Save images individually or as a ZIP archive',
-    'Works on desktop, iPhone, iPad and Android — no app install',
-    'No login, no daily limit, no signup',
-    // From the page list, so a new platform page is named here without an edit.
-    `Dedicated downloaders for ${dedicatedPlatformNames().join(', ')}`,
-  ],
-  screenshot: ogImage,
-  image: ogImage,
-  author: { '@id': `${siteConfig.url}/#person` },
-  creator: { '@id': `${siteConfig.url}/#person` },
-  publisher: { '@id': `${siteConfig.url}/#organization` },
-  mainEntityOfPage: { '@id': `${siteConfig.url}/#website` },
+    description: webApp.description,
+    applicationCategory: 'MultimediaApplication',
+    applicationSubCategory: 'VideoDownloader',
+    operatingSystem: 'Any',
+    browserRequirements: webApp.browserRequirements,
+    softwareVersion: '1.0',
+    datePublished,
+    dateModified,
+    isAccessibleForFree: true,
+    inLanguage: locale,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+      priceValidUntil: '2099-12-31',
+      availability: 'https://schema.org/InStock',
+      url: siteConfig.url,
+    },
+    featureList: [
+      ...webApp.featureList,
+      fill(webApp.dedicated, { platforms: dedicatedPlatformNames().join(', ') }),
+    ],
+    screenshot: ogImage,
+    image: ogImage,
+    author: { '@id': `${siteConfig.url}/#person` },
+    creator: { '@id': `${siteConfig.url}/#person` },
+    publisher: { '@id': `${siteConfig.url}/#organization` },
+    mainEntityOfPage: { '@id': `${siteConfig.url}/#website` },
+  }
 }
 
+// Site-wide, in the root layout, so English by construction. What has words in
+// it (the WebApplication) rides each landing page's own graph instead.
 export const globalStructuredData = {
   '@context': 'https://schema.org',
-  '@graph': [websiteNode, personNode, organizationNode, webApplicationNode],
+  '@graph': [websiteNode, personNode, organizationNode],
 }
 
 function faqPageNode(
@@ -171,12 +169,15 @@ function webPageNode({
   description,
   isPartOfId,
   locale,
+  breadcrumb = true,
 }: {
   locale: Locale
   url: string
   name: string
   description: string
   isPartOfId: string
+  /** A page with one crumb has no trail to show, so it points at none. */
+  breadcrumb?: boolean
 }) {
   return {
     '@type': 'WebPage',
@@ -189,7 +190,7 @@ function webPageNode({
     // Every home and platform route renders its own share card beside it.
     primaryImageOfPage: `${url.replace(/\/$/, '')}/opengraph-image`,
     publisher: { '@id': `${siteConfig.url}/#organization` },
-    breadcrumb: { '@id': `${url}#breadcrumb` },
+    ...(breadcrumb && { breadcrumb: { '@id': `${url}#breadcrumb` } }),
   }
 }
 
@@ -251,7 +252,7 @@ function howToNode({
 export function homepageStructuredData(locale: Locale = 'en') {
   const url = localizedUrl(locale, '/')
   const { copy, homeFaqs } = contentFor(locale)
-  const { howTo, home, nav } = copy
+  const { howTo, home } = copy
   return {
     '@context': 'https://schema.org',
     '@graph': [
@@ -261,8 +262,9 @@ export function homepageStructuredData(locale: Locale = 'en') {
         description: home.metaDescription,
         isPartOfId: `${siteConfig.url}/#website`,
         locale,
+        breadcrumb: false,
       }),
-      breadcrumbNode(`${url}#breadcrumb`, [{ name: nav.home, url }]),
+      webApplicationNode(locale),
       howToNode({
         url,
         locale,
@@ -270,11 +272,8 @@ export function homepageStructuredData(locale: Locale = 'en') {
         description: howTo.homeDescription,
         supply: howTo.homeSupply,
         tool: howTo.homeTool,
-        steps: [
-          { name: howTo.step1Name, text: howTo.homeStep1 },
-          { name: howTo.step2Name, text: howTo.homeStep2 },
-          { name: howTo.step3Name, text: howTo.homeStep3 },
-        ],
+        // The steps the page shows, so the markup cannot drift from the words.
+        steps: home.steps.map(({ title, sub }) => ({ name: title, text: sub })),
         howTo,
       }),
       faqPageNode(`${url}#faq`, homeFaqs, locale),
@@ -314,6 +313,7 @@ export function platformStructuredData(
         isPartOfId: `${siteConfig.url}/#website`,
         locale,
       }),
+      webApplicationNode(locale),
       breadcrumbNode(`${url}#breadcrumb`, [
         { name: nav.home, url: localizedUrl(locale, '/') },
         { name: p.brandLabel, url },

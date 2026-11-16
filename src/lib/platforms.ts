@@ -198,7 +198,7 @@ export const platforms: Platform[] = [
       },
       {
         q: 'How do I extract MP3 audio from a TikTok video?',
-        a: 'Paste the TikTok URL, click Process URL, then use the Extract Audio button. The MP3 is delivered straight to your device — no screen-recording needed.',
+        a: 'Paste the TikTok URL, click Download, then use the Extract Audio button. The MP3 is delivered straight to your device — no screen-recording needed.',
       },
       {
         q: 'Why does my TikTok link fail to process?',
