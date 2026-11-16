@@ -79,24 +79,24 @@
       "whatsNewSub": "Alat ini terus dikembangkan — ini yang berubah belakangan ini.",
       "whatsNew": [
         {
-          "date": "24 Agu",
-          "title": "Tempel link apa saja",
-          "detail": "Di luar sebelas platform: downloader kini memproses video publik dari situs mana pun yang halamannya menyajikannya — host kecil, blog, halaman berita."
+          "date": "16 Nov",
+          "title": "Bot Telegram",
+          "detail": "Kirim tautan ke @SocialDownloaderSpaceBot dan videonya dikirim balik di obrolan, dalam bahasamu."
         },
         {
-          "date": "24 Agu",
-          "title": "Impor koleksi sekali tempel",
-          "detail": "Playlist YouTube, subreddit atau profil Reddit, board Pinterest, atau channel Vimeo otomatis diurai menjadi baris batch."
+          "date": "16 Nov",
+          "title": "Tautan bagikan Threads",
+          "detail": "Tautan yang disalin dari aplikasi Threads kini bisa diunduh, begitu juga postingan yang hanya berisi foto."
         },
         {
-          "date": "24 Agu",
-          "title": "Subtitle sebagai SRT atau VTT",
-          "detail": "Setiap trek caption pada video YouTube, termasuk yang dibuat otomatis, dengan bahasa pilihanmu diingat."
+          "date": "13 Nov",
+          "title": "Tombol unduh lebih dulu",
+          "detail": "Hasil langsung menampilkan kontrol unduhan, dan progres tampil di satu baris status, bukan banner."
         },
         {
-          "date": "24 Agu",
-          "title": "Aplikasinya berbicara bahasamu",
-          "detail": "Spanyol, Portugis, Indonesia, dan Arab (RTL) bergabung dengan Inggris di seluruh alur unduhan — pilih dari footer."
+          "date": "31 Okt",
+          "title": "Setiap halaman dalam bahasamu",
+          "detail": "Spanyol, Portugis, Indonesia, dan Arab (RTL) di semua halaman dan pesan. Pilih dari footer."
         }
       ]
     },

@@ -21,6 +21,11 @@ read-only code review of the download flow. Fixed:
 - The audio proxy skipped the http(s) check that image and video had.
 - The gallery toggle and slide alt text were hard-coded English on every locale.
 - A dismissed share sheet was tracked and shown as a failure.
+- "Recently added" showed four entries all dated Aug 24 and said "eleven platforms"
+  where the FAQ says thirteen; replaced with this month's real changes in all 5
+  languages.
+- The "Three steps" cards lifted and grew their badge on hover but do nothing;
+  PostHog had dead clicks on the badge. Now static.
 
 ## Mistakes
 - The 7-day rage-click list looked alarming (129 people), but most targets

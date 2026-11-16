@@ -20,27 +20,27 @@ export interface WhatsNewItem {
 
 export const WHATS_NEW: WhatsNewItem[] = [
   {
-    date: 'Aug 24',
-    title: 'Paste any link',
+    date: 'Nov 16',
+    title: 'A Telegram bot',
     detail:
-      'Beyond the eleven platforms: the downloader now resolves public videos from any site whose page serves them — smaller hosts, blogs, news pages.',
+      'Send a link to @SocialDownloaderSpaceBot and the video comes back in the chat, in your language.',
   },
   {
-    date: 'Aug 24',
-    title: 'One-paste collection import',
+    date: 'Nov 16',
+    title: 'Threads share links',
     detail:
-      'A YouTube playlist, Reddit subreddit or profile, Pinterest board, or Vimeo channel expands into batch rows automatically.',
+      'Links copied from the Threads app download, and so do photo-only posts.',
   },
   {
-    date: 'Aug 24',
-    title: 'Subtitles as SRT or VTT',
+    date: 'Nov 13',
+    title: 'Download buttons first',
     detail:
-      'Every caption track on a YouTube video, auto-generated included, with your preferred language remembered.',
+      'A result opens on its download controls, and progress reads in one status line instead of a banner.',
   },
   {
-    date: 'Aug 24',
-    title: 'The app speaks your language',
+    date: 'Oct 31',
+    title: 'Every page in your language',
     detail:
-      'Spanish, Portuguese, Indonesian and Arabic (RTL) joined English across the download flow — pick from the footer.',
+      'Spanish, Portuguese, Indonesian and Arabic (RTL) across every page and message. Pick one from the footer.',
   },
 ]

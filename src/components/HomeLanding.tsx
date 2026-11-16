@@ -279,10 +279,11 @@ export function HomeLanding({ locale = 'en' }: { locale?: Locale }) {
                   key={s.title}
                   as='li'
                   id={`step-${i + 1}`}
-                  interaction='lift'
-                  className='group scroll-mt-24 p-6'
+                  // Static: steps are read, not pressed. A lift and a growing badge
+                  // drew dead clicks on the number (PostHog, Nov 2026).
+                  className='scroll-mt-24 p-6'
                 >
-                  <div className='btn-grad mb-4 flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold transition-transform duration-200 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100'>
+                  <div className='btn-grad mb-4 flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold'>
                     {i + 1}
                   </div>
                   <p className='font-semibold text-white'>{s.title}</p>

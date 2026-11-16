@@ -79,24 +79,24 @@
       "whatsNewSub": "La herramienta está en desarrollo activo. Esto es lo que cambió últimamente.",
       "whatsNew": [
         {
-          "date": "24 ago",
-          "title": "Pega cualquier enlace",
-          "detail": "Más allá de las once plataformas: el descargador ahora resuelve videos públicos de cualquier sitio cuya página los ofrezca, como sitios pequeños, blogs y páginas de noticias."
+          "date": "16 nov",
+          "title": "Un bot de Telegram",
+          "detail": "Envía un enlace a @SocialDownloaderSpaceBot y el video vuelve al chat, en tu idioma."
         },
         {
-          "date": "24 ago",
-          "title": "Importar colecciones con un solo pegado",
-          "detail": "Una lista de reproducción de YouTube, un subreddit o perfil de Reddit, un tablero de Pinterest o un canal de Vimeo se convierte automáticamente en filas de la cola por lotes."
+          "date": "16 nov",
+          "title": "Enlaces compartidos de Threads",
+          "detail": "Los enlaces copiados desde la app de Threads se descargan, y también las publicaciones solo con fotos."
         },
         {
-          "date": "24 ago",
-          "title": "Subtítulos en SRT o VTT",
-          "detail": "Todas las pistas de subtítulos de un video de YouTube, incluidas las generadas automáticamente, y se recuerda tu idioma preferido."
+          "date": "13 nov",
+          "title": "Primero los botones de descarga",
+          "detail": "Un resultado se abre con sus controles de descarga, y el progreso se lee en una sola línea de estado en lugar de un aviso."
         },
         {
-          "date": "24 ago",
-          "title": "La app habla tu idioma",
-          "detail": "El español, el portugués, el indonesio y el árabe (de derecha a izquierda) se suman al inglés en todo el proceso de descarga: elígelo desde el pie de página."
+          "date": "31 oct",
+          "title": "Cada página en tu idioma",
+          "detail": "Español, portugués, indonesio y árabe (RTL) en todas las páginas y mensajes. Elige uno en el pie de página."
         }
       ]
     },
