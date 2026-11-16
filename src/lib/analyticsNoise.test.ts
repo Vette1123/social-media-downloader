@@ -33,6 +33,18 @@ describe('shouldDropException', () => {
     ).toBe(true)
   })
 
+  // A <video> whose src changes mid-load: Chrome aborts the old fetch and rejects
+  // play() with this. No stack, nothing to act on (PostHog, 2026-11-15).
+  it('drops the media-fetch AbortError a src swap throws', () => {
+    expect(
+      shouldDropException(
+        exception(
+          "AbortError: The fetching process for the media resource was aborted by the user agent at the user's request.",
+        ),
+      ),
+    ).toBe(true)
+  })
+
   it('drops the WebKit NotFoundError the early reporter sends without its type', () => {
     expect(shouldDropException(exception('[early_crash] The object can not be found here.'))).toBe(
       true,

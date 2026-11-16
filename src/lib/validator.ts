@@ -107,6 +107,8 @@ const platformPatterns: Record<
   threads: [
     /^(https?:\/\/)?([\w-]+\.)?threads\.(net|com)\/(?:@|%40)[\w.-]+\/post\/[\w-]+/i,
     /^(https?:\/\/)?([\w-]+\.)?threads\.(net|com)\/t\/[\w-]+/i,
+    // The app's Copy link: a 302 to the post, followed by the downloader.
+    /^(https?:\/\/)?([\w-]+\.)?threads\.(net|com)\/share\/[\w-]+/i,
   ],
   snapchat: [
     /^(https?:\/\/)?(www\.)?snapchat\.com\/(?:spotlight|t|p|add|u)\/[\w.@/-]+/,

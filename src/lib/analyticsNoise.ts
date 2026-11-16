@@ -15,7 +15,7 @@ const NOISE_PATTERNS = [
   /^\s*(\[[\w:]+\]\s*)?Script error\.?\s*$/i,
   // iOS Safari, thrown with no stack and no frame of ours: native media controls
   // and a navigation cancelling a request. Nothing here to act on.
-  /^\s*(DOMException: )?(NotSupportedError: The operation is not supported|AbortError: The operation was aborted)\.?\s*$/i,
+  /^\s*(DOMException: )?(NotSupportedError: The operation is not supported|AbortError: The (operation was aborted|fetching process for the media resource was aborted by the user agent at the user's request))\.?\s*$/i,
   // A codec this browser cannot decode (Firefox and HEVC): native controls reject
   // play() with no stack. The <video> onError already tells the viewer.
   /^\s*(DOMException: )?NotSupportedError: The media resource indicated by the src attribute or assigned media provider object was not suitable\.?\s*$/i,
