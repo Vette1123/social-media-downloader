@@ -79,24 +79,24 @@
       "whatsNewSub": "A ferramenta está em desenvolvimento ativo — veja o que mudou recentemente.",
       "whatsNew": [
         {
-          "date": "24 ago",
-          "title": "Cole qualquer link",
-          "detail": "Além das onze plataformas: o downloader agora resolve vídeos públicos de qualquer site cuja página os exiba — hospedagens menores, blogs, páginas de notícias."
+          "date": "16 nov",
+          "title": "Um bot no Telegram",
+          "detail": "Envie um link para @SocialDownloaderSpaceBot e o vídeo volta no chat, no seu idioma."
         },
         {
-          "date": "24 ago",
-          "title": "Importação de coleção com um só colar",
-          "detail": "Uma playlist do YouTube, um subreddit ou perfil do Reddit, um quadro do Pinterest ou um canal do Vimeo viram linhas da fila em lote automaticamente."
+          "date": "16 nov",
+          "title": "Links de compartilhamento do Threads",
+          "detail": "Links copiados do app do Threads agora baixam, assim como posts só com fotos."
         },
         {
-          "date": "24 ago",
-          "title": "Legendas em SRT ou VTT",
-          "detail": "Todas as faixas de legenda de um vídeo do YouTube, inclusive as geradas automaticamente, com o seu idioma preferido lembrado."
+          "date": "13 nov",
+          "title": "Botões de download primeiro",
+          "detail": "O resultado abre nos controles de download, e o progresso aparece numa única linha de status em vez de um aviso."
         },
         {
-          "date": "24 ago",
-          "title": "O app fala a sua língua",
-          "detail": "Espanhol, português, indonésio e árabe (da direita para a esquerda) se juntaram ao inglês em todo o fluxo de download — escolha no rodapé."
+          "date": "31 out",
+          "title": "Cada página no seu idioma",
+          "detail": "Espanhol, português, indonésio e árabe (RTL) em todas as páginas e mensagens. Escolha no rodapé."
         }
       ]
     },
