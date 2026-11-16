@@ -10,8 +10,8 @@
  *
  * `pnpm telegram:setup --check` only reports the webhook's delivery health.
  * `pnpm telegram:setup --profile` only republishes the public profile (name,
- * About, description, commands in every site language, plus the avatar from
- * /icons/maskable, full-bleed for the round crop), so copy edits in src/lib/telegramCopy.ts ship without
+ * About, description, commands in every site language, plus the avatar
+ * rendered from src/lib/brandMark.ts), so copy or icon edits ship without
  * rotating the secrets.
  * Re-run after BotFather /revoke. Limits: Windows or macOS clipboard only; the
  * secret upload creates a new Worker version with the code already deployed.
@@ -19,6 +19,8 @@
 import { spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import process from 'node:process'
+import sharp from 'sharp'
+import { brandMarkSvg } from '../src/lib/brandMark.ts'
 import { BOT_COPY } from '../src/lib/telegramCopy.ts'
 
 const SITE = 'https://www.socialdownloader.space'
@@ -103,19 +105,22 @@ async function publishProfile() {
   await publishAvatar()
 }
 
-/** The site icon as the bot's avatar. Older Bot API servers lack the method:
- * then say so and leave the avatar to BotFather /setuserpic. */
+/** The app mark as the bot's avatar, rendered here from brandMark.ts (the
+ * full-bleed maskable variant suits Telegram's circle crop), so it never waits
+ * on a deploy. Older Bot API servers lack the method: then say so and leave the
+ * avatar to BotFather /setuserpic. */
 async function publishAvatar() {
-  const png = await fetch(`${SITE}/icons/maskable`).then((r) => {
-    if (!r.ok) fail(`icon fetch ${r.status}`)
-    return r.blob()
-  })
+  const buffer = await sharp(Buffer.from(brandMarkSvg({ maskable: true })), { density: 90 })
+    .resize(640, 640)
+    .png()
+    .toBuffer()
+  const png = new Blob([buffer], { type: 'image/png' })
   const form = new FormData()
   form.append('photo', JSON.stringify({ type: 'static', photo: 'attach://avatar' }))
   form.append('avatar', png, 'avatar.png')
   const res = await fetch(`https://api.telegram.org/bot${token}/setMyProfilePhoto`, { method: 'POST', body: form })
   const json = await res.json().catch(() => ({}))
-  if (json.ok) console.log(`avatar ok: ${png.size} bytes from /icons/maskable`)
+  if (json.ok) console.log(`avatar ok: ${png.size} bytes, 640px from src/lib/brandMark.ts`)
   else console.log(`avatar NOT set (${res.status} ${json.description ?? ''}): use BotFather /setuserpic`)
 }
 
