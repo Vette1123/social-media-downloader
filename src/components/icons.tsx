@@ -60,6 +60,12 @@ export const GitHubIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
   </svg>
 )
 
+export const TelegramIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
+  <svg className={className} fill='currentColor' viewBox='0 0 24 24' aria-hidden='true' {...props}>
+    <path d='M21.94 4.3 18.7 19.58c-.24 1.08-.88 1.34-1.79.84l-4.94-3.64-2.38 2.29c-.26.27-.48.49-.99.49l.35-5.03 9.16-8.28c.4-.35-.09-.55-.62-.2L6.17 13.17 1.3 11.65c-1.06-.33-1.08-1.06.22-1.57L20.55 2.75c.88-.33 1.65.2 1.39 1.55Z' />
+  </svg>
+)
+
 export const SpinnerIcon = ({ className = 'w-4 h-4', ...props }: IconProps) => (
   <svg
     className={`animate-spin ${className}`}

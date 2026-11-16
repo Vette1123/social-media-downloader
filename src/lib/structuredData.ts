@@ -55,7 +55,7 @@ const organizationNode = {
   foundingDate: datePublished,
   // The product's own profiles only. The founder's links live on the Person,
   // or Google reads the brand as that person.
-  sameAs: [siteConfig.links.github],
+  sameAs: [siteConfig.links.github, siteConfig.links.telegram],
 }
 
 const websiteNode = {

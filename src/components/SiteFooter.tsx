@@ -1,5 +1,5 @@
 import Link from '@/components/IntentLink'
-import { FilmIcon, GitHubIcon, PortfolioIcon } from '@/components/icons'
+import { FilmIcon, GitHubIcon, PortfolioIcon, TelegramIcon } from '@/components/icons'
 import { LanguagePicker } from '@/components/LanguagePicker'
 import { PlayAppsMenu } from '@/components/PlayAppsMenu'
 import { siteConfig } from '@/config/site'
@@ -66,6 +66,15 @@ export function SiteFooter({
           >
             <GitHubIcon className='h-4 w-4' />
             GitHub
+          </a>
+          <a
+            href={siteConfig.links.telegram}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='inline-flex items-center gap-1.5 whitespace-nowrap text-white/70 transition-colors hover:text-white'
+          >
+            <TelegramIcon className='h-4 w-4' />
+            Telegram
           </a>
           <LanguagePicker />
         </div>

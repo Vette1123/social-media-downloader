@@ -72,7 +72,10 @@ describe('brand entity', () => {
 
   it('Organization.sameAs is the product, not the founder', () => {
     const { sameAs } = node('Organization')
-    expect(sameAs).toEqual(['https://github.com/Vette1123/social-media-downloader'])
+    expect(sameAs).toEqual([
+      'https://github.com/Vette1123/social-media-downloader',
+      'https://t.me/SocialDownloaderSpaceBot',
+    ])
     expect(sameAs.join(' ')).not.toContain('twitter.com')
   })
 
