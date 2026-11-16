@@ -1,5 +1,8 @@
 import Link from '@/components/IntentLink'
-import { FilmIcon, GitHubIcon, PortfolioIcon, TelegramIcon } from '@/components/icons'
+import { GitHubIcon, PortfolioIcon, TelegramIcon } from '@/components/icons'
+import { appIcon } from '@/components/AppIcon'
+
+const ReelyIcon = appIcon('reely')
 import { LanguagePicker } from '@/components/LanguagePicker'
 import { PlayAppsMenu } from '@/components/PlayAppsMenu'
 import { siteConfig } from '@/config/site'
@@ -80,15 +83,15 @@ export function SiteFooter({
         </div>
 
         <div className='flex flex-wrap items-center justify-center gap-x-5 gap-y-2'>
-          <Link href={localePath(locale, '/privacy')} className='transition-colors hover:text-white/80'>
+          <Link href={localePath(locale, '/privacy')} className='whitespace-nowrap text-white/70 transition-colors hover:text-white'>
             {footer.privacy}
           </Link>
-          <Link href={localePath(locale, '/terms')} className='transition-colors hover:text-white/80'>
+          <Link href={localePath(locale, '/terms')} className='whitespace-nowrap text-white/70 transition-colors hover:text-white'>
             {footer.terms}
           </Link>
           {/* One link: /pro is the donation page, and the only place support
               is asked for. */}
-          <Link href={localePath(locale, '/pro')} data-pro-cta='footer' className='transition-colors hover:text-white/80'>
+          <Link href={localePath(locale, '/pro')} data-pro-cta='footer' className='whitespace-nowrap text-white/70 transition-colors hover:text-white'>
             {footer.support}
           </Link>
           <a
@@ -97,7 +100,7 @@ export function SiteFooter({
             rel='noopener noreferrer'
             className='inline-flex items-center gap-1.5 whitespace-nowrap text-white/70 transition-colors hover:text-white'
           >
-            <FilmIcon className='h-4 w-4' />
+            <ReelyIcon className='h-4 w-4' />
             Reely
           </a>
           <PlayAppsMenu />

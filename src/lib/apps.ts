@@ -19,8 +19,12 @@
 // The same module exists in the Reely repo. Two deployables with no shared
 // package between them, so this is a port, not an import — fix both or neither.
 
+import { dn } from '@/lib/i18nDeep'
+
 export type PlayApp = {
   name: string
+  /** public/apps/<slug>.webp is its real launcher icon (`pnpm apps:icons`). */
+  slug: string
   /** One line under the name in the footer menu. Same copy the apps ship with. */
   tagline: string
   androidPackage: string
@@ -52,6 +56,7 @@ const playApp = (
 ): PlayApp => {
   const app: PlayApp = {
     name,
+    slug: name.toLowerCase(),
     tagline,
     androidPackage,
     playStoreUrl: `https://play.google.com/store/apps/details?id=${androidPackage}`,
@@ -67,19 +72,19 @@ const playApp = (
 export const PLAY_APPS: readonly PlayApp[] = [
   playApp(
     'Rafiq',
-    'A private Islamic companion: prayer, Qur’an, adhkar, qibla',
+    dn('A private Islamic companion: prayer, Qur’an, adhkar, qibla'),
     'com.mohamedgado.rafiq',
     { id: '6806678979', slug: 'rafiq' },
   ),
   playApp(
     'Masareef',
-    'An offline-first, multi-currency spending tracker',
+    dn('An offline-first, multi-currency spending tracker'),
     'com.mohamedgado.masareef',
     { id: '6806735875', slug: 'masareef' },
   ),
   playApp(
     'Nafis',
-    'A local-price tracker for gold, currencies and more',
+    dn('A local-price tracker for gold, currencies and more'),
     'com.mohamedgado.nafis',
     { id: '6807595780', slug: 'nafis' },
   ),

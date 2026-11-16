@@ -235,5 +235,8 @@
   "Slide {n}": "الشريحة {n}",
   "Slide {n} of {total}": "الشريحة {n} من {total}",
   "Saved {k} of {n} {noun} as ZIP. Paste the post again to retry the rest.": "حُفظ {k} من {n} من {noun} في ملف ZIP. الصق المنشور مرة أخرى لإعادة محاولة الباقي.",
-  "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "حُفظ {k} من {n} من {noun}. الصق المنشور مرة أخرى لإعادة محاولة الباقي."
+  "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "حُفظ {k} من {n} من {noun}. الصق المنشور مرة أخرى لإعادة محاولة الباقي.",
+  "A private Islamic companion: prayer, Qur’an, adhkar, qibla": "رفيق إسلامي خاص: الصلاة والقرآن والأذكار والقبلة",
+  "An offline-first, multi-currency spending tracker": "متتبع مصاريف يعمل دون إنترنت وبعملات متعددة",
+  "A local-price tracker for gold, currencies and more": "متتبع الأسعار المحلية للذهب والعملات وغيرها"
 }

@@ -9,6 +9,7 @@
     "indexnow": "node scripts/indexnow.mjs",
     "sponsors:expire": "node scripts/expire-sponsors.mjs",
     "icons": "node scripts/make-favicon.mjs",
+    "apps:icons": "node scripts/build-app-icons.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
