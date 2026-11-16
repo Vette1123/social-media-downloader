@@ -185,6 +185,24 @@ async function fetchUpstream(url: string, headers: Record<string, string>): Prom
 }
 
 /**
+ * The proxy serves third-party bytes on our own origin, so only image types
+ * pass (octet-stream too: some CDNs label photos that way). Anything else,
+ * text/html above all, would be someone else's page and script running as
+ * socialdownloader.space.
+ */
+function isImageType(contentType: string): boolean {
+  const type = contentType.split(';')[0].trim().toLowerCase()
+  return type.startsWith('image/') || type === 'application/octet-stream' || type === 'binary/octet-stream'
+}
+
+/** Even an allowed type stays inert when opened directly: an image/svg+xml
+ * document can carry script, and the sandbox CSP keeps it from running. */
+const SAME_ORIGIN_SAFE = {
+  'X-Content-Type-Options': 'nosniff',
+  'Content-Security-Policy': "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox",
+}
+
+/**
  * Streams a remote image same-origin.
  *
  * Instagram's scontent/fbcdn hosts omit CORS headers, so the browser cannot
@@ -204,8 +222,15 @@ export async function handleImageProxy(request: Request): Promise<Response> {
     const response = await fetchUpstream(imageUrl, upstreamHeaders(imageUrl, IMAGE_ACCEPT))
     if (!response.ok) return upstreamFailure(response.status, 'image')
 
+    const type = response.headers.get('content-type') || 'image/jpeg'
+    if (!isImageType(type)) {
+      await response.body?.cancel().catch(() => {})
+      return json({ error: 'Not an image' }, { status: 415 })
+    }
+
     const headers: Record<string, string> = {
-      'Content-Type': response.headers.get('content-type') || 'image/jpeg',
+      'Content-Type': type,
+      ...SAME_ORIGIN_SAFE,
       'Cache-Control': 'public, max-age=3600',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET',
