@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Downloader, firstResult, isShortLink, noMediaMessage, parseTwitchClipSlug } from './downloader'
+import { Downloader, firstResult, isCrawlerOnlyShareLink, isShortLink, threadsEmbedImages, noMediaMessage, parseTwitchClipSlug } from './downloader'
 import { failureCode } from './analyticsErrors'
 import { detectPlatform, unwrapLoginWall } from './validator'
 
@@ -135,6 +135,18 @@ describe('short links', () => {
     expect(isShortLink('https://t.co/abc')).toBe(true)
     expect(isShortLink('https://www.bilibili.com/video/BV1')).toBe(false)
     expect(isShortLink('https://notbit.ly.example.com/a')).toBe(false)
+  })
+
+  // The Threads app's Copy link now gives /share/<code>, a 302 to the post.
+  // It fell through to the generic resolver as unsupported (PostHog, Nov 2026).
+  it('treats a Threads share link as a hop to the post', () => {
+    expect(isShortLink('https://www.threads.com/share/D5fb90eNC/')).toBe(true)
+    expect(isShortLink('threads.net/share/E7_VP3FN2')).toBe(true)
+    expect(isShortLink('https://www.threads.com/@user/post/Dc1j54Rmhw4')).toBe(false)
+    expect(detectPlatform('https://www.threads.com/share/D5fb90eNC/')).toBe('threads')
+    // A browser user agent gets 200 and an app shell; only a crawler gets the 302.
+    expect(isCrawlerOnlyShareLink('https://www.threads.com/share/D5fb90eNC/')).toBe(true)
+    expect(isCrawlerOnlyShareLink('https://www.threads.com/@user/post/Dc1j54Rmhw4')).toBe(false)
   })
 
   it('follows a short link once and resolves where it lands', async () => {
@@ -880,5 +892,27 @@ describe('the catch-all failure message', () => {
 
   it('keeps the post-level guess for a named platform', () => {
     expect(noMediaMessage('snapchat')).toMatch(/snapchat.*may be private/i)
+  })
+})
+
+// A photo-only Threads post has no <video>, so the page scorer found nothing and
+// the post failed as "private" (live check of a real 8-photo post, 2026-11-16).
+describe('threadsEmbedImages', () => {
+  const html = [
+    '<img class="img" src="https://scontent.cdninstagram.com/v/t51.82787-19/avatar.jpg?a=1&amp;b=2" height="36" width="36" />',
+    '<img class="img" src="https://scontent.cdninstagram.com/v/t51.82787-15/one.jpg?a=1&amp;b=2" height="300" draggable="false" alt="" />',
+    '<img class="img" src="https://scontent.cdninstagram.com/v/t51.82787-15/two.jpg?c=3" height="300" draggable="false" alt="" />',
+    '<img class="img" src="https://scontent.cdninstagram.com/v/t51.82787-15/one.jpg?a=1&amp;b=2" height="300" />',
+  ].join('')
+
+  it('keeps the post photos in order, decoded, without the avatar or repeats', () => {
+    expect(threadsEmbedImages(html)).toEqual([
+      'https://scontent.cdninstagram.com/v/t51.82787-15/one.jpg?a=1&b=2',
+      'https://scontent.cdninstagram.com/v/t51.82787-15/two.jpg?c=3',
+    ])
+  })
+
+  it('finds nothing on a text post', () => {
+    expect(threadsEmbedImages('<img src="https://scontent.cdninstagram.com/v/t51.82787-19/a.jpg" />')).toEqual([])
   })
 })

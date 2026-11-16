@@ -465,12 +465,18 @@ const DISCORD_CRAWLER_AGENT = 'Mozilla/5.0 (compatible; Discordbot/2.0; +https:/
  * and `facebook.com/share/<v|r>/<code>`. Both answer a browser user agent with
  * 400 and only redirect for a crawler; see `resolveRedirect`, the only caller.
  *
- * Facebook only: Instagram's share links answer a browser normally (checked the
- * same day), so they keep the plain path rather than take a behaviour change
- * nothing asked for.
+ * Threads' `/share/<code>` (the app's Copy link) does the same: 200 and an app
+ * shell for a browser, a 302 to `/@user/post/<id>` for a crawler.
+ *
+ * Instagram's share links answer a browser normally (checked the same day), so
+ * they keep the plain path rather than take a behaviour change nothing asked for.
  */
-export function isFacebookShortLink(url: string): boolean {
-  return /facebook\.com\/share\/|fb\.watch\//i.test(url)
+export function isCrawlerOnlyShareLink(url: string): boolean {
+  return /facebook\.com\/share\/|fb\.watch\//i.test(url) || isThreadsShareLink(url)
+}
+
+export function isThreadsShareLink(url: string): boolean {
+  return /^(https?:\/\/)?([\w-]+\.)?threads\.(net|com)\/share\/[\w-]+/i.test(url)
 }
 
 /**
@@ -1182,6 +1188,8 @@ const SHORT_LINK_HOSTS = [
 ]
 
 export function isShortLink(url: string): boolean {
+  // A hop on a site that also hosts posts: no host rule can say it.
+  if (isThreadsShareLink(url)) return true
   try {
     const host = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`).hostname.toLowerCase()
     return SHORT_LINK_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))
@@ -1199,6 +1207,18 @@ export function threadsEmbedUrl(url: string): string {
   const post = /threads\.(net|com)\/(?:@|%40)([\w.-]+)\/post\/([\w-]+)/i.exec(url)
   if (post) return `https://www.threads.${post[1].toLowerCase()}/@${post[2]}/post/${post[3]}/embed`
   return `${url.split(/[?#]/)[0].replace(/\/$/, '')}/embed`
+}
+
+/**
+ * The photos of a Threads embed, in post order. Post images are `t51.*-15`
+ * files; the author's avatar is `-19`. Repeats (a carousel can list a photo
+ * twice) are dropped. Empty for a text-only post.
+ */
+export function threadsEmbedImages(html: string): string[] {
+  const urls = [...html.matchAll(/<img[^>]+src="(https:\/\/[^"]*cdninstagram\.com\/v\/t51\.[\d.]+-15\/[^"]+)"/g)].map(
+    (m) => m[1].replace(/&amp;/g, '&'),
+  )
+  return [...new Set(urls)]
 }
 
 export class Downloader {
@@ -2176,10 +2196,10 @@ export class Downloader {
     if (response.status !== 200) return null
 
     const html = typeof response.data === 'string' ? response.data : ''
-    const media = extractMediaFromHtml(html, embedUrl)
-    if (!media || media.isStream) return null
-
     const author = /threads\.(?:net|com)\/(?:@|%40)([\w.]+)/i.exec(url)?.[1] ?? 'threads'
+    const media = extractMediaFromHtml(html, embedUrl)
+    if (!media || media.isStream) return this.threadsPhotos(html, url, author)
+
     return {
       id: /post\/([\w-]+)/.exec(url)?.[1] || media.mediaUrl.slice(-32),
       title: media.title === 'Threads' ? `Threads post by @${author}` : media.title,
@@ -2190,6 +2210,25 @@ export class Downloader {
       description: '',
       downloadUrl: media.mediaUrl,
       isPhotoCarousel: false,
+    }
+  }
+
+  /** A photo-only post: no <video> for the scorer, so read the photos. */
+  private threadsPhotos(html: string, url: string, author: string): VideoData | null {
+    const photos = threadsEmbedImages(html)
+    if (photos.length === 0) return null
+    const id = /post\/([\w-]+)/.exec(url)?.[1] || Date.now().toString()
+    return {
+      id,
+      title: `Threads post by @${author}`,
+      url,
+      thumbnail: photos[0],
+      duration: 0,
+      author,
+      description: '',
+      downloadUrl: '',
+      isPhotoCarousel: true,
+      images: photos.map((photo, i) => ({ id: `${id}_${i}`, url: photo, thumbnail: photo })),
     }
   }
 
@@ -3777,7 +3816,7 @@ export class Downloader {
    * megabyte of markup that nothing here reads.
    */
   private async resolveRedirect(url: string): Promise<string> {
-    const share = isFacebookShortLink(url)
+    const share = isCrawlerOnlyShareLink(url)
     try {
       const send = share ? http.head : http.get
       const response = await send(url, {
