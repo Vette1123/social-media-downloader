@@ -1,7 +1,7 @@
 'use client'
 
 import { trackFeatureUsed } from '@/lib/analytics'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useT } from '@/lib/i18nStore'
 import { ChevronDownIcon } from '@/components/icons'
 import { appIcon } from '@/components/AppIcon'
@@ -29,6 +29,8 @@ export function PlayAppsMenu() {
   useDeepWords()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const panelId = useId()
 
   useEffect(() => {
     if (!open) return
@@ -37,12 +39,21 @@ export function PlayAppsMenu() {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      // Escape from inside the panel would otherwise drop focus on <body>.
+      triggerRef.current?.focus()
+    }
+    // Tabbing past the last app closes the panel instead of leaving it hanging.
+    const onFocusIn = (event: FocusEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
     }
 
     document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', onFocusIn)
     return () => {
+      document.removeEventListener('focusin', onFocusIn)
       document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
     }
@@ -56,8 +67,9 @@ export function PlayAppsMenu() {
           trackFeatureUsed('apps_menu', { action: open ? 'close' : 'open' })
           setOpen((wasOpen) => !wasOpen)
         }}
+        ref={triggerRef}
         aria-expanded={open}
-        aria-haspopup='menu'
+        aria-controls={panelId}
         className='inline-flex items-center gap-1.5 whitespace-nowrap text-white/70 transition-colors hover:text-white'
       >
         {/* The three real icons, overlapped, where a generic phone glyph was:
@@ -90,13 +102,12 @@ export function PlayAppsMenu() {
         <div className='animate-section-in absolute bottom-full left-1/2 z-30 mb-2 w-72 -translate-x-1/2 sm:right-0 sm:left-auto sm:w-80 sm:translate-x-0 sm:rtl:right-auto sm:rtl:left-0'>
           {/* No "Our apps" heading inside: it repeated the trigger the reader
               just pressed. The menu still has the name, for screen readers. */}
-          <Surface role='menu' aria-label={t('ourApps')} radius='xl' elevation='raised' className='p-1.5 shadow-2xl'>
+          <Surface id={panelId} role='group' aria-label={t('ourApps')} radius='xl' elevation='raised' className='p-1.5 shadow-2xl'>
             {PLAY_APPS.map((app) => {
               const Icon = appIcon(app.slug)
               return (
               <a
                 key={app.androidPackage}
-                role='menuitem'
                 href={storeHref(app)}
                 target='_blank'
                 rel='noopener noreferrer'

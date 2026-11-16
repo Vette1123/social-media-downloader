@@ -127,3 +127,15 @@ describe('primaryImageOfPage', () => {
     )
   })
 })
+
+describe('WebApplication featureList', () => {
+  it('names every dedicated platform page', () => {
+    const app = globalStructuredData['@graph'].find(
+      (n) => n['@id']?.toString().endsWith('/#webapp'),
+    ) as unknown as { featureList: string[] }
+    const all = app.featureList.join(' ')
+    for (const p of platforms.filter((x) => x.slug !== 'video-downloader')) {
+      expect(all).toContain(p.name)
+    }
+  })
+})

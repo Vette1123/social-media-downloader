@@ -28,7 +28,7 @@
       },
       "h1Lead": "Descargar videos públicos de redes sociales,",
       "h1Accent": "en su calidad original",
-      "intro": "Guarda el video, extrae el audio en MP3 o descarga galerías completas de imágenes de publicaciones públicas de TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion y LinkedIn.",
+      "intro": "Guarda el video, extrae el audio en MP3 o descarga galerías completas de imágenes de publicaciones públicas de TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn y Telegram.",
       "featuresTitle": "Todo desde un solo enlace",
       "featuresSub": "Un pegado, cuatro formas de guardarlo. Sin app, sin cuenta, sin instalar nada.",
       "features": {
@@ -179,7 +179,7 @@
       "support": "Apoyo",
       "languages": "Idiomas",
       "questions": "Consultas o avisos de retirada:",
-      "disclaimer": "Solo publicaciones públicas. {site} es una herramienta independiente, sin afiliación ni respaldo de TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion ni LinkedIn; sus nombres y logotipos pertenecen a sus dueños e indican qué enlaces acepta esta herramienta."
+      "disclaimer": "Solo publicaciones públicas. {site} es una herramienta independiente, sin afiliación ni respaldo de TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn ni Telegram; sus nombres y logotipos pertenecen a sus dueños e indican qué enlaces acepta esta herramienta."
     },
     "howTo": {
       "homeName": "Cómo descargar un video público de TikTok, X, Instagram, Facebook o YouTube",
@@ -318,7 +318,7 @@
           {
             "heading": "Marcas y afiliación",
             "paragraphs": [
-              "{site} es una herramienta independiente y {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn ni ninguna otra plataforma mencionada en este sitio. Esos nombres y logotipos pertenecen a sus respectivos dueños y se usan solo para describir qué enlaces acepta esta herramienta."
+              "{site} es una herramienta independiente y {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn, Telegram ni ninguna otra plataforma mencionada en este sitio. Esos nombres y logotipos pertenecen a sus respectivos dueños y se usan solo para describir qué enlaces acepta esta herramienta."
             ]
           },
           {
@@ -393,8 +393,8 @@
       "a": "Sí. Funciona por completo en el navegador de cualquier dispositivo moderno: iPhone, iPad, teléfono o tableta Android, Mac, Windows o Linux. No hace falta instalar ninguna app."
     },
     {
-      "q": "¿Funciona con sitios además de las trece plataformas?",
-      "a": "Sí: pega cualquier enlace público de video y la app intentará resolverlo. El soporte dedicado cubre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion y LinkedIn; fuera de ellas, el extractor lee el contenido que publica la página, así que los enlaces de sitios de video más pequeños, blogs y medios de noticias suelen resolverse también. Los sitios que exigen iniciar sesión o esconden su contenido no se pueden descargar."
+      "q": "¿Funciona con sitios además de las catorce plataformas?",
+      "a": "Sí: pega cualquier enlace público de video y la app intentará resolverlo. El soporte dedicado cubre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn y Telegram; fuera de ellas, el extractor lee el contenido que publica la página, así que los enlaces de sitios de video más pequeños, blogs y medios de noticias suelen resolverse también. Los sitios que exigen iniciar sesión o esconden su contenido no se pueden descargar."
     },
     {
       "q": "¿Puedo importar una lista de reproducción o colección completa de una vez?",
@@ -428,10 +428,10 @@
       "metaDescription": "Pega un enlace de cualquier sitio y guarda el video en HD, extrae el audio en MP3 o el contenido incrustado: gratis, sin iniciar sesión ni instalar nada.",
       "h1": "Descargar videos de cualquier web: pega el enlace",
       "tagline": "Un solo campo para todos los sitios: obtén el video, el audio o las imágenes de cualquier enlace público.",
-      "intro": "Pega cualquier enlace público de video, de las trece plataformas dedicadas o de cualquier otro sitio. El extractor lee lo que publica la propia página (og:video, JSON-LD, configuraciones del reproductor, archivos directos) y comprueba que sirva contenido real antes de ofrecértelo, así que lo que obtienes es un archivo que se reproduce y no una página de error renombrada como .mp4. Si una página ofrece su video al público, normalmente se puede resolver. Sin iniciar sesión y sin instalar nada.",
+      "intro": "Pega cualquier enlace público de video, de las catorce plataformas dedicadas o de cualquier otro sitio. El extractor lee lo que publica la propia página (og:video, JSON-LD, configuraciones del reproductor, archivos directos) y comprueba que sirva contenido real antes de ofrecértelo, así que lo que obtienes es un archivo que se reproduce y no una página de error renombrada como .mp4. Si una página ofrece su video al público, normalmente se puede resolver. Sin iniciar sesión y sin instalar nada.",
       "cards": [
         {
-          "title": "🌐 Más allá de las trece grandes",
+          "title": "🌐 Más allá de las catorce grandes",
           "body": "Sitios de video pequeños, blogs, medios de noticias, foros: si la página publica su contenido, el extractor genérico encuentra la mejor versión y te entrega el archivo."
         },
         {
@@ -446,7 +446,7 @@
       "faqs": [
         {
           "q": "¿Funciona con cualquier sitio web?",
-          "a": "Funciona donde la página sirva su contenido de forma pública. El soporte dedicado cubre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion y LinkedIn; fuera de ellas, el extractor lee lo que publica la página, lo que resuelve la mayoría de los sitios de video más pequeños, blogs y páginas de noticias."
+          "a": "Funciona donde la página sirva su contenido de forma pública. El soporte dedicado cubre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn y Telegram; fuera de ellas, el extractor lee lo que publica la página, lo que resuelve la mayoría de los sitios de video más pequeños, blogs y páginas de noticias."
         },
         {
           "q": "¿Y si un sitio bloquea el acceso automatizado?",
@@ -1401,6 +1401,75 @@
         {
           "name": "Guarda el archivo",
           "text": "Guárdalo en tu móvil u ordenador. No hace falta iniciar sesión ni instalar nada."
+        }
+      ]
+    },
+    "telegram-downloader": {
+      "brandLabel": "Descargador de videos de Telegram",
+      "metaTitle": "Descargar videos de Telegram de canales públicos",
+      "metaDescription": "Descarga el video o las fotos de una publicación de un canal público de Telegram. Pega un enlace t.me y guarda el MP4 o las imágenes: gratis, sin login ni apps.",
+      "h1": "Descargar videos de Telegram: canales públicos, sin login",
+      "tagline": "Guarda el video o las fotos de una publicación de un canal público de Telegram como archivos que puedes conservar.",
+      "intro": "Pega el enlace de una publicación de un canal público de Telegram (t.me/<canal>/<número>) y la herramienta la resuelve, muestra una vista previa y te deja guardar un clip como MP4 o las fotos como imágenes. Sin cuenta de Telegram, sin extensión y sin instalar nada. Los chats privados, los grupos y los canales que no son públicos no se pueden obtener.",
+      "cards": [
+        {
+          "title": "🎬 Clips guardados como MP4",
+          "body": "Una publicación pública que contiene un clip de video se resuelve en un archivo de video que puedes previsualizar y guardar después."
+        },
+        {
+          "title": "🖼️ Fotos y álbumes",
+          "body": "Una publicación con una foto o un álbum te da cada imagen para guardar, sin hacer capturas de pantalla."
+        },
+        {
+          "title": "🚪 Claros con los límites",
+          "body": "Solo se pueden leer las publicaciones de canales públicos. Los chats privados, los grupos y los canales no públicos no se pueden obtener, y la herramienta lo dice."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "¿Puedo descargar cualquier video de Telegram?",
+          "a": "Solo de publicaciones de canales públicos, las que también puedes abrir en t.me/<canal>/<número> sin iniciar sesión. Los chats privados, los grupos y los canales que exigen invitación no se pueden obtener."
+        },
+        {
+          "q": "¿Qué enlaces de Telegram funcionan?",
+          "a": "Los enlaces de publicación con la forma t.me/<canal>/<número>, la vista web t.me/s/<canal>/<número> y los enlaces telegram.me. El enlace de un canal entero, un enlace de invitación o un enlace privado t.me/c/… no es una publicación pública suelta."
+        },
+        {
+          "q": "¿Necesito una cuenta de Telegram?",
+          "a": "No. La herramienta nunca te pide tu login de Telegram ni usa tu cuenta. Solo lee lo que publica una publicación pública."
+        },
+        {
+          "q": "¿Por qué mi enlace de Telegram no se procesa?",
+          "a": "Puede que el canal no sea público, que la publicación no tenga video ni fotos, o que Telegram no muestre en su vista pública un video muy grande. Abre el enlace en un navegador sin sesión: si no ves el contenido allí, la herramienta tampoco puede obtenerlo."
+        },
+        {
+          "q": "¿Qué obtengo cuando funciona?",
+          "a": "El archivo de video o las fotos que publica la publicación, con vista previa antes. Telegram decide la calidad, así que la herramienta no ofrece elegirla."
+        }
+      ],
+      "featureList": [
+        "Descarga videos y fotos de publicaciones de canales públicos de Telegram",
+        "Funciona con enlaces de publicación t.me, t.me/s y telegram.me",
+        "Sin iniciar sesión en Telegram, sin extensión y sin instalar nada",
+        "Mensaje claro cuando una publicación no es pública",
+        "Previsualiza el contenido antes de descargar"
+      ],
+      "steps": [
+        {
+          "name": "Copia el enlace de la publicación",
+          "text": "En Telegram, abre la publicación de un canal público, tócala o haz clic derecho y elige Copiar enlace de la publicación. Se parece a t.me/nombrecanal/123."
+        },
+        {
+          "name": "Pégalo en la caja",
+          "text": "Pega el enlace en la caja de la parte superior de esta página. La herramienta lee la publicación y muestra una vista previa."
+        },
+        {
+          "name": "Revisa la vista previa",
+          "text": "Una publicación con video muestra el clip. Una con fotos muestra cada imagen, para que elijas qué guardar."
+        },
+        {
+          "name": "Guarda el archivo",
+          "text": "Guarda el MP4 o las imágenes en tu móvil u ordenador. No hace falta iniciar sesión ni instalar nada."
         }
       ]
     }

@@ -1701,8 +1701,8 @@ export class Downloader {
     const methods: Array<() => Promise<VideoData | null>> = []
     const own = ownEndpoint[platform]
     if (own) methods.push(own)
-    // Telegram is no platform of its own (no landing page, no enum value), so
-    // it is keyed on the link: a public channel post reads from its embed page.
+    // Telegram has a landing page but no platform enum value (it detects as
+    // generic), so it is keyed on the link: a public channel post reads from its embed page.
     const telegram = platform === 'generic' ? telegramPostRef(url) : null
     if (telegram) methods.push(() => this.tryTelegramPost(url, telegram))
     methods.push(() => this.tryCobaltInstances(url))

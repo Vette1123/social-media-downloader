@@ -482,7 +482,7 @@ function PlanFacts({ facts }: { facts: PlanFact[] }) {
       {facts.map((fact) => (
         <div key={fact.label} className='flex items-baseline justify-between gap-4 py-2.5'>
           <dt className='text-white/50'>{fact.label}</dt>
-          <dd className='text-right font-medium text-white/85 tabular-nums'>{fact.value}</dd>
+          <dd className='text-end font-medium text-white/85 tabular-nums'>{fact.value}</dd>
         </div>
       ))}
     </dl>
@@ -708,7 +708,7 @@ function FlagRow({
           {label}
         </label>
       </div>
-      <p className='mt-1.5 pl-7 text-xs text-white/45'>{detail}</p>
+      <p className='mt-1.5 ps-7 text-xs text-white/60'>{detail}</p>
     </div>
   )
 }

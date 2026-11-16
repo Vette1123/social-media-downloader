@@ -22,6 +22,7 @@ import {
   VimeoIcon,
   DailymotionIcon,
   LinkedInIcon,
+  TelegramIcon,
   YouTubeIcon,
 } from '@/components/icons'
 import { DevAppLinks } from '@/components/DevAppLinks'
@@ -94,6 +95,7 @@ const platformLinkTiles: Record<
   'vimeo-downloader': { tile: 'bg-[#1AB7EA]', Icon: VimeoIcon },
   'dailymotion-downloader': { tile: 'bg-[#0D0D0D]', Icon: DailymotionIcon },
   'linkedin-video-downloader': { tile: 'bg-[#0A66C2]', Icon: LinkedInIcon },
+  'telegram-downloader': { tile: 'bg-[#26A5E4]', Icon: TelegramIcon },
 }
 
 // The 5 brand tiles that sit above the headline — each links to its dedicated
@@ -395,6 +397,7 @@ export function HomeLanding({ locale = 'en' }: { locale?: Locale }) {
                 <li className='truncate'>vimeo.com/…</li>
                 <li className='truncate'>dailymotion.com/video/… · dai.ly/…</li>
                 <li className='truncate'>linkedin.com/posts/…</li>
+                <li className='truncate'>t.me/channel/…</li>
               </ul>
             </div>
 

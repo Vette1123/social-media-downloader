@@ -670,7 +670,7 @@ export function BatchPanel() {
             placeholder={d('Playlist, subreddit, board, or channel link — expand into the queue')}
             aria-label={d('Collection link')}
             disabled={isRunning || isImporting}
-            className='min-w-0 flex-1 rounded-lg bg-transparent px-2 py-1.5 text-xs text-white caret-cyan-300 outline-none placeholder:text-white/35 disabled:opacity-60'
+            className='min-w-0 flex-1 rounded-lg bg-transparent px-2 py-1.5 text-xs text-white caret-cyan-300 outline-none placeholder:text-white/50 disabled:opacity-60'
           />
           <button
             type='button'

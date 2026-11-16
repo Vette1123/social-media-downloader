@@ -63,6 +63,7 @@ const PLATFORM_SLUGS = [
   'vimeo-downloader',
   'dailymotion-downloader',
   'linkedin-video-downloader',
+  'telegram-downloader',
 ]
 
 const PNG_MAGIC = '89504e470d0a1a0a'

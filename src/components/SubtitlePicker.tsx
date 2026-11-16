@@ -174,7 +174,7 @@ export function SubtitlePicker({ videoId }: { videoId: string }) {
           {/* Format choice sits above the tracks so it reads as applying to
               all of them, and persists — see FMT_KEY. */}
           <div className='mb-2 flex items-center gap-2'>
-            <span className='text-[11px] text-white/45'>{d('Format')}</span>
+            <span className='text-[11px] text-white/60'>{d('Format')}</span>
             <div
               role='group'
               aria-label={d('Subtitle format')}

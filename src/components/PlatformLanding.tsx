@@ -17,6 +17,7 @@ import {
   VimeoIcon,
   DailymotionIcon,
   LinkedInIcon,
+  TelegramIcon,
   YouTubeIcon,
 } from '@/components/icons'
 import { SupportPanel } from '@/components/SupportPanel'
@@ -54,6 +55,7 @@ const OFFER_PLATFORM_BY_SLUG: Record<PlatformSlug, SupportedPlatform> = {
   'vimeo-downloader': 'vimeo',
   'dailymotion-downloader': 'dailymotion',
   'linkedin-video-downloader': 'linkedin',
+  'telegram-downloader': 'generic',
 }
 
 const platformIcons: Record<PlatformSlug, { Icon: React.ComponentType<{ className?: string }>; tile: string }> = {
@@ -112,6 +114,10 @@ const platformIcons: Record<PlatformSlug, { Icon: React.ComponentType<{ classNam
   'linkedin-video-downloader': {
     Icon: LinkedInIcon,
     tile: 'bg-[#0A66C2]',
+  },
+  'telegram-downloader': {
+    Icon: TelegramIcon,
+    tile: 'bg-[#26A5E4]',
   },
 }
 

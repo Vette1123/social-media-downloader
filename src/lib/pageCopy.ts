@@ -124,7 +124,7 @@ export const pageCopy = {
     languages: 'Languages',
     questions: 'Questions or takedown notices:',
     disclaimer:
-      'Public posts only. {site} is an independent tool, not affiliated with or endorsed by TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion or LinkedIn; their names and logos belong to their owners and identify which links this tool accepts.',
+      'Public posts only. {site} is an independent tool, not affiliated with or endorsed by TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn or Telegram; their names and logos belong to their owners and identify which links this tool accepts.',
   },
   legal: legalCopy,
   howTo: {

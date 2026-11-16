@@ -108,7 +108,7 @@ export function LazyFAQ({
               radius='xl'
               className='group overflow-hidden'
             >
-              <summary className='flex flex-1 list-none items-center justify-between gap-4 px-4 py-4 text-left text-sm md:text-base font-semibold text-white transition-colors hover:text-cyan-200'>
+              <summary className='flex flex-1 list-none items-center justify-between gap-4 px-4 py-4 text-start text-sm md:text-base font-semibold text-white transition-colors hover:text-cyan-200'>
                 {f.q}
                 {/* Same glyph the interactive version uses, so the swap is
                     invisible — one definition, in icons.tsx. */}

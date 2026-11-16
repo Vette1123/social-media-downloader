@@ -179,7 +179,7 @@
       "support": "Dukungan",
       "languages": "Bahasa",
       "questions": "Pertanyaan atau pemberitahuan penghapusan:",
-      "disclaimer": "Hanya postingan publik. {site} adalah alat independen, tidak berafiliasi dengan atau didukung oleh TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion atau LinkedIn; nama dan logo mereka milik pemiliknya masing-masing dan menunjukkan link mana yang diterima alat ini."
+      "disclaimer": "Hanya postingan publik. {site} adalah alat independen, tidak berafiliasi dengan atau didukung oleh TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn atau Telegram; nama dan logo mereka milik pemiliknya masing-masing dan menunjukkan link mana yang diterima alat ini."
     },
     "howTo": {
       "homeName": "Cara mengunduh video publik TikTok, X, Instagram, Facebook atau YouTube",
@@ -318,7 +318,7 @@
           {
             "heading": "Merek dagang dan afiliasi",
             "paragraphs": [
-              "{site} adalah alat independen dan {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn, atau platform lain mana pun yang disebut di situs ini. Nama dan logo tersebut milik pemiliknya masing-masing dan hanya dipakai untuk menjelaskan link mana yang diterima alat ini."
+              "{site} adalah alat independen dan {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn, Telegram, atau platform lain mana pun yang disebut di situs ini. Nama dan logo tersebut milik pemiliknya masing-masing dan hanya dipakai untuk menjelaskan link mana yang diterima alat ini."
             ]
           },
           {
@@ -393,8 +393,8 @@
       "a": "Ya. Berjalan sepenuhnya di browser pada perangkat modern apa saja — iPhone, iPad, ponsel Android, tablet, Mac, Windows atau Linux. Tidak perlu instal aplikasi."
     },
     {
-      "q": "Apakah bisa dipakai untuk situs selain tiga belas platform itu?",
-      "a": "Ya — tempel link video publik apa saja dan aplikasi akan mencoba memprosesnya. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion dan LinkedIn; di luar itu, ekstraktor membaca media apa pun yang dipublikasikan halaman, jadi link dari situs hosting video kecil, blog, dan situs berita biasanya juga bisa diproses. Situs yang mewajibkan login atau menyembunyikan medianya tidak bisa diambil."
+      "q": "Apakah bisa dipakai untuk situs selain empat belas platform itu?",
+      "a": "Ya — tempel link video publik apa saja dan aplikasi akan mencoba memprosesnya. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn dan Telegram; di luar itu, ekstraktor membaca media apa pun yang dipublikasikan halaman, jadi link dari situs hosting video kecil, blog, dan situs berita biasanya juga bisa diproses. Situs yang mewajibkan login atau menyembunyikan medianya tidak bisa diambil."
     },
     {
       "q": "Bisakah saya mengimpor seluruh playlist atau koleksi sekaligus?",
@@ -428,10 +428,10 @@
       "metaDescription": "Tempel link dari situs apa saja dan simpan videonya dalam HD, ekstrak audio MP3, atau ambil media tersemat — gratis, tanpa login, tanpa instal.",
       "h1": "Download Video dari Situs Apa Saja — Tempel Link",
       "tagline": "Satu kolom tempel untuk semua situs: ambil video, audio, atau gambar dari link publik apa saja.",
-      "intro": "Tempel link video publik apa saja — dari tiga belas platform khusus atau dari mana pun. Ekstraktor membaca apa yang dipublikasikan halaman itu sendiri (og:video, JSON-LD, konfigurasi player, file langsung) dan memastikan link itu benar-benar menyajikan media sebelum menawarkannya, jadi yang kamu dapat adalah file yang bisa diputar, bukan halaman error yang namanya diganti jadi .mp4. Jika sebuah halaman menyajikan videonya ke publik, biasanya ini bisa memprosesnya. Tanpa login, tidak ada yang dipasang.",
+      "intro": "Tempel link video publik apa saja — dari empat belas platform khusus atau dari mana pun. Ekstraktor membaca apa yang dipublikasikan halaman itu sendiri (og:video, JSON-LD, konfigurasi player, file langsung) dan memastikan link itu benar-benar menyajikan media sebelum menawarkannya, jadi yang kamu dapat adalah file yang bisa diputar, bukan halaman error yang namanya diganti jadi .mp4. Jika sebuah halaman menyajikan videonya ke publik, biasanya ini bisa memprosesnya. Tanpa login, tidak ada yang dipasang.",
       "cards": [
         {
-          "title": "🌐 Di luar tiga belas platform besar",
+          "title": "🌐 Di luar empat belas platform besar",
           "body": "Situs hosting video kecil, blog, situs berita, forum — jika halamannya mempublikasikan medianya, ekstraktor umum menemukan versi terbaiknya dan menyerahkan filenya."
         },
         {
@@ -446,7 +446,7 @@
       "faqs": [
         {
           "q": "Apakah ini bisa dipakai di situs apa saja?",
-          "a": "Bisa selama halamannya menyajikan medianya secara publik. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion dan LinkedIn; di luar itu, ekstraktor membaca apa pun yang dipublikasikan halaman, yang cukup untuk sebagian besar situs hosting video kecil, blog, dan halaman berita."
+          "a": "Bisa selama halamannya menyajikan medianya secara publik. Dukungan khusus mencakup TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn dan Telegram; di luar itu, ekstraktor membaca apa pun yang dipublikasikan halaman, yang cukup untuk sebagian besar situs hosting video kecil, blog, dan halaman berita."
         },
         {
           "q": "Bagaimana jika sebuah situs memblokir akses otomatis?",
@@ -1401,6 +1401,75 @@
         {
           "name": "Simpan file",
           "text": "Simpan ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
+        }
+      ]
+    },
+    "telegram-downloader": {
+      "brandLabel": "Pengunduh video Telegram",
+      "metaTitle": "Unduh Video Telegram dari Channel Publik",
+      "metaDescription": "Unduh video atau foto dari postingan channel Telegram publik. Tempel link t.me lalu simpan MP4 atau gambarnya: gratis, tanpa login, tanpa aplikasi.",
+      "h1": "Unduh Video Telegram: Channel Publik, Tanpa Login",
+      "tagline": "Simpan video atau foto dari postingan channel Telegram publik sebagai file yang bisa Anda simpan.",
+      "intro": "Tempel link postingan di channel Telegram publik (t.me/<channel>/<nomor>) dan alat ini akan memprosesnya, menampilkan pratinjau, lalu membiarkan Anda menyimpan klip sebagai MP4 atau foto sebagai gambar. Tanpa akun Telegram, tanpa ekstensi, tanpa instalasi. Obrolan pribadi, grup, dan channel yang tidak publik tidak bisa diambil.",
+      "cards": [
+        {
+          "title": "🎬 Klip disimpan sebagai MP4",
+          "body": "Postingan publik yang berisi klip video diproses menjadi satu file video yang bisa Anda pratinjau dulu lalu simpan."
+        },
+        {
+          "title": "🖼️ Foto dan album",
+          "body": "Postingan dengan satu foto atau album memberi Anda setiap gambar untuk disimpan, tanpa tangkapan layar."
+        },
+        {
+          "title": "🚪 Jujur soal batasan",
+          "body": "Hanya postingan channel publik yang bisa dibaca. Obrolan pribadi, grup, dan channel tidak publik tidak bisa diambil, dan alat ini menyatakannya."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Bisakah saya mengunduh video Telegram apa pun?",
+          "a": "Hanya dari postingan channel publik, yang juga bisa dibuka di t.me/<channel>/<nomor> tanpa masuk akun. Obrolan pribadi, grup, dan channel yang memerlukan undangan tidak bisa diambil."
+        },
+        {
+          "q": "Link Telegram apa yang bisa dipakai?",
+          "a": "Link postingan berbentuk t.me/<channel>/<nomor>, tampilan web t.me/s/<channel>/<nomor>, dan link telegram.me. Link seluruh channel, link undangan, atau link pribadi t.me/c/… bukan satu postingan publik."
+        },
+        {
+          "q": "Apakah saya perlu akun Telegram?",
+          "a": "Tidak. Alat ini tidak pernah meminta login Telegram Anda dan tidak memakai akun Anda. Alat ini hanya membaca apa yang dipublikasikan sebuah postingan publik."
+        },
+        {
+          "q": "Mengapa link Telegram saya gagal diproses?",
+          "a": "Channel mungkin tidak publik, postingan mungkin tidak memuat video atau foto, atau Telegram mungkin tidak menampilkan video yang sangat besar di pratinjau publiknya. Buka link di peramban tanpa login: jika media tidak terlihat di sana, alat ini juga tidak bisa mengambilnya."
+        },
+        {
+          "q": "Apa yang saya dapat jika berhasil?",
+          "a": "File video atau foto yang dipublikasikan postingan, dengan pratinjau lebih dulu. Telegram yang menentukan kualitas, jadi alat ini tidak menawarkan pilihan."
+        }
+      ],
+      "featureList": [
+        "Unduh video dan foto dari postingan channel Telegram publik",
+        "Berfungsi dengan link postingan t.me, t.me/s, dan telegram.me",
+        "Tanpa login Telegram, tanpa ekstensi, tanpa instalasi",
+        "Pesan jelas saat postingan tidak publik",
+        "Pratinjau media sebelum mengunduh"
+      ],
+      "steps": [
+        {
+          "name": "Salin link postingan",
+          "text": "Di Telegram, buka postingan di channel publik, ketuk atau klik kanan, lalu pilih Salin Tautan Postingan. Bentuknya seperti t.me/namachannel/123."
+        },
+        {
+          "name": "Tempel di kotak",
+          "text": "Tempel link di kotak pada bagian atas halaman ini. Alat ini membaca postingan dan menampilkan pratinjau."
+        },
+        {
+          "name": "Periksa pratinjau",
+          "text": "Postingan dengan video menampilkan kliknya. Postingan dengan foto menampilkan setiap gambar, sehingga Anda bisa memilih yang disimpan."
+        },
+        {
+          "name": "Simpan file",
+          "text": "Simpan MP4 atau gambar ke ponsel atau komputer. Tanpa login dan tanpa aplikasi."
         }
       ]
     }
