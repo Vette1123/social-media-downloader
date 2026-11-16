@@ -19,6 +19,7 @@
  */
 
 import { useSyncExternalStore } from 'react'
+import { canUseLocalStorage } from '@/lib/storageAccess'
 
 const COUNT_KEY = 'smd:resolves'
 /** Nudges the visitor has closed. One key, so a new nudge cannot resurrect an old dismissal. */
@@ -91,7 +92,7 @@ function readDismissed(): string[] {
 
 function getSnapshot(): ProSignals {
   if (cache) return cache
-  if (typeof localStorage === 'undefined') return EMPTY
+  if (!canUseLocalStorage()) return EMPTY
   cache = { today: readCount(), dismissed: readDismissed() }
   return cache
 }
@@ -106,7 +107,7 @@ function getServerSnapshot(): ProSignals {
  * lands, next to the history write.
  */
 export function recordResolve(): void {
-  if (typeof localStorage === 'undefined') return
+  if (!canUseLocalStorage()) return
   try {
     localStorage.setItem(COUNT_KEY, JSON.stringify({ day: dayKey(new Date()), n: readCount() + 1 }))
   } catch {
@@ -117,7 +118,7 @@ export function recordResolve(): void {
 }
 
 export function dismissNudge(id: string): void {
-  if (typeof localStorage === 'undefined') return
+  if (!canUseLocalStorage()) return
   try {
     const next = [...new Set([...readDismissed(), id])]
     localStorage.setItem(DISMISSED_KEY, JSON.stringify(next))
