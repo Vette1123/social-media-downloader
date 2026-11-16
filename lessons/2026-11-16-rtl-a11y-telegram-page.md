@@ -30,6 +30,16 @@
 - Stashing for a red/green check is blocked here (shared tree); copy the one
   file aside, write HEAD's version over it, run, copy back.
 
+- Confirmed "the bot FAQ is live" by grepping the live page for the bot's
+  handle, but the footer already links it; the deploy was still queued. Grep
+  for a phrase only the new copy contains ("without leaving Telegram").
+- A string replace across locale files hit the same sentence on other
+  platforms (shared FAQ wording). Edit the JSON by path instead: load, change
+  the one field, write back with 2-space indent + CRLF (byte-identical
+  round-trip, checked first).
+- `release-notes.test.mjs` timed out twice (7-9 s vs the 5 s default) from
+  git spawns under the full parallel run; the file now sets 30 s.
+
 ## What worked
 - `pnpm shots --routes /ar,...` after the build caught the regression an audit
   and typecheck could not.
