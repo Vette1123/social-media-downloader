@@ -56,6 +56,11 @@ function titleOf(raw: unknown): string {
   return title.length > MAX_TITLE ? `${title.slice(0, MAX_TITLE - 1)}…` : title
 }
 
+/** Replies use parse_mode HTML, where a raw `&` or `<` voids the whole message. */
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
 function shortError(e: unknown): string {
   const message = (e as Error)?.message ?? 'unknown failure'
   return message.length > 160 ? `${message.slice(0, 159)}…` : message
@@ -120,17 +125,17 @@ export async function handleTelegram(request: Request): Promise<Response> {
     if (!fileUrl) {
       await sendMessage(
         chatId,
-        `That link resolved, but yielded nothing I can hand over:\n<b>${titleOf(videoData.title)}</b>`,
+        `That link resolved, but yielded nothing I can hand over:\n<b>${escapeHtml(titleOf(videoData.title))}</b>`,
       )
       return Response.json({ ok: true })
     }
     await sendMessage(
       chatId,
-      `<b>${titleOf(videoData.title)}</b>${videoData.author ? `\n<i>${videoData.author}</i>` : ''}\n${link}`,
+      `<b>${escapeHtml(titleOf(videoData.title))}</b>${videoData.author ? `\n<i>${escapeHtml(videoData.author)}</i>` : ''}\n${escapeHtml(link)}`,
       fileUrl,
     )
   } catch (e) {
-    await sendMessage(chatId, `Could not read that link: ${shortError(e)}`)
+    await sendMessage(chatId, `Could not read that link: ${escapeHtml(shortError(e))}`)
   }
   return Response.json({ ok: true })
 }

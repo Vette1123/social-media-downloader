@@ -8,7 +8,7 @@ vi.mock('./downloader', () => ({
     async downloadVideo(url: string) {
       return {
         id: 'kinetic',
-        title: 'A fine catch',
+        title: url.includes('marks') ? 'Tom & Jerry <3' : 'A fine catch',
         url,
         thumbnail: '',
         duration: 0,
@@ -137,5 +137,17 @@ describe('the telegram webhook', () => {
     )
     const response = await handleTelegram(update('hello again'))
     expect(response.status).toBe(200)
+  })
+
+  // Replies are parse_mode HTML: a raw `&` or `<` in a title or a link makes
+  // Telegram reject the whole message, and the bot looks dead.
+  it('escapes the title and link it echoes back', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'token-1'
+    vi.stubGlobal('fetch', stubFetch())
+    await handleTelegram(update('https://example.com/marks?a=1&b=2'))
+    const text = String(sent.at(-1)?.body.text)
+    expect(text).toContain('Tom &amp; Jerry &lt;3')
+    expect(text).toContain('https://example.com/marks?a=1&amp;b=2')
+    expect(text).not.toMatch(/&(?!amp;|lt;|gt;)/)
   })
 })
