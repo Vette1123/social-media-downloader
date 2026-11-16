@@ -1,5 +1,20 @@
 @import 'tailwindcss';
 
+/* Browser surfaces in the palette. In the base layer on purpose: any
+   component's own focus-visible ring or outline-none (utilities layer)
+   still wins, and everything that sets none falls back to this ring
+   instead of no indicator at all. */
+@layer base {
+  :where(a, button, summary, select, [role='button'], [tabindex]):focus-visible {
+    outline: 2px solid rgb(34 211 238 / 0.7);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: rgb(34 211 238 / 0.3);
+    color: #fff;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    Ink + Cyan theme. Near-black graphite ground, a single electric-cyan accent,
    one locked gradient. Replaces the old purple-gradient look.

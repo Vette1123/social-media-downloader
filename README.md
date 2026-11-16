@@ -1,6 +1,6 @@
 # Social Media Downloader
 
-> Download public TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion & LinkedIn posts in their original quality — HD video, reels, Shorts, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits. Installs as an app.
+> Download public TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn & Telegram posts in their original quality — HD video, reels, Shorts, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits. Installs as an app.
 
 ![Social Media Downloader — download HD video, reels, Shorts, MP3 audio and photos from public posts on TikTok, X, Instagram, Facebook, YouTube and more](docs/social-preview.png)
 
@@ -14,7 +14,7 @@
 
 ### 🚀 [Try it live →](https://www.socialdownloader.space)
 
-A free downloader for public posts on **TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion and LinkedIn**. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack. No login and no install are required, and it runs in your browser. It reaches only what a logged-out visitor can already see: no private accounts, no paywalled or subscriber-only posts, no DRM.
+A free downloader for public posts on **TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn and Telegram**. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack. No login and no install are required, and it runs in your browser. It reaches only what a logged-out visitor can already see: no private accounts, no paywalled or subscriber-only posts, no DRM.
 
 It's also an **installable app (PWA)**: add it to your home screen and share links straight from the TikTok, Instagram, or YouTube app, with no browser and no copy-paste.
 
@@ -26,7 +26,7 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 
 ## Why use it
 
-- 13 platforms, one paste box. TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion and LinkedIn, auto-detected from the URL.
+- 14 platforms, one paste box. TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn and Telegram, auto-detected from the URL.
 - Any other link too. Paste a URL from anywhere else and the extractor still goes to work: it reads whatever media the page publishes (og:video, JSON-LD, player configs, download links), with a self-hosted yt-dlp resolver behind it for everything stricter. If the page serves its media to the public, this usually resolves it.
 - Original quality, HD by default. The source file with no re-encode, a one-tap fallback to SD, and MP3 audio extraction wherever a stream resolves.
 - No login, no API key, no daily limit. Nothing to sign up for and nothing installed unless you want the app.
@@ -103,6 +103,10 @@ Built with Next.js 16, React 19, TypeScript, Tailwind CSS 4, and Motion by [Moha
 **LinkedIn**
 
 - Download videos from public posts at `linkedin.com/posts/…`, `linkedin.com/feed/update/…` and `lnkd.in/…`; posts that need a login can't be fetched
+
+**Telegram**
+
+- Download the clip or photos from public channel posts at `t.me/<channel>/<id>`, `t.me/s/…` and `telegram.me/…`; private chats, groups and non-public channels can't be fetched
 
 **Any other site**
 

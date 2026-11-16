@@ -52,7 +52,7 @@ export const platforms: Platform[] = [
     tagline:
       'One paste box for every site: resolve the video, the audio, or the images from any public link.',
     intro:
-      'Paste any public video link — from the thirteen dedicated platforms or anywhere else. The extractor reads what the page itself publishes (og:video, JSON-LD, player configs, direct files) and verifies it serves real media before offering it, so what you get is a file that plays rather than an error page renamed .mp4. If a page serves its video to the public, this usually resolves it. No login, nothing installed.',
+      'Paste any public video link — from the fourteen dedicated platforms or anywhere else. The extractor reads what the page itself publishes (og:video, JSON-LD, player configs, direct files) and verifies it serves real media before offering it, so what you get is a file that plays rather than an error page renamed .mp4. If a page serves its video to the public, this usually resolves it. No login, nothing installed.',
     steps: [
       {
         name: 'Copy the video link',
@@ -85,7 +85,7 @@ export const platforms: Platform[] = [
     ],
     cards: [
       {
-        title: '🌐 Beyond the big thirteen',
+        title: '🌐 Beyond the big fourteen',
         body: 'Small video hosts, blogs, news sites, forums — if the page publishes its media, the generic extractor finds the best rendition and hands you the file.',
       },
       {
@@ -100,7 +100,7 @@ export const platforms: Platform[] = [
     faqs: [
       {
         q: 'Does this work with any website?',
-        a: 'It works wherever a page serves its media publicly. Dedicated support covers TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion and LinkedIn; beyond those, the extractor reads whatever the page publishes, which resolves most smaller video hosts, blogs and news pages.',
+        a: 'It works wherever a page serves its media publicly. Dedicated support covers TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn and Telegram; beyond those, the extractor reads whatever the page publishes, which resolves most smaller video hosts, blogs and news pages.',
       },
       {
         q: 'What if a site blocks automated access?',
@@ -1258,6 +1258,91 @@ export const platforms: Platform[] = [
       'No LinkedIn login, no extension, no install',
       'Clear message when a post needs a login',
       'Preview the video before downloading',
+    ],
+  },
+  {
+    slug: 'telegram-downloader',
+    name: 'Telegram',
+    brandLabel: 'Telegram video downloader',
+    metaTitle: 'Telegram Video Downloader — Save Public Channel Posts',
+    metaDescription:
+      'Download the video or photos from a public Telegram channel post. Paste a t.me link and save the MP4 or images — free, no login, no app install.',
+    h1: 'Telegram Video Downloader — Public Channel Posts, No Login',
+    tagline:
+      'Save the video or photos from a public Telegram channel post as files you can keep.',
+    intro:
+      'Paste a link to a post in a public Telegram channel — t.me/<channel>/<number> — and the tool resolves it, shows a preview, and lets you save a video clip as an MP4 or the photos as images. No Telegram account, no extension, nothing installed. Private chats, groups and channels that are not public can’t be fetched.',
+    steps: [
+      {
+        name: 'Copy the post link',
+        text: 'In Telegram, open the post in a public channel, tap or right-click it and choose Copy Post Link. It looks like t.me/channelname/123.',
+      },
+      {
+        name: 'Paste it into the box',
+        text: 'Paste the link into the box at the top of this page. The tool reads the post and shows a preview.',
+      },
+      {
+        name: 'Check the preview',
+        text: 'A post with a video shows the clip. A post with photos shows each picture, so you can choose what to save.',
+      },
+      {
+        name: 'Save the file',
+        text: 'Save the MP4 or the images to your phone or computer. No login and no app needed.',
+      },
+    ],
+    accent: {
+      chip: 'bg-[#26A5E4] text-white',
+      grad: 'from-cyan-400 via-sky-500 to-blue-600',
+      ring: 'ring-sky-500/30',
+      glow: 'shadow-sky-500/30',
+    },
+    urlExamples: [
+      't.me/channelname/123',
+      't.me/s/channelname/123',
+      'telegram.me/channelname/123',
+    ],
+    cards: [
+      {
+        title: '🎬 Clips saved as MP4',
+        body: 'A public post that contains a video clip resolves to a video file you can preview first and then save.',
+      },
+      {
+        title: '🖼️ Photos and albums',
+        body: 'A post with one photo or an album gives you each image to save, without a screenshot.',
+      },
+      {
+        title: '🚪 Honest about limits',
+        body: 'Only public channel posts are readable. Private chats, groups and non-public channels can’t be fetched, and the tool says so.',
+      },
+    ],
+    faqs: [
+      {
+        q: 'Can I download any Telegram video?',
+        a: 'Only from posts in public channels, the ones you can also open at t.me/<channel>/<number> without signing in. Private chats, groups and channels that need an invite can’t be fetched.',
+      },
+      {
+        q: 'Which Telegram links work?',
+        a: 'Post links in the form t.me/<channel>/<number>, the t.me/s/<channel>/<number> web preview form, and telegram.me links. A link to a whole channel, an invite link or a t.me/c/… private link isn’t a single public post.',
+      },
+      {
+        q: 'Do I need a Telegram account?',
+        a: 'No. The tool never asks for your Telegram login and doesn’t use your account. It only reads what a public post publishes.',
+      },
+      {
+        q: 'Why does my Telegram link fail to process?',
+        a: 'The channel may not be public, the post may have no video or photo, or Telegram may not show a very large video in its public preview. Open the link in a logged-out browser: if you can’t see the media there, the tool can’t fetch it either.',
+      },
+      {
+        q: 'What do I get when it works?',
+        a: 'The video file or the photos the post publishes, with a preview first. Telegram decides the quality, so the tool doesn’t offer a choice.',
+      },
+    ],
+    featureList: [
+      'Download videos and photos from public Telegram channel posts',
+      'Works with t.me, t.me/s and telegram.me post links',
+      'No Telegram login, no extension, no install',
+      'Clear message when a post is not public',
+      'Preview the media before downloading',
     ],
   },
 ]

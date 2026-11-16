@@ -48,7 +48,7 @@ export function HomeControl() {
       <Link
         href={localePath(locale, '/')}
         title={t('homeTitle')}
-        className='btn-press pointer-events-auto group flex items-center gap-2 rounded-full border border-white/10 bg-black/50 p-2 backdrop-blur transition-colors hover:border-white/25 sm:py-1.5 sm:pr-3.5 sm:pl-3'
+        className='btn-press pointer-events-auto group flex items-center gap-2 rounded-full border border-white/10 bg-black/50 p-2 backdrop-blur transition-colors hover:border-white/25 sm:py-1.5 sm:pe-3.5 sm:ps-3'
       >
         <HomeIcon className='h-4 w-4 text-white/70 transition-colors group-hover:text-white' />
         {/* Hidden on phones, where this shares the line with the account pill,

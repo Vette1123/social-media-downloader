@@ -28,7 +28,7 @@
       },
       "h1Lead": "Baixe qualquer vídeo público,",
       "h1Accent": "na qualidade original",
-      "intro": "Salve o vídeo, extraia o áudio em MP3 ou pegue galerias de imagens completas de posts públicos do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion e LinkedIn.",
+      "intro": "Salve o vídeo, extraia o áudio em MP3 ou pegue galerias de imagens completas de posts públicos do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn e Telegram.",
       "featuresTitle": "Tudo a partir de um único link",
       "featuresSub": "Um só colar, quatro formas de salvar. Sem app, sem conta, nada para instalar.",
       "features": {
@@ -179,7 +179,7 @@
       "support": "Apoio",
       "languages": "Idiomas",
       "questions": "Dúvidas ou avisos de remoção:",
-      "disclaimer": "Somente posts públicos. {site} é uma ferramenta independente, sem afiliação nem aprovação do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion ou LinkedIn; os nomes e logotipos pertencem aos seus donos e indicam quais links esta ferramenta aceita."
+      "disclaimer": "Somente posts públicos. {site} é uma ferramenta independente, sem afiliação nem aprovação do TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn ou Telegram; os nomes e logotipos pertencem aos seus donos e indicam quais links esta ferramenta aceita."
     },
     "howTo": {
       "homeName": "Como baixar um vídeo público do TikTok, X, Instagram, Facebook ou YouTube",
@@ -318,7 +318,7 @@
           {
             "heading": "Marcas e afiliação",
             "paragraphs": [
-              "O {site} é uma ferramenta independente e {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn ou qualquer outra plataforma citada neste site. Esses nomes e logotipos pertencem aos seus respectivos donos e são usados apenas para descrever quais links esta ferramenta aceita."
+              "O {site} é uma ferramenta independente e {notAffiliated} TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn, Telegram ou qualquer outra plataforma citada neste site. Esses nomes e logotipos pertencem aos seus respectivos donos e são usados apenas para descrever quais links esta ferramenta aceita."
             ]
           },
           {
@@ -393,8 +393,8 @@
       "a": "Sim. Roda inteiramente no navegador, em qualquer dispositivo moderno — iPhone, iPad, celular ou tablet Android, Mac, Windows ou Linux. Não precisa instalar app."
     },
     {
-      "q": "Funciona com sites além das treze plataformas?",
-      "a": "Sim — cole qualquer link de vídeo público e o app tenta resolvê-lo. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion e LinkedIn; fora dessas, o extrator lê a mídia que a página publica, então links de hospedagens de vídeo menores, blogs e sites de notícias costumam funcionar também. Sites que exigem login ou escondem a mídia não podem ser acessados."
+      "q": "Funciona com sites além das catorze plataformas?",
+      "a": "Sim — cole qualquer link de vídeo público e o app tenta resolvê-lo. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn e Telegram; fora dessas, o extrator lê a mídia que a página publica, então links de hospedagens de vídeo menores, blogs e sites de notícias costumam funcionar também. Sites que exigem login ou escondem a mídia não podem ser acessados."
     },
     {
       "q": "Posso importar uma playlist ou coleção inteira de uma vez?",
@@ -428,10 +428,10 @@
       "metaDescription": "Cole o link de qualquer site e salve o vídeo em HD, extraia o áudio em MP3 ou pegue a mídia incorporada — grátis, sem login, sem instalar nada.",
       "h1": "Baixar vídeo de qualquer site — cole qualquer link",
       "tagline": "Um só campo para todos os sites: obtenha o vídeo, o áudio ou as imagens de qualquer link público.",
-      "intro": "Cole qualquer link de vídeo público — das treze plataformas dedicadas ou de qualquer outro lugar. O extrator lê o que a própria página publica (og:video, JSON-LD, configurações de player, arquivos diretos) e verifica se ela entrega mídia de verdade antes de oferecer, então você recebe um arquivo que toca, e não uma página de erro renomeada para .mp4. Se uma página entrega o vídeo ao público, em geral isso resolve. Sem login, sem instalar nada.",
+      "intro": "Cole qualquer link de vídeo público — das catorze plataformas dedicadas ou de qualquer outro lugar. O extrator lê o que a própria página publica (og:video, JSON-LD, configurações de player, arquivos diretos) e verifica se ela entrega mídia de verdade antes de oferecer, então você recebe um arquivo que toca, e não uma página de erro renomeada para .mp4. Se uma página entrega o vídeo ao público, em geral isso resolve. Sem login, sem instalar nada.",
       "cards": [
         {
-          "title": "🌐 Além das treze grandes",
+          "title": "🌐 Além das catorze grandes",
           "body": "Hospedagens de vídeo pequenas, blogs, sites de notícias, fóruns — se a página publica a mídia, o extrator genérico encontra a melhor versão e entrega o arquivo."
         },
         {
@@ -446,7 +446,7 @@
       "faqs": [
         {
           "q": "Funciona com qualquer site?",
-          "a": "Funciona onde quer que uma página entregue sua mídia publicamente. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion e LinkedIn; fora dessas, o extrator lê o que a página publica, o que resolve a maioria das hospedagens de vídeo menores, blogs e páginas de notícias."
+          "a": "Funciona onde quer que uma página entregue sua mídia publicamente. O suporte dedicado cobre TikTok, X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn e Telegram; fora dessas, o extrator lê o que a página publica, o que resolve a maioria das hospedagens de vídeo menores, blogs e páginas de notícias."
         },
         {
           "q": "E se um site bloquear o acesso automatizado?",
@@ -1401,6 +1401,75 @@
         {
           "name": "Salve o arquivo",
           "text": "Salve no celular ou no computador. Não precisa de login nem de app."
+        }
+      ]
+    },
+    "telegram-downloader": {
+      "brandLabel": "Baixar vídeos do Telegram",
+      "metaTitle": "Baixar vídeos do Telegram de canais públicos",
+      "metaDescription": "Baixe o vídeo ou as fotos de um post de um canal público do Telegram. Cole um link t.me e salve o MP4 ou as imagens: grátis, sem login nem app.",
+      "h1": "Baixar vídeos do Telegram: canais públicos, sem login",
+      "tagline": "Salve o vídeo ou as fotos de um post de um canal público do Telegram como arquivos que você pode guardar.",
+      "intro": "Cole o link de um post de um canal público do Telegram (t.me/<canal>/<número>) e a ferramenta o resolve, mostra uma prévia e deixa você salvar um clipe como MP4 ou as fotos como imagens. Sem conta do Telegram, sem extensão e sem instalar nada. Conversas privadas, grupos e canais que não são públicos não podem ser obtidos.",
+      "cards": [
+        {
+          "title": "🎬 Clipes salvos como MP4",
+          "body": "Um post público que contém um clipe de vídeo é resolvido em um arquivo de vídeo que você pode ver antes e salvar depois."
+        },
+        {
+          "title": "🖼️ Fotos e álbuns",
+          "body": "Um post com uma foto ou um álbum entrega cada imagem para salvar, sem precisar de captura de tela."
+        },
+        {
+          "title": "🚪 Claro sobre os limites",
+          "body": "Só posts de canais públicos podem ser lidos. Conversas privadas, grupos e canais não públicos não podem ser obtidos, e a ferramenta avisa."
+        }
+      ],
+      "faqs": [
+        {
+          "q": "Posso baixar qualquer vídeo do Telegram?",
+          "a": "Só de posts de canais públicos, os mesmos que você também abre em t.me/<canal>/<número> sem entrar na conta. Conversas privadas, grupos e canais que exigem convite não podem ser obtidos."
+        },
+        {
+          "q": "Quais links do Telegram funcionam?",
+          "a": "Links de post no formato t.me/<canal>/<número>, a visualização web t.me/s/<canal>/<número> e links telegram.me. O link de um canal inteiro, um link de convite ou um link privado t.me/c/… não é um post público individual."
+        },
+        {
+          "q": "Preciso de uma conta do Telegram?",
+          "a": "Não. A ferramenta nunca pede seu login do Telegram nem usa sua conta. Ela só lê o que um post público publica."
+        },
+        {
+          "q": "Por que meu link do Telegram não é processado?",
+          "a": "O canal pode não ser público, o post pode não ter vídeo nem foto, ou o Telegram pode não exibir um vídeo muito grande na prévia pública. Abra o link em um navegador sem login: se você não vê a mídia lá, a ferramenta também não consegue obtê-la."
+        },
+        {
+          "q": "O que recebo quando funciona?",
+          "a": "O arquivo de vídeo ou as fotos que o post publica, com prévia antes. O Telegram define a qualidade, então a ferramenta não oferece escolha."
+        }
+      ],
+      "featureList": [
+        "Baixe vídeos e fotos de posts de canais públicos do Telegram",
+        "Funciona com links de post t.me, t.me/s e telegram.me",
+        "Sem login no Telegram, sem extensão e sem instalar nada",
+        "Mensagem clara quando um post não é público",
+        "Veja a mídia antes de baixar"
+      ],
+      "steps": [
+        {
+          "name": "Copie o link do post",
+          "text": "No Telegram, abra o post de um canal público, toque nele ou clique com o botão direito e escolha Copiar link do post. Ele se parece com t.me/nomedocanal/123."
+        },
+        {
+          "name": "Cole na caixa",
+          "text": "Cole o link na caixa no topo desta página. A ferramenta lê o post e mostra uma prévia."
+        },
+        {
+          "name": "Confira a prévia",
+          "text": "Um post com vídeo mostra o clipe. Um post com fotos mostra cada imagem, para você escolher o que salvar."
+        },
+        {
+          "name": "Salve o arquivo",
+          "text": "Salve o MP4 ou as imagens no celular ou no computador. Não precisa de login nem de app."
         }
       ]
     }

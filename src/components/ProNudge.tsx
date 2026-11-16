@@ -80,7 +80,7 @@ export function ProNudge({
           otherwise sit on top of the last word of the first line. */}
       <p
         className={`min-w-0 flex-1 text-sm text-pretty text-white/75 ${
-          dismissible ? 'pr-7 sm:pr-0' : ''
+          dismissible ? 'pe-7 sm:pe-0' : ''
         }`}
       >
         {lede}
@@ -107,7 +107,7 @@ export function ProNudge({
             dismissNudge(id)
           }}
           aria-label={t('dismiss')}
-          className='absolute top-1 right-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80 sm:static'
+          className='absolute top-1 end-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white/80 sm:static'
         >
           <CloseIcon className='h-4 w-4' />
         </button>

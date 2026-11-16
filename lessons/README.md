@@ -157,3 +157,4 @@ the index for exactly that.
 | 2026-11-16 | [Full app audit](2026-11-16-full-app-audit.md) | A same-origin proxy allow-lists the content type; success messages count real writes. |
 | 2026-11-16 | [Telegram posts](2026-11-16-telegram-posts.md) | A site's embed page is built to be read; check it before calling the site blocked. |
 | 2026-11-16 | [Real app icons](2026-11-16-real-app-icons.md) | Logical and physical inset utilities do not mix; screenshot every popover in RTL. |
+| 2026-11-16 | [RTL pass, focus floor, Telegram landing page](2026-11-16-rtl-a11y-telegram-page.md) | A `dir=auto` field computes LTR when empty: its overlay controls follow the field, not the page; screenshot Arabic before trusting an RTL audit. |

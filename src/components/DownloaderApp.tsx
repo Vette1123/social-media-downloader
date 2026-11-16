@@ -890,7 +890,7 @@ function ResolveNarration({
     <p
       role='status'
       aria-live='polite'
-      className='animate-fade-in-up text-center text-xs text-white/45'
+      className='animate-fade-in-up text-center text-xs text-white/60'
     >
       {locale === 'en'
         ? resolveNarration(platform, elapsed)
@@ -982,9 +982,11 @@ export function DownloaderApp() {
   const [resultScroll, setResultScroll] = useState(0)
   useEffect(() => {
     if (resultScroll === 0) return
-    containerRef.current
-      ?.querySelector('.results-section')
-      ?.scrollIntoView({ behavior: motionScrollBehavior(), block: 'start' })
+    const section = containerRef.current?.querySelector<HTMLElement>('.results-section')
+    section?.scrollIntoView({ behavior: motionScrollBehavior(), block: 'start' })
+    // Keyboard users: the next Tab lands on the card's buttons, not back in
+    // the paste bar above it. The live region still announces the status.
+    section?.focus({ preventScroll: true })
   }, [resultScroll])
   useEffect(() => {
     void clipboardReadDenied().then(setPasteBlocked)
@@ -2846,7 +2848,11 @@ export function DownloaderApp() {
             /* Reserve room for the Paste chip only while it's shown (empty
                field); once a link is typed the chip is gone, so reclaim the
                width. The right-edge fade mask feathers an overflowing URL out
-               instead of clipping it on a hard vertical edge. */
+               instead of clipping it on a hard vertical edge.
+               Physical right, not logical end, even in Arabic: an empty or
+               URL-holding dir='auto' input computes LTR, so `pe-`/`end-` would
+               split the padding (right) from the chip (left, the container's
+               end) and the chip would cover the placeholder. */
             className={`min-w-0 flex-1 rounded-xl bg-transparent py-3 pl-4 text-base text-white placeholder-white/40 outline-none [mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] ${
               state.url || pasteBlocked ? 'pr-3' : 'pr-[4.75rem]'
             }`}
@@ -2894,7 +2900,7 @@ export function DownloaderApp() {
                 }`}
               >
                 {key !== 'downloadBtn' && (
-                  <SpinnerIcon className='-ml-1 mr-2 h-4 w-4 md:h-5 md:w-5' />
+                  <SpinnerIcon className='-ms-1 me-2 h-4 w-4 md:h-5 md:w-5' />
                 )}
                 {t(key)}
               </span>
@@ -3058,7 +3064,7 @@ export function DownloaderApp() {
                   rememberedQuality === 'sd' ? t('dataSaver') : null,
                 ].filter(Boolean)
                 return (
-                  <span className='text-[11px] text-white/40'>
+                  <span className='text-[11px] text-white/60'>
                     {label}: {remembered.join(' · ')} ·{' '}
                     <button
                       type='button'
@@ -3153,7 +3159,7 @@ export function DownloaderApp() {
               onChange={(e) => setHistoryQuery(e.target.value)}
               placeholder={t('filterRecent')}
               aria-label={t('filterRecent')}
-              className='mb-2 w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white caret-cyan-300 outline-none placeholder:text-white/35 focus:border-cyan-400/40'
+              className='mb-2 w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white caret-cyan-300 outline-none placeholder:text-white/50 focus:border-cyan-400/40 focus-visible:ring-2 focus-visible:ring-cyan-400/40'
             />
           )}
           {/* The Recent list now knows which rows are downloaded and which were
@@ -3169,13 +3175,13 @@ export function DownloaderApp() {
             />
           )}
           {historyNote && (
-            <p className='mb-2 text-right text-[11px] text-white/45'>
+            <p className='mb-2 text-end text-xs text-white/55'>
               {historyNote}
             </p>
           )}
           <ul
             className={`space-y-1.5 ${
-              showAllHistory ? 'max-h-72 overflow-y-auto pr-1' : ''
+              showAllHistory ? 'max-h-72 overflow-y-auto pe-1' : ''
             }`}
           >
             {visibleHistory.map((h) => (
@@ -3186,7 +3192,7 @@ export function DownloaderApp() {
                     trackFeatureUsed('history_reopen')
                     handleProcess(h.url, 'history')
                   }}
-                  className='card-hover group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pr-9 pl-2 text-left'
+                  className='card-hover group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pe-9 ps-2 text-start'
                 >
                   {/* Branded tile sits underneath; the snapshot (a self-contained
                       data URL) overlays it. If a legacy remote thumb ever fails,
@@ -3236,7 +3242,7 @@ export function DownloaderApp() {
                     removeHistory(h.url)
                   }}
                   aria-label={t('removeRecent', { title: h.title })}
-                  className='absolute top-1/2 right-1.5 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
+                  className='absolute top-1/2 end-1.5 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
                 >
                   <span aria-hidden className='text-base leading-none'>
                     ×
@@ -3274,7 +3280,7 @@ export function DownloaderApp() {
           collapsing address bar overlays that strip and eats the card header
           ("top disappears"). scroll-margin-top leaves ~6rem so the header always
           clears the browser chrome. */}
-      <div className='results-section ph-no-capture mt-6 space-y-4 scroll-mt-24'>
+      <div tabIndex={-1} className='results-section ph-no-capture mt-6 space-y-4 scroll-mt-24 outline-none'>
         {(() => {
           // Plain conditional + CSS reveal. key={message.text} remounts on new
           // text so the entrance re-fires as state feedback. No height
@@ -3364,7 +3370,7 @@ export function DownloaderApp() {
                 </li>
               ))}
               {batchMisses.length > MISSES_SHOWN && (
-                <li className='text-white/35'>
+                <li className='text-white/55'>
                   {d('and {n} more', { n: batchMisses.length - MISSES_SHOWN })}
                 </li>
               )}
@@ -3826,7 +3832,7 @@ export function DownloaderApp() {
                         poster={state.videoMetadata?.thumbnail || undefined}
                         controls
                         playsInline
-                        className='w-full h-auto max-h-[60vh] object-contain bg-black'
+                        className='w-full h-auto max-h-[60dvh] object-contain bg-black'
                         preload='none'
                         onPlay={() => trackFeatureUsed('media_play', { action: 'video' })}
                         onError={(e) => {
@@ -4021,7 +4027,7 @@ export function DownloaderApp() {
                                     ? d('Deselect item {n}', { n: index + 1 })
                                     : d('Select item {n}', { n: index + 1 })
                                 }
-                                className={`absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 backdrop-blur-sm transition-all duration-200 ${
+                                className={`absolute top-1.5 end-1.5 flex h-7 w-7 items-center justify-center rounded-full border-2 backdrop-blur-sm transition-all duration-200 ${
                                   image.selected
                                     ? 'border-cyan-400 bg-cyan-400 text-[#04171b]'
                                     : 'border-white/50 bg-black/40 hover:border-white hover:bg-black/60'
@@ -4032,7 +4038,7 @@ export function DownloaderApp() {
                                 )}
                               </button>
 
-                              <div className='pointer-events-none absolute top-1.5 left-1.5 rounded bg-black/60 px-2 py-0.5 text-xs font-medium text-white'>
+                              <div className='pointer-events-none absolute top-1.5 start-1.5 rounded bg-black/60 px-2 py-0.5 text-xs font-medium text-white'>
                                 {index + 1}
                               </div>
 

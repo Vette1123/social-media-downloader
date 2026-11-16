@@ -90,10 +90,10 @@ export function InstallPrompt() {
   }
 
   return createPortal(
-    <div className='animate-section-in mt-6 sm:fixed sm:bottom-4 sm:left-4 sm:z-40 sm:mt-0 sm:w-96'>
+    <div className='animate-section-in mt-6 sm:fixed sm:bottom-[max(1rem,env(safe-area-inset-bottom))] sm:start-4 sm:z-40 sm:mt-0 sm:w-96'>
       <Surface
         tone='accent'
-        className='grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 p-3 pr-9 shadow-2xl sm:flex'
+        className='grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 p-3 pe-9 shadow-2xl sm:flex'
       >
         <span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#17171d] to-[#0a0a0c] ring-1 ring-cyan-400/40'>
           <DownloadIcon className='h-5 w-5 text-cyan-300' />
@@ -130,7 +130,7 @@ export function InstallPrompt() {
           type='button'
           onClick={dismiss}
           aria-label={t('installDismiss')}
-          className='absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
+          className='absolute top-2 end-2 flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition-colors hover:bg-white/10 hover:text-white/70'
         >
           <CloseIcon className='h-3.5 w-3.5' />
         </button>

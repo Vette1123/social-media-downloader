@@ -31,7 +31,7 @@ export function LanguagePicker() {
       <select
         value={value}
         onChange={(e) => choose(e.target.value as Locale)}
-        className='cursor-pointer rounded-md border border-white/10 bg-transparent px-1.5 py-0.5 text-xs text-white/60 outline-none transition-colors hover:text-white [&>option]:bg-[#0b1220] [&>option]:text-white'
+        className='cursor-pointer rounded-md border border-white/10 bg-transparent px-1.5 py-0.5 text-xs text-white/60 outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-cyan-400/60 [&>option]:bg-[#0b1220] [&>option]:text-white'
       >
         {LOCALES.map((locale) => (
           <option key={locale} value={locale}>

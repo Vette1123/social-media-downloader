@@ -7,7 +7,7 @@ import {
 import { d, useDeepWords } from '@/lib/i18nDeep'
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion, type PanInfo } from 'motion/react'
+import { AnimatePresence, MotionConfig, motion, type PanInfo } from 'motion/react'
 import {
   DownloadIcon,
   CloseIcon,
@@ -16,6 +16,7 @@ import {
 } from './icons'
 import { buildDownloadFilename } from '@/lib/filename'
 import { useHydrated } from '@/lib/clientEnv'
+import { slideSign, stepForKey, stepForSwipe } from '@/lib/lightboxDirection'
 
 interface LightboxImage {
   id: string
@@ -37,6 +38,9 @@ interface ImageLightboxProps {
   /** A supporter’s saved-filename shape, passed down rather than re-derived. */
   filenameTemplate?: string
 }
+
+// The lightbox only renders after hydration, when RouteLocale has set <html dir>.
+const isRtlDocument = () => document.documentElement.dir === 'rtl'
 
 // Direction-aware slide variants. `direction` is +1 when paginating forward
 // (next) and -1 when paginating back (prev); the entering image slides in from
@@ -167,8 +171,8 @@ export function ImageLightbox({
       // a clip focused, one press would otherwise both scrub the video and
       // change the slide out from under it.
       if ((e.target as HTMLElement | null)?.closest?.('video')) return
-      if (e.key === 'ArrowLeft') paginate(-1)
-      else if (e.key === 'ArrowRight') paginate(1)
+      const step = stepForKey(e.key, isRtlDocument())
+      if (step) paginate(step)
     },
     [onClose, paginate, hasMultiple],
   )
@@ -186,11 +190,14 @@ export function ImageLightbox({
   const handleDragEnd = (_: unknown, info: PanInfo) => {
     setIsDragging(false)
     const { offset, velocity } = info
-    if (offset.x < -OFFSET_THRESHOLD || velocity.x < -VELOCITY_THRESHOLD) {
-      paginate(1)
-    } else if (offset.x > OFFSET_THRESHOLD || velocity.x > VELOCITY_THRESHOLD) {
-      paginate(-1)
-    }
+    const step = stepForSwipe(
+      offset.x,
+      velocity.x,
+      isRtlDocument(),
+      OFFSET_THRESHOLD,
+      VELOCITY_THRESHOLD,
+    )
+    if (step) paginate(step)
     // Otherwise the image springs back to 0 automatically (constraints 0/0).
   }
 
@@ -294,10 +301,10 @@ export function ImageLightbox({
               stop(e)
               paginate(-1)
             }}
-            className='absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/10 transition-colors hover:bg-white/20 sm:left-4 md:h-12 md:w-12'
+            className='absolute start-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/10 transition-colors hover:bg-white/20 sm:start-4 md:h-12 md:w-12'
             aria-label={d('Previous slide')}
           >
-            <ChevronLeftIcon className='h-5 w-5 md:h-6 md:w-6' />
+            <ChevronLeftIcon className='h-5 w-5 md:h-6 md:w-6 rtl:-scale-x-100' />
           </button>
         )}
 
@@ -306,10 +313,12 @@ export function ImageLightbox({
             A clip is never draggable: the drag would swallow every touch aimed
             at the scrubber, so a video slide paginates by arrow, swipe on the
             surrounding area, or keyboard. */}
-        <AnimatePresence initial={false} custom={direction} mode='popLayout'>
+        {/* Reduced motion: the slide swaps by fade alone. */}
+        <MotionConfig reducedMotion='user'>
+        <AnimatePresence initial={false} custom={slideSign(direction, isRtlDocument())} mode='popLayout'>
           <motion.div
             key={activeIndex}
-            custom={direction}
+            custom={slideSign(direction, isRtlDocument())}
             variants={slideVariants}
             initial='enter'
             animate='center'
@@ -351,6 +360,7 @@ export function ImageLightbox({
             )}
           </motion.div>
         </AnimatePresence>
+        </MotionConfig>
 
         {hasMultiple && (
           <button
@@ -358,10 +368,10 @@ export function ImageLightbox({
               stop(e)
               paginate(1)
             }}
-            className='absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/10 transition-colors hover:bg-white/20 sm:right-4 md:h-12 md:w-12'
+            className='absolute end-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/10 transition-colors hover:bg-white/20 sm:end-4 md:h-12 md:w-12'
             aria-label={d('Next slide')}
           >
-            <ChevronRightIcon className='h-5 w-5 md:h-6 md:w-6' />
+            <ChevronRightIcon className='h-5 w-5 md:h-6 md:w-6 rtl:-scale-x-100' />
           </button>
         )}
       </div>

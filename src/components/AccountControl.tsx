@@ -182,7 +182,7 @@ function ProPill({
       href={to('/pro')}
       data-pro-cta='account_control'
       title={t('supportProject')}
-      className='icon-lift pointer-events-auto flex items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-400/10 py-1.5 pr-3 pl-2.5 text-xs font-semibold whitespace-nowrap text-cyan-200 backdrop-blur'
+      className='icon-lift pointer-events-auto flex items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-400/10 py-1.5 pe-3 ps-2.5 text-xs font-semibold whitespace-nowrap text-cyan-200 backdrop-blur'
     >
       <MailIcon className='h-3.5 w-3.5' />
       <span>{t('supportShort')}</span>
@@ -276,7 +276,7 @@ function Control({
       onClick={() => trackFeatureUsed('account_menu')}
       title={profile?.email ?? t('yourAccount')}
       aria-label={profile?.email ? `Account: ${profile.email}` : t('yourAccount')}
-      className='btn-press pointer-events-auto group flex items-center gap-2 rounded-full border border-white/10 bg-black/50 p-1.5 backdrop-blur hover:border-white/25 sm:p-1 sm:pl-3'
+      className='btn-press pointer-events-auto group flex items-center gap-2 rounded-full border border-white/10 bg-black/50 p-1.5 backdrop-blur hover:border-white/25 sm:p-1 sm:ps-3'
     >
       <span className='hidden max-w-[8rem] truncate text-xs font-medium text-white/70 transition-colors group-hover:text-white sm:block'>
         {shortLabel(profile)}

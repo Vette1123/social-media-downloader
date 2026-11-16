@@ -17,6 +17,13 @@ export function jsonLdText(graph: unknown): string {
 }
 
 const ogImage = siteConfig.ogImage
+
+/** Every platform with its own page, by display name ("Any Site" is not one). */
+export function dedicatedPlatformNames(): string[] {
+  return contentFor('en')
+    .platforms.filter((p) => p.slug !== 'video-downloader')
+    .map((p) => p.name)
+}
 const datePublished = `${siteConfig.foundingYear}-01-01`
 const dateModified = contentDay
 
@@ -109,6 +116,8 @@ const webApplicationNode = {
     'Save images individually or as a ZIP archive',
     'Works on desktop, iPhone, iPad and Android — no app install',
     'No login, no daily limit, no signup',
+    // From the page list, so a new platform page is named here without an edit.
+    `Dedicated downloaders for ${dedicatedPlatformNames().join(', ')}`,
   ],
   screenshot: ogImage,
   image: ogImage,
