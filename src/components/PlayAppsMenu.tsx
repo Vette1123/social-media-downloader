@@ -3,7 +3,9 @@
 import { trackFeatureUsed } from '@/lib/analytics'
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '@/lib/i18nStore'
-import { AppsIcon, ChevronDownIcon } from '@/components/icons'
+import { ChevronDownIcon } from '@/components/icons'
+import { appIcon } from '@/components/AppIcon'
+import { dKnown, useDeepWords } from '@/lib/i18nDeep'
 import { Surface } from '@/components/Surface'
 import { onStoreLinkClick, PLAY_APPS, storeHref, storesLabel } from '@/lib/apps'
 
@@ -24,6 +26,7 @@ import { onStoreLinkClick, PLAY_APPS, storeHref, storesLabel } from '@/lib/apps'
  */
 export function PlayAppsMenu() {
   const t = useT()
+  useDeepWords()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -57,7 +60,15 @@ export function PlayAppsMenu() {
         aria-haspopup='menu'
         className='inline-flex items-center gap-1.5 whitespace-nowrap text-white/70 transition-colors hover:text-white'
       >
-        <AppsIcon className='h-4 w-4' />
+        {/* The three real icons, overlapped, where a generic phone glyph was:
+            the apps are recognisable before the menu opens. The ring in the
+            footer's own colour cuts each icon from the one beneath it. */}
+        <span className='flex -space-x-1.5' aria-hidden>
+          {PLAY_APPS.map((app) => {
+            const Icon = appIcon(app.slug)
+            return <Icon key={app.slug} className='h-4 w-4 ring-2 ring-neutral-950' />
+          })}
+        </span>
         {t('ourApps')}
         <ChevronDownIcon
           className={`h-3.5 w-3.5 text-white/40 transition-transform duration-200 ${
@@ -73,14 +84,16 @@ export function PlayAppsMenu() {
 
           It is centred while the footer stacks centred on phones, and
           right-aligned from sm up, where the trigger is the last item on the
-          right and a centred panel would hang past the edge. */}
+          right and a centred panel would hang past the edge. In Arabic the row
+          mirrors, the trigger is last on the LEFT, and the panel anchors left. */}
       {open && (
-        <div className='animate-section-in absolute bottom-full left-1/2 z-30 mb-2 w-72 -translate-x-1/2 sm:right-0 sm:left-auto sm:translate-x-0'>
-          <Surface role='menu' radius='xl' elevation='raised' className='p-2 shadow-2xl'>
-            <p className='px-2 pt-1 pb-2 text-xs font-medium text-white/45'>
-              {t('ourApps')}
-            </p>
-            {PLAY_APPS.map((app) => (
+        <div className='animate-section-in absolute bottom-full left-1/2 z-30 mb-2 w-72 -translate-x-1/2 sm:right-0 sm:left-auto sm:w-80 sm:translate-x-0 sm:rtl:right-auto sm:rtl:left-0'>
+          {/* No "Our apps" heading inside: it repeated the trigger the reader
+              just pressed. The menu still has the name, for screen readers. */}
+          <Surface role='menu' aria-label={t('ourApps')} radius='xl' elevation='raised' className='p-1.5 shadow-2xl'>
+            {PLAY_APPS.map((app) => {
+              const Icon = appIcon(app.slug)
+              return (
               <a
                 key={app.androidPackage}
                 role='menuitem'
@@ -95,22 +108,23 @@ export function PlayAppsMenu() {
                 // .card-hover, not a translucent white film: rows in a panel are
                 // exactly what that primitive is for, and hoverStyles.test.ts
                 // fails the ad-hoc version.
-                className='card-hover flex items-start gap-3 rounded-lg px-2 py-2 focus-visible:ring-1 focus-visible:ring-cyan-400/40 focus-visible:outline-none'
+                className='card-hover flex items-center gap-3 rounded-lg p-2 focus-visible:ring-1 focus-visible:ring-cyan-400/40 focus-visible:outline-none'
               >
-                <AppsIcon className='mt-0.5 h-4 w-4 shrink-0 text-white/70' />
-                <span className='min-w-0'>
-                  <span className='block text-sm font-semibold text-white'>
+                <Icon className='h-10 w-10' />
+                <span className='min-w-0 flex-1'>
+                  <span className='block text-sm leading-tight font-semibold text-white'>
                     {app.name}
                   </span>
-                  <span className='block text-xs leading-snug text-white/55'>
-                    {app.tagline}
+                  <span className='mt-0.5 block text-xs leading-snug text-white/60'>
+                    {dKnown(app.tagline)}
                   </span>
-                  <span className='block text-[11px] leading-snug text-white/35'>
+                  <span className='mt-0.5 block text-[11px] leading-snug text-white/50'>
                     {storesLabel(app)}
                   </span>
                 </span>
               </a>
-            ))}
+              )
+            })}
           </Surface>
         </div>
       )}

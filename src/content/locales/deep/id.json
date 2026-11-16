@@ -235,5 +235,8 @@
   "Slide {n}": "Slide {n}",
   "Slide {n} of {total}": "Slide {n} dari {total}",
   "Saved {k} of {n} {noun} as ZIP. Paste the post again to retry the rest.": "{k} dari {n} {noun} tersimpan sebagai ZIP. Tempel postingannya lagi untuk mencoba sisanya.",
-  "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "{k} dari {n} {noun} tersimpan. Tempel postingannya lagi untuk mencoba sisanya."
+  "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "{k} dari {n} {noun} tersimpan. Tempel postingannya lagi untuk mencoba sisanya.",
+  "A private Islamic companion: prayer, Qur’an, adhkar, qibla": "Pendamping Islami yang privat: salat, Al-Qur’an, zikir, kiblat",
+  "An offline-first, multi-currency spending tracker": "Pencatat pengeluaran offline dengan banyak mata uang",
+  "A local-price tracker for gold, currencies and more": "Pelacak harga lokal emas, mata uang, dan lainnya"
 }

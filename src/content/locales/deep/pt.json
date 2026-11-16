@@ -235,5 +235,8 @@
   "Slide {n}": "Slide {n}",
   "Slide {n} of {total}": "Slide {n} de {total}",
   "Saved {k} of {n} {noun} as ZIP. Paste the post again to retry the rest.": "{k} de {n} {noun} salvos em ZIP. Cole o post de novo para tentar o resto.",
-  "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "{k} de {n} {noun} salvos. Cole o post de novo para tentar o resto."
+  "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "{k} de {n} {noun} salvos. Cole o post de novo para tentar o resto.",
+  "A private Islamic companion: prayer, Qur’an, adhkar, qibla": "Um companheiro islâmico privado: oração, Alcorão, adhkar, qibla",
+  "An offline-first, multi-currency spending tracker": "Um controle de gastos offline e em várias moedas",
+  "A local-price tracker for gold, currencies and more": "Preços locais de ouro, moedas e mais"
 }

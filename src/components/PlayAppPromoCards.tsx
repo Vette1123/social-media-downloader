@@ -1,7 +1,7 @@
 'use client'
 
 import { useT } from '@/lib/i18nStore'
-import { AppsIcon } from '@/components/icons'
+import { appIcon } from '@/components/AppIcon'
 import { LinkCard } from '@/components/LinkCard'
 import {
   onStoreLinkClick,
@@ -24,7 +24,7 @@ export function PlayAppPromoCard({ app }: { app: PlayApp }) {
     <LinkCard
       href={storeHref(app)}
       label={app.name}
-      Icon={AppsIcon}
+      Icon={appIcon(app.slug)}
       phoneWidth='third'
       iconHoverClass='group-hover:text-white'
       title={t('appCardTitle', { app: app.name, stores: storesLabel(app) })}
