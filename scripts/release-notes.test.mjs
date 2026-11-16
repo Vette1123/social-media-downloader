@@ -9,7 +9,11 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, expect, it } from 'vitest'
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+
+// Every test spawns git ~10 times plus the script. On Windows, inside the full
+// parallel run, that alone passed the 5 s default (7-9 s seen 2026-11-16).
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 30_000 })
 
 const SCRIPT = fileURLToPath(new URL('./release-notes.mjs', import.meta.url))
 

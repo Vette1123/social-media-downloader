@@ -1326,7 +1326,7 @@ export const platforms: Platform[] = [
       },
       {
         q: 'Do I need a Telegram account?',
-        a: 'No. The tool never asks for your Telegram login and doesn’t use your account. It only reads what a public post publishes.',
+        a: 'No. The tool never asks for your Telegram login and doesn’t use your account. It only reads what a public post publishes. To save TikTok, Instagram, YouTube or X videos without leaving Telegram, send the link to our bot, @SocialDownloaderSpaceBot.',
       },
       {
         q: 'Why does my Telegram link fail to process?',

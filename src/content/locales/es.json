@@ -1436,7 +1436,7 @@
         },
         {
           "q": "¿Necesito una cuenta de Telegram?",
-          "a": "No. La herramienta nunca te pide tu login de Telegram ni usa tu cuenta. Solo lee lo que publica una publicación pública."
+          "a": "No. La herramienta nunca te pide tu login de Telegram ni usa tu cuenta. Solo lee lo que muestra una publicación pública. Para guardar videos de TikTok, Instagram, YouTube o X sin salir de Telegram, envía el enlace a nuestro bot, @SocialDownloaderSpaceBot."
         },
         {
           "q": "¿Por qué mi enlace de Telegram no se procesa?",
