@@ -803,6 +803,13 @@ const PLATFORM_PROBES = [
     platform: 'dailymotion',
     url: 'https://www.dailymotion.com/video/x84sh87',
   },
+  // A public Telegram channel post (Telegram's own channel, so it stays up).
+  // It routes as generic; the clip comes from the embed page, lib/telegramPost.
+  {
+    platform: 'generic',
+    url: 'https://t.me/telegram/300',
+    expectVideo: true,
+  },
 ]
 
 /**
