@@ -554,17 +554,19 @@ function buildChecks() {
     },
 
     {
-      name: 'api/telegram accepts an update without a token',
+      name: 'api/telegram refuses an unsigned update, or drops it without a token',
       request: {
         pathname: '/api/telegram',
         method: 'POST',
         json: { message: { chat: { id: 1 }, text: 'https://vimeo.com/76979871' } },
       },
       check: async (response, body) => {
-        // With no bot token every update is answered 200 and silently dropped;
-        // with one, this is a real resolve — so only 200 means "reachable, and
-        // not retry-storming Telegram's delivery".
-        if (response.status !== 200) return `expected 200, got ${response.status}`
+        // Live bot (TELEGRAM_WEBHOOK_SECRET set): this request lacks Telegram's
+        // secret header, so 401 — a forged update must never resolve. No bot
+        // token: answered 200 and dropped. Anything else (a WAF 403, a 5xx)
+        // means Telegram's own deliveries fail too.
+        if (response.status === 401) return null
+        if (response.status !== 200) return `expected 401 or 200, got ${response.status}`
         const payload = JSON.parse(new TextDecoder().decode(body))
         if (payload.ok !== true) return 'update was not acknowledged'
         return null
