@@ -1436,7 +1436,7 @@
         },
         {
           "q": "Apakah saya perlu akun Telegram?",
-          "a": "Tidak. Alat ini tidak pernah meminta login Telegram Anda dan tidak memakai akun Anda. Alat ini hanya membaca apa yang dipublikasikan sebuah postingan publik."
+          "a": "Tidak. Alat ini tidak pernah meminta login Telegram Anda dan tidak memakai akun Anda. Alat ini hanya membaca apa yang dipublikasikan sebuah postingan publik. Untuk menyimpan video TikTok, Instagram, YouTube, atau X tanpa keluar dari Telegram, kirim tautannya ke bot kami, @SocialDownloaderSpaceBot."
         },
         {
           "q": "Mengapa link Telegram saya gagal diproses?",
