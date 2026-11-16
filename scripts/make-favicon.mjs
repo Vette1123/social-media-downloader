@@ -1,5 +1,6 @@
 /**
- * Rebuild public/favicon.ico from public/favicon.svg.
+ * Rebuild public/favicon.svg, public/checkout-mark.svg and public/favicon.ico
+ * from the one mark in src/lib/brandMark.ts.
  *
  * Run with `pnpm icons` after changing the mark, and commit the result.
  *
@@ -20,9 +21,10 @@
  * the rounded corners of the tile need.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
+import { brandMarkSvg, checkoutMarkSvg } from '../src/lib/brandMark.ts'
 
 const PUBLIC_DIR = join(import.meta.dirname, '..', 'public')
 
@@ -66,15 +68,17 @@ function buildIco(images) {
   return Buffer.concat([header, directory, ...images.map((image) => image.data)])
 }
 
-const source = readFileSync(join(PUBLIC_DIR, 'favicon.svg'))
+const source = Buffer.from(brandMarkSvg())
+writeFileSync(join(PUBLIC_DIR, 'favicon.svg'), source)
+writeFileSync(join(PUBLIC_DIR, 'checkout-mark.svg'), checkoutMarkSvg())
+console.log(`favicon.svg + checkout-mark.svg: written from src/lib/brandMark.ts`)
 
 const images = await Promise.all(
   SIZES.map(async (size) => ({
     size,
-    // `density` scales librsvg's rasterisation up before the resize, so the
-    // rounded corners and the glyph edges are antialiased from a larger render
-    // rather than from a 16px one.
-    data: await sharp(source, { density: 72 * (size / 16) })
+    // The SVG is 512px at density 72: every size is antialiased down from a
+    // full render rather than drawn at 16px.
+    data: await sharp(source, { density: 72 })
       .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .png({ compressionLevel: 9, effort: 10 })
       .toBuffer(),

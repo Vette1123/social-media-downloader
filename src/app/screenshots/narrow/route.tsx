@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { siteConfig } from '@/config/site'
+import { brandMarkDataUri } from '@/lib/brandMark'
 
 /**
  * Portrait screenshot for the web app manifest.
@@ -60,30 +61,8 @@ export function GET() {
         >
           {/* Brand lockup */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-            <div
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 20,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background:
-                  'linear-gradient(135deg, #2dd4bf 0%, #22d3ee 50%, #38bdf8 100%)',
-                boxShadow:
-                  '0 20px 60px rgba(34, 211, 238, 0.45), inset 0 1px 0 rgba(255,255,255,0.3)',
-              }}
-            >
-              <svg width='40' height='40' viewBox='0 0 24 24' fill='none'>
-                <path
-                  d='M12 3v12m0 0l-4-4m4 4l4-4M5 21h14'
-                  stroke='#ffffff'
-                  strokeWidth='2.5'
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                />
-              </svg>
-            </div>
+            {/* The app mark, from the one definition in brandMark.ts. */}
+            <img src={brandMarkDataUri()} width={72} height={72} alt='' />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <div style={{ fontSize: 32, fontWeight: 700, color: '#cffafe' }}>
                 {siteConfig.shortName}
