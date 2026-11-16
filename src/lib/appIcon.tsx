@@ -1,10 +1,11 @@
 import { ImageResponse } from 'next/og'
+import { brandMarkDataUri } from './brandMark'
 
 // PNG app-icon renderer. Chrome on Android only treats a PWA as installable —
 // and only then registers its share_target in the system share sheet — when the
 // manifest ships PNG icons at 192 and 512 (SVG icons don't satisfy the install
-// criteria). These are generated from the same gradient tile as favicon.svg so
-// the installed app matches the browser tab.
+// criteria). These render the same brandMark.ts art as favicon.svg so the
+// installed app matches the browser tab.
 //
 // `maskable` renders the glyph inside the ~80% safe zone on a full-bleed tile,
 // so Android can mask it into any shape without clipping the glyph.
@@ -25,81 +26,29 @@ export const appIconContentType = 'image/png'
  * same `?v=` on each icon src and has to move with it. src/lib/appIcon.test.ts
  * fails when the two drift.
  */
-export const ICON_VERSION = '3'
+export const ICON_VERSION = '4'
 
 /** Appends the cache-busting version to an icon path. */
 export function versionedIcon(path: string): string {
   return `${path}?v=${ICON_VERSION}`
 }
 
-// The glyph, knocked out in ink, as a data URI so Satori can rasterise it on
-// top of the gradient. A play triangle rotated to point down, over a tray: one
-// mark that says "video" and "save" at once, in two heavy masses. Solid masses
-// rather than strokes, because a stroke tuned to read at 512 disappears at 32.
-//
-// Byte-for-byte the same art as public/favicon.svg, which the Worker cannot
-// read at runtime. The viewBox is cropped square to the art, so `glyphRatio`
-// below is the mark's true share of the tile — the previous art sat in a padded
-// box and so rendered at 0.62 x 0.48 = 30% of the icon, a third of the size the
-// favicon drew from the same "one definition".
-const GLYPH_SVG =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="2 2 28 28" fill="none">' +
-      '<g fill="#08080a">' +
-      '<path d="M5.65 2.2H26.35Q30 2.2 27.78 5.09L17.74 18.13Q16 20.4 14.26 18.13L4.22 5.09Q2 2.2 5.65 2.2Z"/>' +
-      '<rect x="6" y="24.8" width="20" height="5" rx="2.5"/>' +
-      '</g></svg>',
-  )
-
 /**
- * The gradient tile, at any size. One definition, so the favicon, the PWA
- * icons and the iOS launch screens cannot drift apart.
- *
- * The tile carries the colour and the glyph is the negative space, which is
- * what makes this survive at 32px on a dark taskbar. The old arrangement (ink
- * tile, thin cyan strokes) inverted both of those.
+ * The mark at any size, from the one definition in brandMark.ts, so the
+ * favicon, the PWA icons and the iOS launch screens cannot drift apart. Satori
+ * rasterises the SVG data URI with resvg, gradients and shadow included.
  */
-function tile(size: number, radius: number, glyphRatio: number): React.ReactElement {
-  return (
-    <div
-      style={{
-        width: size,
-        height: size,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #2dd4bf 0%, #22d3ee 50%, #38bdf8 100%)',
-        borderRadius: radius,
-      }}
-    >
-      {/* satori renders this, not a browser — next/image has no meaning here. */}
-      <img
-        src={GLYPH_SVG}
-        width={Math.round(size * glyphRatio)}
-        height={Math.round(size * glyphRatio)}
-        alt=''
-      />
-    </div>
-  )
+function mark(size: number, maskable = false): React.ReactElement {
+  // satori renders this, not a browser — next/image has no meaning here.
+  return <img src={brandMarkDataUri({ maskable })} width={size} height={size} alt='' />
 }
-
-/** The mark's share of the tile. Mirrored by the `scale()` in favicon.svg. */
-const GLYPH_RATIO = 0.66
-
-/** Same mark, shrunk to clear the ~80% safe zone of a maskable tile. */
-const MASKABLE_GLYPH_RATIO = 0.56
 
 export function renderAppIcon(size: number, maskable = false) {
   // A maskable icon is full-bleed and square: Android crops it to whatever
-  // shape the launcher uses, so the tile must not round its own corners, and
-  // the glyph shrinks to stay inside the ~80% safe zone.
+  // shape the launcher uses, so the art has no corners of its own and the
+  // bubble sits inside the ~80% safe zone.
   return new ImageResponse(
-    tile(
-      size,
-      maskable ? 0 : Math.round(size * 0.22),
-      maskable ? MASKABLE_GLYPH_RATIO : GLYPH_RATIO,
-    ),
+    <div style={{ width: size, height: size, display: 'flex' }}>{mark(size, maskable)}</div>,
     appIconSize(size),
   )
 }
@@ -123,7 +72,7 @@ export const SPLASH_BACKGROUND = '#08080a'
  * transition read as one continuous surface instead of a flash.
  */
 export function renderSplash(width: number, height: number) {
-  const mark = Math.round(Math.min(width, height) * 0.26)
+  const markSize = Math.round(Math.min(width, height) * 0.26)
   return new ImageResponse(
     (
       <div
@@ -136,7 +85,7 @@ export function renderSplash(width: number, height: number) {
           backgroundColor: SPLASH_BACKGROUND,
         }}
       >
-        {tile(mark, Math.round(mark * 0.22), GLYPH_RATIO)}
+        {mark(markSize)}
       </div>
     ),
     { width, height },

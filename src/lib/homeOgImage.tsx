@@ -2,6 +2,7 @@ import { ImageResponse } from 'next/og'
 import type { Locale } from '@/lib/i18n'
 import { headlineSize, homeOgCopy } from '@/lib/ogCopy'
 import { siteConfig } from '@/config/site'
+import { brandMarkDataUri } from './brandMark'
 
 export const homeOgSize = { width: 1200, height: 630 }
 
@@ -87,30 +88,8 @@ export function homeOgCard(locale: Locale = 'en') {
               width: '100%',            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              <div
-                style={{
-                  width: 76,
-                  height: 76,
-                  borderRadius: 22,
-                  background:
-                    'linear-gradient(135deg, #2dd4bf 0%, #22d3ee 50%, #38bdf8 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow:
-                    '0 20px 60px rgba(34, 211, 238, 0.5), inset 0 1px 0 rgba(255,255,255,0.3)',
-                }}
-              >
-                <svg width='42' height='42' viewBox='0 0 24 24' fill='none'>
-                  <path
-                    d='M12 3v12m0 0l-4-4m4 4l4-4M5 21h14'
-                    stroke='#ffffff'
-                    strokeWidth='2.5'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                  />
-                </svg>
-              </div>
+              {/* The app mark, from the one definition in brandMark.ts. */}
+              <img src={brandMarkDataUri()} width={76} height={76} alt='' />
               <div
                 style={{ display: 'flex', flexDirection: 'column', gap: 4 }}
               >
