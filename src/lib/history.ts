@@ -10,6 +10,7 @@
 
 import type { SupportedPlatform } from '@/lib/validator'
 import { forgetRecentHeight } from '@/lib/recentReserve'
+import { canUseLocalStorage } from '@/lib/storageAccess'
 
 export interface HistoryEntry {
   /** Stable key — the original post URL. */
@@ -38,17 +39,9 @@ const KEY = 'smd:history:v1'
 // a handful by default and expands to the rest.
 const MAX = 30
 
-/** Never throws: a browser with storage disabled throws from the getter itself. */
-function canUse(): boolean {
-  try {
-    return typeof window !== 'undefined' && !!window.localStorage
-  } catch {
-    return false
-  }
-}
 
 export function loadHistory(): HistoryEntry[] {
-  if (!canUse()) return []
+  if (!canUseLocalStorage()) return []
   try {
     const raw = window.localStorage.getItem(KEY)
     if (!raw) return []
@@ -81,7 +74,7 @@ export function loadHistory(): HistoryEntry[] {
  * Returns the new list so the caller can update state without a re-read.
  */
 export function addHistory(entry: HistoryEntry): HistoryEntry[] {
-  if (!canUse()) return []
+  if (!canUseLocalStorage()) return []
   const current = loadHistory()
   // Pasting a link again does not un-download the file. Without this, the
   // "already saved" mark is wiped by the very act of looking the post up
@@ -115,7 +108,7 @@ export function addHistory(entry: HistoryEntry): HistoryEntry[] {
  * three later pastes should not reorder them.
  */
 export function markSaved(url: string, at: number): HistoryEntry[] {
-  if (!canUse()) return []
+  if (!canUseLocalStorage()) return []
   const current = loadHistory()
   let found = false
   const next = current.map((entry) => {
@@ -134,7 +127,7 @@ export function markSaved(url: string, at: number): HistoryEntry[] {
 }
 
 export function removeHistory(url: string): HistoryEntry[] {
-  if (!canUse()) return []
+  if (!canUseLocalStorage()) return []
   const next = loadHistory().filter((e) => e.url !== url)
   try {
     window.localStorage.setItem(KEY, JSON.stringify(next))
@@ -146,7 +139,7 @@ export function removeHistory(url: string): HistoryEntry[] {
 }
 
 export function clearHistory(): void {
-  if (!canUse()) return
+  if (!canUseLocalStorage()) return
   try {
     window.localStorage.removeItem(KEY)
   } catch {

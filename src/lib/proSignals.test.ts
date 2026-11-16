@@ -27,3 +27,24 @@ describe('attachedNudgeDue', () => {
     expect(attachedNudgeDue(0)).toBe(false)
   })
 })
+
+// A browser with site storage blocked throws from the `localStorage` getter, and
+// `typeof localStorage` calls that getter too. The old guard threw during render
+// and blanked the page (PostHog early_crash, Android Chrome, 2026-11-14).
+describe('storage that refuses access', () => {
+  it('records and dismisses without throwing', async () => {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new DOMException('Access is denied for this document.', 'SecurityError')
+      },
+    })
+    try {
+      const { recordResolve, dismissNudge } = await import('./proSignals')
+      expect(() => recordResolve()).not.toThrow()
+      expect(() => dismissNudge('x')).not.toThrow()
+    } finally {
+      delete (globalThis as { localStorage?: unknown }).localStorage
+    }
+  })
+})

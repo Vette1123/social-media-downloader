@@ -150,3 +150,4 @@ the index for exactly that.
 | 2026-11-14 | [Tap targets, tokens, Vimeo intent](2026-11-14-tap-targets-tokens-vimeo-intent.md) | A div turned button centres its content; template tokens render as LTR code. |
 | 2026-11-14 | [Embed notice, empty-submit paste, panel count](2026-11-14-embed-notice-empty-submit-panel.md) | A result that cannot be saved says so on the card, never only inside a collapsed preview. |
 | 2026-11-14 | [Hero checklist and link rows](2026-11-14-hero-checklist-link-rows.md) | Cut the duplicate people do not click; read Lighthouse TBT as a spread, not one run. |
+| 2026-11-16 | [typeof storage crash](2026-11-16-typeof-storage-crash.md) | `typeof localStorage` calls the throwing getter; guard with `canUseLocalStorage()`. |
