@@ -594,10 +594,12 @@ const JUNK_UAS = [
  * Paths this rule must never touch: the webhook senders are exactly the kind of
  * client it describes. The payment provider posts with an
  * `axios` user agent and its handler verifies an HMAC
- * over their own body before a byte is trusted — they do not need UA screening
- * and cannot survive it.
+ * over their own body before a byte is trusted. Telegram posts with NO user
+ * agent (a challenge answered it 403 and the bot went silent, 2026-11-16); its
+ * handler checks the webhook secret header. Neither needs UA screening and
+ * neither can survive it.
  */
-const WEBHOOK_PATH_PREFIX = '/api/billing/'
+const WEBHOOK_PATH_PREFIXES = ['/api/billing/', '/api/telegram']
 
 /**
  * PROBE_EXTENSIONS (scripts/lib/edge-health.mjs) saves no Worker CPU:
@@ -651,7 +653,7 @@ const WAF_RULES = [
     description: `${WAF_TAG} challenge scripted clients`,
     expression:
       `((${orUserAgent(JUNK_UAS)}) or (http.user_agent eq ""))` +
-      ` and not starts_with(http.request.uri.path, "${WEBHOOK_PATH_PREFIX}")`,
+      WEBHOOK_PATH_PREFIXES.map((path) => ` and not starts_with(http.request.uri.path, "${path}")`).join(''),
     action: 'managed_challenge',
   },
 ]

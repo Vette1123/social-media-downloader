@@ -18,6 +18,8 @@
 import { Downloader } from './downloader'
 import type { VideoData } from './types'
 import { directSaveUrl } from './directSave'
+import { botCopyFor } from './telegramCopy'
+import { siteConfig } from '@/config/site'
 
 const MAX_TITLE = 64
 
@@ -74,6 +76,7 @@ async function sendMessage(
   chatId: number,
   text: string,
   fileUrl?: string,
+  buttonText = 'Save the video',
 ): Promise<void> {
   await fetch(`https://api.telegram.org/bot${botToken()}/sendMessage`, {
     method: 'POST',
@@ -87,7 +90,7 @@ async function sendMessage(
         ? {
             reply_markup: {
               inline_keyboard: [
-                [{ text: 'Save the video', url: fileUrl }],
+                [{ text: buttonText, url: fileUrl }],
               ],
             },
           }
@@ -104,18 +107,24 @@ export async function handleTelegram(request: Request): Promise<Response> {
   if (!webhookAuthorized(request)) return new Response(null, { status: 401 })
 
   const update = (await request.json().catch(() => null)) as
-    | { message?: { chat?: { id?: number }; text?: string } }
+    | {
+        message?: {
+          chat?: { id?: number }
+          from?: { language_code?: string }
+          text?: string
+        }
+      }
     | null
   const chatId = update?.message?.chat?.id
   const text = (update?.message?.text ?? '').trim()
   if (typeof chatId !== 'number') return Response.json({ ok: true })
+  const copy = botCopyFor(update?.message?.from?.language_code)
+  const site = siteConfig.url.replace(/^https:\/\/(www\.)?/, '')
 
   const link = extractFirstUrl(text)
   if (!link) {
-    await sendMessage(
-      chatId,
-      'Send me a link — TikTok, Instagram, YouTube, Reddit, Twitch, Pinterest or any video page — and I answer with a download button.',
-    )
+    const wantsHelp = /^\/help\b/i.test(text)
+    await sendMessage(chatId, wantsHelp ? copy.help(site) : copy.greeting(site))
     return Response.json({ ok: true })
   }
 
@@ -125,7 +134,7 @@ export async function handleTelegram(request: Request): Promise<Response> {
     if (!fileUrl) {
       await sendMessage(
         chatId,
-        `That link resolved, but yielded nothing I can hand over:\n<b>${escapeHtml(titleOf(videoData.title))}</b>`,
+        `${copy.nothingToHandOver}\n<b>${escapeHtml(titleOf(videoData.title))}</b>`,
       )
       return Response.json({ ok: true })
     }
@@ -133,9 +142,10 @@ export async function handleTelegram(request: Request): Promise<Response> {
       chatId,
       `<b>${escapeHtml(titleOf(videoData.title))}</b>${videoData.author ? `\n<i>${escapeHtml(videoData.author)}</i>` : ''}\n${escapeHtml(link)}`,
       fileUrl,
+      copy.saveButton,
     )
   } catch (e) {
-    await sendMessage(chatId, `Could not read that link: ${escapeHtml(shortError(e))}`)
+    await sendMessage(chatId, `${copy.couldNotRead} ${escapeHtml(shortError(e))}`)
   }
   return Response.json({ ok: true })
 }

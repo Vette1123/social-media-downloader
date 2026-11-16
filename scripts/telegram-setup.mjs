@@ -8,24 +8,23 @@
  * fresh TELEGRAM_WEBHOOK_SECRET as Worker secrets, registers the webhook and the
  * bot's profile text, asserts getWebhookInfo, and clears the clipboard.
  *
+ * `pnpm telegram:setup --check` only reports the webhook's delivery health.
+ * `pnpm telegram:setup --profile` only republishes the public profile (name,
+ * About, description, commands in every site language, plus the avatar from
+ * /icons/maskable, full-bleed for the round crop), so copy edits in src/lib/telegramCopy.ts ship without
+ * rotating the secrets.
  * Re-run after BotFather /revoke. Limits: Windows or macOS clipboard only; the
  * secret upload creates a new Worker version with the code already deployed.
  */
 import { spawnSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import process from 'node:process'
+import { BOT_COPY } from '../src/lib/telegramCopy.ts'
 
 const SITE = 'https://www.socialdownloader.space'
 const WEBHOOK = `${SITE}/api/telegram`
 const TOKEN_SHAPE = /^\d{6,}:[A-Za-z0-9_-]{30,}$/
 
-const DESCRIPTION =
-  'Send a link from TikTok, Instagram, YouTube, X, Facebook, Reddit, Pinterest, Threads or any video page and get the file back. Free, no sign-up. Public posts only.'
-const SHORT_DESCRIPTION = 'Send a video link, get the file. Free, no sign-up. socialdownloader.space'
-const COMMANDS = [
-  { command: 'start', description: 'How to use the bot' },
-  { command: 'help', description: 'Which links work' },
-]
 
 function fail(message) {
   console.error(`telegram:setup: ${message}`)
@@ -74,6 +73,58 @@ if (!TOKEN_SHAPE.test(token))
 const me = await api(token, 'getMe')
 console.log(`token ok: @${me.username} (id ${me.id})`)
 
+// `--check`: report delivery health only, change nothing.
+if (process.argv.includes('--check')) {
+  const info = await api(token, 'getWebhookInfo')
+  const lastError = info.last_error_date
+    ? `${new Date(info.last_error_date * 1000).toISOString()} ${info.last_error_message}`
+    : 'none'
+  console.log(`webhook: ${info.url || 'unset'}, pending ${info.pending_update_count}, last error: ${lastError}`)
+  if (!process.env.TELEGRAM_BOT_TOKEN) clearClipboard()
+  process.exit(info.url === WEBHOOK && !info.last_error_date ? 0 : 1)
+}
+
+/** Telegram serves each profile field per user language; '' is the default. */
+async function publishProfile() {
+  for (const [locale, copy] of Object.entries(BOT_COPY)) {
+    const language_code = locale === 'en' ? '' : locale
+    await api(token, 'setMyName', { name: copy.name, language_code })
+    await api(token, 'setMyShortDescription', { short_description: copy.shortDescription, language_code })
+    await api(token, 'setMyDescription', { description: copy.description, language_code })
+    await api(token, 'setMyCommands', {
+      commands: [
+        { command: 'start', description: copy.commands.start },
+        { command: 'help', description: copy.commands.help },
+      ],
+      language_code,
+    })
+    console.log(`profile ok: ${locale || 'default'} "${copy.name}"`)
+  }
+  await publishAvatar()
+}
+
+/** The site icon as the bot's avatar. Older Bot API servers lack the method:
+ * then say so and leave the avatar to BotFather /setuserpic. */
+async function publishAvatar() {
+  const png = await fetch(`${SITE}/icons/maskable`).then((r) => {
+    if (!r.ok) fail(`icon fetch ${r.status}`)
+    return r.blob()
+  })
+  const form = new FormData()
+  form.append('photo', JSON.stringify({ type: 'static', photo: 'attach://avatar' }))
+  form.append('avatar', png, 'avatar.png')
+  const res = await fetch(`https://api.telegram.org/bot${token}/setMyProfilePhoto`, { method: 'POST', body: form })
+  const json = await res.json().catch(() => ({}))
+  if (json.ok) console.log(`avatar ok: ${png.size} bytes from /icons/maskable`)
+  else console.log(`avatar NOT set (${res.status} ${json.description ?? ''}): use BotFather /setuserpic`)
+}
+
+if (process.argv.includes('--profile')) {
+  await publishProfile()
+  if (!process.env.TELEGRAM_BOT_TOKEN) clearClipboard()
+  process.exit(0)
+}
+
 const secret = randomBytes(24).toString('hex')
 putSecret('TELEGRAM_BOT_TOKEN', token)
 putSecret('TELEGRAM_WEBHOOK_SECRET', secret)
@@ -85,9 +136,7 @@ await api(token, 'setWebhook', {
   allowed_updates: ['message'],
   drop_pending_updates: true,
 })
-await api(token, 'setMyCommands', { commands: COMMANDS })
-await api(token, 'setMyDescription', { description: DESCRIPTION })
-await api(token, 'setMyShortDescription', { short_description: SHORT_DESCRIPTION })
+await publishProfile()
 
 const info = await api(token, 'getWebhookInfo')
 if (info.url !== WEBHOOK) fail(`webhook is ${info.url || 'unset'}, expected ${WEBHOOK}`)

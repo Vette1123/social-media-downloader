@@ -152,3 +152,4 @@ the index for exactly that.
 | 2026-11-14 | [Hero checklist and link rows](2026-11-14-hero-checklist-link-rows.md) | Cut the duplicate people do not click; read Lighthouse TBT as a spread, not one run. |
 | 2026-11-16 | [typeof storage crash](2026-11-16-typeof-storage-crash.md) | `typeof localStorage` calls the throwing getter; guard with `canUseLocalStorage()`. |
 | 2026-11-16 | [Threads share links + photos](2026-11-16-threads-share-links.md) | Probe with real ids; Threads and Facebook share links redirect only for a crawler. |
+| 2026-11-16 | [Telegram bot](2026-11-16-telegram-bot.md) | A webhook path must be exempt from the scripted-client WAF challenge before Telegram can reach it |

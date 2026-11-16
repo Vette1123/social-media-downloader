@@ -53,6 +53,8 @@ export const siteConfig = {
     portfolio: 'https://www.mohamedgado.com',
     /** Our other site: the streaming/discovery app. Sister link, both ways. */
     reely: 'https://www.reely.space',
+    /** The same downloader as a Telegram bot (src/lib/telegram.ts). */
+    telegram: 'https://t.me/SocialDownloaderSpaceBot',
   },
   twitterTag: '@Sadge1996',
   /**

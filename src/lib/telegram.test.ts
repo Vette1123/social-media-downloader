@@ -51,12 +51,17 @@ function stubFetch(hook?: SendHook): ReturnType<typeof vi.fn> {
   })
 }
 
-function update(text: string): Request {
+function update(text: string, languageCode?: string): Request {
   return new Request('https://www.socialdownloader.space/api/telegram', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      message: { chat: { id: 9001 }, text, date: Math.floor(Date.now() / 1000) },
+      message: {
+        chat: { id: 9001 },
+        from: languageCode ? { language_code: languageCode } : undefined,
+        text,
+        date: Math.floor(Date.now() / 1000),
+      },
     }),
   })
 }
@@ -149,5 +154,32 @@ describe('the telegram webhook', () => {
     expect(text).toContain('Tom &amp; Jerry &lt;3')
     expect(text).toContain('https://example.com/marks?a=1&amp;b=2')
     expect(text).not.toMatch(/&(?!amp;|lt;|gt;)/)
+  })
+
+  // The greeting is the bot's landing page: it answers in the reader's language
+  // and links the site, the same way the site links the bot.
+  it("greets in the reader's language and links the site", async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'token-1'
+    vi.stubGlobal('fetch', stubFetch())
+    await handleTelegram(update('/start', 'ar'))
+    const text = String(sent.at(-1)?.body.text)
+    expect(text).toContain('أرسل')
+    expect(text).toContain('socialdownloader.space')
+  })
+
+  it('falls back to English for a language the site does not speak', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'token-1'
+    vi.stubGlobal('fetch', stubFetch())
+    await handleTelegram(update('/start', 'de'))
+    expect(String(sent.at(-1)?.body.text)).toContain('Send me a link')
+  })
+
+  it('answers /help with what works and what does not', async () => {
+    process.env.TELEGRAM_BOT_TOKEN = 'token-1'
+    vi.stubGlobal('fetch', stubFetch())
+    await handleTelegram(update('/help', 'pt-br'))
+    const text = String(sent.at(-1)?.body.text)
+    expect(text).toContain('TikTok')
+    expect(text).toMatch(/privad/i)
   })
 })

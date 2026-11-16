@@ -60,6 +60,7 @@ function body(): string {
     section('Links', [
       `- [Homepage](${siteConfig.url}): paste any supported link.`,
       `- [Sitemap](${siteConfig.url}/sitemap.xml): every indexable page.`,
+      `- [Telegram bot](${siteConfig.links.telegram}): send it a link, get the video back.`,
       `- [Source](${siteConfig.links.github}): the code behind this site.`,
       `- [Author](${siteConfig.author.url}): ${siteConfig.author.name}.`,
     ]),
