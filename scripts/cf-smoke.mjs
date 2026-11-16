@@ -629,6 +629,16 @@ function buildChecks() {
     },
 
     {
+      // It served any page as text/html on our origin until 2026-11-16.
+      name: 'api/image refuses a page that is not an image',
+      request: { pathname: `/api/image?url=${encodeURIComponent('https://example.com/')}`, timeoutMs: 30_000 },
+      check: async (response) => {
+        if (response.status !== 415) return `expected 415, got ${response.status} ${response.headers.get('content-type')}`
+        return null
+      },
+    },
+
+    {
       name: 'api/image rejects a missing url param',
       request: { pathname: '/api/image' },
       check: async (response) => {

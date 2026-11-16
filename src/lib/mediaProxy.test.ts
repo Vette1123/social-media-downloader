@@ -8,7 +8,10 @@ const upstream = (...answers: (number | Error)[]) => {
   const fetchMock = vi.fn(async () => {
     const next = answers.shift()!
     if (next instanceof Error) throw next
-    return new Response(next < 400 ? 'bytes' : 'no', { status: next })
+    return new Response(next < 400 ? 'bytes' : 'no', {
+      status: next,
+      headers: { 'content-type': 'application/octet-stream' },
+    })
   })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
@@ -72,4 +75,32 @@ describe.each([
     )
     expect(res.status).toBe(502)
   })
+})
+
+describe('image proxy serving our own origin', () => {
+  const answer = (type: string) =>
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<script>alert(1)</script>', { headers: { 'content-type': type } })))
+
+  // /api/image?url=<any page> used to answer 200 text/html: anyone's markup
+  // and script, rendered on socialdownloader.space.
+  it.each(['text/html; charset=utf-8', 'text/plain', 'application/javascript', 'application/xhtml+xml'])(
+    'refuses a %s upstream with 415',
+    async (type) => {
+      answer(type)
+      const res = await ask(handleImageProxy)
+      expect(res.status).toBe(415)
+      expect(res.headers.get('content-type')).toMatch(/json/)
+    },
+  )
+
+  it.each(['image/jpeg', 'image/webp', 'image/svg+xml', 'application/octet-stream', 'binary/octet-stream'])(
+    'streams a %s upstream, sandboxed so an SVG cannot run script',
+    async (type) => {
+      answer(type)
+      const res = await ask(handleImageProxy)
+      expect(res.status).toBe(200)
+      expect(res.headers.get('x-content-type-options')).toBe('nosniff')
+      expect(res.headers.get('content-security-policy')).toMatch(/sandbox/)
+    },
+  )
 })
