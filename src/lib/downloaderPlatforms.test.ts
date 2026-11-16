@@ -916,3 +916,34 @@ describe('threadsEmbedImages', () => {
     expect(threadsEmbedImages('<img src="https://scontent.cdninstagram.com/v/t51.82787-19/a.jpg" />')).toEqual([])
   })
 })
+
+describe('a public Telegram channel post', () => {
+  // Visitors pasted t.me links and the page scrape found only an og:image:
+  // the clip lives in the embed page Telegram's widget loads.
+  const embed = `<a class="tgme_widget_message_owner_name" href="https://t.me/telegram"><span dir="auto">Telegram News</span></a>
+<i class="tgme_widget_message_video_thumb" style="background-image:url('https://cdn1.telesco.pe/file/thumb.jpg')"></i>
+<video src="https://cdn1.telesco.pe/file/clip.mp4?token=abc&amp;x=1" class="tgme_widget_message_video"></video>
+<div class="tgme_widget_message_text js-message_text" dir="auto">April Update</div>`
+
+  it('resolves the clip from the embed page', async () => {
+    const spy = stubFetch(embed)
+    const result = await new Downloader().downloadVideo('https://t.me/telegram/300')
+    expect(String(spy.mock.calls[0][0])).toBe('https://t.me/telegram/300?embed=1&mode=tme')
+    expect(result.downloadUrl).toBe('https://cdn1.telesco.pe/file/clip.mp4?token=abc&x=1')
+    expect(result.author).toBe('Telegram News')
+    expect(result.title).toBe('April Update')
+    expect(result.thumbnail).toBe('https://cdn1.telesco.pe/file/thumb.jpg')
+  })
+
+  it('hands an album back as a gallery', async () => {
+    stubFetch(
+      `<a class="tgme_widget_message_photo_wrap 1" style="width:800px;background-image:url('https://cdn1.telesco.pe/file/a.jpg')"></a>` +
+        `<a class="tgme_widget_message_photo_wrap 2" style="width:800px;background-image:url('https://cdn1.telesco.pe/file/b.jpg')"></a>`,
+    )
+    const result = await new Downloader().downloadVideo('https://t.me/telegram/390')
+    expect(result.images?.map((i) => i.url)).toEqual([
+      'https://cdn1.telesco.pe/file/a.jpg',
+      'https://cdn1.telesco.pe/file/b.jpg',
+    ])
+  })
+})

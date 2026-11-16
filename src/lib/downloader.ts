@@ -1,4 +1,5 @@
 import { http } from './httpClient'
+import { parseTelegramEmbed, telegramPostRef, type TelegramPostRef } from './telegramPost'
 import { pageRelayUrl } from './pageRelay'
 import {
   decodeEntities,
@@ -1700,6 +1701,10 @@ export class Downloader {
     const methods: Array<() => Promise<VideoData | null>> = []
     const own = ownEndpoint[platform]
     if (own) methods.push(own)
+    // Telegram is no platform of its own (no landing page, no enum value), so
+    // it is keyed on the link: a public channel post reads from its embed page.
+    const telegram = platform === 'generic' ? telegramPostRef(url) : null
+    if (telegram) methods.push(() => this.tryTelegramPost(url, telegram))
     methods.push(() => this.tryCobaltInstances(url))
     // Last resort, and the only extractor that runs with nothing configured.
     // Cobalt's public instance serves a fixed platform list, so before this a
@@ -2230,6 +2235,36 @@ export class Downloader {
       isPhotoCarousel: true,
       images: photos.map((photo, i) => ({ id: `${id}_${i}`, url: photo, thumbnail: photo })),
     }
+  }
+
+  /**
+   * A public Telegram channel post, from the embed page Telegram's own widget
+   * loads (see lib/telegramPost). A clip is a direct file on Telegram's CDN; an
+   * album is a gallery. A post with neither is a clean null.
+   */
+  private async tryTelegramPost(url: string, ref: TelegramPostRef): Promise<VideoData | null> {
+    const response = await http.get(ref.embedUrl, {
+      headers: { 'User-Agent': this.userAgent, Accept: 'text/html' },
+      timeout: 15000,
+      validateStatus: () => true,
+    })
+    if (response.status !== 200 || typeof response.data !== 'string') return null
+    const media = parseTelegramEmbed(response.data)
+    const author = media.author || ref.channel
+    const title = media.text?.slice(0, 100) || `Telegram post by ${author}`
+    const id = `telegram_${ref.channel}_${ref.id}`
+    const base = { id, title, url, duration: 0, author, description: media.text ?? '' }
+    const [video] = media.videos
+    if (media.videos.length === 1 && media.photos.length === 0) {
+      return { ...base, thumbnail: video.thumbnail ?? '', downloadUrl: video.url, isPhotoCarousel: false }
+    }
+    // An album, or a mix of clips and photos: every item as one gallery.
+    const items = [
+      ...media.videos.map((v, i) => ({ id: `${id}_v${i}`, url: v.url, thumbnail: v.thumbnail ?? v.url, kind: 'video' as const })),
+      ...media.photos.map((photo, i) => ({ id: `${id}_${i}`, url: photo, thumbnail: photo })),
+    ]
+    if (items.length === 0) return null
+    return { ...base, thumbnail: items[0].thumbnail, downloadUrl: '', isPhotoCarousel: true, images: items }
   }
 
   /**
