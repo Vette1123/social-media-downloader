@@ -337,6 +337,9 @@ export async function handleAudioProxy(request: Request): Promise<Response> {
         { status: 400 },
       )
     }
+    if (!isHttpUrl(audioUrl)) {
+      return json({ success: false, error: 'Invalid audio URL format' }, { status: 400 })
+    }
 
     const rangeHeader = request.headers.get('range')
     const headers = upstreamHeaders(audioUrl, AUDIO_ACCEPT, {

@@ -93,6 +93,34 @@ describe('resolving a TikTok link', () => {
     expect(result.metadata?.title).toBe('from-browser')
   })
 
+  it('keeps a late browser answer when the server answers with a failure', async () => {
+    // A server JSON `{success:false}` (the 422 "Failed to extract") is truthy,
+    // so it settled the race as the answer while tikwm was still queueing.
+    browserResolve.mockReturnValue(
+      new Promise((r) => setTimeout(() => r(answer('from-browser')), 750)),
+    )
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ success: false, error: 'Failed to extract' }))),
+    )
+
+    const result = await resolve(TIKTOK)
+
+    expect(result.metadata?.title).toBe('from-browser')
+  })
+
+  it("hands back the server's failure when the browser has nothing either", async () => {
+    browserResolve.mockResolvedValue(null)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ success: false, error: 'Failed to extract' }))),
+    )
+
+    const result = await resolve(TIKTOK)
+
+    expect(result.success).toBe(false)
+  })
+
   it('cancels the server request the browser beat', async () => {
     browserResolve.mockReturnValue(
       new Promise((r) => setTimeout(() => r(answer('from-browser')), 750)),

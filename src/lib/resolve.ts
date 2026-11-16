@@ -173,7 +173,12 @@ async function resolveLink(
     // answer, and racing the raw promise handed a network error to the caller
     // while a perfectly good browser answer was in flight. Null means "this one
     // has nothing", and the race waits for the other side.
-    const serverOrNull: Promise<ResolveResult | null> = server.catch(() => null)
+    // A `{success:false}` answer counts as nothing too: it is truthy, and it
+    // settled the race while tikwm was still about to succeed.
+    const serverOrNull: Promise<ResolveResult | null> = server.then(
+      (answer) => (answer?.success ? answer : null),
+      () => null,
+    )
     const localFirst: Promise<ResolveResult | null> = local.then(
       (answer) => answer ?? serverOrNull,
     )

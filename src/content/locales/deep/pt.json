@@ -227,5 +227,13 @@
   "Same result twice — retrying won’t change it. Try another post, or check this one opens in a private browser window.": "Mesmo resultado duas vezes — tentar de novo não vai mudar. Tente outra publicação ou veja se esta abre numa janela anônima do navegador.",
   "The site didn’t say why. Posts that only open for signed-in accounts fail this way. Check it opens in a private browser window.": "O site não disse o motivo. Publicações que só abrem com uma conta conectada falham assim. Veja se ela abre numa janela anônima do navegador.",
   "The site is limiting how fast we can read posts. Your link is fine — try again in a few minutes.": "O site está limitando a velocidade com que lemos publicações. Seu link está certo — tente de novo em alguns minutos.",
-  "We couldn’t download this one": "Não conseguimos baixar esta"
+  "We couldn’t download this one": "Não conseguimos baixar esta",
+  "items": "itens",
+  "images": "imagens",
+  "Hide {noun}": "Ocultar {noun}",
+  "Show {noun} ({n})": "Ver {noun} ({n})",
+  "Slide {n}": "Slide {n}",
+  "Slide {n} of {total}": "Slide {n} de {total}",
+  "Saved {k} of {n} {noun} as ZIP. Paste the post again to retry the rest.": "{k} de {n} {noun} salvos em ZIP. Cole o post de novo para tentar o resto.",
+  "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "{k} de {n} {noun} salvos. Cole o post de novo para tentar o resto."
 }

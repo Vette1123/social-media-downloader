@@ -344,7 +344,7 @@ export function ImageLightbox({
             ) : (
               <img
                 src={current.url}
-                alt={`Slide ${activeIndex + 1} of ${images.length}`}
+                alt={d('Slide {n} of {total}', { n: activeIndex + 1, total: images.length })}
                 draggable={false}
                 className='max-h-full max-w-full cursor-grab rounded-lg object-contain shadow-2xl select-none active:cursor-grabbing'
               />
