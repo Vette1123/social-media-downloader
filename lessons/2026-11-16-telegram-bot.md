@@ -10,6 +10,7 @@ Created @SocialDownloaderSpaceBot, wired it with `pnpm telegram:setup`, and made
 - The clipboard was overwritten once between copying the token and running setup; run setup straight after the click.
 - Multi-line string replacements through a node heredoc failed on CRLF files; use the Edit tool.
 
+- The CI smoke check still expected 200 from `/api/telegram` (written before a token existed); with the secret set an unsigned update is 401. Deploy succeeded, smoke failed. A smoke check pinned to "not configured yet" breaks the day it's configured.
 ## What worked
 - Node 26 imports the `.ts` copy module straight from the `.mjs` script (type-only imports erase), so there's no second copy of the text.
 - `setMyProfilePhoto` exists in the Bot API now; the avatar needs no BotFather session.
