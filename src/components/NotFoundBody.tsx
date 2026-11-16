@@ -6,6 +6,7 @@ import { Surface } from '@/components/Surface'
 import { siteConfig } from '@/config/site'
 import { useHydrated } from '@/lib/clientEnv'
 import { d, useDeepWords } from '@/lib/i18nDeep'
+import { isRtl } from '@/lib/i18n'
 import { useLocale } from '@/lib/i18nStore'
 import { localePath } from '@/lib/localeRoutes'
 
@@ -27,8 +28,14 @@ export function NotFoundBody({
     }
   }, [locale, wordsReady])
   const to = (path: string) => (hydrated ? localePath(locale, path) : path)
+  // <html> stays English for a static 404, so the content carries its own
+  // language and direction. After hydration only: the prerender cannot know the
+  // address that was missed.
+  const wrapper = hydrated
+    ? { lang: locale, dir: isRtl(locale) ? 'rtl' : 'ltr' }
+    : undefined
   return (
-    <>
+    <div {...wrapper}>
       <h1 className='mt-2 mb-3 text-2xl md:text-3xl font-bold text-white'>
         {d('That page wandered off.')}
       </h1>
@@ -60,6 +67,6 @@ export function NotFoundBody({
           </Surface>
         ))}
       </div>
-    </>
+    </div>
   )
 }

@@ -29,6 +29,7 @@ import { contentFor, platformFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
 import type { PageCopy } from '@/lib/pageCopy'
 import type { Platform, PlatformSlug } from '@/lib/platforms'
+import { ImageAltMeta } from '@/components/ImageAltMeta'
 import { jsonLdText, platformStructuredData } from '@/lib/structuredData'
 import type { SupportedPlatform } from '@/lib/validator'
 
@@ -301,6 +302,7 @@ export function PlatformLanding({
   const heroChips = [chips.free, chips.noLoginRequired, chips.noLimits, chips.hd]
   return (
     <>
+    <ImageAltMeta locale={locale} slug={slug} />
     <script
       type='application/ld+json'
       dangerouslySetInnerHTML={{

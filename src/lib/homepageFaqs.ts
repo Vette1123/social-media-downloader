@@ -12,16 +12,16 @@ export interface HomepageFaq {
 
 export const homepageFaqs: HomepageFaq[] = [
   {
-    q: 'Is this TikTok downloader free?',
+    q: 'Is this video downloader free?',
     a: 'Yes. The tool is completely free, requires no sign-up or account, and has no daily download limit.',
   },
   {
-    q: 'What quality are downloaded TikTok videos?',
-    a: 'The source file as TikTok serves it for a public post — up to 1080p HD, not a re-encode or a screen recording.',
+    q: 'What quality are downloaded videos?',
+    a: 'The source file as the platform serves it for a public post — up to 1080p HD, not a re-encode or a screen recording.',
   },
   {
-    q: 'Can I download a TikTok photo carousel (slideshow)?',
-    a: 'Yes. Paste the slideshow URL and the app shows every image plus the original background music — download them individually, as a ZIP archive, or save the audio as an MP3.',
+    q: 'Can I download photo carousels and slideshows?',
+    a: 'Yes. Paste a TikTok slideshow or Instagram carousel URL and the app shows every image plus the original background music, where the post has one — download them individually, as a ZIP archive, or save the audio as an MP3.',
   },
   {
     q: 'Does it support Twitter/X videos?',
@@ -68,7 +68,7 @@ export const homepageFaqs: HomepageFaq[] = [
     a: 'Downloading public videos for personal, non-commercial use is generally allowed, but you should respect the original creator’s rights and the platform’s terms of service. Do not redistribute or monetize content you do not own.',
   },
   {
-    q: 'Why does my TikTok link fail to process?',
-    a: 'Make sure the post is public and the URL is the share link (tiktok.com/@user/video/... or vm.tiktok.com/...). Private, deleted, region-locked or age-restricted posts cannot be fetched.',
+    q: 'Why does my link fail to process?',
+    a: 'Make sure the post is public and the URL is the share link (for example tiktok.com/@user/video/..., youtu.be/... or x.com/.../status/...). Private, deleted, region-locked or age-restricted posts cannot be fetched.',
   },
 ]

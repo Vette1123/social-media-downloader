@@ -16,6 +16,18 @@ const OG_LOCALES: Record<Locale, string> = {
 
 const OG_SIZE = { width: 1200, height: 630 }
 
+/**
+ * What a share card shows, in words, in the page's language: a platform page by
+ * its label and tagline, the home page by its title (English keeps the brand line).
+ */
+export function ogImageAlt(locale: Locale, slug?: PlatformSlug): string {
+  if (slug) {
+    const { brandLabel, tagline } = platformFor(locale, slug)
+    return `${brandLabel} — ${tagline}`
+  }
+  return locale === 'en' ? siteConfig.ogImageAlt : contentFor(locale).copy.home.metaTitle
+}
+
 /** Every language of a page, English as the default. Paths or absolute URLs. */
 export function languageAlternates(
   path: string,

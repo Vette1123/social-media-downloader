@@ -856,7 +856,7 @@ const SubtitlePicker = dynamic(
   { ssr: false, loading: () => null },
 )
 
-// Shown the instant "Process URL" is hit, filling the results column with a
+// Shown the instant "Download" is hit, filling the results column with a
 // shaped placeholder so the card doesn't pop in cold ~1.5s later. Its outline
 // matches the real result (thumbnail + title, a toggle, a tile grid, and the
 // two download buttons) so the swap to real content reads as fill-in, not a
