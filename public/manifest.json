@@ -130,6 +130,58 @@
           "type": "image/png"
         }
       ]
+    },
+    {
+      "name": "Pinterest downloader",
+      "short_name": "Pinterest",
+      "description": "Save Pinterest videos and images from a public pin.",
+      "url": "/pinterest-downloader",
+      "icons": [
+        {
+          "src": "/icons/192?v=4",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Reddit video downloader",
+      "short_name": "Reddit",
+      "description": "Save Reddit videos with sound in HD.",
+      "url": "/reddit-video-downloader",
+      "icons": [
+        {
+          "src": "/icons/192?v=4",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Threads video & photo downloader",
+      "short_name": "Threads",
+      "description": "Download videos and photos from public Threads posts.",
+      "url": "/threads-video-downloader",
+      "icons": [
+        {
+          "src": "/icons/192?v=4",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Snapchat Spotlight downloader",
+      "short_name": "Snapchat",
+      "description": "Save public Snapchat Spotlight videos in HD.",
+      "url": "/snapchat-downloader",
+      "icons": [
+        {
+          "src": "/icons/192?v=4",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ],
   "share_target": {

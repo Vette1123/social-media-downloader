@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { pageCopy } from './pageCopy'
 import { LOCALES } from './i18n'
-import { platformFor } from './localeContent'
+import { contentFor, platformFor } from './localeContent'
 import { platforms } from './platforms'
 import {
   globalStructuredData,
@@ -128,14 +128,107 @@ describe('primaryImageOfPage', () => {
   })
 })
 
-describe('WebApplication featureList', () => {
-  it('names every dedicated platform page', () => {
-    const app = globalStructuredData['@graph'].find(
-      (n) => n['@id']?.toString().endsWith('/#webapp'),
-    ) as unknown as { featureList: string[] }
+type Node = Record<string, unknown>
+
+const nodeOf = (graph: { '@graph': unknown[] }, type: string): Node | undefined =>
+  (graph['@graph'] as Node[]).find((n) => n['@type'] === type)
+
+const webApp = (graph: { '@graph': unknown[] }): Node | undefined =>
+  (graph['@graph'] as Node[]).find((n) => String(n['@id']).endsWith('/#webapp'))
+
+describe('WebApplication', () => {
+  it('is not in the site-wide graph, which can only speak English', () => {
+    expect(webApp(globalStructuredData)).toBeUndefined()
+  })
+
+  it.each(LOCALES)('%s: names every dedicated platform page', (locale) => {
+    const app = webApp(homepageStructuredData(locale)) as { featureList: string[] }
     const all = app.featureList.join(' ')
     for (const p of platforms.filter((x) => x.slug !== 'video-downloader')) {
       expect(all).toContain(p.name)
     }
+  })
+
+  it.each(LOCALES.filter((l) => l !== 'en'))(
+    '%s: description, features and requirements are not English',
+    (locale) => {
+      const en = webApp(homepageStructuredData('en')) as Record<string, unknown>
+      for (const graph of [
+        homepageStructuredData(locale),
+        platformStructuredData('tiktok-downloader', locale),
+      ]) {
+        const app = webApp(graph) as Record<string, unknown>
+        expect(app.inLanguage).toBe(locale)
+        expect(app.description).not.toBe(en.description)
+        expect(app.browserRequirements).not.toBe(en.browserRequirements)
+        const features = app.featureList as string[]
+        const english = en.featureList as string[]
+        expect(features).toHaveLength(english.length)
+        expect(features.filter((f, i) => f === english[i])).toEqual([])
+      }
+    },
+  )
+})
+
+describe('organization logo', () => {
+  it('is a raster image, which Google requires, not the SVG favicon', () => {
+    const { logo } = nodeOf(globalStructuredData, 'Organization') as unknown as {
+      logo: { url: string; contentUrl: string; width: number; height: number }
+    }
+    expect(logo.url).toMatch(/\/icons\/512\?v=\d+$/)
+    expect(logo.contentUrl).toBe(logo.url)
+    expect(logo.url).not.toContain('.svg')
+    expect([logo.width, logo.height]).toEqual([512, 512])
+  })
+})
+
+describe('home how-to', () => {
+  it.each(LOCALES)('%s: its steps are the steps the page shows', (locale) => {
+    const visible = contentFor(locale).copy.home.steps
+    const { step } = nodeOf(homepageStructuredData(locale), 'HowTo') as unknown as {
+      step: Array<{ name: string; text: string }>
+    }
+    expect(step.map(({ name, text }) => ({ name, text }))).toEqual(
+      visible.map(({ title, sub }) => ({ name: title, text: sub })),
+    )
+  })
+})
+
+describe('the Download button', () => {
+  // The button reads "Download" (or its translation). No "Process URL" exists.
+  const STALE = /Process URL|Procesar URL|Processar URL|Proses URL|معالجة الرابط/
+  it.each(LOCALES)('%s: no copy or markup sends people to a Process URL button', (locale) => {
+    const { copy, homeFaqs, platforms: pages } = contentFor(locale)
+    const text = JSON.stringify([copy, homeFaqs, pages, homepageStructuredData(locale)])
+    expect(text).not.toMatch(STALE)
+  })
+})
+
+describe('home breadcrumb', () => {
+  it.each(LOCALES)('%s: the home page has no one-item trail, a platform page does', (locale) => {
+    const home = homepageStructuredData(locale)
+    expect(nodeOf(home, 'BreadcrumbList')).toBeUndefined()
+    expect(nodeOf(home, 'WebPage')).not.toHaveProperty('breadcrumb')
+    const page = platformStructuredData('tiktok-downloader', locale)
+    expect(nodeOf(page, 'BreadcrumbList')).toBeDefined()
+    expect(nodeOf(page, 'WebPage')).toHaveProperty('breadcrumb')
+  })
+})
+
+describe('home FAQ', () => {
+  it.each(LOCALES)('%s: is about the downloader, not TikTok alone', (locale) => {
+    const { homeFaqs } = contentFor(locale)
+    // A question may name TikTok next to the other platforms, never by itself.
+    const tiktokOnly = homeFaqs.filter(({ q }) => q.includes('TikTok') && !q.includes('YouTube'))
+    expect(tiktokOnly.map(({ q }) => q)).toEqual([])
+  })
+
+  it.each(LOCALES)('%s: the FAQPage JSON-LD is the visible text', (locale) => {
+    const { mainEntity } = nodeOf(homepageStructuredData(locale), 'FAQPage') as unknown as {
+      mainEntity: Array<{ name: string; acceptedAnswer: { text: string } }>
+    }
+    expect(mainEntity.map((e) => ({ q: e.name, a: e.acceptedAnswer.text }))).toEqual(
+      contentFor(locale).homeFaqs,
+    )
   })
 })

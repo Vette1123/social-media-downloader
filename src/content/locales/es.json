@@ -187,12 +187,6 @@
       "homeSupply": "URL de una publicación de TikTok, Twitter/X, Instagram, Facebook o YouTube",
       "homeTool": "Una URL de TikTok, Twitter/X, Instagram, Facebook o YouTube",
       "browserTool": "Cualquier navegador web moderno",
-      "step1Name": "Copia el enlace",
-      "homeStep1": "Abre la publicación de TikTok, Twitter/X, Instagram, Facebook o YouTube y copia la URL para compartir.",
-      "step2Name": "Pega y procesa",
-      "homeStep2": "Pega la URL en el campo de esta página y haz clic en Procesar URL para obtener el contenido.",
-      "step3Name": "Descarga",
-      "homeStep3": "Previsualiza y descarga el video en calidad completa, el audio MP3 o las imágenes del carrusel, una a una o en un ZIP.",
       "platformName": "Cómo descargar desde {name}",
       "platformDescription": "Guarda cualquier video, foto o MP3 público de {name} en cuatro pasos, sin iniciar sesión ni instalar nada.",
       "platformSupply": "La URL de una publicación pública de {name}",
@@ -357,20 +351,39 @@
         "h1Accent": "Tú decides.",
         "intro": "Gestiona tu suscripción, tus preferencias de descarga y los dispositivos con sesión iniciada en esta cuenta."
       }
+    },
+    "webApp": {
+      "description": "Descargador gratuito de publicaciones públicas de TikTok, X, Instagram, Facebook y YouTube: guarda videos HD, Reels y Shorts, extrae audio MP3 o descarga carruseles de fotos.",
+      "browserRequirements": "Requiere JavaScript. Requiere HTML5.",
+      "featureList": [
+        "Descarga videos públicos de TikTok en HD",
+        "Descarga videos de Twitter/X en HD (incluidos los videos GIF)",
+        "Descarga reels, videos y fotos de Instagram",
+        "Descarga videos y Shorts de YouTube en HD",
+        "Descarga videos, clips de Watch y reels de Facebook en HD",
+        "Extrae audio MP3 de videos de TikTok, YouTube y Facebook",
+        "Descarga presentaciones de TikTok (carruseles de fotos) con su música original",
+        "Descarga carruseles de fotos de Instagram: cada imagen por separado o en un ZIP",
+        "Previsualiza el video, el audio y las imágenes antes de descargar",
+        "Guarda las imágenes una a una o en un archivo ZIP",
+        "Funciona en escritorio, iPhone, iPad y Android, sin instalar ninguna app",
+        "Sin inicio de sesión, sin límite diario y sin registro"
+      ],
+      "dedicated": "Descargadores específicos para {platforms}"
     }
   },
   "homeFaqs": [
     {
-      "q": "¿Este descargador de TikTok es gratis?",
+      "q": "¿Este descargador de videos es gratis?",
       "a": "Sí. La herramienta es totalmente gratuita, no requiere registro ni cuenta y no tiene límite diario de descargas."
     },
     {
-      "q": "¿Qué calidad tienen los videos de TikTok descargados?",
-      "a": "El archivo original tal como TikTok lo ofrece para una publicación pública: hasta 1080p HD, sin recodificar y sin grabación de pantalla."
+      "q": "¿Qué calidad tienen los videos descargados?",
+      "a": "El archivo original tal como la plataforma lo ofrece para una publicación pública: hasta 1080p HD, sin recodificar y sin grabación de pantalla."
     },
     {
-      "q": "¿Puedo descargar un carrusel de fotos de TikTok (presentación)?",
-      "a": "Sí. Pega la URL de la presentación y la app muestra todas las imágenes más la música de fondo original. Descárgalas una a una, en un archivo ZIP, o guarda el audio como MP3."
+      "q": "¿Puedo descargar carruseles de fotos y presentaciones?",
+      "a": "Sí. Pega la URL de una presentación de TikTok o de un carrusel de Instagram y la app muestra todas las imágenes más la música de fondo original, si la publicación la tiene. Descárgalas una a una, en un archivo ZIP, o guarda el audio como MP3."
     },
     {
       "q": "¿Admite videos de Twitter/X?",
@@ -417,8 +430,8 @@
       "a": "Descargar videos públicos para uso personal y no comercial suele estar permitido, pero debes respetar los derechos del creador original y las condiciones de servicio de la plataforma. No redistribuyas ni monetices contenido que no te pertenezca."
     },
     {
-      "q": "¿Por qué mi enlace de TikTok no se procesa?",
-      "a": "Comprueba que la publicación sea pública y que la URL sea el enlace para compartir (tiktok.com/@user/video/... o vm.tiktok.com/...). Las publicaciones privadas, eliminadas, bloqueadas por región o con restricción de edad no se pueden descargar."
+      "q": "¿Por qué mi enlace no se procesa?",
+      "a": "Comprueba que la publicación sea pública y que la URL sea el enlace para compartir (por ejemplo tiktok.com/@user/video/..., youtu.be/... o x.com/.../status/...). Las publicaciones privadas, eliminadas, bloqueadas por región o con restricción de edad no se pueden descargar."
     }
   ],
   "platforms": {
@@ -527,7 +540,7 @@
         },
         {
           "q": "¿Cómo extraigo el audio MP3 de un video de TikTok?",
-          "a": "Pega la URL de TikTok, haz clic en Procesar URL y usa el botón Extraer audio. El MP3 llega directo a tu dispositivo, sin grabar la pantalla."
+          "a": "Pega la URL de TikTok, haz clic en Descargar y usa el botón Extraer audio. El MP3 llega directo a tu dispositivo, sin grabar la pantalla."
         },
         {
           "q": "¿Por qué mi enlace de TikTok no se procesa?",

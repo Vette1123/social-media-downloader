@@ -1,4 +1,5 @@
 import { PRO_BENEFITS } from '@/config/pro'
+import { siteConfig } from '@/config/site'
 import { WHATS_NEW } from '@/config/whatsNew'
 import { legalCopy } from '@/lib/legalCopy'
 
@@ -135,20 +136,32 @@ export const pageCopy = {
     homeSupply: 'TikTok, Twitter/X, Instagram, Facebook or YouTube post URL',
     homeTool: 'A TikTok, Twitter/X, Instagram, Facebook or YouTube URL',
     browserTool: 'Any modern web browser',
-    step1Name: 'Copy the link',
-    homeStep1:
-      'Open the TikTok, Twitter/X, Instagram, Facebook or YouTube post and copy the share URL.',
-    step2Name: 'Paste and process',
-    homeStep2:
-      'Paste the URL into the input on this page and click Process URL to fetch the media.',
-    step3Name: 'Download',
-    homeStep3:
-      'Preview, then download the full-quality video, MP3 audio, or carousel images individually or as a ZIP.',
     platformName: 'How to download from {name}',
     platformDescription:
       'Save any public {name} video, photo, or MP3 in four steps — no login, no install.',
     platformSupply: 'A public {name} post URL',
     platformTool: 'A {name} post URL',
+  },
+  // The WebApplication JSON-LD node, which names the site in the page's language.
+  webApp: {
+    description: siteConfig.description,
+    browserRequirements: 'Requires JavaScript. Requires HTML5.',
+    featureList: [
+      'Download public TikTok videos in HD',
+      'Download Twitter/X videos in HD (including GIF videos)',
+      'Download Instagram reels, videos and photos',
+      'Download YouTube videos and Shorts in HD',
+      'Download Facebook videos, watch clips and reels in HD',
+      'Extract MP3 audio from TikTok, YouTube and Facebook videos',
+      'Download TikTok slideshows (photo carousels) with original music',
+      'Download Instagram photo carousels — every image individually or as a ZIP',
+      'Preview video, audio and images before downloading',
+      'Save images individually or as a ZIP archive',
+      'Works on desktop, iPhone, iPad and Android — no app install',
+      'No login, no daily limit, no signup',
+    ],
+    // From the page list, so a new platform page is named without an edit.
+    dedicated: 'Dedicated downloaders for {platforms}',
   },
 }
 

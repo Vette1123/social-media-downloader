@@ -26,6 +26,7 @@ import {
   YouTubeIcon,
 } from '@/components/icons'
 import { DevAppLinks } from '@/components/DevAppLinks'
+import { ImageAltMeta } from '@/components/ImageAltMeta'
 import { FeatureCardButton } from '@/components/FeatureCardButton'
 import { SiteFooter } from '@/components/SiteFooter'
 import type { Locale } from '@/lib/i18n'
@@ -148,6 +149,7 @@ export function HomeLanding({ locale = 'en' }: { locale?: Locale }) {
   const heroChips = homeHeroChips(chips)
   return (
     <>
+      <ImageAltMeta locale={locale} />
       <script
         type='application/ld+json'
         dangerouslySetInnerHTML={{
