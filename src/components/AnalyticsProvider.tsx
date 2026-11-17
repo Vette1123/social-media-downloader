@@ -32,6 +32,7 @@ import {
   loadPostHog,
   setPostHogInitializer,
 } from '@/lib/posthogClient'
+import { installStaleChunkRecovery } from '@/lib/staleChunk'
 
 /** Share of sessions recorded: the free tier is 5K a month, and few get watched. */
 const REPLAY_SAMPLE_RATE = 0.1
@@ -158,6 +159,9 @@ function onDocumentClick(event: MouseEvent): void {
   const surface = link?.getAttribute('data-pro-cta')
   if (surface) trackProCtaClicked({ surface })
 }
+
+// Not gated on analytics: a stale tab recovers on localhost and for bots too.
+if (typeof window !== 'undefined') installStaleChunkRecovery()
 
 if (typeof window !== 'undefined' && analyticsEnabled()) {
   reportEarlyCrashes()
