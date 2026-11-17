@@ -12,6 +12,11 @@ import { contentFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
 import type { ReactNode } from 'react'
 
+// Balanced so a two-line heading never strands its last word ("run." on /pro).
+const PAGE_H1 = 'text-3xl font-bold tracking-tight text-white text-balance sm:text-4xl'
+// Pretty, not balanced: a paragraph keeps its full measure and only refuses an orphan ("them.").
+const PAGE_INTRO = 'mx-auto mt-3 max-w-xl text-sm text-pretty text-white/70 md:text-base'
+
 const PRIVACY_UPDATED = '2026-10-31'
 const TERMS_UPDATED = '2026-10-31'
 
@@ -89,7 +94,7 @@ function LegalDocument({
   const { shared } = contentFor(locale).copy.legal
   return (
     <Shell locale={locale} path={path}>
-      <h1 className='text-3xl font-bold tracking-tight text-white sm:text-4xl'>
+      <h1 className={PAGE_H1}>
         {doc.title}
       </h1>
       <p className='mt-2 text-sm text-white/50'>
@@ -176,10 +181,10 @@ export function AccountPage({ locale = 'en' }: { locale?: Locale }) {
         <span className='btn-grad inline-flex rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase'>
           {account.badge}
         </span>
-        <h1 className='mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl'>
+        <h1 className={`mt-4 ${PAGE_H1}`}>
           {account.h1Lead} <span className='text-grad'>{account.h1Accent}</span>
         </h1>
-        <p className='mx-auto mt-3 max-w-xl text-sm text-white/70 md:text-base'>
+        <p className={PAGE_INTRO}>
           {account.intro}
         </p>
       </div>
@@ -226,10 +231,10 @@ export function ProPage({ locale = 'en' }: { locale?: Locale }) {
           <MailIcon className='h-3.5 w-3.5' />
           {pro.badge}
         </span>
-        <h1 className='mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl'>
+        <h1 className={`mt-4 ${PAGE_H1}`}>
           {pro.h1Lead} <span className='text-grad'>{pro.h1Accent}</span>
         </h1>
-        <p className='mx-auto mt-3 max-w-xl text-sm text-white/70 md:text-base'>
+        <p className={PAGE_INTRO}>
           {pro.intro}
         </p>
       </div>

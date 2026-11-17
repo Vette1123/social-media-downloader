@@ -36,7 +36,7 @@ export function NotFoundBody({
     : undefined
   return (
     <div {...wrapper}>
-      <h1 className='mt-2 mb-3 text-2xl md:text-3xl font-bold text-white'>
+      <h1 className='mt-2 mb-3 text-2xl md:text-3xl font-bold text-white text-balance'>
         {d('That page wandered off.')}
       </h1>
       <p className='mb-6 text-sm md:text-base text-white/70'>
