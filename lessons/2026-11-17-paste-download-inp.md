@@ -15,6 +15,17 @@ reported `BUTTON#slow.onclick 700ms`, and a button that removes itself was
 still named. Read it with
 `SELECT properties.target, properties.hidden, properties.top_scripts, properties.since_load_s FROM events WHERE event='slow_interaction'`.
 
+Day-one field reports (18 Nov, 4 rows): the worst, a 1,096 ms mobile tap on
+the Download button, spent 348 ms in PostHog's own `dead-clicks-autocapture.js`
+touchend handler. Dead clicks stay ON: they feed the frustration dashboard and
+five past fixes, it was 1 of 4 reports, and a live page load showed no long
+frame from any PostHog script. Revisit only if `slow_interaction` keeps naming
+it. The same day, CLS on sessions that resolved a link fell after the
+preview-box fix (2a7c357): desktop p75 0.167 to 0.083 (10 sessions so far),
+mobile 0.087 to 0.083. The `defer-render` sections do not shift in a lab fast
+scroll (scroll anchoring absorbs the 560 px placeholder); their field rows
+are the landing being pushed down when a result arrives.
+
 ## Mistakes
 Went in expecting `setPasting(true)` / the reducer dispatch to re-render the whole DownloaderApp inside the click. Measured, it does not: Paste processing 12 ms, Download 27 ms median at 4x, also when tapped 300 ms after load (before hydration settles). The CPU profile of the tap window was idle plus native "(program)"; no React function showed more than ~16 ms. So no app change was made; a speculative startTransition/memo would have been a fix with no red test.
 - The reporter's first version kept the first entry of a tap (`pointerup`,
