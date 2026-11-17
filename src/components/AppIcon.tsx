@@ -13,15 +13,23 @@ export const APP_ICON_SLUGS = ['rafiq', 'masareef', 'nafis', 'reely'] as const
  * Reely's components/companion-app-icon.tsx.
  *
  * A plain <img>: a 120px file shown at 16-40 CSS px, so next/image buys
- * nothing. Decorative (`alt=""`): every slot prints the app's name beside it.
+ * nothing. Every slot prints the app's name beside it, so the icon is
+ * aria-hidden; its alt still names the app, because Bing reports an empty alt
+ * as an SEO issue and image search reads it.
  * One component per slug, built once, so a re-render never remounts it.
  */
+/** "masareef" -> "Masareef app icon": each slug is the app's name. */
+export function appIconAlt(slug: string): string {
+  return `${slug.charAt(0).toUpperCase()}${slug.slice(1)} app icon`
+}
+
 function makeIcon(slug: string): ComponentType<IconProps> {
   function AppIcon({ className }: IconProps) {
     return (
       <img
         src={`/apps/${slug}.webp`}
-        alt=''
+        alt={appIconAlt(slug)}
+        aria-hidden='true'
         width={120}
         height={120}
         loading='lazy'

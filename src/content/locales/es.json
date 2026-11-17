@@ -1310,12 +1310,12 @@
           "a": "Los enlaces con la forma dailymotion.com/video/<id> y los enlaces cortos dai.ly/<id>. La página de un canal o una lista de reproducción no es un video suelto, así que pega el enlace de un solo video."
         },
         {
-          "q": "¿Qué calidad obtengo?",
-          "a": "La mejor calidad que ofrezca el video si eliges HD. Usa la opción Ahorro de datos para un archivo más pequeño."
+          "q": "¿Cómo copio un enlace de Dailymotion desde la app?",
+          "a": "En la app de Dailymotion, abre el video, toca Compartir y luego Copiar enlace. La app copia un enlace corto dai.ly/…, y funciona aquí tal como se copia."
         },
         {
-          "q": "¿Necesito una cuenta de Dailymotion?",
-          "a": "No. Solo se accede a videos visibles públicamente, sin iniciar sesión, sin extensión y sin instalar nada."
+          "q": "¿Funciona en iPhone y Android?",
+          "a": "Sí. Funciona en el navegador de iPhone, Android y computadoras, así que no se instala nada. En iPhone, Safari guarda el MP4 en Descargas dentro de la app Archivos, y desde ahí puedes guardarlo en Fotos."
         },
         {
           "q": "¿Por qué mi enlace de Dailymotion no se procesa?",

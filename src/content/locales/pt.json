@@ -1310,12 +1310,12 @@
           "a": "Links no formato dailymotion.com/video/<id> e os links curtos dai.ly/<id>. A página de um canal ou uma playlist não é um vídeo único, então cole o link de um só vídeo."
         },
         {
-          "q": "Que qualidade eu recebo?",
-          "a": "A melhor qualidade que o vídeo oferece quando você escolhe HD. Use a opção Economia de dados para um arquivo menor."
+          "q": "Como copio um link do Dailymotion pelo app?",
+          "a": "No app do Dailymotion, abra o vídeo, toque em Compartilhar e depois em Copiar link. O app copia um link curto dai.ly/…, e ele funciona aqui do jeito que foi copiado."
         },
         {
-          "q": "Preciso de uma conta no Dailymotion?",
-          "a": "Não. Só vídeos visíveis publicamente são acessados: sem login, sem extensão, sem instalação."
+          "q": "Funciona no iPhone e no Android?",
+          "a": "Sim. Funciona no navegador do iPhone, do Android e do computador, então nada é instalado. No iPhone, o Safari coloca o MP4 em Downloads no app Arquivos, e de lá você pode salvá-lo em Fotos."
         },
         {
           "q": "Por que meu link do Dailymotion não é processado?",
