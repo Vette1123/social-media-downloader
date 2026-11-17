@@ -34,7 +34,8 @@ const NOISE_PATTERNS = [
   // Injected by a Safari extension or reader mode; nothing of ours defines it.
   /Can't find variable: EmptyRanges/i,
   // A tab that outlived a deploy, or a connection that dropped.
-  /ChunkLoadError|Loading (CSS )?chunk \S+ failed/i,
+  // Turbopack says "Failed to load chunk … from module …"; lib/staleChunk reloads.
+  /ChunkLoadError|Loading (CSS )?chunk \S+ failed|Failed to load chunk /i,
   /Failed to fetch dynamically imported module/i,
   /^(TypeError: )?(Failed to fetch|Load failed|NetworkError when attempting to fetch resource\.?)$/i,
 ]

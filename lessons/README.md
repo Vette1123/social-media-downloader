@@ -159,3 +159,4 @@ the index for exactly that.
 | 2026-11-16 | [Real app icons](2026-11-16-real-app-icons.md) | Logical and physical inset utilities do not mix; screenshot every popover in RTL. |
 | 2026-11-16 | [RTL pass, focus floor, Telegram landing page](2026-11-16-rtl-a11y-telegram-page.md) | A `dir=auto` field computes LTR when empty: its overlay controls follow the field, not the page; screenshot Arabic before trusting an RTL audit. |
 | 2026-11-17 | [SEO and marketing sweep](2026-11-17-seo-marketing-sweep.md) | Markup reads the same array the page shows; words in JSON-LD are per language, never in the root layout. |
+| 2026-11-17 | [Stale-chunk recovery](2026-11-17-stale-chunk-recovery.md) | A failed chunk that 404s on prod is a tab older than the deploy: reload once, never on a network failure. |
