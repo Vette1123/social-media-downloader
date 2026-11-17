@@ -1155,12 +1155,12 @@ export const platforms: Platform[] = [
         a: 'Links in the form dailymotion.com/video/<id> and the dai.ly/<id> short links. A channel page or playlist address isn’t a single video, so paste the link to one video.',
       },
       {
-        q: 'What quality do I get?',
-        a: 'The best quality the video offers when you choose HD. Use the Data saver option for a smaller file.',
+        q: 'How do I copy a Dailymotion link from the app?',
+        a: 'In the Dailymotion app, open the video, tap Share, then Copy link. The app copies a dai.ly/… short link, and it works here exactly as copied.',
       },
       {
-        q: 'Do I need a Dailymotion account?',
-        a: 'No. Only publicly viewable videos are accessed — no login, no extension, no install.',
+        q: 'Does it work on iPhone and Android?',
+        a: 'Yes. It runs in the browser on iPhone, Android and computers, so nothing is installed. On iPhone, Safari puts the MP4 in Downloads in the Files app, and from there you can save it to Photos.',
       },
       {
         q: 'Why does my Dailymotion link fail to process?',

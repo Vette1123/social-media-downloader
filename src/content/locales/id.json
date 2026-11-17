@@ -1310,12 +1310,12 @@
           "a": "Link berbentuk dailymotion.com/video/<id> dan link pendek dai.ly/<id>. Halaman kanal atau daftar putar bukan satu video, jadi tempel link satu video saja."
         },
         {
-          "q": "Kualitas apa yang saya dapat?",
-          "a": "Kualitas terbaik yang ditawarkan video saat Anda memilih HD. Gunakan opsi Hemat data untuk file yang lebih kecil."
+          "q": "Bagaimana cara menyalin link Dailymotion dari aplikasi?",
+          "a": "Di aplikasi Dailymotion, buka videonya, ketuk Bagikan, lalu Salin link. Aplikasi menyalin link pendek dai.ly/…, dan link itu langsung bisa dipakai di sini."
         },
         {
-          "q": "Apakah saya perlu akun Dailymotion?",
-          "a": "Tidak. Hanya video yang bisa dilihat publik yang diakses: tanpa login, tanpa ekstensi, tanpa pemasangan."
+          "q": "Apakah bisa dipakai di iPhone dan Android?",
+          "a": "Bisa. Alat ini berjalan di browser iPhone, Android, dan komputer, jadi tidak ada yang perlu dipasang. Di iPhone, Safari menyimpan MP4 ke folder Unduhan di aplikasi File, dan dari sana Anda bisa menyimpannya ke Foto."
         },
         {
           "q": "Mengapa link Dailymotion saya gagal diproses?",
