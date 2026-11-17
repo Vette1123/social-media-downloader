@@ -25,6 +25,7 @@ import {
 } from './analyticsErrors'
 import { contentLink, linkHost, linkShape, scrubText } from './analyticsPrivacy'
 import { ph } from './posthogClient'
+import type { SlowInteractionProps } from './slowInteractions'
 
 export const EVENTS = {
   // The core funnel: link → resolve → file.
@@ -60,6 +61,7 @@ export const EVENTS = {
   // Health
   PAGE_NOT_FOUND: 'page_not_found',
   API_ERROR: 'api_error',
+  SLOW_INTERACTION: 'slow_interaction',
   // Once-ever milestones, derived inside track() and never fired by a call site.
   FIRST_DOWNLOAD: 'first_download',
   FIRST_CORE_USE: 'first_core_use',
@@ -110,6 +112,7 @@ export const EVENT_AREA = {
   feature_used: 'download',
   page_not_found: 'health',
   api_error: 'health',
+  slow_interaction: 'health',
   first_download: 'activation',
   first_core_use: 'activation',
 } as const satisfies Record<EventName, EventArea>
@@ -452,6 +455,11 @@ export function trackPlanCanceled(): void {
 }
 
 /** Which placement sends people to /pro, so the ones that convert nobody can go. */
+/** A tap over 500 ms on a real device: see lib/slowInteractions. */
+export function trackSlowInteraction(props: SlowInteractionProps): void {
+  track(EVENTS.SLOW_INTERACTION, props)
+}
+
 export function trackProCtaClicked(props: { surface: string }): void {
   track(EVENTS.PRO_CTA_CLICKED, props)
 }

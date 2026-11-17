@@ -20,6 +20,7 @@ import {
   trackProCtaClicked,
   trackPwaInstalled,
   trackSignedIn,
+  trackSlowInteraction,
 } from '@/lib/analytics'
 import { accountContextFor } from '@/lib/analyticsContext'
 import { isInertDeadClick, isForeignEarlyError, shouldDropException } from '@/lib/analyticsNoise'
@@ -32,6 +33,7 @@ import {
   loadPostHog,
   setPostHogInitializer,
 } from '@/lib/posthogClient'
+import { installSlowInteractionReporter } from '@/lib/slowInteractions'
 import { installStaleChunkRecovery } from '@/lib/staleChunk'
 
 /** Share of sessions recorded: the free tier is 5K a month, and few get watched. */
@@ -172,6 +174,7 @@ if (typeof window !== 'undefined') installStaleChunkRecovery()
 
 if (typeof window !== 'undefined' && analyticsEnabled()) {
   reportEarlyCrashes()
+  installSlowInteractionReporter(trackSlowInteraction)
   scheduleBoot()
   window.addEventListener('appinstalled', trackPwaInstalled)
   document.addEventListener('click', onDocumentClick, { capture: true })
