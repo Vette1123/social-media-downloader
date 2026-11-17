@@ -96,7 +96,14 @@ setPostHogInitializer((posthog) => {
     // Console text and network URLs both quote the links people paste, so
     // neither is recorded. Results and Recent carry `ph-no-capture`, which keeps
     // them out of autocapture and blocks them in replay.
-    capture_performance: { web_vitals: true, network_timing: false },
+    // CLS joins the INP/LCP attribution posthog-js sends by default, so a
+    // shift names its element (largestShiftTarget, a selector) from real phones:
+    // the lab flow (pnpm cls:flow) scores ~0 while field p75 is 0.26.
+    capture_performance: {
+      web_vitals: true,
+      web_vitals_attribution: ['CLS', 'INP', 'LCP'],
+      network_timing: false,
+    },
     enable_recording_console_log: false,
     session_recording: { maskAllInputs: true },
     disable_session_recording: !shouldRecordSession(),

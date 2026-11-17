@@ -170,6 +170,7 @@ import {
   usePendingCollectionImport,
 } from '@/lib/batchHandoff'
 import { MAX_BATCH_URLS } from '@/lib/batchQueue'
+import { previewAspectRatio } from '@/lib/previewAspect'
 
 // Pull the first http(s) URL out of arbitrary shared text. Android's share sheet
 // often hands a link inside `text` wrapped in a caption ("check this out <url>"),
@@ -963,6 +964,9 @@ export function DownloaderApp() {
   const [state, dispatch] = useReducer(appReducer, initialState)
   const containerRef = useRef<HTMLDivElement>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  // The loaded result thumbnail's size, keyed by its src: the preview box is
+  // drawn at this shape so it never resizes (lib/previewAspect).
+  const [thumbSize, setThumbSize] = useState<{ src: string; w: number; h: number } | null>(null)
   const [urlError, setUrlErrorText] = useState<string | null>(null)
   // Every failed attempt counts, even with the same words: pressing Download on
   // an empty box (or Paste on an empty clipboard) a second time used to set an
@@ -2662,6 +2666,14 @@ export function DownloaderApp() {
   )
   // Absent rather than 'Unknown' — see lib/byline.
   const resultAuthor = namedAuthor(state.videoMetadata?.author)
+  const thumbnailSrc = state.videoMetadata?.thumbnail
+  const previewAspect = useMemo(
+    () =>
+      thumbSize && thumbnailSrc && thumbSize.src.endsWith(thumbnailSrc)
+        ? previewAspectRatio(thumbSize.w, thumbSize.h)
+        : previewAspectRatio(),
+    [thumbSize, thumbnailSrc],
+  )
 
   // What a retry would re-run. Empty when there is nothing to retry — which,
   // until this was derived rather than read straight off `originalUrl`, was
@@ -3440,6 +3452,10 @@ export function DownloaderApp() {
                     loading='lazy'
                     decoding='async'
                     className='w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover flex-shrink-0'
+                    onLoad={(e) => {
+                      const img = e.currentTarget
+                      setThumbSize({ src: img.src, w: img.naturalWidth, h: img.naturalHeight })
+                    }}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
                     }}
@@ -3826,13 +3842,16 @@ export function DownloaderApp() {
                         direct. A preview costs two extra clicks (Show preview,
                         then play) and preload='none' means nothing is fetched
                         until the user actually presses play. */}
-                    <div className='bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg'>
+                    <div
+                      className='relative max-h-[60dvh] w-full bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg'
+                      style={{ aspectRatio: previewAspect }}
+                    >
                       <video
                         src={state.downloadUrl}
                         poster={state.videoMetadata?.thumbnail || undefined}
                         controls
                         playsInline
-                        className='w-full h-auto max-h-[60dvh] object-contain bg-black'
+                        className='absolute inset-0 h-full w-full object-contain bg-black'
                         preload='none'
                         onPlay={() => trackFeatureUsed('media_play', { action: 'video' })}
                         onError={(e) => {
