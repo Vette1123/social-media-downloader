@@ -5,7 +5,7 @@
  *   pnpm posthog:query "SELECT event, count() c FROM events
  *                       WHERE {humans} AND timestamp > now() - INTERVAL 7 DAY
  *                       GROUP BY event ORDER BY c DESC LIMIT 50"
- *   pnpm posthog:query --events | --errors | --dead-clicks | --routes
+ *   pnpm posthog:query --events | --errors | --dead-clicks | --routes | --cls | --cls-stage
  *
  * `{humans}` expands to "after the bot block, not the test cohort" (see
  * scripts/lib/posthog.mjs). The async handshake, the polling and the
@@ -54,6 +54,34 @@ const PRESETS = {
           FROM events
           WHERE {humans} AND event = '$pageview' AND timestamp > now() - INTERVAL 7 DAY
           GROUP BY route ORDER BY people DESC LIMIT 60`,
+  },
+  // Field CLS. Lighthouse reads 0 here; real phones did not (17 Nov: mobile
+  // p75 0.374 once a download started with the Pro nudge on screen). Reports
+  // from builds since 2a7c357 carry attribution, so a shift names its element.
+  '--cls': {
+    label: 'CLS by the element that shifted most (attributed reports), last 7 days',
+    sql: `SELECT properties.$device_type AS device,
+                 JSONExtractString(toString(properties.$web_vitals_CLS_event), 'attribution', 'largestShiftTarget') AS target,
+                 count() AS reports, round(quantile(0.75)(toFloat(properties.$web_vitals_CLS_value)), 3) AS p75,
+                 countIf(toFloat(properties.$web_vitals_CLS_value) > 0.1) AS poor
+          FROM events
+          WHERE {humans} AND event = '$web_vitals' AND timestamp > now() - INTERVAL 7 DAY
+            AND properties.$web_vitals_CLS_value IS NOT NULL AND target != ''
+          GROUP BY device, target ORDER BY poor DESC, reports DESC LIMIT 40`,
+  },
+  '--cls-stage': {
+    label: 'worst CLS per session by how far the session got, last 14 days',
+    sql: `SELECT device, least(resolves, 4) AS resolves, nudge > 0 AS nudge, downloads > 0 AS downloaded,
+                 count() AS sessions, round(quantile(0.75)(cls), 3) AS p75, countIf(cls > 0.1) AS poor
+          FROM (SELECT $session_id AS sid, any(properties.$device_type) AS device,
+                       maxIf(toFloat(properties.$web_vitals_CLS_value), event = '$web_vitals') AS cls,
+                       countIf(event = '$web_vitals' AND properties.$web_vitals_CLS_value IS NOT NULL) AS reports,
+                       countIf(event = 'resolve_succeeded') AS resolves,
+                       countIf(event = 'pro_nudge_shown') AS nudge,
+                       countIf(event = 'download_started') AS downloads
+                FROM events WHERE {humans} AND timestamp > now() - INTERVAL 14 DAY GROUP BY sid)
+          WHERE reports > 0
+          GROUP BY device, resolves, nudge, downloaded ORDER BY device, resolves, nudge, downloaded`,
   },
 }
 

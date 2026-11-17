@@ -38,6 +38,17 @@ not, and 0.31-0.36 once a download started. Google ranks on the field number.
 - Phone runs did not reproduce the field CLS (0.001). The phone-only cause is
   still unknown. The new attribution data will find it; more guessing won't.
 
+- Follow-up the same day: holding resolves at 1, mobile CLS p75 is 0.144 with a
+  download only, 0.148 with the Pro nudge only, and 0.335 with both (539
+  sessions). So the post-download nudge under the card is what moves, and
+  something above it changes height during a real download. The transfer
+  slot is fixed at resolve and the two iOS hints are the same length, so
+  neither explains it. A 3 MB mocked download didn't reproduce it either:
+  `Fetch.fulfillRequest` bodies skip network throttling and land in about a
+  second. Next step: `pnpm posthog:query --cls` once attributed reports
+  arrive (about 5 CLS reports per 90 minutes), and `--cls-stage` to check
+  the fix.
+
 ## What worked
 - One HogQL query that split field CLS by funnel stage (no link / resolved /
   download started / completed) narrowed the problem to the download flow
