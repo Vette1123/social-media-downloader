@@ -48,6 +48,11 @@ not, and 0.31-0.36 once a download started. Google ranks on the field number.
   second. Next step: `pnpm posthog:query --cls` once attributed reports
   arrive (about 5 CLS reports per 90 minutes), and `--cls-stage` to check
   the fix.
+- `--cls` read 0 rows the first time while 10 attributed reports existed: a
+  WHERE on the alias `target` resolved to something else in HogQL. Filter on
+  the spelled-out expression, and give an alias a name no column has. The first
+  poor attributed shift is the chip row under the paste bar on `/` (0.133,
+  Samsung Internet, 2.2 s after load, no input), one report so far.
 
 ## What worked
 - One HogQL query that split field CLS by funnel stage (no link / resolved /

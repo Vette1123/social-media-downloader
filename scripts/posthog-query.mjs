@@ -61,13 +61,16 @@ const PRESETS = {
   '--cls': {
     label: 'CLS by the element that shifted most (attributed reports), last 7 days',
     sql: `SELECT properties.$device_type AS device,
-                 JSONExtractString(toString(properties.$web_vitals_CLS_event), 'attribution', 'largestShiftTarget') AS target,
+                 JSONExtractString(toString(properties.$web_vitals_CLS_event), 'attribution', 'largestShiftTarget') AS shifted,
                  count() AS reports, round(quantile(0.75)(toFloat(properties.$web_vitals_CLS_value)), 3) AS p75,
                  countIf(toFloat(properties.$web_vitals_CLS_value) > 0.1) AS poor
           FROM events
           WHERE {humans} AND event = '$web_vitals' AND timestamp > now() - INTERVAL 7 DAY
-            AND properties.$web_vitals_CLS_value IS NOT NULL AND target != ''
-          GROUP BY device, target ORDER BY poor DESC, reports DESC LIMIT 40`,
+            AND properties.$web_vitals_CLS_value IS NOT NULL
+            -- Spelled out, not the alias: HogQL resolved a WHERE alias named
+            -- "target" to something else and the preset read 0 rows.
+            AND JSONExtractString(toString(properties.$web_vitals_CLS_event), 'attribution', 'largestShiftTarget') != ''
+          GROUP BY device, shifted ORDER BY poor DESC, reports DESC LIMIT 40`,
   },
   '--cls-stage': {
     label: 'worst CLS per session by how far the session got, last 14 days',
