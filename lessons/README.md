@@ -162,3 +162,4 @@ the index for exactly that.
 | 2026-11-17 | [Stale-chunk recovery](2026-11-17-stale-chunk-recovery.md) | A failed chunk that 404s on prod is a tab older than the deploy: reload once, never on a network failure. |
 | 2026-11-17 | [Field CLS and the preview box](2026-11-17-field-cls-and-the-preview-box.md) | Lighthouse CLS 0 hid field p75 0.26 after a resolve; split field vitals by funnel stage, and size late media from what is already loaded. |
 | 2026-11-17 | [Search Console + Bing pass](2026-11-17-gsc-bing-pass.md) | Bing sends 1 visit a month against 1,330 from Google: a quality verdict, not markup; check referrers before trusting a console chart. |
+| 2026-11-17 | [Headings strand their last word on a phone](2026-11-17-heading-balance.md) | Every h1 balances its lines, pinned by a scan of src. |
