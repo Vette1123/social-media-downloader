@@ -3,18 +3,22 @@
  * answers.
  *
  * Production's Cloudflare egress gets `429, 0 chars` on the crawler view of a
- * reel, while the Deno relay in the user's own Deno Deploy org gets `200` and
- * the full ~800 KB page for the same URL in the same minute (measured
- * 2026-11-11). Only the HTML is refused; the media URLs inside it play from
+ * reel, while a Deno-runtime relay outside Cloudflare gets `200` and the full
+ * ~800 KB page for the same URL in the same minute (measured 2026-11-11). Only the HTML is refused; the media URLs inside it play from
  * anywhere, so only the page goes through the relay, never the bytes.
  *
- * The relay (`reely-resolver-relay`, `page.ts`) fetches nothing but
+ * The relay (`reely-resolver-relay`, `page.ts`, deployed alone as the
+ * `reely-ig-page` Netlify site by `npm run deploy:page` there) fetches nothing but
  * `www.instagram.com/{p,reel,reels,tv}/<code>/`, and only for a request signed
  * with Ed25519 over `<url>|<exp>`. The private key is the `PAGE_RELAY_KEY`
  * Worker secret (base64url PKCS#8); the relay carries the public half. Unset,
  * the relay is simply not asked.
+ *
+ * Its own Netlify account (2026-11-18), so these pages never spend the film
+ * relay's 300-credit pool; the old Deno Deploy home was suspended. Worker →
+ * netlify.app is fine; only some ISPs block *.netlify.app for browsers.
  */
-export const PAGE_RELAY = 'https://reely-resolver-relay.reely.deno.net/page'
+export const PAGE_RELAY = 'https://reely-ig-page.netlify.app/page'
 
 /** How long a signed request stays good. The relay refuses more than 300 s. */
 const VALID_FOR_S = 120
