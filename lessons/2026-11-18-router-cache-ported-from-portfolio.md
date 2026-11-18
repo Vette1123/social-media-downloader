@@ -14,3 +14,4 @@ The sibling portfolio repo fixed slow taps and cold image transforms on Cloudfla
 ## Rules
 - A sibling-repo fix is ported by checking its precondition here, not by copying the diff.
 - A deliberate trade-off with a lesson behind it is not undone by another repo's different trade-off.
+- staleTimes raised to 2 h static / 30 min dynamic (was 30 min / 5 min). The router cache lives only in an open tab and never revalidates, so keep it under a day: a longer value shows old pages, and old chunk names, to a tab left open across a deploy. The test pins the exact values.
