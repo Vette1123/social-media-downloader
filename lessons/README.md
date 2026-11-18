@@ -165,3 +165,4 @@ the index for exactly that.
 | 2026-11-17 | [Headings strand their last word on a phone](2026-11-17-heading-balance.md) | Every h1 balances its lines, pinned by a scan of src. |
 | 2026-11-17 | [Paste and Download INP](2026-11-17-paste-download-inp.md) | Field Paste INP 1016 ms did not reproduce: lab processing is 12 ms (Download 27 ms), so the re-render theory was wrong and no app code changed; measure processing vs presentation first. |
 | 2026-11-18 | [Router cache ported from the portfolio](2026-11-18-router-cache-ported-from-portfolio.md) | Of four sibling speed fixes only staleTimes applied; the hover prefetch gate here is measured, and no image transforms or deploy purge exist. |
+| 2026-11-18 | [Warm prefetch after the first interaction](2026-11-18-warm-prefetch-after-interaction.md) | Prefetch is ~38 KiB a link now; warm 3 tiles only after a real interaction so Lighthouse keeps 273 KiB, and cache launcher icons 30 days. |

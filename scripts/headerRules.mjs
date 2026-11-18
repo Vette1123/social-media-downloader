@@ -33,3 +33,14 @@ export function imageHeaderRules(urls, headers) {
   const patterns = cards.length > 0 ? CARD_PATTERNS : []
   return [...patterns, ...rest].map((path) => [path, headers])
 }
+
+/** Stable-named images whose content changes only when we ship a new build of the asset. */
+export const LONG_IMAGE_CACHE = 'public, max-age=2592000, stale-while-revalidate=604800'
+
+// Launcher icons (regenerated only by pnpm apps:icons) and the favicons (always
+// requested as ?v=ICON_VERSION, see src/lib/appIcon.tsx) change on a deliberate
+// step, so a month is safe. /promo is
+// left out on purpose: expire-sponsors swaps a creative under the same file name.
+export function longLivedImageRules() {
+  return ['/apps/*', '/favicon.svg', '/favicon.ico'].map((path) => [path, [`Cache-Control: ${LONG_IMAGE_CACHE}`]])
+}
