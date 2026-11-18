@@ -101,6 +101,11 @@ const nextConfig: NextConfig = {
   // Cloudflare deploy, so the button for it must not be shown (nativeMedia.ts).
   env: { NEXT_PUBLIC_DEPLOY_TARGET: process.env.DEPLOY_TARGET ?? '' },
 
+  // Keep visited and prefetched pages in the client router cache for the session
+  // (default 5 min static / 0 dynamic), so going back or revisiting a page never
+  // refetches its payload.
+  experimental: { staleTimes: { static: 1800, dynamic: 300 } },
+
   // Everywhere except the static build (local dev, any Node host), keep these
   // native / dynamic-require packages out of the server bundle so their
   // runtime `require()` calls resolve from node_modules instead of being

@@ -164,3 +164,4 @@ the index for exactly that.
 | 2026-11-17 | [Search Console + Bing pass](2026-11-17-gsc-bing-pass.md) | Bing sends 1 visit a month against 1,330 from Google: a quality verdict, not markup; check referrers before trusting a console chart. |
 | 2026-11-17 | [Headings strand their last word on a phone](2026-11-17-heading-balance.md) | Every h1 balances its lines, pinned by a scan of src. |
 | 2026-11-17 | [Paste and Download INP](2026-11-17-paste-download-inp.md) | Field Paste INP 1016 ms did not reproduce: lab processing is 12 ms (Download 27 ms), so the re-render theory was wrong and no app code changed; measure processing vs presentation first. |
+| 2026-11-18 | [Router cache ported from the portfolio](2026-11-18-router-cache-ported-from-portfolio.md) | Of four sibling speed fixes only staleTimes applied; the hover prefetch gate here is measured, and no image transforms or deploy purge exist. |
