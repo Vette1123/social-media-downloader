@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CARD_PATTERNS, imageHeaderRules } from './headerRules.mjs'
+import { CARD_PATTERNS, imageHeaderRules, LONG_IMAGE_CACHE, longLivedImageRules } from './headerRules.mjs'
 
 const H = ['Content-Type: image/png']
 const LOCALES = ['es', 'pt', 'id', 'ar']
@@ -41,5 +41,20 @@ describe('image header rules', () => {
 
   it('adds no placeholder rules when there are no cards', () => {
     expect(imageHeaderRules(['/icons/192'], H)).toEqual([['/icons/192', H]])
+  })
+})
+
+describe('long-lived image rules', () => {
+  const rules = Object.fromEntries(longLivedImageRules())
+
+  it('caches launcher icons and versioned favicons for 30 days', () => {
+    for (const path of ['/apps/*', '/favicon.svg', '/favicon.ico']) {
+      expect(rules[path]).toEqual([`Cache-Control: ${LONG_IMAGE_CACHE}`])
+    }
+    expect(LONG_IMAGE_CACHE).toBe('public, max-age=2592000, stale-while-revalidate=604800')
+  })
+
+  it('leaves /promo out: a sponsor swaps a creative under the same name', () => {
+    expect(rules['/promo/*']).toBeUndefined()
   })
 })

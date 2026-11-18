@@ -32,6 +32,7 @@ import { SiteFooter } from '@/components/SiteFooter'
 import type { Locale } from '@/lib/i18n'
 import { contentFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
+import { WARM_LIMIT } from '@/lib/warmPrefetch'
 import { homepageStructuredData, jsonLdText } from '@/lib/structuredData'
 
 // Line icons for the "what you can do" grid — replaces the old emoji glyphs.
@@ -177,9 +178,10 @@ export function HomeLanding({ locale = 'en' }: { locale?: Locale }) {
             <div className='text-center'>
               <div className='mb-6 flex justify-center'>
                 <div className='flex items-center gap-2 md:gap-2.5'>
-                  {heroPlatforms.map((p) => (
+                  {heroPlatforms.map((p, index) => (
                     <Link
                       key={p.slug}
+                      warm={index < WARM_LIMIT}
                       href={localePath(locale, `/${p.slug}`)}
                       aria-label={home.heroLabels[p.slug]}
                       className='block'

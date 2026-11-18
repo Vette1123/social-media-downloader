@@ -25,7 +25,7 @@
 import { createHash } from 'node:crypto'
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join, posix, relative, sep } from 'node:path'
-import { imageHeaderRules } from './headerRules.mjs'
+import { imageHeaderRules, longLivedImageRules } from './headerRules.mjs'
 
 const OUT_DIR = 'out'
 
@@ -268,6 +268,7 @@ function buildHeaders(files) {
   // woff2 fonts under _next/static/media.
   rules.push(['/_next/static/*', [`Cache-Control: ${IMMUTABLE_CACHE}`]])
   rules.push(['/promo/*', [`Cache-Control: ${IMAGE_CACHE}`]])
+  rules.push(...longLivedImageRules())
 
   // Extension-less PNGs. Share cards collapse into placeholder rules, the
   // rest are listed one by one: see scripts/headerRules.mjs.
