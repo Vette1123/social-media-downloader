@@ -167,3 +167,4 @@ the index for exactly that.
 | 2026-11-18 | [Router cache ported from the portfolio](2026-11-18-router-cache-ported-from-portfolio.md) | Of four sibling speed fixes only staleTimes applied; the hover prefetch gate here is measured, and no image transforms or deploy purge exist. |
 | 2026-11-18 | [Warm prefetch after the first interaction](2026-11-18-warm-prefetch-after-interaction.md) | Prefetch is ~38 KiB a link now; warm 3 tiles only after a real interaction so Lighthouse keeps 273 KiB, and cache launcher icons 30 days. |
 | 2026-11-18 | [The page relay leaves Deno for its own Netlify](2026-11-18-page-relay-on-netlify.md) | Deno suspended the relay; PAGE_RELAY now on reely-ig-page.netlify.app, its own credit pool. |
+| 2026-11-18 | [TikTok ultra slow: dead tunnels logged as successes](2026-11-18-tiktok-tunnel-fallback.md) | otomir23 tunnels 500 on ~1 in 3 TikToks; a failed TikTok tunnel now retries from tikwm instead of handing the dead URL to the browser. |

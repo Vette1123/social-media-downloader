@@ -119,6 +119,8 @@ import {
   shortLink,
 } from '@/lib/missedLinks'
 import { resolve } from '@/lib/resolve'
+import { resolveTikTokInBrowser } from '@/lib/tikwmClient'
+import { wantsTikwmFallback } from '@/lib/tunnelFallback'
 import { reportProgress } from '@/lib/downloadProgress'
 import { TransferButton, TransferStatus } from '@/components/TransferProgress'
 import {
@@ -2030,20 +2032,35 @@ export function DownloaderApp() {
       })
     cancelRef.current = new AbortController()
     const transfer = beginDownload('video', content())
+    // Where the bytes come from. A TikTok tunnel that fails swaps all three for
+    // tikwm's answer, so the handoff and the proxy retry below never go back to
+    // the dead tunnel.
+    let source = {
+      direct: direct ?? '',
+      isAttachment: state.videoMetadata?.directIsAttachment,
+      proxied: state.downloadUrl,
+    }
+    let delivery = 'direct'
     if (direct) {
       const filename = nameFile('mp4')
+      const signal = cancelRef.current.signal
+      const onProgress = (p: number | null) => dispatch({ type: 'SET_PROGRESS', payload: p })
       // The instance resolves server-side before the first byte, so nothing
       // moves for a moment after the click. Hold the button in a spinning
       // "preparing" state until the stream starts reporting.
       dispatch({ type: 'SET_DOWNLOADING', payload: true })
       dispatch({ type: 'SET_PROGRESS', payload: null })
-      const outcome = await downloadDirectWithProgress(
-        direct,
-        filename,
-        (p) => dispatch({ type: 'SET_PROGRESS', payload: p }),
-        deliver,
-        cancelRef.current.signal,
-      )
+      let outcome = await downloadDirectWithProgress(direct, filename, onProgress, deliver, signal)
+      if (!cancelled() && wantsTikwmFallback(outcome, state.videoMetadata)) {
+        const alt = await resolveTikTokInBrowser(state.originalUrl, quality).catch(() => null)
+        const altDirect = alt?.metadata.directVideoUrl
+        if (alt && altDirect && !cancelled()) {
+          dispatch({ type: 'SET_PROGRESS', payload: null })
+          outcome = await downloadDirectWithProgress(altDirect, filename, onProgress, deliver, signal)
+          source = { direct: altDirect, isAttachment: false, proxied: alt.downloadUrl }
+          delivery = 'tikwm_fallback'
+        }
+      }
       if (cancelled()) {
         // A cancel is not a failure — falling through would hand the browser
         // the very file the visitor just told us to stop, or restart the whole
@@ -2055,7 +2072,7 @@ export function DownloaderApp() {
         return false
       }
       if (outcome === 'saved') {
-        transfer.completed({ delivery: 'direct' })
+        transfer.completed({ delivery })
         dispatch({ type: 'SET_DOWNLOADING', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({
@@ -2067,9 +2084,9 @@ export function DownloaderApp() {
       }
       const handoff = downloadManagerUrl(
         outcome,
-        direct,
-        state.videoMetadata?.directIsAttachment,
-        state.downloadUrl,
+        source.direct,
+        source.isAttachment,
+        source.proxied,
       )
       if (handoff) {
         // The browser's own downloader streams to disk instead of holding the
@@ -2096,7 +2113,7 @@ export function DownloaderApp() {
 
     try {
       const blob = await fetchFreshMediaBlob(
-        state.downloadUrl,
+        source.proxied,
         'video',
         cancelRef.current.signal,
       )
