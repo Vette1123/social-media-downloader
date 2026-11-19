@@ -44,6 +44,7 @@ import {
   useTier,
 } from '@/lib/entitlements'
 import { CheckIcon, SpinnerIcon } from '@/components/icons'
+import { batchSaveSources } from '@/lib/batchSave'
 
 /**
  * Pro's headline feature: paste up to MAX_BATCH_URLS links and resolve them as
@@ -105,18 +106,31 @@ async function saveVideoResult(
   })
   const transfer = beginDownload('batch_video', contentProps(meta, url))
   try {
-    const direct = meta?.directVideoUrl
-    if (direct) {
-      triggerTunnelDownload(direct)
+    const sources = batchSaveSources(meta, result.downloadUrl)
+    if (sources.navigate) {
+      triggerTunnelDownload(sources.navigate)
       transfer.completed({ delivery: 'direct' })
       return
     }
-    if (!result.downloadUrl) throw new Error('No download link')
-    const response = await fetch(result.downloadUrl)
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const blob = await response.blob()
-    await saveMedia(blob, filename)
-    transfer.completed({ size_bytes: blob.size, delivery: 'proxy' })
+    if (sources.fetch.length === 0) throw new Error('No download link')
+    let lastError: unknown
+    for (const source of sources.fetch) {
+      try {
+        const viaProxy = source === result.downloadUrl
+        // A third-party CDN gets the single download's referrer rule; our own
+        // proxy keeps the referrer the zone's rules expect.
+        const response = await fetch(source, viaProxy ? undefined : { referrerPolicy: 'no-referrer' })
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const blob = await response.blob()
+        await saveMedia(blob, filename)
+        const delivery = viaProxy ? 'proxy' : 'direct'
+        transfer.completed({ size_bytes: blob.size, delivery })
+        return
+      } catch (error) {
+        lastError = error
+      }
+    }
+    throw lastError
   } catch (error) {
     // Network hiccup or an expired proxy URL — silent to the visitor, matches
     // the best-effort contract described above.

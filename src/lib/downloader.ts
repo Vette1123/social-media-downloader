@@ -3249,6 +3249,22 @@ export class Downloader {
     const result = await this.tryCobaltInstances(url)
     if (!result) return null
 
+    // A tunnel is a promise, not a file: Cobalt says "tunnel" at once and only
+    // asks TikTok when the tunnel is read. On 2026-11-19 one answered 500 after
+    // 6.4 s on every read while still winning the race above in a fraction of a
+    // second, and the resolve cache served it for its whole TTL. Reading the
+    // first bytes here turns a dead tunnel into "no answer", so the race waits
+    // for tikwm, and nothing that does not play is ever cached.
+    const stream = result.downloadUrl || result.musicUrl
+    if (stream && !result.isPhotoCarousel) {
+      const probe = await this.probeStream(
+        stream,
+        result.downloadUrl ? { expect: 'video' } : undefined,
+      )
+      if (probe.verdict !== 'ok') return null
+      result.sizeBytes ??= probe.sizeBytes
+    }
+
     // Recover author + numeric id from Cobalt's `tiktok_<author>_<id>` filename
     // (the title is that filename minus extension). Falls back to the URL.
     const fnMatch = result.title.match(/^tiktok_(.+)_(\d+)$/)

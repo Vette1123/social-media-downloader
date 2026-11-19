@@ -30,3 +30,41 @@ export function directSaveUrl(
   if (videoData.directBrowser) return videoData.downloadUrl
   return undefined
 }
+
+/**
+ * CDN hosts measured on 2026-11-19 to answer a cross-origin ranged GET from our
+ * page with `Access-Control-Allow-Origin` and the full file, with no referer,
+ * from an address other than the one that resolved the link. The page can
+ * fetch these itself with a progress bar: about as fast as our proxy or faster
+ * (fbcdn 3.1 vs 2.0 MB/s, Instagram 1.9 vs 1.2 MB/s), and the bytes never cross
+ * the Worker. A failed read still falls back to the proxy in the client.
+ * ponytail: a hand-kept list; a host that drops CORS only costs one failed
+ * fetch before the proxy retry. Add a host only after measuring its headers.
+ */
+const CORS_CDN_HOSTS = [/\.fbcdn\.net$/, /\.cdninstagram\.com$/, /^video\.twimg\.com$/]
+
+function isCorsCdn(url: string | undefined): boolean {
+  if (!url) return false
+  try {
+    const { protocol, hostname } = new URL(url)
+    return protocol === 'https:' && CORS_CDN_HOSTS.some((host) => host.test(hostname))
+  } catch {
+    return false
+  }
+}
+
+/**
+ * The URL the web page should read the video from before trying our proxy: an
+ * attachment URL when there is one, else a CDN URL the page is allowed to
+ * fetch cross-origin. Only the first kind may be handed to a navigation —
+ * that is what `isAttachment` says; a raw CDN file navigated to plays inline
+ * instead of saving.
+ */
+export function directFetch(
+  videoData: Pick<VideoData, 'tunnel' | 'directBrowser' | 'downloadUrl'>,
+): { url?: string; isAttachment: boolean } {
+  const attachment = directSaveUrl(videoData)
+  if (attachment) return { url: attachment, isAttachment: true }
+  if (isCorsCdn(videoData.downloadUrl)) return { url: videoData.downloadUrl, isAttachment: false }
+  return { isAttachment: false }
+}
