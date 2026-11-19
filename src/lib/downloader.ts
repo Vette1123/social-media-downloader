@@ -429,6 +429,13 @@ export function noMediaMessage(platform: SupportedPlatform): string {
   return `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`
 }
 
+/**
+ * How long a Cobalt TikTok tunnel may take to prove it streams before a second,
+ * fresh resolve is started beside it. A healthy resolve plus first read takes
+ * ~0.5 s from the Worker (measured 2026-11-19); a dead one stalls 6.4 s.
+ */
+export const TIKTOK_TUNNEL_HEDGE_MS = 1500
+
 export async function firstResult<T>(
   methods: Array<() => Promise<T | null>>,
 ): Promise<T | null> {
@@ -3255,24 +3262,37 @@ export class Downloader {
    * so title/author/thumbnail are enriched from TikTok's public oembed endpoint.
    */
   private async tryTikTokCobalt(url: string): Promise<VideoData | null> {
-    const result = await this.tryCobaltInstances(url)
-    if (!result) return null
-
-    // A tunnel is a promise, not a file: Cobalt says "tunnel" at once and only
-    // asks TikTok when the tunnel is read. On 2026-11-19 one answered 500 after
-    // 6.4 s on every read while still winning the race above in a fraction of a
-    // second, and the resolve cache served it for its whole TTL. Reading the
-    // first bytes here turns a dead tunnel into "no answer", so the race waits
-    // for tikwm, and nothing that does not play is ever cached.
-    const stream = result.downloadUrl || result.musicUrl
-    if (stream && !result.isPhotoCarousel) {
-      const probe = await this.probeStream(
-        stream,
-        result.downloadUrl ? { expect: 'video' } : undefined,
-      )
-      if (probe.verdict !== 'ok') return null
-      result.sizeBytes ??= probe.sizeBytes
+    // co.otomir23.me hands back a dead tunnel about one resolve in six
+    // (measured 2026-11-19: 500 after 6.35 s on the first read), and asking
+    // again gets a fresh one that streams at once. So a second resolve starts
+    // the moment the first tunnel fails, or once it has stalled past the hedge;
+    // whichever streams first wins. Only a tunnel that came back and did not
+    // stream earns the retry: a link Cobalt has nothing for costs one call.
+    let cobaltHadNothing = false
+    const attempt = async () => {
+      const result = await this.tryTikTokCobaltOnce(url)
+      if (result === 'nothing') {
+        cobaltHadNothing = true
+        return null
+      }
+      return result
     }
+    const first = attempt()
+    const hedge = new Promise<null>((resolve) =>
+      setTimeout(() => resolve(null), TIKTOK_TUNNEL_HEDGE_MS),
+    )
+    const second = Promise.race([first, hedge]).then((won) =>
+      won || cobaltHadNothing ? null : attempt(),
+    )
+    return firstResult([() => first, () => second])
+  }
+
+  /** One Cobalt resolve whose tunnel has been seen to stream, or why not. */
+  private async tryTikTokCobaltOnce(
+    url: string,
+  ): Promise<VideoData | null | 'nothing'> {
+    const result = await this.tryCobaltInstances(url)
+    if (!result) return 'nothing'
 
     // Recover author + numeric id from Cobalt's `tiktok_<author>_<id>` filename
     // (the title is that filename minus extension). Falls back to the URL.
@@ -3280,11 +3300,29 @@ export class Downloader {
     const fnAuthor = fnMatch?.[1]
     const videoId = fnMatch?.[2] || parseVideoId(url) || result.id
     result.id = videoId
-
     const canonical = fnAuthor
       ? `https://www.tiktok.com/@${fnAuthor}/video/${videoId}`
       : url
-    const meta = await this.fetchTikTokMeta(canonical)
+
+    // A tunnel is a promise, not a file: Cobalt says "tunnel" at once and only
+    // asks TikTok when the tunnel is read. On 2026-11-19 one answered 500 after
+    // 6.4 s on every read while still winning the race above in a fraction of a
+    // second, and the resolve cache served it for its whole TTL. Reading the
+    // first bytes here turns a dead tunnel into "no answer", and nothing that
+    // does not play is ever cached. The oembed lookup runs alongside the read
+    // rather than after it; neither needs the other.
+    const stream = result.downloadUrl || result.musicUrl
+    const needsProbe = Boolean(stream) && !result.isPhotoCarousel
+    const [probe, meta] = await Promise.all([
+      needsProbe
+        ? this.probeStream(stream!, result.downloadUrl ? { expect: 'video' } : undefined)
+        : null,
+      this.fetchTikTokMeta(canonical),
+    ])
+    if (probe) {
+      if (probe.verdict !== 'ok') return null
+      result.sizeBytes ??= probe.sizeBytes
+    }
 
     if (meta.title) result.title = meta.title
     else if (fnAuthor) result.title = `TikTok by @${fnAuthor}`

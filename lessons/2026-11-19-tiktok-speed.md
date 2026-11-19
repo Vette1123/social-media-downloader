@@ -45,3 +45,24 @@ residential line that does 3.4 MB/s to Cloudflare:
 
 - Re-measure a third party's latency before keeping a delay sized for it.
 - Parallel ranges buy nothing on a line the single stream already fills.
+
+## Follow-up: the 6.5 s failures
+
+After the hedge fix, 3 of 10 uncached server resolves still failed at exactly
+6.5 s. Hitting the instances directly showed why: co.otomir23.me returns a dead
+TikTok tunnel about one resolve in six (500 after 6.35 s on the first read), and
+cobaltapi.cjs.nz fails TikTok 5 of 6 times. The server probed that one dead
+tunnel to its end and gave up, while asking otomir23 again would have produced
+a working tunnel in under a second.
+
+`tryTikTokCobalt` now starts a second, fresh resolve as soon as the first
+tunnel fails, or after `TIKTOK_TUNNEL_HEDGE_MS` (1.5 s) if it stalls; whichever
+streams first wins. A link Cobalt has nothing for still costs one call. The
+oembed title lookup runs alongside the probe instead of after it.
+
+- **Mistake:** the first tunnel fix (`08ec5a5`) turned a dead tunnel into "no
+  answer" and trusted the Worker's tikwm call to take over. From the Worker
+  tikwm never answered, so "no answer" became "failed after 6.5 s". A fallback
+  that is never seen to win is not a fallback.
+- **Rule:** when a flaky upstream can be asked again, retry it beside the slow
+  attempt (hedge); don't wait out the stall.

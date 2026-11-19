@@ -64,3 +64,51 @@ describe('TikTok via Cobalt only counts a tunnel that streams', () => {
     expect(probe).not.toHaveBeenCalled()
   })
 })
+
+/**
+ * Measured 2026-11-19: co.otomir23.me hands back a dead TikTok tunnel about one
+ * resolve in six (500 after 6.35 s on the first read); asking again gets a
+ * fresh tunnel that streams at once. Probing that one dead tunnel failed 3 of
+ * 10 uncached resolves at exactly 6.5 s. A second resolve now starts as soon
+ * as the first tunnel fails, or once it has stalled past the hedge.
+ */
+describe('a dead or stalled Cobalt tunnel gets a second, fresh resolve', () => {
+  const FRESH = 'https://cobalt.example/tunnel?id=fresh'
+
+  function twoTunnels(firstProbe: Promise<{ verdict: string }>) {
+    const d = new Downloader() as unknown as PrivateDownloader
+    const tunnel = (downloadUrl: string) => ({
+      downloadUrl,
+      title: 'tiktok_scout2015_6718335390845095173',
+    })
+    const resolves = vi
+      .spyOn(d, 'tryCobaltInstances')
+      .mockResolvedValueOnce(tunnel(TUNNEL))
+      .mockResolvedValueOnce(tunnel(FRESH))
+    vi.spyOn(d, 'fetchTikTokMeta').mockResolvedValue({})
+    vi.spyOn(d, 'probeStream').mockImplementation(async (url: string) =>
+      url === TUNNEL ? firstProbe : { verdict: 'ok' },
+    )
+    return { d, resolves }
+  }
+
+  it('re-resolves at once when the first tunnel is dead', async () => {
+    const { d, resolves } = twoTunnels(Promise.resolve({ verdict: 'unreachable' }))
+    expect((await d.tryTikTokCobalt(LINK))?.downloadUrl).toBe(FRESH)
+    expect(resolves).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not wait out a stalled first tunnel', async () => {
+    const { d } = twoTunnels(new Promise(() => {}))
+    const started = Date.now()
+    expect((await d.tryTikTokCobalt(LINK))?.downloadUrl).toBe(FRESH)
+    expect(Date.now() - started).toBeLessThan(2500)
+  })
+
+  it('costs one resolve when the first tunnel streams', async () => {
+    const { d, resolves } = twoTunnels(Promise.resolve({ verdict: 'ok' }))
+    expect((await d.tryTikTokCobalt(LINK))?.downloadUrl).toBe(TUNNEL)
+    await new Promise((r) => setTimeout(r, 1700))
+    expect(resolves).toHaveBeenCalledTimes(1)
+  })
+})
