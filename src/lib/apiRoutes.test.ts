@@ -6,6 +6,7 @@ import {
   resolveCacheKey,
   resolveFailure,
 } from './apiRoutes'
+import { directFetch } from './directSave'
 
 describe('resolveCacheKey', () => {
   it('produces equal keys for identical inputs', () => {
@@ -72,6 +73,35 @@ describe('directSaveUrl', () => {
 
   it('is absent for an ordinary proxied stream', () => {
     expect(directSaveUrl(base)).toBeUndefined()
+  })
+
+  it('lets the page read a CORS CDN file itself, but never as an attachment', () => {
+    for (const downloadUrl of [
+      'https://video-mrs2-3.xx.fbcdn.net/o1/v/t2/clip.mp4?oh=1',
+      'https://scontent-fra5-1.cdninstagram.com/o1/v/clip.mp4',
+      'https://video.twimg.com/amplify_video/1/vid/avc1/720x1280/a.mp4',
+    ]) {
+      expect(directFetch({ ...base, downloadUrl })).toEqual({ url: downloadUrl, isAttachment: false })
+      expect(directSaveUrl({ ...base, downloadUrl })).toBeUndefined()
+    }
+  })
+
+  it('keeps other hosts, look-alikes and plain http on the proxy', () => {
+    for (const downloadUrl of [
+      base.downloadUrl,
+      'https://fbcdn.net.evil.example/clip.mp4',
+      'http://video.twimg.com/a.mp4',
+      'https://pbs.twimg.com/media/a.jpg',
+    ]) {
+      expect(directFetch({ ...base, downloadUrl })).toEqual({ isAttachment: false })
+    }
+  })
+
+  it('reports a tunnel as an attachment', () => {
+    expect(directFetch({ ...base, tunnel: true })).toEqual({
+      url: 'https://cdn.example/raw/clip.mp4',
+      isAttachment: true,
+    })
   })
 
   it('prefers the tunnel form when both flags are somehow set', () => {

@@ -50,7 +50,7 @@ import {
   handleRefresh,
 } from './auth/routes'
 import { handleTelegram, telegramHealth } from './telegram'
-import { asDirectTunnel, directSaveUrl } from './directSave'
+import { asDirectTunnel, directFetch, directSaveUrl } from './directSave'
 
 // requireDb and WorkerEnv live in their own leaf module. Importing them from
 // here would put apiRoutes back in an import cycle with auth/routes and the
@@ -302,7 +302,7 @@ export async function handleDownload(
     const proxyImage = (u: string) =>
       isInstagram && u ? `/api/image?url=${encodeURIComponent(u)}` : u
 
-    const directVideoUrl = directSaveUrl(videoData)
+    const direct = directFetch(videoData)
     const directAudioUrl = videoData.tunnel
       ? asDirectTunnel(videoData.musicUrl)
       : undefined
@@ -326,12 +326,13 @@ export async function handleDownload(
         musicAuthor: videoData.musicAuthor,
         // Raw (non-proxied) URL needed by the /api/slideshow renderer.
         rawMusicUrl: videoData.musicUrl,
-        directVideoUrl,
+        directVideoUrl: direct.url,
         directAudioUrl,
-        // Only ever set alongside directVideoUrl: a tunnel, or a recipe-built
-        // URL — each of which downloads as an attachment once the referrer is
-        // stripped, which is how the browser's own manager is handed the file.
-        directIsAttachment: true,
+        // True for a tunnel or a recipe-built URL, each of which downloads as
+        // an attachment once the referrer is stripped, so the browser's own
+        // manager can be handed it. False for a CORS CDN file the page reads
+        // itself: navigated to, that would play instead of saving.
+        directIsAttachment: direct.isAttachment,
         // A gallery entry can be a clip (a carousel that mixes stills and
         // video). Its bytes need the video proxy — the image proxy would set
         // the wrong content type and the wrong referer — while its poster is
