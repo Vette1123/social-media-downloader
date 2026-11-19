@@ -1535,6 +1535,15 @@ export class Downloader {
   ): Promise<VideoData> {
     let result = await this.tryCobaltInstances(url)
 
+    // A tunnel is not an answer until it streams. For a long YouTube video
+    // (2026-11-18, 1 h 51 min) the instance answered `200` with an empty body,
+    // and the MP3 button waited ~15 s to save nothing. Read the first bytes so
+    // a dead tunnel falls through to the sources below, and when they miss too
+    // the visitor gets the honest message at once.
+    if (result?.musicUrl && (await this.probeStream(result.musicUrl)).verdict !== 'ok') {
+      result = null
+    }
+
     if (!result || !result.musicUrl) {
       // Cobalt is the only audio path for most platforms, and for YouTube it is
       // also the least dependable one — the same public instance already
