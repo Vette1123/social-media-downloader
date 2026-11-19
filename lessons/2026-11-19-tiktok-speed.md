@@ -64,5 +64,8 @@ oembed title lookup runs alongside the probe instead of after it.
   answer" and trusted the Worker's tikwm call to take over. From the Worker
   tikwm never answered, so "no answer" became "failed after 6.5 s". A fallback
   that is never seen to win is not a fallback.
+- **Second miss:** two attempts still failed 2 of 15 sequential prod resolves at
+  8.1 s. Dead tunnels are independent (~1 in 5 on any video, measured 10 in a
+  row), so two in a row is ~4%. Now 3 staggered attempts, 1.2 s apart: ~1%.
 - **Rule:** when a flaky upstream can be asked again, retry it beside the slow
   attempt (hedge); don't wait out the stall.

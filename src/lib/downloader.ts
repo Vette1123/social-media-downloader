@@ -434,7 +434,10 @@ export function noMediaMessage(platform: SupportedPlatform): string {
  * fresh resolve is started beside it. A healthy resolve plus first read takes
  * ~0.5 s from the Worker (measured 2026-11-19); a dead one stalls 6.4 s.
  */
-export const TIKTOK_TUNNEL_HEDGE_MS = 1500
+export const TIKTOK_TUNNEL_HEDGE_MS = 1200
+
+/** Staggered Cobalt resolves per TikTok link; see tryTikTokCobalt. */
+export const TIKTOK_TUNNEL_ATTEMPTS = 3
 
 export async function firstResult<T>(
   methods: Array<() => Promise<T | null>>,
@@ -3264,27 +3267,33 @@ export class Downloader {
   private async tryTikTokCobalt(url: string): Promise<VideoData | null> {
     // co.otomir23.me hands back a dead tunnel about one resolve in six
     // (measured 2026-11-19: 500 after 6.35 s on the first read), and asking
-    // again gets a fresh one that streams at once. So a second resolve starts
-    // the moment the first tunnel fails, or once it has stalled past the hedge;
+    // again gets a fresh one that streams at once. So another resolve starts
+    // the moment a tunnel fails, or once it has stalled past the hedge;
     // whichever streams first wins. Only a tunnel that came back and did not
     // stream earns the retry: a link Cobalt has nothing for costs one call.
-    let cobaltHadNothing = false
+    // Dead tunnels are independent (about one in five), so up to
+    // TIKTOK_TUNNEL_ATTEMPTS are staggered: each starts when the one before it
+    // fails or stalls past the hedge, and none starts once any has streamed.
+    let settled = false
     const attempt = async () => {
+      if (settled) return null
       const result = await this.tryTikTokCobaltOnce(url)
       if (result === 'nothing') {
-        cobaltHadNothing = true
+        settled = true
         return null
       }
+      if (result) settled = true
       return result
     }
-    const first = attempt()
-    const hedge = new Promise<null>((resolve) =>
-      setTimeout(() => resolve(null), TIKTOK_TUNNEL_HEDGE_MS),
-    )
-    const second = Promise.race([first, hedge]).then((won) =>
-      won || cobaltHadNothing ? null : attempt(),
-    )
-    return firstResult([() => first, () => second])
+    const attempts = [attempt()]
+    for (let i = 1; i < TIKTOK_TUNNEL_ATTEMPTS; i++) {
+      const previous = attempts[i - 1]
+      const hedge = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), TIKTOK_TUNNEL_HEDGE_MS),
+      )
+      attempts.push(Promise.race([previous, hedge]).then(() => attempt()))
+    }
+    return firstResult(attempts.map((p) => () => p))
   }
 
   /** One Cobalt resolve whose tunnel has been seen to stream, or why not. */

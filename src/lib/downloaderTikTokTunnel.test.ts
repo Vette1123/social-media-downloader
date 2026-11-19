@@ -112,3 +112,28 @@ describe('a dead or stalled Cobalt tunnel gets a second, fresh resolve', () => {
     expect(resolves).toHaveBeenCalledTimes(1)
   })
 })
+
+/**
+ * Dead tunnels are independent, about one in five on any video, so two in a
+ * row still happened (2 of 15 sequential prod resolves after the two-attempt
+ * hedge, failing at 8.1 s). A third staggered attempt makes that rare.
+ */
+describe('two dead tunnels in a row', () => {
+  it('still finds a live third one', async () => {
+    const d = new Downloader() as unknown as PrivateDownloader
+    let n = 0
+    const resolves = vi.spyOn(d, 'tryCobaltInstances').mockImplementation(async () => ({
+      downloadUrl: `https://cobalt.example/tunnel?id=${++n}`,
+      title: 'tiktok_scout2015_6718335390845095173',
+    }))
+    vi.spyOn(d, 'fetchTikTokMeta').mockResolvedValue({})
+    vi.spyOn(d, 'probeStream').mockImplementation(async (url: string) =>
+      url.endsWith('id=3') ? { verdict: 'ok' } : new Promise(() => {}),
+    )
+    const started = Date.now()
+    expect((await d.tryTikTokCobalt(LINK))?.downloadUrl).toBe('https://cobalt.example/tunnel?id=3')
+    expect(Date.now() - started).toBeLessThan(3500)
+    await new Promise((r) => setTimeout(r, 1500))
+    expect(resolves).toHaveBeenCalledTimes(3)
+  })
+})
