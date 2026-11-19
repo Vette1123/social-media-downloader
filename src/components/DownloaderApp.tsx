@@ -2045,18 +2045,25 @@ export function DownloaderApp() {
       const filename = nameFile('mp4')
       const signal = cancelRef.current.signal
       const onProgress = (p: number | null) => dispatch({ type: 'SET_PROGRESS', payload: p })
+      // The direct path reported no size, so its speed could not be measured
+      // (2026-11-19 TikTok audit). The saved blob says it.
+      let savedBytes: number | undefined
+      const deliverSized = (blob: Blob, name: string) => {
+        savedBytes = blob.size
+        return deliver(blob, name)
+      }
       // The instance resolves server-side before the first byte, so nothing
       // moves for a moment after the click. Hold the button in a spinning
       // "preparing" state until the stream starts reporting.
       dispatch({ type: 'SET_DOWNLOADING', payload: true })
       dispatch({ type: 'SET_PROGRESS', payload: null })
-      let outcome = await downloadDirectWithProgress(direct, filename, onProgress, deliver, signal)
+      let outcome = await downloadDirectWithProgress(direct, filename, onProgress, deliverSized, signal)
       if (!cancelled() && wantsTikwmFallback(outcome, state.videoMetadata)) {
         const alt = await resolveTikTokInBrowser(state.originalUrl, quality).catch(() => null)
         const altDirect = alt?.metadata.directVideoUrl
         if (alt && altDirect && !cancelled()) {
           dispatch({ type: 'SET_PROGRESS', payload: null })
-          outcome = await downloadDirectWithProgress(altDirect, filename, onProgress, deliver, signal)
+          outcome = await downloadDirectWithProgress(altDirect, filename, onProgress, deliverSized, signal)
           source = { direct: altDirect, isAttachment: false, proxied: alt.downloadUrl }
           delivery = 'tikwm_fallback'
         }
@@ -2072,7 +2079,7 @@ export function DownloaderApp() {
         return false
       }
       if (outcome === 'saved') {
-        transfer.completed({ delivery })
+        transfer.completed({ delivery, size_bytes: savedBytes })
         dispatch({ type: 'SET_DOWNLOADING', payload: false })
         dispatch({ type: 'SET_PROGRESS', payload: null })
         dispatch({

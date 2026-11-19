@@ -41,7 +41,13 @@ export function directSaveUrl(
  * ponytail: a hand-kept list; a host that drops CORS only costs one failed
  * fetch before the proxy retry. Add a host only after measuring its headers.
  */
-const CORS_CDN_HOSTS = [/\.fbcdn\.net$/, /\.cdninstagram\.com$/, /^video\.twimg\.com$/]
+const CORS_CDN_HOSTS = [
+  /\.fbcdn\.net$/,
+  /\.cdninstagram\.com$/,
+  /^video\.twimg\.com$/,
+  // tikwm's TikTok URLs (v16-notes, v19): `*` CORS and full reads, 2026-11-19.
+  /\.tiktokcdn-us\.com$/,
+]
 
 function isCorsCdn(url: string | undefined): boolean {
   if (!url) return false

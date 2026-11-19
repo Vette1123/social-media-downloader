@@ -75,6 +75,18 @@ describe('resolving a TikTok link', () => {
     expect(result.metadata?.title).toBe('from-server')
   })
 
+  it('asks the server at once instead of giving tikwm a head start', async () => {
+    // Measured 2026-11-19: tikwm answered in 2.2–5.6 s on 9 of 9 calls, so a
+    // 700 ms head start never let it win and only delayed every paste.
+    browserResolve.mockReturnValue(never)
+    const server = stubServer(10_000)
+
+    void resolve(TIKTOK)
+    await new Promise((r) => setTimeout(r, 50))
+
+    expect(server).toHaveBeenCalled()
+  })
+
   it('keeps a late browser answer when the server request fails', async () => {
     // Racing the raw server promise meant a network error settled the race and
     // was thrown at the caller, discarding the browser answer still in flight.

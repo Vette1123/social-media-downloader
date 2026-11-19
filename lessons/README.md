@@ -169,3 +169,4 @@ the index for exactly that.
 | 2026-11-18 | [The page relay leaves Deno for its own Netlify](2026-11-18-page-relay-on-netlify.md) | Deno suspended the relay; PAGE_RELAY now on reely-ig-page.netlify.app, its own credit pool. |
 | 2026-11-18 | [TikTok ultra slow: dead tunnels logged as successes](2026-11-18-tiktok-tunnel-fallback.md) | otomir23 tunnels 500 on ~1 in 3 TikToks; a failed TikTok tunnel now retries from tikwm instead of handing the dead URL to the browser. |
 | 2026-11-19 | [Download audit: dead TikTok tunnels, direct CDN reads](2026-11-19-download-audit-direct-cdn.md) | A tunnel is not an answer until its first bytes are read; FB/IG/X CDN files go browser-direct with the proxy as fallback; batch never navigates to a non-attachment. |
+| 2026-11-19 | [TikTok "slow": where the seconds went](2026-11-19-tiktok-speed.md) | tikwm now takes 2–6 s, so the 700 ms head start only delayed every paste; race the server at once. Transfer is already near line speed. |

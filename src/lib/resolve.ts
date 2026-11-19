@@ -51,11 +51,13 @@ export interface ResolveResult {
  * How long the browser's own TikTok attempt runs alone before the server is
  * asked as well. See `resolve`.
  *
- * Short enough that a stalled tikwm is barely felt, long enough that its usual
- * answer (a few hundred ms from a residential IP) still arrives first and the
- * server is never troubled at all.
+ * Zero since 2026-11-19. It was 700 ms, sized for a tikwm that answered in a
+ * few hundred ms; measured that day it answered in 2.2–5.6 s on 9 of 9 calls,
+ * so the head start never let it win and only added 0.7 s to every paste. An
+ * answer tikwm already has (settled before the timer fires) still wins without
+ * a server request.
  */
-const HEDGE_AFTER_MS = 700
+const HEDGE_AFTER_MS = 0
 
 const after = (ms: number) =>
   new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
