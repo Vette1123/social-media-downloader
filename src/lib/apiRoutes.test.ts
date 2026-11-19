@@ -80,6 +80,7 @@ describe('directSaveUrl', () => {
       'https://video-mrs2-3.xx.fbcdn.net/o1/v/t2/clip.mp4?oh=1',
       'https://scontent-fra5-1.cdninstagram.com/o1/v/clip.mp4',
       'https://video.twimg.com/amplify_video/1/vid/avc1/720x1280/a.mp4',
+      'https://v16-notes.tiktokcdn-us.com/300ccb/6afeaf18/video/tos/a.mp4',
     ]) {
       expect(directFetch({ ...base, downloadUrl })).toEqual({ url: downloadUrl, isAttachment: false })
       expect(directSaveUrl({ ...base, downloadUrl })).toBeUndefined()
