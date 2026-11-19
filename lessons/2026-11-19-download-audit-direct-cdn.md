@@ -56,3 +56,13 @@ through production.
 - `directIsAttachment` decides navigate vs fetch; never navigate to a URL
   without it.
 - Add a host to `CORS_CDN_HOSTS` only after measuring its CORS headers.
+
+## Follow-up: the MP3 button on a long YouTube video
+
+`downloadAudio` took Cobalt's first audio tunnel unread. For `JkeyKeK3V24`
+(1 h 51 min) it answered `200` with an empty body, so the MP3 button waited
+~15 s and saved nothing. Innertube had already refused the same track
+(`403` past the first MB without a PO token). The audio path now probes the
+tunnel too; a dead one falls through to Innertube and the via-video fallback,
+and when every source misses, the visitor gets "Could not extract audio" at
+once. Same rule as TikTok: a tunnel is not an answer until it streams.
