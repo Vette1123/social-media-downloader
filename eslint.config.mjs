@@ -20,6 +20,8 @@ const eslintConfig = [
       // Scratch dir for CPU profiling and the throwaway bench Worker: bundled
       // output and one-off measurement scripts, gitignored and not shipped.
       '.prof/**',
+      // The promo films: their own package, deps and typecheck (video/README.md).
+      'video/**',
     ],
   },
   ...nextCoreWebVitals,
