@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectPlatform, extractLink, parseVideoId } from './validator'
+import { detectPlatform, extractLink, linkTokens, parseVideoId } from './validator'
 
 describe('extractLink', () => {
   it('leaves a single link alone', () => {
@@ -65,5 +65,34 @@ describe('detectPlatform: share-sheet shapes that were landing in generic', () =
     const url = 'https://www.tiktok.com/@someone/photo/7311111111111111111?_r=1'
     expect(detectPlatform(url)).toBe('tiktok')
     expect(parseVideoId(url)).toBe('7311111111111111111')
+  })
+  it('takes the first of several links pasted run together', () => {
+    const a = 'https://www.tiktok.com/t/ZSaaaaaaa'
+    const b = 'https://www.tiktok.com/t/ZSbbbbbbb'
+    const c = 'https://vt.tiktok.com/ZScccccccc'
+    expect(extractLink(`${a}${b}${c}`)).toBe(a)
+    expect(extractLink(`${a}/${b}/${c}/`)).toBe(`${a}/`)
+  })
+
+  it('does not split a link that carries another link in its query', () => {
+    const link = 'https://www.facebook.com/login/?next=https://www.facebook.com/reel/123'
+    expect(extractLink(link)).toBe(link)
+  })
+})
+
+describe('linkTokens', () => {
+  it('splits links pasted with no space between them', () => {
+    expect(linkTokens('https://a.com/xhttps://b.com/y http://c.com/z')).toEqual([
+      'https://a.com/x',
+      'https://b.com/y',
+      'http://c.com/z',
+    ])
+  })
+})
+
+describe('author-less TikTok photo links', () => {
+  it('is TikTok, as a /t/ short link lands on it', () => {
+    expect(detectPlatform('https://www.tiktok.com/@/photo/7584709238878915858?_r=1')).toBe('tiktok')
+    expect(parseVideoId('https://www.tiktok.com/@/photo/7584709238878915858')).toBe('7584709238878915858')
   })
 })
