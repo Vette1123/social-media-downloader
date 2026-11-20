@@ -507,6 +507,30 @@ export function isCrawlerOnlyShareLink(url: string): boolean {
   );
 }
 
+/**
+ * What a visitor sees when a Facebook share link opens only for a logged-in
+ * account. `logged-in` files it under `private` (see analyticsErrors.ts).
+ */
+export const FACEBOOK_SHARE_WALLED =
+  "Facebook opens this link only for logged-in viewers, so it cannot be downloaded here. The post is friends-only, in a private group, or was deleted. Public videos, reels and watch links work.";
+
+/**
+ * A Facebook share link that Facebook answered without naming the post. A
+ * public post's `/share/r|v/<code>` answers the link crawler with a 302 to
+ * `/reel/<id>` or `/<page>/videos/<id>`; a gated one answers 200 with a
+ * "log in to view" page and stays on `/share/`, for every crawler identity
+ * (facebookexternalhit, WhatsApp, Telegram, Twitter, Slack, Discord, Google,
+ * on www and m, measured 2026-11-20 on links pasted in public bug reports).
+ * There is no post id to try anything on, so the chain stops here.
+ *
+ * `finalUrl` is where the redirect walk ended, after unwrapLoginWall.
+ */
+export function isWalledFacebookShare(finalUrl: string): boolean {
+  return /^https?:\/\/([\w-]+\.)?(facebook\.com\/(share\/|login(\.php)?([/?#]|$))|fb\.watch\/)/i.test(
+    finalUrl,
+  );
+}
+
 export function isThreadsShareLink(url: string): boolean {
   return /^(https?:\/\/)?([\w-]+\.)?threads\.(net|com)\/share\/[\w-]+/i.test(
     url,
@@ -2683,7 +2707,17 @@ export class Downloader {
       url.includes("/share/") ||
       url.includes("fb.com")
     ) {
-      resolvedUrl = await this.resolveRedirect(url);
+      const hop = await this.followRedirect(url);
+      // Only an answer Facebook gave counts: a timeout also leaves the link on
+      // /share/, and that is not the post's fault.
+      if (
+        hop.answered &&
+        isCrawlerOnlyShareLink(url) &&
+        isWalledFacebookShare(hop.url)
+      ) {
+        throw new Error(FACEBOOK_SHARE_WALLED);
+      }
+      resolvedUrl = hop.url;
     }
 
     // tryFacebookScrape pulls the whole post page and scans it; it is skipped
@@ -4111,6 +4145,18 @@ export class Downloader {
    * megabyte of markup that nothing here reads.
    */
   private async resolveRedirect(url: string): Promise<string> {
+    return (await this.followRedirect(url)).url;
+  }
+
+  /**
+   * resolveRedirect, plus whether the host actually answered (a 2xx at the end
+   * of the walk). A thrown request or an error status leaves `url` unchanged
+   * and `answered` false, so a caller can tell "Facebook said nothing" from
+   * "Facebook said no".
+   */
+  private async followRedirect(
+    url: string,
+  ): Promise<{ url: string; answered: boolean }> {
     const share = isCrawlerOnlyShareLink(url);
     try {
       const send = share ? http.head : http.get;
@@ -4126,9 +4172,12 @@ export class Downloader {
       // login wall, and the canonical post is in its `next` parameter. Without
       // this the shortcode is lost and every extractor that needs one is
       // skipped. See unwrapLoginWall.
-      return unwrapLoginWall(response.request?.res?.responseUrl || url);
+      return {
+        url: unwrapLoginWall(response.request?.res?.responseUrl || url),
+        answered: response.status >= 200 && response.status < 300,
+      };
     } catch {
-      return url;
+      return { url, answered: false };
     }
   }
 
