@@ -42,7 +42,8 @@
     "posthog:issues": "node scripts/posthog-issues.mjs",
     "posthog:usage": "node scripts/posthog-usage.mjs",
     "posthog:setup": "node scripts/posthog-setup.mjs",
-    "telegram:setup": "node scripts/telegram-setup.mjs"
+    "telegram:setup": "node scripts/telegram-setup.mjs",
+    "link:probe": "node scripts/link-probe.mjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
