@@ -325,7 +325,38 @@ export function parseYouTubeId(url: string): string | null {
  * already a single link, a cleaned `https://…` link when one is embedded, or
  * null when there is none.
  */
+// Outbound-link wrappers: a Google result, or a link tapped inside Facebook,
+// Instagram or a YouTube description, copies as the wrapper with the real link
+// in one query parameter. host -> [path, param].
+const REDIRECT_WRAPPERS: Array<[RegExp, RegExp, string]> = [
+  [/^(?:www\.)?google\.[a-z.]+$/, /^\/url$/, 'url'],
+  [/^(?:www\.)?google\.[a-z.]+$/, /^\/url$/, 'q'],
+  [/^lm?\.facebook\.com$/, /^\/l\.php$/, 'u'],
+  [/^l\.instagram\.com$/, /^\/?$/, 'u'],
+  [/^(?:www\.|m\.)?youtube\.com$/, /^\/redirect$/, 'q'],
+]
+
+export function unwrapRedirect(link: string): string {
+  let parsed: URL
+  try {
+    parsed = new URL(link)
+  } catch {
+    return link
+  }
+  for (const [host, path, param] of REDIRECT_WRAPPERS) {
+    if (!host.test(parsed.hostname) || !path.test(parsed.pathname)) continue
+    const inner = parsed.searchParams.get(param)
+    if (inner && /^https?:\/\//i.test(inner) && isHttpUrl(inner)) return inner
+  }
+  return link
+}
+
 export function extractLink(text: string | null | undefined): string | null {
+  const link = findLink(text)
+  return link ? unwrapRedirect(link) : null
+}
+
+function findLink(text: string | null | undefined): string | null {
   if (!text || typeof text !== 'string') return null
   const trimmed = text.trim()
   if (!trimmed) return null

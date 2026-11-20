@@ -96,3 +96,32 @@ describe('author-less TikTok photo links', () => {
     expect(parseVideoId('https://www.tiktok.com/@/photo/7584709238878915858')).toBe('7584709238878915858')
   })
 })
+
+describe('extractLink — redirect wrappers', () => {
+  it('unwraps a Google search result link', () => {
+    expect(
+      extractLink(
+        'https://www.google.com/url?sa=t&url=https%3A%2F%2Fwww.tiktok.com%2F%40a%2Fvideo%2F123&gsessionid=x',
+      ),
+    ).toBe('https://www.tiktok.com/@a/video/123')
+  })
+
+  it('unwraps Facebook, Instagram and YouTube outbound links', () => {
+    expect(extractLink('https://l.facebook.com/l.php?u=https%3A%2F%2Fx.com%2Fa%2Fstatus%2F1&h=AT0')).toBe(
+      'https://x.com/a/status/1',
+    )
+    expect(extractLink('https://l.instagram.com/?u=https%3A%2F%2Fyoutu.be%2Fabc&e=1')).toBe('https://youtu.be/abc')
+    expect(
+      extractLink('https://www.youtube.com/redirect?event=x&q=https%3A%2F%2Fvimeo.com%2F42'),
+    ).toBe('https://vimeo.com/42')
+  })
+
+  it('keeps a wrapper whose target is not a web link, and ordinary query links', () => {
+    expect(extractLink('https://www.google.com/url?url=javascript%3Aalert(1)')).toBe(
+      'https://www.google.com/url?url=javascript%3Aalert(1)',
+    )
+    expect(extractLink('https://www.youtube.com/watch?v=abc&url=https%3A%2F%2Fx.com')).toBe(
+      'https://www.youtube.com/watch?v=abc&url=https%3A%2F%2Fx.com',
+    )
+  })
+})
