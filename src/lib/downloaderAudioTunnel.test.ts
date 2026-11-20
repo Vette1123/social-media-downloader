@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Downloader } from './downloader'
 
+// As on the Worker: no yt-dlp, so the MP3 fallback goes straight to the video
+// resolve instead of probing a real binary.
+vi.mock('./nativeMedia', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./nativeMedia')>()),
+  nativeMediaAvailable: () => false,
+}))
+
 /**
  * The MP3 button on a long YouTube video (2026-11-18, `JkeyKeK3V24`, 1 h 51 min)
  * got a Cobalt audio tunnel that answered `200` with an empty body: the
@@ -55,5 +62,43 @@ describe('the MP3 path only offers an audio tunnel that streams', () => {
   it('keeps a tunnel that streams', async () => {
     const { d } = setup('ok')
     expect((await d.downloadAudio(LINK, 'youtube')).musicUrl).toBe(TUNNEL)
+  })
+})
+
+/**
+ * 2026-11-20: every TikTok MP3 failed on prod. Cobalt's TikTok audio tunnel
+ * answers `200` with 0 bytes, the probe rightly drops it, and the video
+ * fallback then skipped Cobalt as if it had missed the link, which left only
+ * tikwm, which never answers from the Worker. Cobalt's VIDEO tunnel for the
+ * same post streams, so the fallback must still ask it.
+ */
+describe('the MP3 video fallback asks Cobalt again unless Cobalt had nothing', () => {
+  const TIKTOK = 'https://www.tiktok.com/@scout2015/video/6718335390845095173'
+
+  async function innerSkipCobalt(cobalt: Result | null): Promise<boolean | undefined> {
+    const d = new Downloader({ mode: 'audio' }) as unknown as PrivateDownloader & {
+      fetchTikTokMeta(): Promise<Record<string, string>>
+    }
+    vi.spyOn(d, 'tryCobaltInstances').mockResolvedValue(cobalt)
+    vi.spyOn(d, 'probeStream').mockResolvedValue({ verdict: 'unreachable' })
+    vi.spyOn(d, 'fetchTikTokMeta').mockResolvedValue({})
+    let seen: boolean | undefined
+    vi.spyOn(Downloader.prototype, 'downloadVideo').mockImplementation(async function (
+      this: unknown,
+    ) {
+      seen = (this as { skipCobalt: boolean }).skipCobalt
+      return { title: 't', downloadUrl: 'https://co.example/tunnel?id=v' } as never
+    })
+    const out = await d.downloadAudio(TIKTOK, 'tiktok')
+    expect(out.musicUrl).toBe('https://co.example/tunnel?id=v')
+    return seen
+  }
+
+  it('keeps Cobalt in the video resolve when its audio tunnel was empty', async () => {
+    expect(await innerSkipCobalt({ title: 'x', downloadUrl: '', musicUrl: TUNNEL })).toBe(false)
+  })
+
+  it('skips Cobalt in the video resolve when Cobalt had no answer', async () => {
+    expect(await innerSkipCobalt(null)).toBe(true)
   })
 })
