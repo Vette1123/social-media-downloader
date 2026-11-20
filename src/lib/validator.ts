@@ -23,7 +23,7 @@ const platformPatterns: Record<
   tiktok: [
     /^(https?:\/\/)?(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/,
     // Photo carousels: same id space, and tikwm/Cobalt resolve them like videos
-    /^(https?:\/\/)?(www\.)?tiktok\.com\/@[\w.-]+\/photo\/\d+/,
+    /^(https?:\/\/)?(www\.)?tiktok\.com\/@[\w.-]*\/photo\/\d+/,
     /^(https?:\/\/)?(www\.)?tiktok\.com\/[\w.-]+\/video\/\d+/,
     /^(https?:\/\/)?vm\.tiktok\.com\/[\w\d]+/,
     /^(https?:\/\/)?vt\.tiktok\.com\/[\w\d]+/,
@@ -193,7 +193,7 @@ export function validateUrl(url: string): boolean {
 export function parseVideoId(url: string): string | null {
   const patterns = [
     /\/video\/(\d+)/,
-    /tiktok\.com\/@[\w.-]+\/photo\/(\d+)/,
+    /tiktok\.com\/@[\w.-]*\/photo\/(\d+)/,
     /\/v\/(\d+)/,
     /vm\.tiktok\.com\/([\w\d]+)/,
     /vt\.tiktok\.com\/([\w\d]+)/,
@@ -329,6 +329,10 @@ export function extractLink(text: string | null | undefined): string | null {
   if (!text || typeof text !== 'string') return null
   const trimmed = text.trim()
   if (!trimmed) return null
+  // Several links pasted with nothing between them are one long "link" to every
+  // anchored pattern, so take the first.
+  const tokens = linkTokens(trimmed)
+  if (tokens.length > 1) return trimTail(tokens[0])
   if (!/\s/.test(trimmed) && detectPlatform(trimmed) !== 'unknown') return trimmed
   const withScheme = trimmed.match(/https?:\/\/[^\s<>"']+/i)
   if (withScheme) return trimTail(withScheme[0])
@@ -345,4 +349,24 @@ export function extractLink(text: string | null | undefined): string | null {
 // Sentence punctuation and a closing bracket are not part of a link.
 function trimTail(link: string): string {
   return link.replace(/[.,;:!?)\]}>'"]+$/, '')
+}
+
+/**
+ * Every `http(s)://` link in the text, in order. A new scheme starts a new link
+ * even with no space before it (a paste of several share links run together),
+ * except right after `=`, `?` or `&`, where it is a query value of the link
+ * before, e.g. a login wall's `?next=https://…`.
+ */
+export function linkTokens(text: string): string[] {
+  if (!text) return []
+  const starts = [...text.matchAll(/https?:\/\//gi)]
+    .map((m) => m.index ?? 0)
+    .filter((i) => i === 0 || !/[=?&]/.test(text[i - 1]))
+  const out: string[] = []
+  starts.forEach((start, n) => {
+    const piece = text.slice(start, starts[n + 1] ?? text.length)
+    const link = piece.match(/^[^\s<>"']+/)?.[0]
+    if (link) out.push(link)
+  })
+  return out
 }

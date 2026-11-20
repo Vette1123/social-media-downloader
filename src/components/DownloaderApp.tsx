@@ -98,7 +98,7 @@ import {
   removeFormat,
   type FormatMap,
 } from '@/lib/platformFormat'
-import { detectPlatform, extractLink, type SupportedPlatform } from '@/lib/validator'
+import { detectPlatform, extractLink, linkTokens, type SupportedPlatform } from '@/lib/validator'
 import {
   beginDownload,
   contentProps,
@@ -179,9 +179,7 @@ import { previewAspectRatio } from '@/lib/previewAspect'
 // so we scan for the first URL token rather than assume the whole string is one.
 function extractFirstUrl(s: string): string | null {
   if (!s) return null
-  const m = s.match(/https?:\/\/[^\s]+/i)
-  const candidate = (m ? m[0] : s).trim()
-  return /^https?:\/\//i.test(candidate) ? candidate : null
+  return linkTokens(s)[0] ?? null
 }
 
 // Pull EVERY http(s) URL out of pasted text, de-duplicated in order. Powers
@@ -189,7 +187,7 @@ function extractFirstUrl(s: string): string | null {
 // resolved and saved to Recent in turn.
 function extractAllUrls(s: string): string[] {
   if (!s) return []
-  const matches = s.match(/https?:\/\/[^\s]+/gi) || []
+  const matches = linkTokens(s)
   const seen = new Set<string>()
   const out: string[] = []
   for (const raw of matches) {

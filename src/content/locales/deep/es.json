@@ -239,5 +239,6 @@
   "Saved {k} of {n} {noun}. Paste the post again to retry the rest.": "Se guardaron {k} de {n} {noun}. Pega la publicación otra vez para reintentar el resto.",
   "A private Islamic companion: prayer, Qur’an, adhkar, qibla": "Un compañero islámico privado: oración, Corán, adhkar, qibla",
   "An offline-first, multi-currency spending tracker": "Un control de gastos sin conexión y en varias monedas",
-  "A local-price tracker for gold, currencies and more": "Precios locales del oro, las divisas y más"
+  "A local-price tracker for gold, currencies and more": "Precios locales del oro, las divisas y más",
+  "That is a Telegram channel, not a post": "Ese es un canal de Telegram, no una publicación"
 }

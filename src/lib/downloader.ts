@@ -1,6 +1,13 @@
-import { http } from './httpClient'
-import { parseTelegramEmbed, telegramPostRef, type TelegramPostRef } from './telegramPost'
-import { pageRelayUrl } from './pageRelay'
+import { http } from "./httpClient";
+import {
+  isTelegramPrivateLink,
+  parseTelegramEmbed,
+  TELEGRAM_PRIVATE_CHANNEL,
+  telegramEmptyReason,
+  telegramPostRef,
+  type TelegramPostRef,
+} from "./telegramPost";
+import { pageRelayUrl } from "./pageRelay";
 import {
   decodeEntities,
   firstTagAttr,
@@ -10,7 +17,7 @@ import {
   pageTitle,
   scriptContaining,
   textOfFirstWithClass,
-} from './htmlExtract'
+} from "./htmlExtract";
 import {
   extractMediaFromHtml,
   fetchThroughRelay,
@@ -19,9 +26,9 @@ import {
   looksLikeBotWall,
   OriginBlockedError,
   readCappedText,
-} from './pageScrape'
-import { resolveByRule } from './siteRules'
-import { VideoData, ImageData } from './types'
+} from "./pageScrape";
+import { resolveByRule } from "./siteRules";
+import { VideoData, ImageData } from "./types";
 import {
   parseVideoId,
   detectPlatform,
@@ -30,13 +37,12 @@ import {
   parseYouTubeId,
   unwrapLoginWall,
   type SupportedPlatform,
-} from './validator'
-import { htmlScrapingAvailable, nativeMediaAvailable } from './nativeMedia'
-import { getMediaReferer } from './proxyHeaders'
-import { tryYouTubeInnertube } from './youtubeInnertube'
-import { ytdlpInfo, ytdlpProbe } from './ytdlp'
-import { isTransientError, withRetry } from './retry'
-
+} from "./validator";
+import { htmlScrapingAvailable, nativeMediaAvailable } from "./nativeMedia";
+import { getMediaReferer } from "./proxyHeaders";
+import { tryYouTubeInnertube } from "./youtubeInnertube";
+import { ytdlpInfo, ytdlpProbe } from "./ytdlp";
+import { isTransientError, withRetry } from "./retry";
 
 /**
  * Hosts the public cobalt instances will actually answer for.
@@ -56,55 +62,55 @@ import { isTransientError, withRetry } from './retry'
  * and every other subdomain falls out of the same entry.
  */
 const COBALT_SERVICE_HOSTS = [
-  'bilibili.com',
-  'bilibili.tv',
-  'b23.tv',
-  'bsky.app',
-  'dailymotion.com',
-  'dai.ly',
-  'facebook.com',
-  'fb.watch',
-  'instagram.com',
-  'loom.com',
-  'ok.ru',
-  'pin.it',
-  'redd.it',
-  'reddit.com',
-  'rutube.ru',
-  'snapchat.com',
-  'snd.sc',
-  'soundcloud.com',
-  'streamable.com',
-  'tiktok.com',
-  'tumblr.com',
-  'twitch.tv',
-  'twitter.com',
-  'vimeo.com',
-  'vk.com',
-  'vk.ru',
-  'vkvideo.ru',
-  'x.com',
-  'xhslink.com',
-  'xiaohongshu.com',
-  'youtu.be',
-  'youtube.com',
-]
+  "bilibili.com",
+  "bilibili.tv",
+  "b23.tv",
+  "bsky.app",
+  "dailymotion.com",
+  "dai.ly",
+  "facebook.com",
+  "fb.watch",
+  "instagram.com",
+  "loom.com",
+  "ok.ru",
+  "pin.it",
+  "redd.it",
+  "reddit.com",
+  "rutube.ru",
+  "snapchat.com",
+  "snd.sc",
+  "soundcloud.com",
+  "streamable.com",
+  "tiktok.com",
+  "tumblr.com",
+  "twitch.tv",
+  "twitter.com",
+  "vimeo.com",
+  "vk.com",
+  "vk.ru",
+  "vkvideo.ru",
+  "x.com",
+  "xhslink.com",
+  "xiaohongshu.com",
+  "youtu.be",
+  "youtube.com",
+];
 
 /** Pinterest ships one domain per country — pinterest.co.uk, .fr, .de, … */
-const PINTEREST_HOST = /(^|\.)pinterest\.[a-z]{2,3}(\.[a-z]{2})?$/i
+const PINTEREST_HOST = /(^|\.)pinterest\.[a-z]{2,3}(\.[a-z]{2})?$/i;
 
 /** Whether the public cobalt instances serve this URL's host at all. */
 export function publicCobaltServes(url: string): boolean {
-  let hostname: string
+  let hostname: string;
   try {
-    hostname = new URL(url).hostname.toLowerCase()
+    hostname = new URL(url).hostname.toLowerCase();
   } catch {
-    return false
+    return false;
   }
-  if (PINTEREST_HOST.test(hostname)) return true
+  if (PINTEREST_HOST.test(hostname)) return true;
   return COBALT_SERVICE_HOSTS.some(
     (host) => hostname === host || hostname.endsWith(`.${host}`),
-  )
+  );
 }
 
 /**
@@ -120,15 +126,15 @@ export function publicCobaltServes(url: string): boolean {
  * minutes is long enough to matter under load and short enough that a
  * recovered instance is back before anyone notices it left.
  */
-const COBALT_COOLDOWN_MS = 5 * 60_000
-const cobaltCooldown = new Map<string, number>()
+const COBALT_COOLDOWN_MS = 5 * 60_000;
+const cobaltCooldown = new Map<string, number>();
 
 /** One key per instance, so a trailing slash does not make two of them. */
-const cobaltKey = (instance: string): string => instance.replace(/\/$/, '')
+const cobaltKey = (instance: string): string => instance.replace(/\/$/, "");
 
 /** Test seam: the cooldown is module state and outlives a single test. */
 export function resetCobaltCooldown(): void {
-  cobaltCooldown.clear()
+  cobaltCooldown.clear();
 }
 
 /**
@@ -147,16 +153,16 @@ export function resetCobaltCooldown(): void {
  * approximately right in each isolate is the whole benefit, and shared state
  * would cost more than it saves.
  */
-const IG_CRAWLER_COOLDOWN_MS = 10 * 60 * 1000
-let instagramCrawlerBlockedUntil = 0
+const IG_CRAWLER_COOLDOWN_MS = 10 * 60 * 1000;
+let instagramCrawlerBlockedUntil = 0;
 
 function instagramCrawlerCoolingDown(): boolean {
-  return Date.now() < instagramCrawlerBlockedUntil
+  return Date.now() < instagramCrawlerBlockedUntil;
 }
 
 /** Test seam: module state that outlives a single test. */
 export function resetInstagramCrawlerCooldown(): void {
-  instagramCrawlerBlockedUntil = 0
+  instagramCrawlerBlockedUntil = 0;
 }
 
 /**
@@ -167,7 +173,7 @@ export function resetInstagramCrawlerCooldown(): void {
  * media that was asked for, so keeping the result as a fallback would ship the
  * wrong file rather than a slow one.
  */
-type StreamVerdict = 'ok' | 'unreachable' | 'wrong-type'
+type StreamVerdict = "ok" | "unreachable" | "wrong-type";
 
 /**
  * What a probe of a candidate stream found, and how big it turned out to be.
@@ -182,8 +188,8 @@ type StreamVerdict = 'ok' | 'unreachable' | 'wrong-type'
  * shows nothing rather than a guess.
  */
 interface StreamProbe {
-  verdict: StreamVerdict
-  sizeBytes?: number
+  verdict: StreamVerdict;
+  sizeBytes?: number;
 }
 
 /**
@@ -195,15 +201,15 @@ interface StreamProbe {
  * are both refused — reporting 1 KB for a 40 MB clip is worse than silence.
  */
 function totalStreamBytes(response: Response): number | undefined {
-  const range = response.headers.get('content-range')
-  const total = range?.match(/\/(\d+)\s*$/)?.[1]
-  if (total) return Number(total)
+  const range = response.headers.get("content-range");
+  const total = range?.match(/\/(\d+)\s*$/)?.[1];
+  if (total) return Number(total);
   if (response.status === 200) {
-    const length = Number(response.headers.get('content-length'))
-    if (length > 0) return length
+    const length = Number(response.headers.get("content-length"));
+    if (length > 0) return length;
   }
-  const estimated = Number(response.headers.get('estimated-content-length'))
-  return estimated > 0 ? estimated : undefined
+  const estimated = Number(response.headers.get("estimated-content-length"));
+  return estimated > 0 ? estimated : undefined;
 }
 
 /**
@@ -215,26 +221,34 @@ function totalStreamBytes(response: Response): number | undefined {
  * `application/octet-stream` for everything it carries.
  */
 function looksLikeImageBytes(bytes: Uint8Array | undefined): boolean {
-  if (!bytes || bytes.length < 4) return false
-  const [a, b, c, d] = bytes
-  if (a === 0xff && b === 0xd8 && c === 0xff) return true // JPEG
-  if (a === 0x89 && b === 0x50 && c === 0x4e && d === 0x47) return true // PNG
-  if (a === 0x47 && b === 0x49 && c === 0x46 && d === 0x38) return true // GIF8
+  if (!bytes || bytes.length < 4) return false;
+  const [a, b, c, d] = bytes;
+  if (a === 0xff && b === 0xd8 && c === 0xff) return true; // JPEG
+  if (a === 0x89 && b === 0x50 && c === 0x4e && d === 0x47) return true; // PNG
+  if (a === 0x47 && b === 0x49 && c === 0x46 && d === 0x38) return true; // GIF8
   if (bytes.length >= 12) {
-    const riff = a === 0x52 && b === 0x49 && c === 0x46 && d === 0x46
+    const riff = a === 0x52 && b === 0x49 && c === 0x46 && d === 0x46;
     const webp =
       bytes[8] === 0x57 &&
       bytes[9] === 0x45 &&
       bytes[10] === 0x42 &&
-      bytes[11] === 0x50
-    if (riff && webp) return true
+      bytes[11] === 0x50;
+    if (riff && webp) return true;
   }
-  return false
+  return false;
 }
 
-const COBALT_VIDEO_EXTENSIONS = ['mp4', 'webm', 'mkv', 'mov', 'm4v']
-const COBALT_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'avif']
-const COBALT_AUDIO_EXTENSIONS = ['mp3', 'm4a', 'opus', 'ogg', 'wav', 'flac']
+const COBALT_VIDEO_EXTENSIONS = ["mp4", "webm", "mkv", "mov", "m4v"];
+const COBALT_IMAGE_EXTENSIONS = [
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "gif",
+  "heic",
+  "avif",
+];
+const COBALT_AUDIO_EXTENSIONS = ["mp3", "m4a", "opus", "ogg", "wav", "flac"];
 
 /**
  * What Cobalt actually put in the tunnel, from the filename it names.
@@ -248,14 +262,14 @@ const COBALT_AUDIO_EXTENSIONS = ['mp3', 'm4a', 'opus', 'ogg', 'wav', 'flac']
  */
 export function cobaltMediaKind(
   filename: unknown,
-): 'video' | 'image' | 'audio' | 'unknown' {
-  if (typeof filename !== 'string') return 'unknown'
-  const ext = (filename.match(/\.([A-Za-z0-9]+)$/)?.[1] ?? '').toLowerCase()
-  if (!ext) return 'unknown'
-  if (COBALT_VIDEO_EXTENSIONS.includes(ext)) return 'video'
-  if (COBALT_IMAGE_EXTENSIONS.includes(ext)) return 'image'
-  if (COBALT_AUDIO_EXTENSIONS.includes(ext)) return 'audio'
-  return 'unknown'
+): "video" | "image" | "audio" | "unknown" {
+  if (typeof filename !== "string") return "unknown";
+  const ext = (filename.match(/\.([A-Za-z0-9]+)$/)?.[1] ?? "").toLowerCase();
+  if (!ext) return "unknown";
+  if (COBALT_VIDEO_EXTENSIONS.includes(ext)) return "video";
+  if (COBALT_IMAGE_EXTENSIONS.includes(ext)) return "image";
+  if (COBALT_AUDIO_EXTENSIONS.includes(ext)) return "audio";
+  return "unknown";
 }
 
 /**
@@ -270,9 +284,9 @@ export function cobaltMediaKind(
  * tikwm is checked first because it is the more specific host.
  */
 function codecProbeReferer(url: string): string {
-  if (url.includes('tikwm.com')) return 'https://www.tikwm.com/'
-  if (url.includes('tiktok')) return 'https://www.tiktok.com/'
-  return ''
+  if (url.includes("tikwm.com")) return "https://www.tikwm.com/";
+  if (url.includes("tiktok")) return "https://www.tiktok.com/";
+  return "";
 }
 
 /**
@@ -282,9 +296,9 @@ function codecProbeReferer(url: string): string {
  * "present but empty".
  */
 function tikwmAbsoluteUrl(path: string | undefined): string | undefined {
-  if (!path) return undefined
-  if (!path.startsWith('/')) return path
-  return 'https://www.tikwm.com' + path
+  if (!path) return undefined;
+  if (!path.startsWith("/")) return path;
+  return "https://www.tikwm.com" + path;
 }
 
 /**
@@ -303,15 +317,17 @@ function tikwmAbsoluteUrl(path: string | undefined): string | undefined {
  * A tikwm-hosted path is still returned as a last resort — a poster that might
  * 403 beats no poster, and the caller treats '' as "no thumbnail at all".
  */
-function pickTikwmCover(
-  data: { cover?: string; origin_cover?: string; ai_dynamic_cover?: string },
-): string {
-  const candidates = [data.origin_cover, data.cover, data.ai_dynamic_cover]
+function pickTikwmCover(data: {
+  cover?: string;
+  origin_cover?: string;
+  ai_dynamic_cover?: string;
+}): string {
+  const candidates = [data.origin_cover, data.cover, data.ai_dynamic_cover];
   for (const candidate of candidates) {
-    const absolute = tikwmAbsoluteUrl(candidate)
-    if (absolute && !absolute.includes('tikwm.com')) return absolute
+    const absolute = tikwmAbsoluteUrl(candidate);
+    if (absolute && !absolute.includes("tikwm.com")) return absolute;
   }
-  return tikwmAbsoluteUrl(data.cover) || ''
+  return tikwmAbsoluteUrl(data.cover) || "";
 }
 
 // Discover a self-hosted resolver's *current* base URL from a shared key/value
@@ -320,35 +336,35 @@ function pickTikwmCover(
 // store and we read it here — rotation heals with no env changes. Credentials
 // come from env only; nothing sensitive lands in the repo. The value is
 // cached in-process briefly so a burst of requests doesn't hammer the store.
-let _resolverCache: { url: string | null; at: number } = { url: null, at: 0 }
-const RESOLVER_DISCOVERY_TTL_MS = 60_000
+let _resolverCache: { url: string | null; at: number } = { url: null, at: 0 };
+const RESOLVER_DISCOVERY_TTL_MS = 60_000;
 
 async function discoverResolverBase(): Promise<string | null> {
-  const store = process.env.UPSTASH_REDIS_REST_URL?.trim().replace(/\/$/, '')
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
-  if (!store || !token) return null
+  const store = process.env.UPSTASH_REDIS_REST_URL?.trim().replace(/\/$/, "");
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  if (!store || !token) return null;
 
-  const now = Date.now()
+  const now = Date.now();
   if (now - _resolverCache.at < RESOLVER_DISCOVERY_TTL_MS) {
-    return _resolverCache.url
+    return _resolverCache.url;
   }
 
-  const key = process.env.REGISTRY_KEY?.trim() || 'resolver_url'
+  const key = process.env.REGISTRY_KEY?.trim() || "resolver_url";
   try {
     const res = await http.get(`${store}/get/${encodeURIComponent(key)}`, {
       headers: { Authorization: `Bearer ${token}` },
       timeout: 6000,
-    })
+    });
     // Upstash REST returns { result: <value> | null }.
-    const value = res.data?.result
-    const url = typeof value === 'string' && value ? value : null
-    _resolverCache = { url, at: now }
-    return url
+    const value = res.data?.result;
+    const url = typeof value === "string" && value ? value : null;
+    _resolverCache = { url, at: now };
+    return url;
   } catch {
     // On a store hiccup, keep serving the last known value rather than dropping
     // the fallback entirely (staleness is better than no resolver at all).
-    _resolverCache = { url: _resolverCache.url, at: now }
-    return _resolverCache.url
+    _resolverCache = { url: _resolverCache.url, at: now };
+    return _resolverCache.url;
   }
 }
 
@@ -358,7 +374,7 @@ async function discoverResolverBase(): Promise<string | null> {
  * reads this same constant.
  */
 const BROWSER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 /**
  * What a browser sends when it navigates to a page, rather than the two
@@ -369,38 +385,40 @@ const BROWSER_AGENT =
  * we are, and a host that fingerprints those is not fooled by headers.
  */
 const BROWSER_PAGE_HEADERS: Record<string, string> = {
-  'User-Agent': BROWSER_AGENT,
+  "User-Agent": BROWSER_AGENT,
   Accept:
-    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-  'Accept-Language': 'en-US,en;q=0.9',
-  'Sec-Fetch-Dest': 'document',
-  'Sec-Fetch-Mode': 'navigate',
-  'Sec-Fetch-Site': 'none',
-  'Sec-Fetch-User': '?1',
-  'Upgrade-Insecure-Requests': '1',
-}
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Sec-Fetch-User": "?1",
+  "Upgrade-Insecure-Requests": "1",
+};
 
 /**
  * Read a recipe's page from wherever it will answer: the host itself first,
  * a relay only if that fails. See the call site in `tryPageScrape`.
  */
-async function fetchPageDirectThenRelay(target: string): Promise<string | null> {
+async function fetchPageDirectThenRelay(
+  target: string,
+): Promise<string | null> {
   try {
     const response = await fetch(target, {
       headers: BROWSER_PAGE_HEADERS,
-      redirect: 'follow',
+      redirect: "follow",
       signal: AbortSignal.timeout(10_000),
-    })
+    });
     if (response.ok) {
-      const html = await readCappedText(response)
+      const html = await readCappedText(response);
       // A stub is not the page; fall through to the relay rather than feeding
       // the recipe markup that cannot contain what it is looking for.
-      if (html && !looksLikeBotWall(html)) return html
+      if (html && !looksLikeBotWall(html)) return html;
     }
   } catch {
     // Network failure is the same news as a wall here: try the relay.
   }
-  return fetchThroughRelay(target)
+  return fetchThroughRelay(target);
 }
 
 /**
@@ -423,10 +441,10 @@ async function fetchPageDirectThenRelay(target: string): Promise<string | null> 
  * the post (or implying a login) sends the visitor to check the wrong thing.
  */
 export function noMediaMessage(platform: SupportedPlatform): string {
-  if (platform === 'generic') {
-    return 'No downloadable video or image was found at this link. The site may be unsupported by this extractor, or it may show the media only to signed-in viewers.'
+  if (platform === "generic") {
+    return "No downloadable video or image was found at this link. The site may be unsupported by this extractor, or it may show the media only to signed-in viewers.";
   }
-  return `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`
+  return `Could not download this ${platform} content. The post may be private, region-locked, unavailable, or not supported by our extractor.`;
 }
 
 /**
@@ -434,10 +452,10 @@ export function noMediaMessage(platform: SupportedPlatform): string {
  * fresh resolve is started beside it. A healthy resolve plus first read takes
  * ~0.5 s from the Worker (measured 2026-11-19); a dead one stalls 6.4 s.
  */
-export const TIKTOK_TUNNEL_HEDGE_MS = 1200
+export const TIKTOK_TUNNEL_HEDGE_MS = 1200;
 
 /** Staggered Cobalt resolves per TikTok link; see tryTikTokCobalt. */
-export const TIKTOK_TUNNEL_ATTEMPTS = 3
+export const TIKTOK_TUNNEL_ATTEMPTS = 3;
 
 export async function firstResult<T>(
   methods: Array<() => Promise<T | null>>,
@@ -445,15 +463,15 @@ export async function firstResult<T>(
   try {
     return await Promise.any(
       methods.map(async (method) => {
-        const result = await method()
+        const result = await method();
         // Promise.any counts only rejections as losses, so "answered null" has
         // to become one.
-        if (!result) throw new Error('no result')
-        return result
+        if (!result) throw new Error("no result");
+        return result;
       }),
-    )
+    );
   } catch {
-    return null
+    return null;
   }
 }
 
@@ -465,11 +483,12 @@ export async function firstResult<T>(
  * is the same page the site publishes for link previews.
  */
 const LINK_CRAWLER_AGENT =
-  'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
+  "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
 
 /** Reddit's media through a host reddit does not block. See tryRedditMirror. */
-const REDDIT_MIRROR = 'https://vxreddit.com'
-const DISCORD_CRAWLER_AGENT = 'Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)'
+const REDDIT_MIRROR = "https://vxreddit.com";
+const DISCORD_CRAWLER_AGENT =
+  "Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)";
 
 /**
  * The two link shapes Facebook's own share sheet produces — `fb.watch/<code>`
@@ -483,11 +502,15 @@ const DISCORD_CRAWLER_AGENT = 'Mozilla/5.0 (compatible; Discordbot/2.0; +https:/
  * they keep the plain path rather than take a behaviour change nothing asked for.
  */
 export function isCrawlerOnlyShareLink(url: string): boolean {
-  return /facebook\.com\/share\/|fb\.watch\//i.test(url) || isThreadsShareLink(url)
+  return (
+    /facebook\.com\/share\/|fb\.watch\//i.test(url) || isThreadsShareLink(url)
+  );
 }
 
 export function isThreadsShareLink(url: string): boolean {
-  return /^(https?:\/\/)?([\w-]+\.)?threads\.(net|com)\/share\/[\w-]+/i.test(url)
+  return /^(https?:\/\/)?([\w-]+\.)?threads\.(net|com)\/share\/[\w-]+/i.test(
+    url,
+  );
 }
 
 /**
@@ -496,12 +519,12 @@ export function isThreadsShareLink(url: string): boolean {
  * instead of trying four paths that cannot work.
  */
 export function isFacebookStory(url: string): boolean {
-  return /facebook\.com\/stories\//i.test(url)
+  return /facebook\.com\/stories\//i.test(url);
 }
 
 /** A link that names a photo rather than a video. See `tryFacebookPhoto`. */
 export function isFacebookPhotoLink(url: string): boolean {
-  return /facebook\.com\/(?:photo(?:\.php)?\/?\?|[\w.-]+\/photos\/)/i.test(url)
+  return /facebook\.com\/(?:photo(?:\.php)?\/?\?|[\w.-]+\/photos\/)/i.test(url);
 }
 
 /**
@@ -511,7 +534,7 @@ export function isFacebookPhotoLink(url: string): boolean {
  * `/t39.`. Matching the segment rather than taking the first image is the
  * difference between a poster and a spacer gif.
  */
-const FB_POSTER_URL = /https:\/\/[^"'\\\s]+\/t15\.[^"'\\\s]+/
+const FB_POSTER_URL = /https:\/\/[^"'\\\s]+\/t15\.[^"'\\\s]+/;
 
 /**
  * The poster for a Facebook video, from either page shape.
@@ -523,17 +546,17 @@ const FB_POSTER_URL = /https:\/\/[^"'\\\s]+\/t15\.[^"'\\\s]+/
  * poster box. A page with neither yields '', which the card already handles.
  */
 /** How far past a `progressive_urls` list the id of its reel may sit. */
-const FB_REEL_ID_SPAN = 20_000
+const FB_REEL_ID_SPAN = 20_000;
 /** A reel's details end by here; the live page has them within 55 KB. */
-const FB_REEL_SECTION_SPAN = 100_000
+const FB_REEL_SECTION_SPAN = 100_000;
 /** How close the owner and caption sit to the `"id"` that ties them to a reel. */
-const FB_OWNER_SPAN = 2_000
-const FB_CAPTION_SPAN = 12_000
+const FB_OWNER_SPAN = 2_000;
+const FB_CAPTION_SPAN = 12_000;
 
 /** The first capture of `pattern`, undone from JSON-string escaping. */
 function facebookField(section: string, pattern: RegExp): string {
-  const raw = section.match(pattern)?.[1]
-  return raw ? (JSON.parse(`"${raw}"`) as string) : ''
+  const raw = section.match(pattern)?.[1];
+  return raw ? (JSON.parse(`"${raw}"`) as string) : "";
 }
 
 /**
@@ -545,22 +568,24 @@ function facebookStory(
   html: string,
   videoId: string,
 ): { author: string; caption: string } {
-  const key = `"id":"${videoId}"`
+  const key = `"id":"${videoId}"`;
   for (let at = html.indexOf(key); at !== -1; at = html.indexOf(key, at + 1)) {
     // The nearest owner: the previous reel's can sit inside the same span.
     const owners = html
       .slice(Math.max(0, at - FB_OWNER_SPAN), at)
-      .matchAll(/"owner":\{"__typename":"\w+"[^{}]*?"name":"((?:[^"\\]|\\.)*)"/g)
-    const raw = [...owners].at(-1)?.[1]
-    if (!raw) continue
-    const author = JSON.parse(`"${raw}"`) as string
+      .matchAll(
+        /"owner":\{"__typename":"\w+"[^{}]*?"name":"((?:[^"\\]|\\.)*)"/g,
+      );
+    const raw = [...owners].at(-1)?.[1];
+    if (!raw) continue;
+    const author = JSON.parse(`"${raw}"`) as string;
     const caption = facebookField(
       html.slice(at, at + FB_CAPTION_SPAN),
       /"message":\{"text":"((?:[^"\\]|\\.)*)"/,
-    )
-    return { author, caption }
+    );
+    return { author, caption };
   }
-  return { author: '', caption: '' }
+  return { author: "", caption: "" };
 }
 
 /**
@@ -574,29 +599,31 @@ export function facebookReelFromPage(
   html: string,
   videoId: string,
 ): {
-  downloadUrl: string
-  thumbnail: string
-  caption: string
-  author: string
-  duration: number
+  downloadUrl: string;
+  thumbnail: string;
+  caption: string;
+  author: string;
+  duration: number;
 } | null {
-  const lists = [...html.matchAll(/"progressive_urls":\[(.*?)\]/g)]
+  const lists = [...html.matchAll(/"progressive_urls":\[(.*?)\]/g)];
   for (const [index, list] of lists.entries()) {
-    const end = list.index + list[0].length
-    const id = html.slice(end, end + FB_REEL_ID_SPAN).match(/"id":"(\d+)"/)
-    if (id?.[1] !== videoId) continue
+    const end = list.index + list[0].length;
+    const id = html.slice(end, end + FB_REEL_ID_SPAN).match(/"id":"(\d+)"/);
+    if (id?.[1] !== videoId) continue;
     const sources = [
       ...list[1].matchAll(
         /"progressive_url":"([^"]+)"[^{}]*"metadata":\{"quality":"(\w+)"/g,
       ),
-    ]
-    const best = sources.find((source) => source[2] === 'HD') ?? sources[0]
-    if (!best) continue
+    ];
+    const best = sources.find((source) => source[2] === "HD") ?? sources[0];
+    if (!best) continue;
     const section = html.slice(
       end,
       lists[index + 1]?.index ?? end + FB_REEL_SECTION_SPAN,
-    )
-    const ms = Number(section.match(/"playable_duration_in_ms":(\d+)/)?.[1] ?? 0)
+    );
+    const ms = Number(
+      section.match(/"playable_duration_in_ms":(\d+)/)?.[1] ?? 0,
+    );
     return {
       downloadUrl: JSON.parse(`"${best[1]}"`) as string,
       thumbnail: facebookField(
@@ -605,21 +632,21 @@ export function facebookReelFromPage(
       ),
       ...facebookStory(html, videoId),
       duration: Math.round(ms / 1000),
-    }
+    };
   }
-  return null
+  return null;
 }
 
 function facebookPoster(html: string): string {
-  const og = metaContent(html, 'og:image')
-  if (og) return og
-  return decodeEntities(FB_POSTER_URL.exec(html)?.[0] ?? '')
+  const og = metaContent(html, "og:image");
+  if (og) return og;
+  return decodeEntities(FB_POSTER_URL.exec(html)?.[0] ?? "");
 }
 
 /** Vimeo's config ships several thumbnail sizes under unpredictable keys. */
 function vimeoThumb(thumbs: Record<string, string> | undefined): string {
-  const t = thumbs ?? {}
-  return t.base || t['1280'] || t['960'] || t['640'] || ''
+  const t = thumbs ?? {};
+  return t.base || t["1280"] || t["960"] || t["640"] || "";
 }
 
 /**
@@ -631,39 +658,41 @@ function vimeoThumb(thumbs: Record<string, string> | undefined): string {
  * bare quote inside it, so the next `"` is reliably its end.
  */
 function redditPackagedJson(html: string): {
-  duration?: number
+  duration?: number;
   permutations?: Array<{
-    source?: { url?: string; dimensions?: { height?: number } }
-  }>
+    source?: { url?: string; dimensions?: { height?: number } };
+  }>;
 } | null {
-  const marker = 'packaged-media-json="'
-  const start = html.indexOf(marker)
-  if (start === -1) return null
-  const end = html.indexOf('"', start + marker.length)
-  if (end === -1) return null
+  const marker = 'packaged-media-json="';
+  const start = html.indexOf(marker);
+  if (start === -1) return null;
+  const end = html.indexOf('"', start + marker.length);
+  if (end === -1) return null;
   try {
     const parsed = JSON.parse(
       decodeEntities(html.slice(start + marker.length, end)),
-    )
-    return parsed?.playbackMp4s ?? null
+    );
+    return parsed?.playbackMp4s ?? null;
   } catch {
-    return null
+    return null;
   }
 }
 
-function redditPackagedMp4s(html: string): Array<{ url: string; height: number }> {
-  const permutations = redditPackagedJson(html)?.permutations ?? []
+function redditPackagedMp4s(
+  html: string,
+): Array<{ url: string; height: number }> {
+  const permutations = redditPackagedJson(html)?.permutations ?? [];
   return permutations
     .map((p) => ({
-      url: decodeEntities(p?.source?.url ?? ''),
+      url: decodeEntities(p?.source?.url ?? ""),
       height: p?.source?.dimensions?.height ?? 0,
     }))
     .filter((r) => r.url)
-    .sort((a, b) => a.height - b.height)
+    .sort((a, b) => a.height - b.height);
 }
 
 function redditPackagedDuration(html: string): number {
-  return redditPackagedJson(html)?.duration ?? 0
+  return redditPackagedJson(html)?.duration ?? 0;
 }
 
 /**
@@ -675,12 +704,12 @@ export function parseTwitchClipSlug(url: string): string | null {
   const patterns = [
     /clips\.twitch\.tv\/([\w-]+)/,
     /twitch\.tv\/(?:[\w-]+\/)?clip\/([\w-]+)/,
-  ]
+  ];
   for (const pattern of patterns) {
-    const slug = pattern.exec(url)?.[1]
-    if (slug) return slug
+    const slug = pattern.exec(url)?.[1];
+    if (slug) return slug;
   }
-  return null
+  return null;
 }
 
 /**
@@ -688,21 +717,23 @@ export function parseTwitchClipSlug(url: string): string | null {
  * `video_list` is a map of rendition name to file, not an array.
  */
 interface PinterestRendition {
-  url?: string
-  width?: number
-  height?: number
+  url?: string;
+  width?: number;
+  height?: number;
 }
 interface PinterestPin {
-  grid_title?: string
-  description?: string
-  pinner?: { username?: string }
-  images?: Record<string, PinterestRendition>
-  videos?: { video_list?: Record<string, PinterestRendition> }
+  grid_title?: string;
+  description?: string;
+  pinner?: { username?: string };
+  images?: Record<string, PinterestRendition>;
+  videos?: { video_list?: Record<string, PinterestRendition> };
   story_pin_data?: {
     pages?: Array<{
-      blocks?: Array<{ video?: { video_list?: Record<string, PinterestRendition> } }>
-    }>
-  }
+      blocks?: Array<{
+        video?: { video_list?: Record<string, PinterestRendition> };
+      }>;
+    }>;
+  };
 }
 
 /** Tallest rendition that is a file rather than a manifest. */
@@ -712,9 +743,9 @@ function tallestFile(
   const files = Object.values(list ?? {}).filter(
     (r): r is PinterestRendition & { url: string } =>
       Boolean(r?.url) && !/\.(m3u8|mpd)(\?|$)/i.test(r.url as string),
-  )
-  if (files.length === 0) return null
-  return files.sort((a, b) => (a.height ?? 0) - (b.height ?? 0)).pop()!.url
+  );
+  if (files.length === 0) return null;
+  return files.sort((a, b) => (a.height ?? 0) - (b.height ?? 0)).pop()!.url;
 }
 
 /**
@@ -722,40 +753,40 @@ function tallestFile(
  * block instead, which is why both are read before giving up.
  */
 function bestPinterestVideo(pin: PinterestPin): string | null {
-  const direct = tallestFile(pin.videos?.video_list)
-  if (direct) return direct
+  const direct = tallestFile(pin.videos?.video_list);
+  if (direct) return direct;
   for (const page of pin.story_pin_data?.pages ?? []) {
     for (const block of page.blocks ?? []) {
-      const fromBlock = tallestFile(block.video?.video_list)
-      if (fromBlock) return fromBlock
+      const fromBlock = tallestFile(block.video?.video_list);
+      if (fromBlock) return fromBlock;
     }
   }
-  return null
+  return null;
 }
 
 /** `orig` when the pin has one, else the largest sized rendition. */
 function bestPinterestImage(pin: PinterestPin): string | null {
-  const images = pin.images ?? {}
-  if (images.orig?.url) return images.orig.url
-  return tallestFile(images)
+  const images = pin.images ?? {};
+  if (images.orig?.url) return images.orig.url;
+  return tallestFile(images);
 }
 
 // Loose shapes for Instagram's GraphQL / embed `shortcode_media` payload.
 // Only the fields we actually read are typed; everything else is ignored.
 interface IgMediaNode {
-  __typename?: string
-  is_video?: boolean
-  video_url?: string
-  display_url?: string
-  thumbnail_src?: string
-  display_resources?: Array<{ src: string }>
-  video_duration?: number
+  __typename?: string;
+  is_video?: boolean;
+  video_url?: string;
+  display_url?: string;
+  thumbnail_src?: string;
+  display_resources?: Array<{ src: string }>;
+  video_duration?: number;
 }
 
 interface IgShortcodeMedia extends IgMediaNode {
-  owner?: { username?: string; full_name?: string }
-  edge_media_to_caption?: { edges?: Array<{ node?: { text?: string } }> }
-  edge_sidecar_to_children?: { edges?: Array<{ node?: IgMediaNode }> }
+  owner?: { username?: string; full_name?: string };
+  edge_media_to_caption?: { edges?: Array<{ node?: { text?: string } }> };
+  edge_sidecar_to_children?: { edges?: Array<{ node?: IgMediaNode }> };
 }
 
 /**
@@ -765,18 +796,18 @@ interface IgShortcodeMedia extends IgMediaNode {
  * both. Only the fields we read are typed.
  */
 interface IgRendition {
-  url?: string
-  width?: number
-  height?: number
+  url?: string;
+  width?: number;
+  height?: number;
 }
 
 interface IgMediaInfoItem {
-  user?: { username?: string }
-  caption?: { text?: string }
-  video_versions?: IgRendition[]
-  image_versions2?: { candidates?: IgRendition[] }
-  video_duration?: number
-  carousel_media?: IgMediaInfoItem[]
+  user?: { username?: string };
+  caption?: { text?: string };
+  video_versions?: IgRendition[];
+  image_versions2?: { candidates?: IgRendition[] };
+  video_duration?: number;
+  carousel_media?: IgMediaInfoItem[];
 }
 
 /**
@@ -789,17 +820,19 @@ interface IgMediaInfoItem {
  * removes the assumption; a list with no dimensions falls back to first, which
  * is the old behaviour exactly.
  */
-function igLargestRendition(list: IgRendition[] | undefined): string | undefined {
-  const usable = (list ?? []).filter((r) => r?.url)
-  if (usable.length === 0) return undefined
-  const area = (r: IgRendition) => (r.width ?? 0) * (r.height ?? 0)
-  return usable.reduce((best, r) => (area(r) > area(best) ? r : best)).url
+function igLargestRendition(
+  list: IgRendition[] | undefined,
+): string | undefined {
+  const usable = (list ?? []).filter((r) => r?.url);
+  if (usable.length === 0) return undefined;
+  const area = (r: IgRendition) => (r.width ?? 0) * (r.height ?? 0);
+  return usable.reduce((best, r) => (area(r) > area(best) ? r : best)).url;
 }
 
 // A story item is a media item that also carries its position in the reel.
 interface IgStoryItem extends IgMediaInfoItem {
-  pk?: string | number
-  id?: string
+  pk?: string | number;
+  id?: string;
 }
 
 /**
@@ -808,7 +841,7 @@ interface IgStoryItem extends IgMediaInfoItem {
  * arithmetic and needs no lookup request.
  */
 const IG_SHORTCODE_ALPHABET =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 /**
  * BigInt rather than Number: a media id is ~19 digits and overflows a double
@@ -817,15 +850,15 @@ const IG_SHORTCODE_ALPHABET =
  * for; the values themselves only ever exist server-side.
  */
 export function instagramMediaId(shortcode: string): string | null {
-  if (!shortcode) return null
-  const base = BigInt(64)
-  let id = BigInt(0)
+  if (!shortcode) return null;
+  const base = BigInt(64);
+  let id = BigInt(0);
   for (const char of shortcode) {
-    const value = IG_SHORTCODE_ALPHABET.indexOf(char)
-    if (value === -1) return null
-    id = id * base + BigInt(value)
+    const value = IG_SHORTCODE_ALPHABET.indexOf(char);
+    if (value === -1) return null;
+    id = id * base + BigInt(value);
   }
-  return id.toString()
+  return id.toString();
 }
 
 /**
@@ -837,7 +870,7 @@ export function instagramMediaId(shortcode: string): string | null {
  * image being handed back as the download for a reel.
  */
 export function instagramLinkIsVideo(url: string): boolean {
-  return /instagram\.com\/(?:[\w.-]+\/)?(?:reel|reels|tv)\//.test(url)
+  return /instagram\.com\/(?:[\w.-]+\/)?(?:reel|reels|tv)\//.test(url);
 }
 
 /**
@@ -861,7 +894,7 @@ export function stillsAreJustTheCover(
   expectsVideo: boolean,
   imageCount: number,
 ): boolean {
-  return expectsVideo && imageCount === 1
+  return expectsVideo && imageCount === 1;
 }
 
 /**
@@ -872,7 +905,7 @@ export function stillsAreJustTheCover(
  * there when it is needed. `none` when the post is unavailable.
  */
 function instagramEmbedMediaType(html: string): string {
-  return html.match(/data-media-type="([^"]+)"/)?.[1] ?? ''
+  return html.match(/data-media-type="([^"]+)"/)?.[1] ?? "";
 }
 
 /**
@@ -900,12 +933,12 @@ export function parseInstagramCrawlerMedia(
   html: string,
   mediaId: string,
 ): { videoUrl: string; poster: string; duration: number } | null {
-  const anchor = html.indexOf(`"pk":"${mediaId}"`)
-  if (anchor === -1) return null
-  const videoUrl = igUrlAfterKey(html, anchor, 'video_versions')
-  const poster = igUrlAfterKey(html, anchor, 'image_versions2')
-  if (!videoUrl && !poster) return null
-  return { videoUrl, poster, duration: instagramUrlDuration(videoUrl) }
+  const anchor = html.indexOf(`"pk":"${mediaId}"`);
+  if (anchor === -1) return null;
+  const videoUrl = igUrlAfterKey(html, anchor, "video_versions");
+  const poster = igUrlAfterKey(html, anchor, "image_versions2");
+  if (!videoUrl && !poster) return null;
+  return { videoUrl, poster, duration: instagramUrlDuration(videoUrl) };
 }
 
 /**
@@ -921,14 +954,14 @@ export function parseInstagramCrawlerMedia(
  * renders as "no duration" rather than as a wrong one.
  */
 export function instagramUrlDuration(videoUrl: string): number {
-  if (!videoUrl) return 0
+  if (!videoUrl) return 0;
   try {
-    const efg = new URL(videoUrl).searchParams.get('efg')
-    if (!efg) return 0
-    const seconds = JSON.parse(atob(efg))?.duration_s
-    return typeof seconds === 'number' && seconds > 0 ? seconds : 0
+    const efg = new URL(videoUrl).searchParams.get("efg");
+    if (!efg) return 0;
+    const seconds = JSON.parse(atob(efg))?.duration_s;
+    return typeof seconds === "number" && seconds > 0 ? seconds : 0;
   } catch {
-    return 0
+    return 0;
   }
 }
 
@@ -940,23 +973,23 @@ export function instagramUrlDuration(videoUrl: string): number {
  * keys.
  */
 export function instagramCaptionAuthor(ogTitle: string): string {
-  return ogTitle.match(/^(.+?) on Instagram/)?.[1]?.trim() || 'Instagram'
+  return ogTitle.match(/^(.+?) on Instagram/)?.[1]?.trim() || "Instagram";
 }
 
 export function instagramCaptionTitle(
   ogTitle: string,
   shortcode: string,
 ): string {
-  const quoted = ogTitle.match(/on Instagram:\s*"([\s\S]*)"\s*$/)?.[1]?.trim()
-  const text = quoted || ogTitle.trim()
-  if (!text) return `Instagram video ${shortcode}`
-  return text.slice(0, 80).replace(/\s+/g, ' ').trim()
+  const quoted = ogTitle.match(/on Instagram:\s*"([\s\S]*)"\s*$/)?.[1]?.trim();
+  const text = quoted || ogTitle.trim();
+  if (!text) return `Instagram video ${shortcode}`;
+  return text.slice(0, 80).replace(/\s+/g, " ").trim();
 }
 
 /** How far past a key to look for its first `url`. One rendition list fits. */
-const IG_KEY_SCAN_SPAN = 9000
+const IG_KEY_SCAN_SPAN = 9000;
 /** How far past the post's own id its media payload can start. */
-const IG_ANCHOR_SPAN = 80_000
+const IG_ANCHOR_SPAN = 80_000;
 
 /**
  * The first `"url"` value after `key`, JSON-unescaped.
@@ -967,16 +1000,16 @@ const IG_ANCHOR_SPAN = 80_000
  * correctly, where a hand-rolled replace would miss the ones nobody thought of.
  */
 function igUrlAfterKey(html: string, from: number, key: string): string {
-  const at = html.indexOf(key, from)
-  if (at === -1 || at - from > IG_ANCHOR_SPAN) return ''
+  const at = html.indexOf(key, from);
+  if (at === -1 || at - from > IG_ANCHOR_SPAN) return "";
   const raw = /"url":"(https:.*?)"/.exec(
     html.slice(at, at + IG_KEY_SCAN_SPAN),
-  )?.[1]
-  if (!raw) return ''
+  )?.[1];
+  if (!raw) return "";
   try {
-    return JSON.parse(`"${raw}"`) as string
+    return JSON.parse(`"${raw}"`) as string;
   } catch {
-    return ''
+    return "";
   }
 }
 
@@ -990,17 +1023,17 @@ function igUrlAfterKey(html: string, from: number, key: string): string {
  * poster-is-not-a-photo rule in `parseInstagramMedia` alone.
  */
 function igInfoNode(item: IgMediaInfoItem): IgMediaNode {
-  const video = igLargestRendition(item.video_versions)
+  const video = igLargestRendition(item.video_versions);
   return {
     is_video: Boolean(video),
     video_url: video,
     display_url: igLargestRendition(item.image_versions2?.candidates),
     video_duration: item.video_duration,
-  }
+  };
 }
 
 function igInfoToShortcodeMedia(item: IgMediaInfoItem): IgShortcodeMedia {
-  const children = item.carousel_media
+  const children = item.carousel_media;
   return {
     ...igInfoNode(item),
     owner: { username: item.user?.username },
@@ -1012,11 +1045,11 @@ function igInfoToShortcodeMedia(item: IgMediaInfoItem): IgShortcodeMedia {
           },
         }
       : {}),
-  }
+  };
 }
 interface IgReel {
-  user?: { username?: string }
-  items?: IgStoryItem[]
+  user?: { username?: string };
+  items?: IgStoryItem[];
 }
 
 /**
@@ -1029,20 +1062,20 @@ interface IgReel {
  * a cooldown that outlived the isolate would need shared state, and being
  * approximately right in each isolate is the whole benefit here.
  */
-const IG_LOCK_COOLDOWN_MS = 30 * 60 * 1000
-let instagramLockedUntil = 0
+const IG_LOCK_COOLDOWN_MS = 30 * 60 * 1000;
+let instagramLockedUntil = 0;
 
 function noteInstagramSessionLocked(): void {
-  instagramLockedUntil = Date.now() + IG_LOCK_COOLDOWN_MS
+  instagramLockedUntil = Date.now() + IG_LOCK_COOLDOWN_MS;
 }
 
 function instagramSessionLocked(): boolean {
-  return Date.now() < instagramLockedUntil
+  return Date.now() < instagramLockedUntil;
 }
 
 /** Test seam: the cooldown is module state, and a test must be able to clear it. */
 export function resetInstagramSessionLock(): void {
-  instagramLockedUntil = 0
+  instagramLockedUntil = 0;
 }
 
 /**
@@ -1067,21 +1100,21 @@ function logInstagramRefusal(
   subject: string,
   response: { status?: number; data?: unknown },
 ): void {
-  const data = response.data as { message?: string } | string | undefined
-  const message = typeof data === 'object' ? data?.message : undefined
-  if (message === 'checkpoint_required') {
-    noteInstagramSessionLocked()
+  const data = response.data as { message?: string } | string | undefined;
+  const message = typeof data === "object" ? data?.message : undefined;
+  if (message === "checkpoint_required") {
+    noteInstagramSessionLocked();
     console.warn(
       `instagram ${endpoint}: the session's account is LOCKED (checkpoint_required). Every credentialed resolve fails until the challenge is cleared in a browser and IG_SESSIONID (plus its companion cookies) are re-uploaded. Holding the cookie back for ${IG_LOCK_COOLDOWN_MS / 60000} minutes.`,
-    )
-    return
+    );
+    return;
   }
   console.warn(
     `instagram ${endpoint}: no item for ${subject}`,
     response.status,
-    typeof data === 'string' ? 'html (login wall — session stale)' : 'json',
-    message ?? '',
-  )
+    typeof data === "string" ? "html (login wall — session stale)" : "json",
+    message ?? "",
+  );
 }
 
 /**
@@ -1096,36 +1129,36 @@ function storyItemToVideoData(
   originalUrl: string,
   fallbackId?: string,
 ): VideoData | null {
-  const video = igLargestRendition(item.video_versions)
-  const image = igLargestRendition(item.image_versions2?.candidates)
-  const id = String(item.pk ?? fallbackId ?? Date.now())
+  const video = igLargestRendition(item.video_versions);
+  const image = igLargestRendition(item.image_versions2?.candidates);
+  const id = String(item.pk ?? fallbackId ?? Date.now());
   const common = {
     id,
     title: `Instagram story by @${owner}`,
     url: originalUrl,
     author: owner,
-    description: '',
+    description: "",
     isPhotoCarousel: false,
-  }
+  };
 
   if (video) {
     return {
       ...common,
-      thumbnail: image || '',
+      thumbnail: image || "",
       duration: Math.round(item.video_duration || 0),
       downloadUrl: video,
-    }
+    };
   }
   if (image) {
     return {
       ...common,
       thumbnail: image,
       duration: 0,
-      downloadUrl: '',
+      downloadUrl: "",
       images: [{ id: `${id}_0`, url: image, thumbnail: image }],
-    }
+    };
   }
-  return null
+  return null;
 }
 
 // Instagram's GraphQL endpoint rejects requests that don't carry its anti-CSRF
@@ -1134,11 +1167,11 @@ function storyItemToVideoData(
 // an extra round-trip on every request. Keyed by the session cookie in use so
 // switching IG_SESSIONID invalidates a stale (anonymous) token set.
 let igTokenCache: {
-  csrf: string
-  lsd: string
-  sessionKey: string
-  expires: number
-} | null = null
+  csrf: string;
+  lsd: string;
+  sessionKey: string;
+  expires: number;
+} | null = null;
 
 /**
  * The companion cookies a real Instagram session carries, and the env var each
@@ -1157,55 +1190,73 @@ let igTokenCache: {
  */
 const IG_COOKIE_ORDER: readonly { name: string; env: string }[] = [
   // Meta's device cookie, set across facebook.com and instagram.com.
-  { name: 'datr', env: 'IG_DATR' },
+  { name: "datr", env: "IG_DATR" },
   // Instagram's own device id.
-  { name: 'ig_did', env: 'IG_DID' },
+  { name: "ig_did", env: "IG_DID" },
   // Machine id. Stable per browser profile, and one of the oldest signals Meta
   // uses to tie requests together.
-  { name: 'mid', env: 'IG_MID' },
+  { name: "mid", env: "IG_MID" },
   // Anti-CSRF token. Also sent as the X-CSRFToken header, and the two must
   // match — see instagramCsrf.
-  { name: 'csrftoken', env: 'IG_CSRFTOKEN' },
+  { name: "csrftoken", env: "IG_CSRFTOKEN" },
   // The logged-in account's numeric id. Always present alongside a real
   // sessionid, which is exactly why sending sessionid without it stands out.
-  { name: 'ds_user_id', env: 'IG_DS_USER_ID' },
+  { name: "ds_user_id", env: "IG_DS_USER_ID" },
   // Regional routing hint, tying the session to the region it was created in.
-  { name: 'rur', env: 'IG_RUR' },
+  { name: "rur", env: "IG_RUR" },
   // Viewport size, e.g. 1920x1080. Pure telemetry and worthless on its own; it
   // is here because a browser sends it and this list exists to look like one.
-  { name: 'wd', env: 'IG_WD' },
-]
+  { name: "wd", env: "IG_WD" },
+];
+
+/** Telegram's embed page read in full and held no media; the message says why. */
+class TelegramEmptyPost extends Error {}
 
 /** A post the API read in full and found no media on. Maps to `unavailable`. */
 export const TWEET_HAS_NO_MEDIA =
-  'This X post has no video or image to download. It is text only, or its media was removed.'
+  "This X post has no video or image to download. It is text only, or its media was removed.";
 
 /** Link shorteners and share redirectors: no media of their own, only a hop. */
 const SHORT_LINK_HOSTS = [
-  'b23.tv',
-  'share.google',
-  't.co',
-  'bit.ly',
-  'tinyurl.com',
-  'goo.gl',
-  'ow.ly',
-  'is.gd',
-  'buff.ly',
-  'cutt.ly',
-  'shorturl.at',
-  'rebrand.ly',
-  'lnkd.in',
-  'tiny.cc',
-]
+  "b23.tv",
+  "share.google",
+  "t.co",
+  "bit.ly",
+  "tinyurl.com",
+  "goo.gl",
+  "ow.ly",
+  "is.gd",
+  "buff.ly",
+  "cutt.ly",
+  "shorturl.at",
+  "rebrand.ly",
+  "lnkd.in",
+  "tiny.cc",
+];
+
+/**
+ * TikTok's three short shapes. Not in `isShortLink`: tikwm and Cobalt expand
+ * these themselves, so they are followed only after both have missed.
+ */
+export function isTikTokShortLink(url: string): boolean {
+  return /^(?:https?:\/\/)?(?:(?:vt|vm)\.tiktok\.com\/|(?:www\.)?tiktok\.com\/t\/)[\w-]+/i.test(
+    url.trim(),
+  );
+}
+
+export const TIKTOK_LINK_RETIRED =
+  "This TikTok link no longer points to a post. It has expired or the video was removed. Copy the link again from TikTok.";
 
 export function isShortLink(url: string): boolean {
   // A hop on a site that also hosts posts: no host rule can say it.
-  if (isThreadsShareLink(url)) return true
+  if (isThreadsShareLink(url)) return true;
   try {
-    const host = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`).hostname.toLowerCase()
-    return SHORT_LINK_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))
+    const host = new URL(
+      /^https?:\/\//i.test(url) ? url : `https://${url}`,
+    ).hostname.toLowerCase();
+    return SHORT_LINK_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
   } catch {
-    return false
+    return false;
   }
 }
 
@@ -1215,9 +1266,12 @@ export function isShortLink(url: string): boolean {
  * `/embed` stuck on the raw link, which Threads answers with nothing.
  */
 export function threadsEmbedUrl(url: string): string {
-  const post = /threads\.(net|com)\/(?:@|%40)([\w.-]+)\/post\/([\w-]+)/i.exec(url)
-  if (post) return `https://www.threads.${post[1].toLowerCase()}/@${post[2]}/post/${post[3]}/embed`
-  return `${url.split(/[?#]/)[0].replace(/\/$/, '')}/embed`
+  const post = /threads\.(net|com)\/(?:@|%40)([\w.-]+)\/post\/([\w-]+)/i.exec(
+    url,
+  );
+  if (post)
+    return `https://www.threads.${post[1].toLowerCase()}/@${post[2]}/post/${post[3]}/embed`;
+  return `${url.split(/[?#]/)[0].replace(/\/$/, "")}/embed`;
 }
 
 /**
@@ -1226,10 +1280,12 @@ export function threadsEmbedUrl(url: string): string {
  * twice) are dropped. Empty for a text-only post.
  */
 export function threadsEmbedImages(html: string): string[] {
-  const urls = [...html.matchAll(/<img[^>]+src="(https:\/\/[^"]*cdninstagram\.com\/v\/t51\.[\d.]+-15\/[^"]+)"/g)].map(
-    (m) => m[1].replace(/&amp;/g, '&'),
-  )
-  return [...new Set(urls)]
+  const urls = [
+    ...html.matchAll(
+      /<img[^>]+src="(https:\/\/[^"]*cdninstagram\.com\/v\/t51\.[\d.]+-15\/[^"]+)"/g,
+    ),
+  ].map((m) => m[1].replace(/&amp;/g, "&"));
+  return [...new Set(urls)];
 }
 
 export class Downloader {
@@ -1237,57 +1293,57 @@ export class Downloader {
   // (Cobalt's videoQuality, tikwm's hd flag). 'hd' = best available (default);
   // 'sd' = a smaller data-saver rendition. Extractors that only ever return a
   // single rendition ignore this.
-  private readonly videoQuality: 'hd' | 'sd'
+  private readonly videoQuality: "hd" | "sd";
 
   // Extraction mode: 'auto' resolves the video (default), 'audio' pulls an
   // audio-only stream (MP3) — the "YouTube → MP3" flow, routed through Cobalt's
   // downloadMode:'audio' for every platform.
-  private readonly mode: 'auto' | 'audio'
+  private readonly mode: "auto" | "audio";
 
   // Pro requests try the operator's own instances first. See cobaltInstances.
   // Ordering is the whole of the entitlement: it changes which resolver is
   // asked first, never what a resolve is allowed to reach.
-  private readonly priority: boolean
+  private readonly priority: boolean;
 
   // Whether this instance may attach IG_SESSIONID. See instagramSessionId.
-  private readonly credentialed: boolean
+  private readonly credentialed: boolean;
 
   // Never ask any Cobalt instance. Set only by the MP3 fallback, which runs
   // after the audio attempt has already watched every instance fail — asking
   // them all again just to resolve the same URL doubled the worst-case wait
   // for an answer (measured: >150 s when the instances stall instead of
   // erroring) without changing what could be reached.
-  private readonly skipCobalt: boolean
+  private readonly skipCobalt: boolean;
 
   constructor(opts?: {
-    quality?: 'hd' | 'sd'
-    mode?: 'auto' | 'audio'
-    priority?: boolean
-    credentialed?: boolean
-    skipCobalt?: boolean
+    quality?: "hd" | "sd";
+    mode?: "auto" | "audio";
+    priority?: boolean;
+    credentialed?: boolean;
+    skipCobalt?: boolean;
   }) {
-    this.videoQuality = opts?.quality === 'sd' ? 'sd' : 'hd'
-    this.mode = opts?.mode === 'audio' ? 'audio' : 'auto'
-    this.priority = opts?.priority === true
+    this.videoQuality = opts?.quality === "sd" ? "sd" : "hd";
+    this.mode = opts?.mode === "audio" ? "audio" : "auto";
+    this.priority = opts?.priority === true;
     // Defaults to false, so every construction site that does not think about
     // this — the CLI, tests, any future caller — resolves anonymously.
-    this.credentialed = opts?.credentialed === true
-    this.skipCobalt = opts?.skipCobalt === true
+    this.credentialed = opts?.credentialed === true;
+    this.skipCobalt = opts?.skipCobalt === true;
   }
 
-  private readonly userAgent = BROWSER_AGENT
+  private readonly userAgent = BROWSER_AGENT;
 
   // Browser-renderable video codecs (bvc2 / ByteDance proprietary codec is NOT in this list)
   private readonly supportedVideoCodecs = [
-    'avc1',
-    'avc2',
-    'avc3', // H.264
-    'hvc1',
-    'hev1', // H.265/HEVC
-    'vp08',
-    'vp09', // VP8/VP9
-    'av01', // AV1
-  ]
+    "avc1",
+    "avc2",
+    "avc3", // H.264
+    "hvc1",
+    "hev1", // H.265/HEVC
+    "vp08",
+    "vp09", // VP8/VP9
+    "av01", // AV1
+  ];
 
   // Cobalt instances, tried in order. Cobalt tunnels the media, so the URL it
   // returns plays cross-origin (unlike a raw CDN URL) — which is what makes it
@@ -1328,26 +1384,26 @@ export class Downloader {
   // Cloudflare's network — several instances answer datacenter egress with 403
   // while working perfectly from a laptop.
   private static readonly publicCobaltInstances = [
-    'https://co.otomir23.me/',
-    'https://cobaltapi.cjs.nz/',
-  ]
+    "https://co.otomir23.me/",
+    "https://cobaltapi.cjs.nz/",
+  ];
 
   private get cobaltInstances(): string[] {
-    const public_ = Downloader.publicCobaltInstances
-    const private_ = (process.env.COBALT_API_URL ?? '')
+    const public_ = Downloader.publicCobaltInstances;
+    const private_ = (process.env.COBALT_API_URL ?? "")
       .split(/[\s,]+/)
       .map((s) => s.trim())
-      .filter(Boolean)
+      .filter(Boolean);
 
     if (this.priority && private_.length > 0) {
-      return [...private_, ...public_]
+      return [...private_, ...public_];
     }
-    return [...public_, ...private_]
+    return [...public_, ...private_];
   }
 
   // Public Instagram web app id — required by the GraphQL/web-API endpoints.
   // This is the same id Instagram's own web client sends and is not a secret.
-  private readonly instagramAppId = '936619743392459'
+  private readonly instagramAppId = "936619743392459";
 
   // Optional Instagram session cookie (the `sessionid` value). Public posts
   // work without it, and the extractor degrades gracefully when it's absent or
@@ -1372,11 +1428,11 @@ export class Downloader {
   // that no supporter, and no future entitlement, can reach it — see
   // migrations/0007 and `hasGrant`.
   private get instagramSessionId(): string {
-    if (!this.credentialed) return ''
+    if (!this.credentialed) return "";
     // A locked account rejects every private call, so continuing to attach the
     // cookie only fails slower and looks more like a bot. See IG_LOCK_COOLDOWN_MS.
-    if (instagramSessionLocked()) return ''
-    return process.env.IG_SESSIONID?.trim() || ''
+    if (instagramSessionLocked()) return "";
+    return process.env.IG_SESSIONID?.trim() || "";
   }
 
   /**
@@ -1390,7 +1446,7 @@ export class Downloader {
    * that is already there.
    */
   private get instagramSessionConfigured(): boolean {
-    return Boolean(process.env.IG_SESSIONID?.trim())
+    return Boolean(process.env.IG_SESSIONID?.trim());
   }
 
   /**
@@ -1413,13 +1469,13 @@ export class Downloader {
    * than sent empty, since `mid=` with no value is a worse signal than no `mid`.
    */
   private get instagramCookie(): string {
-    const sessionId = this.instagramSessionId
-    if (!sessionId) return ''
+    const sessionId = this.instagramSessionId;
+    if (!sessionId) return "";
     const pairs = IG_COOKIE_ORDER.map(({ name, env }) => {
-      const value = process.env[env]?.trim()
-      return value ? `${name}=${value}` : ''
-    }).filter(Boolean)
-    return [...pairs, `sessionid=${sessionId}`].join('; ')
+      const value = process.env[env]?.trim();
+      return value ? `${name}=${value}` : "";
+    }).filter(Boolean);
+    return [...pairs, `sessionid=${sessionId}`].join("; ");
   }
 
   /**
@@ -1432,10 +1488,10 @@ export class Downloader {
    * which is malformed and reads as automation on its own.
    */
   private instagramCookieWith(csrf: string): string {
-    const base = this.instagramCookie
-    if (!base) return ''
-    if (!csrf || process.env.IG_CSRFTOKEN?.trim()) return base
-    return `${base}; csrftoken=${csrf}`
+    const base = this.instagramCookie;
+    if (!base) return "";
+    if (!csrf || process.env.IG_CSRFTOKEN?.trim()) return base;
+    return `${base}; csrftoken=${csrf}`;
   }
 
   /**
@@ -1443,65 +1499,66 @@ export class Downloader {
    * cookie or Instagram rejects the POST. Same precedence as the cookie above.
    */
   private instagramCsrf(harvested: string): string {
-    return process.env.IG_CSRFTOKEN?.trim() || harvested
+    return process.env.IG_CSRFTOKEN?.trim() || harvested;
   }
 
   // Main entry point: auto-detects platform and routes accordingly
   async downloadVideo(url: string, expanded = false): Promise<VideoData> {
-    const platform = detectPlatform(url)
+    const platform = detectPlatform(url);
 
     // A short link names no post of its own (t.co even passes as X, whose
     // extractor needs a /status/ id), so nothing below can read it: follow it
     // once and start over on where it lands.
     if (!expanded && isShortLink(url)) {
-      const target = await this.resolveRedirect(url)
-      if (target !== url) return this.downloadVideo(target, true)
+      const target = await this.resolveRedirect(url);
+      if (target !== url) return this.downloadVideo(target, true);
     }
 
     // Audio-only mode (the "→ MP3" flow) short-circuits every platform through
     // Cobalt's audio tunnel — one path, MP3 out.
-    if (this.mode === 'audio') {
-      return this.downloadAudio(url, platform)
+    if (this.mode === "audio") {
+      return this.downloadAudio(url, platform);
     }
 
-    if (platform === 'tiktok') {
-      return this.downloadTikTok(url)
+    if (platform === "tiktok") {
+      return this.downloadTikTok(url);
     }
 
-    if (platform === 'twitter') {
+    if (platform === "twitter") {
       const methods = [
         () => this.tryVxTwitterMethod(url),
         () => this.tryCobaltInstances(url),
-      ]
+      ];
       // The API read the post and it carries no media: a definite answer, so
       // it outranks the "may be private" guess if nothing else resolves.
-      let textOnly = false
+      let textOnly = false;
       for (const method of methods) {
         try {
-          const result = await method()
-          if (result) return result
+          const result = await method();
+          if (result) return result;
         } catch (e) {
-          if (e instanceof Error && e.message === TWEET_HAS_NO_MEDIA) textOnly = true
-          console.warn('Twitter method failed, trying next...', e)
+          if (e instanceof Error && e.message === TWEET_HAS_NO_MEDIA)
+            textOnly = true;
+          console.warn("Twitter method failed, trying next...", e);
         }
       }
       throw new Error(
         textOnly
           ? TWEET_HAS_NO_MEDIA
-          : 'Could not download Twitter/X content. The post may be private, age-restricted, or unavailable.',
-      )
+          : "Could not download Twitter/X content. The post may be private, age-restricted, or unavailable.",
+      );
     }
 
-    if (platform === 'instagram') {
-      return this.downloadInstagram(url)
+    if (platform === "instagram") {
+      return this.downloadInstagram(url);
     }
 
-    if (platform === 'youtube') {
-      return this.downloadYouTube(url)
+    if (platform === "youtube") {
+      return this.downloadYouTube(url);
     }
 
-    if (platform === 'facebook') {
-      return this.downloadFacebook(url)
+    if (platform === "facebook") {
+      return this.downloadFacebook(url);
     }
 
     // Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, SoundCloud,
@@ -1509,26 +1566,26 @@ export class Downloader {
     // embed read of its own); the rest resolve generically through Cobalt,
     // which tunnels the media so it plays/downloads from any IP.
     const genericPlatforms: SupportedPlatform[] = [
-      'pinterest',
-      'reddit',
-      'threads',
-      'snapchat',
-      'twitch',
-      'vimeo',
-      'soundcloud',
-      'dailymotion',
-      'linkedin',
-      'generic',
-    ]
+      "pinterest",
+      "reddit",
+      "threads",
+      "snapchat",
+      "twitch",
+      "vimeo",
+      "soundcloud",
+      "dailymotion",
+      "linkedin",
+      "generic",
+    ];
     if (genericPlatforms.includes(platform)) {
-      return this.downloadGeneric(url, platform)
+      return this.downloadGeneric(url, platform);
     }
 
     // Unreachable with every platform routed above — kept as the type-level
     // safety net so an added enum value fails loudly instead of silently.
     throw new Error(
-      'Unsupported URL. Paste a public post or video link from any site.',
-    )
+      "Unsupported URL. Paste a public post or video link from any site.",
+    );
   }
 
   /**
@@ -1543,21 +1600,24 @@ export class Downloader {
     url: string,
     platform: SupportedPlatform,
   ): Promise<VideoData> {
-    let result = await this.tryCobaltInstances(url)
+    let result = await this.tryCobaltInstances(url);
     // Cobalt answering at all means it can read this link, even when its audio
     // tunnel then streams nothing: on 2026-11-20 every TikTok audio tunnel from
     // co.otomir23.me answered `200` with 0 bytes while the same post's video
     // tunnel streamed. The video fallback below may skip Cobalt only when it
     // had no answer.
-    const cobaltAnswered = result !== null
+    const cobaltAnswered = result !== null;
 
     // A tunnel is not an answer until it streams. For a long YouTube video
     // (2026-11-18, 1 h 51 min) the instance answered `200` with an empty body,
     // and the MP3 button waited ~15 s to save nothing. Read the first bytes so
     // a dead tunnel falls through to the sources below, and when they miss too
     // the visitor gets the honest message at once.
-    if (result?.musicUrl && (await this.probeStream(result.musicUrl)).verdict !== 'ok') {
-      result = null
+    if (
+      result?.musicUrl &&
+      (await this.probeStream(result.musicUrl)).verdict !== "ok"
+    ) {
+      result = null;
     }
 
     if (!result || !result.musicUrl) {
@@ -1568,41 +1628,46 @@ export class Downloader {
       // optimistic. Innertube gives us a real second option: an audio-only
       // adaptive stream needs no muxing, so unlike video it comes back at full
       // quality.
-      const viaInnertube = await this.tryYouTubeInnertubeAudio(url, platform)
+      const viaInnertube = await this.tryYouTubeInnertubeAudio(url, platform);
       if (viaInnertube) {
-        result = viaInnertube
+        result = viaInnertube;
       } else {
-        const viaFallback = await this.fallbackAudioViaVideo(url, cobaltAnswered)
+        const viaFallback = await this.fallbackAudioViaVideo(
+          url,
+          cobaltAnswered,
+        );
         if (!viaFallback?.musicUrl) {
           throw new Error(
-            'Could not extract audio from this link. The post may be private, region-locked, or the audio source may be unavailable (YouTube blocks audio extraction from some networks).',
-          )
+            "Could not extract audio from this link. The post may be private, region-locked, or the audio source may be unavailable (YouTube blocks audio extraction from some networks).",
+          );
         }
-        result = viaFallback
+        result = viaFallback;
       }
     }
 
     // Enrich sparse Cobalt metadata from the platform's public oEmbed.
-    let meta: { title?: string; author?: string; thumbnail?: string } = {}
-    if (platform === 'youtube') {
-      const videoId = parseYouTubeId(url)
+    let meta: { title?: string; author?: string; thumbnail?: string } = {};
+    if (platform === "youtube") {
+      const videoId = parseYouTubeId(url);
       const canonical = videoId
         ? `https://www.youtube.com/watch?v=${videoId}`
-        : url
-      meta = await this.fetchYouTubeMeta(videoId, canonical)
-    } else if (platform === 'tiktok') {
-      meta = await this.fetchTikTokMeta(url)
+        : url;
+      meta = await this.fetchYouTubeMeta(videoId, canonical);
+    } else if (platform === "tiktok") {
+      meta = await this.fetchTikTokMeta(url);
     }
 
-    const baseTitle = meta.title || result.title || 'Audio track'
+    const baseTitle = meta.title || result.title || "Audio track";
     return {
       ...result,
-      title: baseTitle.endsWith(' (audio)') ? baseTitle : `${baseTitle} (audio)`,
-      author: meta.author || result.author || 'Unknown',
-      thumbnail: meta.thumbnail || result.thumbnail || '',
-      downloadUrl: '',
+      title: baseTitle.endsWith(" (audio)")
+        ? baseTitle
+        : `${baseTitle} (audio)`,
+      author: meta.author || result.author || "Unknown",
+      thumbnail: meta.thumbnail || result.thumbnail || "",
+      downloadUrl: "",
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /**
@@ -1615,18 +1680,18 @@ export class Downloader {
     url: string,
     platform: SupportedPlatform,
   ): Promise<VideoData | null> {
-    if (platform !== 'youtube') return null
+    if (platform !== "youtube") return null;
 
-    const videoId = parseYouTubeId(url)
-    if (!videoId) return null
+    const videoId = parseYouTubeId(url);
+    if (!videoId) return null;
 
-    const canonical = `https://www.youtube.com/watch?v=${videoId}`
-    const result = await tryYouTubeInnertube(videoId, canonical, 'audio')
-    if (!result?.musicUrl) return null
+    const canonical = `https://www.youtube.com/watch?v=${videoId}`;
+    const result = await tryYouTubeInnertube(videoId, canonical, "audio");
+    if (!result?.musicUrl) return null;
 
     // Matches the naming the Cobalt path applies, so the download filename is
     // the same whichever extractor answered.
-    return { ...result, title: `${result.title} (audio)`, downloadUrl: '' }
+    return { ...result, title: `${result.title} (audio)`, downloadUrl: "" };
   }
 
   /**
@@ -1652,24 +1717,24 @@ export class Downloader {
   ): Promise<VideoData | null> {
     // A real audio-only stream when we can get one. Instant null on Cloudflare.
     if (nativeMediaAvailable()) {
-      const probe = await ytdlpProbe(url, 'audio')
+      const probe = await ytdlpProbe(url, "audio");
       if (probe?.downloadUrl) {
         return {
           id: parseVideoId(url) || url.slice(-32),
           title: probe.title || filenameTitle(url),
           url,
-          thumbnail: probe.thumbnail || '',
+          thumbnail: probe.thumbnail || "",
           duration: Math.round(probe.duration ?? 0),
-          author: probe.uploader || new URL(url).hostname.replace(/^www\./, ''),
-          description: '',
-          downloadUrl: '',
+          author: probe.uploader || new URL(url).hostname.replace(/^www\./, ""),
+          description: "",
+          downloadUrl: "",
           musicUrl: probe.downloadUrl,
           tunnel: false,
-        }
+        };
       }
     }
 
-    let resolved: VideoData | null = null
+    let resolved: VideoData | null = null;
     try {
       // skipCobalt: when the audio attempt watched every Cobalt instance miss,
       // the video resolve skips them and goes straight to the extractors that
@@ -1678,20 +1743,20 @@ export class Downloader {
       // TikTok it is the only path that works from the Worker.
       resolved = await new Downloader({
         quality: this.videoQuality,
-        mode: 'auto',
+        mode: "auto",
         skipCobalt: !cobaltAnswered,
-      }).downloadVideo(url)
+      }).downloadVideo(url);
     } catch {
-      return null
+      return null;
     }
 
     // A TikTok photo carousel carries its real soundtrack separately — prefer
     // that over any video. Otherwise the resolved video stream becomes the
     // audio source. downloadUrl is blanked either way: like the Innertube
     // audio path, this method's whole output is the audio track.
-    const source = resolved.musicUrl || resolved.downloadUrl
-    if (!source) return null
-    return { ...resolved, musicUrl: source, downloadUrl: '', tunnel: false }
+    const source = resolved.musicUrl || resolved.downloadUrl;
+    if (!source) return null;
+    return { ...resolved, musicUrl: source, downloadUrl: "", tunnel: false };
   }
 
   /**
@@ -1726,29 +1791,34 @@ export class Downloader {
       pinterest: () => this.tryPinterestPin(url),
       reddit: () => this.tryRedditEmbed(url),
       linkedin: () => this.tryLinkedInPost(url),
-    }
+    };
 
-    const methods: Array<() => Promise<VideoData | null>> = []
-    const own = ownEndpoint[platform]
-    if (own) methods.push(own)
+    const methods: Array<() => Promise<VideoData | null>> = [];
+    const own = ownEndpoint[platform];
+    if (own) methods.push(own);
     // Telegram has a landing page but no platform enum value (it detects as
     // generic), so it is keyed on the link: a public channel post reads from its embed page.
-    const telegram = platform === 'generic' ? telegramPostRef(url) : null
-    if (telegram) methods.push(() => this.tryTelegramPost(url, telegram))
-    methods.push(() => this.tryCobaltInstances(url))
+    const telegram = platform === "generic" ? telegramPostRef(url) : null;
+    if (telegram) methods.push(() => this.tryTelegramPost(url, telegram));
+    if (platform === "generic" && isTelegramPrivateLink(url)) {
+      methods.push(async () => {
+        throw new TelegramEmptyPost(TELEGRAM_PRIVATE_CHANNEL);
+      });
+    }
+    methods.push(() => this.tryCobaltInstances(url));
     // Last resort, and the only extractor that runs with nothing configured.
     // Cobalt's public instance serves a fixed platform list, so before this a
     // `generic` link had no path at all unless the operator had stood up a
     // resolver. Reading the page's own og:video/JSON-LD costs one fetch and a
     // handful of bounded regexes, and it is the honest majority of the long
     // tail: small hosts, blogs, and news sites publish their media URL.
-    methods.push(() => this.tryPageScrape(url))
+    methods.push(() => this.tryPageScrape(url));
     // After tag-scraping: yt-dlp reads every player shape the scrapers can't,
     // at the cost of spawning a process. Gated on native media, so on Cloudflare
     // this is one env comparison returning null and the chain is unchanged;
     // locally it is what makes an arbitrary link resolve.
     if (nativeMediaAvailable()) {
-      methods.push(() => this.tryNativeExtractor(url))
+      methods.push(() => this.tryNativeExtractor(url));
     }
 
     // A wall is definite news about one site, but it is news about *our fetch*:
@@ -1756,11 +1826,11 @@ export class Downloader {
     // the direct fetch did not. So the error is held rather than thrown, every
     // remaining method still runs, and it only surfaces if nothing resolves —
     // which keeps today's message exactly as it is wherever nothing new works.
-    let blocked: OriginBlockedError | null = null
+    let blocked: OriginBlockedError | null = null;
 
     for (const method of methods) {
       try {
-        const result = await method()
+        const result = await method();
         // `embedUrl` counts: a video that can only be played (Vimeo without
         // progressive renditions) is still a better answer than an error.
         if (
@@ -1769,29 +1839,31 @@ export class Downloader {
             result.embedUrl ||
             (result.images?.length ?? 0) > 0)
         ) {
-          return result
+          return result;
         }
       } catch (e) {
         // The one failure worth surfacing verbatim: it is a definite answer
         // about a specific site, not another extractor declining to guess.
         if (e instanceof OriginBlockedError) {
-          blocked = e
-          continue
+          blocked = e;
+          continue;
         }
-        console.warn(`${platform} method failed, trying next...`, e)
+        // Telegram's own page said why there is nothing: no other method can do better.
+        if (e instanceof TelegramEmptyPost) throw new Error(e.message);
+        console.warn(`${platform} method failed, trying next...`, e);
       }
     }
-    if (blocked) throw blocked
+    if (blocked) throw blocked;
     // Where the generic sentence would be false, say the truth instead:
     // "may be private" implies a login the reader could make, and for these
     // two the honest answer is that the file is simply not given out this way.
     const platformReason: Partial<Record<SupportedPlatform, string>> = {
       soundcloud:
-        'SoundCloud delivers its audio as an HLS stream through its player, which this extractor cannot repackage as a single file yet.',
+        "SoundCloud delivers its audio as an HLS stream through its player, which this extractor cannot repackage as a single file yet.",
       linkedin:
-        'LinkedIn serves its videos to signed-in members only; the public page publishes just a preview.',
-    }
-    throw new Error(platformReason[platform] || noMediaMessage(platform))
+        "LinkedIn serves its videos to signed-in members only; the public page publishes just a preview.",
+    };
+    throw new Error(platformReason[platform] || noMediaMessage(platform));
   }
 
   /**
@@ -1806,19 +1878,19 @@ export class Downloader {
    * path a scraped URL takes, with real title/author/thumbnail attached.
    */
   private async tryNativeExtractor(url: string): Promise<VideoData | null> {
-    const probe = await ytdlpProbe(url, 'video')
-    if (!probe?.downloadUrl) return null
+    const probe = await ytdlpProbe(url, "video");
+    if (!probe?.downloadUrl) return null;
     return {
       id: parseVideoId(url) || url.slice(-32),
       title: probe.title || filenameTitle(url),
       url,
-      thumbnail: probe.thumbnail || '',
+      thumbnail: probe.thumbnail || "",
       duration: Math.round(probe.duration ?? 0),
-      author: probe.uploader || new URL(url).hostname.replace(/^www\./, ''),
-      description: '',
+      author: probe.uploader || new URL(url).hostname.replace(/^www\./, ""),
+      description: "",
       downloadUrl: probe.downloadUrl,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /**
@@ -1838,17 +1910,17 @@ export class Downloader {
   private async tryPageScrape(url: string): Promise<VideoData | null> {
     const response = await fetch(url, {
       headers: BROWSER_PAGE_HEADERS,
-      redirect: 'follow',
+      redirect: "follow",
       signal: AbortSignal.timeout(10000),
-    })
-    const contentType = response.headers.get('content-type') ?? ''
-    const directMedia = isDirectMediaType(contentType)
-    const isHtml = contentType.includes('html')
+    });
+    const contentType = response.headers.get("content-type") ?? "";
+    const directMedia = isDirectMediaType(contentType);
+    const isHtml = contentType.includes("html");
     if (!response.ok || directMedia || !isHtml) {
-      await response.body?.cancel().catch(() => {})
+      await response.body?.cancel().catch(() => {});
     }
-    if (!response.ok) return null
-    const finalUrl = response.url || url
+    if (!response.ok) return null;
+    const finalUrl = response.url || url;
 
     // A direct media link pasted as-is: no page to scrape, and the URL is
     // already the answer. Nothing reads the body, so cancel it rather than
@@ -1858,19 +1930,19 @@ export class Downloader {
         id: parseVideoId(url) || finalUrl.slice(-32),
         title: filenameTitle(finalUrl),
         url,
-        thumbnail: '',
+        thumbnail: "",
         duration: 0,
-        author: new URL(url).hostname.replace(/^www\./, ''),
-        description: '',
+        author: new URL(url).hostname.replace(/^www\./, ""),
+        description: "",
         downloadUrl: finalUrl,
-      }
+      };
     }
-    if (!isHtml) return null
+    if (!isHtml) return null;
 
-    const html = await readCappedText(response)
+    const html = await readCappedText(response);
     // Redirects mean the final URL, not the pasted one, is what relative srcs
     // resolve against.
-    let media = extractMediaFromHtml(html, finalUrl)
+    let media = extractMediaFromHtml(html, finalUrl);
 
     // A page can advertise a URL that does not serve — one host publishes a
     // 2160p download link for every clip and answers it with an HTML error
@@ -1886,16 +1958,16 @@ export class Downloader {
           // fall back to the page the URL came from.
           pageReferer: finalUrl,
         })
-      ).verdict !== 'ok'
+      ).verdict !== "ok"
     ) {
-      media = null
+      media = null;
     }
 
     // Distinguish "this page has no video we can read" from "this site did not
     // show us the page at all", which are the same failure to the code above
     // and completely different news to the user.
-    const walled = looksLikeBotWall(html)
-    let fromRule = false
+    const walled = looksLikeBotWall(html);
+    let fromRule = false;
     if (!media) {
       // The recipe first: it is host-specific (a no-op for any host without
       // one), it probes a ladder of renditions rather than trusting a link, and
@@ -1908,8 +1980,8 @@ export class Downloader {
       // watch page, not its embed, so the direct fetch is the one that works —
       // while every free relay now refuses to fetch on behalf of a Worker at
       // all, which made the whole recipe path dead code.
-      media = await resolveByRule(url, fetchPageDirectThenRelay)
-      fromRule = media !== null
+      media = await resolveByRule(url, fetchPageDirectThenRelay);
+      fromRule = media !== null;
 
       // Otherwise read the watch page from an address the site will answer and
       // extract from that exactly as if we had fetched it. A page can yield
@@ -1918,16 +1990,18 @@ export class Downloader {
       // could not read — so the relay is worth one attempt whenever the direct
       // read came up empty.
       if (!media) {
-        const relayed = await fetchThroughRelay(url)
-        if (relayed) media = extractMediaFromHtml(relayed, url)
+        const relayed = await fetchThroughRelay(url);
+        if (relayed) media = extractMediaFromHtml(relayed, url);
       }
 
       if (!media && walled) {
-        throw new OriginBlockedError(new URL(url).hostname.replace(/^www\./, ''))
+        throw new OriginBlockedError(
+          new URL(url).hostname.replace(/^www\./, ""),
+        );
       }
     }
 
-    if (!media || media.isStream) return null
+    if (!media || media.isStream) return null;
 
     return {
       id: parseVideoId(url) || media.mediaUrl.slice(-32),
@@ -1935,11 +2009,11 @@ export class Downloader {
       url,
       thumbnail: media.thumbnail,
       duration: 0,
-      author: new URL(url).hostname.replace(/^www\./, ''),
-      description: '',
+      author: new URL(url).hostname.replace(/^www\./, ""),
+      description: "",
       downloadUrl: media.mediaUrl,
       directBrowser: fromRule || undefined,
-    }
+    };
   }
 
   /**
@@ -1949,35 +2023,38 @@ export class Downloader {
    * quality preference by picking the highest / lowest rendition.
    */
   private async tryVimeo(url: string): Promise<VideoData | null> {
-    const id = url.match(/vimeo\.com\/(?:video\/)?(\d+)/)?.[1]
-    if (!id) return null
+    const id = url.match(/vimeo\.com\/(?:video\/)?(\d+)/)?.[1];
+    if (!id) return null;
     const response = await http.get(
       `https://player.vimeo.com/video/${id}/config`,
       {
-        headers: { 'User-Agent': this.userAgent, Referer: 'https://vimeo.com/' },
+        headers: {
+          "User-Agent": this.userAgent,
+          Referer: "https://vimeo.com/",
+        },
         timeout: 15000,
         validateStatus: () => true,
       },
-    )
-    if (response.status !== 200) return null
+    );
+    if (response.status !== 200) return null;
     const data = response.data as {
       video?: {
-        title?: string
-        duration?: number
-        owner?: { name?: string }
-        thumbs?: Record<string, string>
-      }
+        title?: string;
+        duration?: number;
+        owner?: { name?: string };
+        thumbs?: Record<string, string>;
+      };
       request?: {
         files?: {
-          progressive?: Array<{ url?: string; height?: number }>
-        }
-      }
-    }
+          progressive?: Array<{ url?: string; height?: number }>;
+        };
+      };
+    };
 
-    const v0 = data.video ?? {}
+    const v0 = data.video ?? {};
     const progressive = (data.request?.files?.progressive ?? []).filter(
       (f): f is { url: string; height?: number } => Boolean(f?.url),
-    )
+    );
 
     // Vimeo has been retiring progressive renditions: many videos now ship only
     // DASH and HLS, which are manifests, and turning one into a file needs
@@ -1987,35 +2064,35 @@ export class Downloader {
     if (progressive.length === 0) {
       return {
         id,
-        title: v0.title || 'Vimeo Video',
+        title: v0.title || "Vimeo Video",
         url,
         thumbnail: vimeoThumb(v0.thumbs),
         duration: Math.round(v0.duration || 0),
-        author: v0.owner?.name || 'Vimeo',
-        description: '',
-        downloadUrl: '',
+        author: v0.owner?.name || "Vimeo",
+        description: "",
+        downloadUrl: "",
         embedUrl: `https://player.vimeo.com/video/${id}`,
         isPhotoCarousel: false,
-      }
+      };
     }
 
     const sorted = [...progressive].sort(
       (a, b) => (a.height ?? 0) - (b.height ?? 0),
-    )
+    );
     const chosen =
-      this.videoQuality === 'sd' ? sorted[0] : sorted[sorted.length - 1]
+      this.videoQuality === "sd" ? sorted[0] : sorted[sorted.length - 1];
 
     return {
       id,
-      title: v0.title || 'Vimeo Video',
+      title: v0.title || "Vimeo Video",
       url,
       thumbnail: vimeoThumb(v0.thumbs),
       duration: Math.round(v0.duration || 0),
-      author: v0.owner?.name || 'Vimeo',
-      description: '',
+      author: v0.owner?.name || "Vimeo",
+      description: "",
       downloadUrl: chosen.url,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /**
@@ -2031,60 +2108,60 @@ export class Downloader {
    * deployment cannot mux one into a file.
    */
   private async tryTwitchClip(url: string): Promise<VideoData | null> {
-    const slug = parseTwitchClipSlug(url)
-    if (!slug) return null
+    const slug = parseTwitchClipSlug(url);
+    if (!slug) return null;
 
     const response = await http.post(
-      'https://gql.twitch.tv/gql',
+      "https://gql.twitch.tv/gql",
       {
         query: `{ clip(slug: "${slug}") { title durationSeconds thumbnailURL broadcaster { displayName } videoQualities { quality sourceURL } playbackAccessToken(params: {platform:"web", playerBackend:"mediaplayer", playerType:"site"}) { signature value } } }`,
       },
       {
         // The web client's own id. Public, shipped in Twitch's own JS bundle,
         // and required on every unauthenticated GQL call.
-        headers: { 'Client-ID': 'kimne78kx3ncx6brgo4mv6wki5h1ko' },
+        headers: { "Client-ID": "kimne78kx3ncx6brgo4mv6wki5h1ko" },
         timeout: 15000,
         validateStatus: () => true,
       },
-    )
-    if (response.status !== 200) return null
+    );
+    if (response.status !== 200) return null;
 
     const clip = response.data?.data?.clip as
       | {
-          title?: string
-          durationSeconds?: number
-          thumbnailURL?: string
-          broadcaster?: { displayName?: string }
-          videoQualities?: Array<{ quality?: string; sourceURL?: string }>
-          playbackAccessToken?: { signature?: string; value?: string }
+          title?: string;
+          durationSeconds?: number;
+          thumbnailURL?: string;
+          broadcaster?: { displayName?: string };
+          videoQualities?: Array<{ quality?: string; sourceURL?: string }>;
+          playbackAccessToken?: { signature?: string; value?: string };
         }
-      | undefined
+      | undefined;
 
     const renditions = (clip?.videoQualities ?? [])
       .filter((q): q is { quality: string; sourceURL: string } =>
         Boolean(q?.sourceURL),
       )
-      .sort((a, b) => parseInt(a.quality, 10) - parseInt(b.quality, 10))
-    if (renditions.length === 0) return null
+      .sort((a, b) => parseInt(a.quality, 10) - parseInt(b.quality, 10));
+    if (renditions.length === 0) return null;
 
     const chosen =
-      this.videoQuality === 'sd'
+      this.videoQuality === "sd"
         ? renditions[0]
-        : renditions[renditions.length - 1]
-    const token = clip?.playbackAccessToken
-    if (!token?.signature || !token?.value) return null
+        : renditions[renditions.length - 1];
+    const token = clip?.playbackAccessToken;
+    if (!token?.signature || !token?.value) return null;
 
     return {
       id: slug,
-      title: clip?.title || 'Twitch clip',
+      title: clip?.title || "Twitch clip",
       url,
-      thumbnail: clip?.thumbnailURL || '',
+      thumbnail: clip?.thumbnailURL || "",
       duration: Math.round(clip?.durationSeconds || 0),
-      author: clip?.broadcaster?.displayName || 'Twitch',
-      description: '',
+      author: clip?.broadcaster?.displayName || "Twitch",
+      description: "",
       downloadUrl: `${chosen.sourceURL}?sig=${token.signature}&token=${encodeURIComponent(token.value)}`,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /**
@@ -2103,51 +2180,59 @@ export class Downloader {
   private async tryRedditEmbed(url: string): Promise<VideoData | null> {
     // Share links (/s/…), redd.it and v.redd.it all redirect to the canonical
     // permalink, which is the only shape the embed host answers.
-    const isPermalink = /reddit\.com\/(?:r|user|u)\/[\w.-]+\/comments\//.test(url)
-    const permalink = isPermalink ? url : await this.resolveRedirect(url)
+    const isPermalink = /reddit\.com\/(?:r|user|u)\/[\w.-]+\/comments\//.test(
+      url,
+    );
+    const permalink = isPermalink ? url : await this.resolveRedirect(url);
     const path = /reddit\.com\/((?:r|user|u)\/[\w.-]+\/comments\/[\w]+)/.exec(
       permalink,
-    )?.[1]
-    if (!path) return null
+    )?.[1];
+    if (!path) return null;
 
     const response = await http.get(`https://embed.reddit.com/${path}/`, {
       headers: {
-        'User-Agent': this.userAgent,
-        Accept: 'text/html,application/xhtml+xml',
+        "User-Agent": this.userAgent,
+        Accept: "text/html,application/xhtml+xml",
         // The embed is meant to be framed by a third party, and answers as one.
-        Referer: 'https://www.reddit.com/',
+        Referer: "https://www.reddit.com/",
       },
       timeout: 20000,
       validateStatus: () => true,
-    })
+    });
 
     const html =
-      response.status === 200 && typeof response.data === 'string' ? response.data : ''
-    const mp4s = redditPackagedMp4s(html)
+      response.status === 200 && typeof response.data === "string"
+        ? response.data
+        : "";
+    const mp4s = redditPackagedMp4s(html);
     // Reddit answers 403 to every Cloudflare egress (see tryRedditMirror), so
     // in production this is the path that runs.
-    if (mp4s.length === 0) return this.tryRedditMirror(path, permalink, url)
+    if (mp4s.length === 0) return this.tryRedditMirror(path, permalink, url);
 
-    const chosen = this.videoQuality === 'sd' ? mp4s[0] : mp4s[mp4s.length - 1]
-    const slug = /comments\/[\w]+\/([\w_]+)/.exec(permalink)?.[1] ?? ''
-    const subreddit = /\/r\/([\w.-]+)/.exec(permalink)?.[1] ?? 'reddit'
+    const chosen = this.videoQuality === "sd" ? mp4s[0] : mp4s[mp4s.length - 1];
+    const slug = /comments\/[\w]+\/([\w_]+)/.exec(permalink)?.[1] ?? "";
+    const subreddit = /\/r\/([\w.-]+)/.exec(permalink)?.[1] ?? "reddit";
 
     return {
       id: /comments\/([\w]+)/.exec(permalink)?.[1] ?? path,
       // The embed page's own <title> is the site's name on every post, so the
       // permalink slug — which is the title, lowercased and hyphenated — is the
       // better source.
-      title: slug ? slug.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()) : 'Reddit video',
+      title: slug
+        ? slug.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())
+        : "Reddit video",
       url,
       thumbnail: decodeEntities(
-        /https:\/\/(?:preview|external-preview)\.redd\.it\/[^"'\s\\]+/.exec(html)?.[0] ?? '',
+        /https:\/\/(?:preview|external-preview)\.redd\.it\/[^"'\s\\]+/.exec(
+          html,
+        )?.[0] ?? "",
       ),
       duration: Math.round(redditPackagedDuration(html)),
       author: `r/${subreddit}`,
-      description: '',
+      description: "",
       downloadUrl: chosen.url,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /**
@@ -2170,39 +2255,46 @@ export class Downloader {
   ): Promise<VideoData | null> {
     const response = await http.get(`${REDDIT_MIRROR}/${path}/`, {
       // It serves the preview card only to a client that looks like a crawler.
-      headers: { 'User-Agent': DISCORD_CRAWLER_AGENT, Accept: 'text/html' },
+      headers: { "User-Agent": DISCORD_CRAWLER_AGENT, Accept: "text/html" },
       timeout: 15000,
       validateStatus: () => true,
-    })
-    if (response.status !== 200 || typeof response.data !== 'string') return null
-    const html = response.data
+    });
+    if (response.status !== 200 || typeof response.data !== "string")
+      return null;
+    const html = response.data;
     const meta = (property: string) =>
       decodeEntities(
-        new RegExp(`<meta[^>]+property="${property}"[^>]+content="([^"]*)"`).exec(html)?.[1] ??
-          '',
-      )
+        new RegExp(
+          `<meta[^>]+property="${property}"[^>]+content="([^"]*)"`,
+        ).exec(html)?.[1] ?? "",
+      );
 
-    const video = meta('og:video')
+    const video = meta("og:video");
     // Only ever a render of reddit's own media, so a hijacked or changed page
     // cannot hand our users a file from anywhere else.
-    if (!video.startsWith(`${REDDIT_MIRROR}/redditvideo.mp4?`) || !video.includes('v.redd.it'))
-      return null
+    if (
+      !video.startsWith(`${REDDIT_MIRROR}/redditvideo.mp4?`) ||
+      !video.includes("v.redd.it")
+    )
+      return null;
 
-    const subreddit = /\/r\/([\w.-]+)/.exec(permalink)?.[1] ?? 'reddit'
-    const slug = /comments\/[\w]+\/([\w_]+)/.exec(permalink)?.[1] ?? ''
+    const subreddit = /\/r\/([\w.-]+)/.exec(permalink)?.[1] ?? "reddit";
+    const slug = /comments\/[\w]+\/([\w_]+)/.exec(permalink)?.[1] ?? "";
     return {
       id: /comments\/([\w]+)/.exec(permalink)?.[1] ?? path,
       title:
-        meta('og:title') ||
-        (slug ? slug.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase()) : 'Reddit video'),
+        meta("og:title") ||
+        (slug
+          ? slug.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())
+          : "Reddit video"),
       url,
-      thumbnail: meta('og:image'),
+      thumbnail: meta("og:image"),
       duration: 0,
       author: `r/${subreddit}`,
-      description: '',
+      description: "",
       downloadUrl: video,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /**
@@ -2219,40 +2311,46 @@ export class Downloader {
    * ask.
    */
   private async tryThreadsEmbed(url: string): Promise<VideoData | null> {
-    const embedUrl = threadsEmbedUrl(url)
+    const embedUrl = threadsEmbedUrl(url);
     const response = await http.get(embedUrl, {
       headers: {
-        'User-Agent': LINK_CRAWLER_AGENT,
-        Accept: 'text/html,application/xhtml+xml',
+        "User-Agent": LINK_CRAWLER_AGENT,
+        Accept: "text/html,application/xhtml+xml",
       },
       timeout: 15000,
       validateStatus: () => true,
-    })
-    if (response.status !== 200) return null
+    });
+    if (response.status !== 200) return null;
 
-    const html = typeof response.data === 'string' ? response.data : ''
-    const author = /threads\.(?:net|com)\/(?:@|%40)([\w.]+)/i.exec(url)?.[1] ?? 'threads'
-    const media = extractMediaFromHtml(html, embedUrl)
-    if (!media || media.isStream) return this.threadsPhotos(html, url, author)
+    const html = typeof response.data === "string" ? response.data : "";
+    const author =
+      /threads\.(?:net|com)\/(?:@|%40)([\w.]+)/i.exec(url)?.[1] ?? "threads";
+    const media = extractMediaFromHtml(html, embedUrl);
+    if (!media || media.isStream) return this.threadsPhotos(html, url, author);
 
     return {
       id: /post\/([\w-]+)/.exec(url)?.[1] || media.mediaUrl.slice(-32),
-      title: media.title === 'Threads' ? `Threads post by @${author}` : media.title,
+      title:
+        media.title === "Threads" ? `Threads post by @${author}` : media.title,
       url,
       thumbnail: media.thumbnail,
       duration: 0,
       author,
-      description: '',
+      description: "",
       downloadUrl: media.mediaUrl,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /** A photo-only post: no <video> for the scorer, so read the photos. */
-  private threadsPhotos(html: string, url: string, author: string): VideoData | null {
-    const photos = threadsEmbedImages(html)
-    if (photos.length === 0) return null
-    const id = /post\/([\w-]+)/.exec(url)?.[1] || Date.now().toString()
+  private threadsPhotos(
+    html: string,
+    url: string,
+    author: string,
+  ): VideoData | null {
+    const photos = threadsEmbedImages(html);
+    if (photos.length === 0) return null;
+    const id = /post\/([\w-]+)/.exec(url)?.[1] || Date.now().toString();
     return {
       id,
       title: `Threads post by @${author}`,
@@ -2260,11 +2358,15 @@ export class Downloader {
       thumbnail: photos[0],
       duration: 0,
       author,
-      description: '',
-      downloadUrl: '',
+      description: "",
+      downloadUrl: "",
       isPhotoCarousel: true,
-      images: photos.map((photo, i) => ({ id: `${id}_${i}`, url: photo, thumbnail: photo })),
-    }
+      images: photos.map((photo, i) => ({
+        id: `${id}_${i}`,
+        url: photo,
+        thumbnail: photo,
+      })),
+    };
   }
 
   /**
@@ -2272,29 +2374,62 @@ export class Downloader {
    * loads (see lib/telegramPost). A clip is a direct file on Telegram's CDN; an
    * album is a gallery. A post with neither is a clean null.
    */
-  private async tryTelegramPost(url: string, ref: TelegramPostRef): Promise<VideoData | null> {
+  private async tryTelegramPost(
+    url: string,
+    ref: TelegramPostRef,
+  ): Promise<VideoData | null> {
     const response = await http.get(ref.embedUrl, {
-      headers: { 'User-Agent': this.userAgent, Accept: 'text/html' },
+      headers: { "User-Agent": this.userAgent, Accept: "text/html" },
       timeout: 15000,
       validateStatus: () => true,
-    })
-    if (response.status !== 200 || typeof response.data !== 'string') return null
-    const media = parseTelegramEmbed(response.data)
-    const author = media.author || ref.channel
-    const title = media.text?.slice(0, 100) || `Telegram post by ${author}`
-    const id = `telegram_${ref.channel}_${ref.id}`
-    const base = { id, title, url, duration: 0, author, description: media.text ?? '' }
-    const [video] = media.videos
+    });
+    if (response.status !== 200 || typeof response.data !== "string")
+      return null;
+    const media = parseTelegramEmbed(response.data);
+    const reason = telegramEmptyReason(response.data, media);
+    if (reason) throw new TelegramEmptyPost(reason);
+    const author = media.author || ref.channel;
+    const title = media.text?.slice(0, 100) || `Telegram post by ${author}`;
+    const id = `telegram_${ref.channel}_${ref.id}`;
+    const base = {
+      id,
+      title,
+      url,
+      duration: 0,
+      author,
+      description: media.text ?? "",
+    };
+    const [video] = media.videos;
     if (media.videos.length === 1 && media.photos.length === 0) {
-      return { ...base, thumbnail: video.thumbnail ?? '', downloadUrl: video.url, isPhotoCarousel: false }
+      return {
+        ...base,
+        thumbnail: video.thumbnail ?? "",
+        downloadUrl: video.url,
+        isPhotoCarousel: false,
+      };
     }
     // An album, or a mix of clips and photos: every item as one gallery.
     const items = [
-      ...media.videos.map((v, i) => ({ id: `${id}_v${i}`, url: v.url, thumbnail: v.thumbnail ?? v.url, kind: 'video' as const })),
-      ...media.photos.map((photo, i) => ({ id: `${id}_${i}`, url: photo, thumbnail: photo })),
-    ]
-    if (items.length === 0) return null
-    return { ...base, thumbnail: items[0].thumbnail, downloadUrl: '', isPhotoCarousel: true, images: items }
+      ...media.videos.map((v, i) => ({
+        id: `${id}_v${i}`,
+        url: v.url,
+        thumbnail: v.thumbnail ?? v.url,
+        kind: "video" as const,
+      })),
+      ...media.photos.map((photo, i) => ({
+        id: `${id}_${i}`,
+        url: photo,
+        thumbnail: photo,
+      })),
+    ];
+    if (items.length === 0) return null;
+    return {
+      ...base,
+      thumbnail: items[0].thumbnail,
+      downloadUrl: "",
+      isPhotoCarousel: true,
+      images: items,
+    };
   }
 
   /**
@@ -2308,30 +2443,30 @@ export class Downloader {
    * chain moves on.
    */
   private async tryLinkedInPost(url: string): Promise<VideoData | null> {
-    const canonical = url.split(/[?#]/)[0].replace(/\/$/, '')
+    const canonical = url.split(/[?#]/)[0].replace(/\/$/, "");
     const response = await http.get(canonical, {
       headers: {
-        'User-Agent': LINK_CRAWLER_AGENT,
-        Accept: 'text/html,application/xhtml+xml',
+        "User-Agent": LINK_CRAWLER_AGENT,
+        Accept: "text/html,application/xhtml+xml",
       },
       timeout: 15000,
       validateStatus: () => true,
-    })
-    if (response.status !== 200) return null
+    });
+    if (response.status !== 200) return null;
 
-    const html = typeof response.data === 'string' ? response.data : ''
+    const html = typeof response.data === "string" ? response.data : "";
     // The cover-as-video rejection lives in extractMediaFromHtml (pageScrape) —
     // LinkedIn's og:video is its /dms/image/ poster, and tryPageScrape hit the
     // same trap on the same page.
-    const media = extractMediaFromHtml(html, canonical)
-    if (!media || media.isStream) return null
+    const media = extractMediaFromHtml(html, canonical);
+    if (!media || media.isStream) return null;
 
     // Share links (lnkd.in/…) redirect to their post URL; the author slug
     // only makes sense on it. The slug runs `name_hash-stuff-activity-…`,
     // so the readable name is everything before the first underscore.
     const author =
-      /linkedin\.com\/posts\/([^/?#]+)/.exec(canonical)?.[1]?.split('_')[0] ||
-      'LinkedIn'
+      /linkedin\.com\/posts\/([^/?#]+)/.exec(canonical)?.[1]?.split("_")[0] ||
+      "LinkedIn";
     return {
       id: /activity-(\d+)/.exec(canonical)?.[1] || media.mediaUrl.slice(-32),
       title: media.title,
@@ -2339,10 +2474,10 @@ export class Downloader {
       thumbnail: media.thumbnail,
       duration: 0,
       author,
-      description: '',
+      description: "",
       downloadUrl: media.mediaUrl,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /**
@@ -2357,44 +2492,48 @@ export class Downloader {
     // A pin.it short link carries no id of its own: follow it to the pin, the
     // way Facebook's share links are followed. Without this every pin.it link
     // skipped the one extractor that reads pins and relied on Cobalt alone.
-    const pinUrl = /\/pin\/\d+/.test(url) ? url : await this.resolveRedirect(url)
-    const id = /\/pin\/(\d+)/.exec(pinUrl)?.[1]
-    if (!id) return null
+    const pinUrl = /\/pin\/\d+/.test(url)
+      ? url
+      : await this.resolveRedirect(url);
+    const id = /\/pin\/(\d+)/.exec(pinUrl)?.[1];
+    if (!id) return null;
 
     const response = await http.get(
       `https://widgets.pinterest.com/v3/pidgets/pins/info/?pin_ids=${id}`,
       {
-        headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
+        headers: { "User-Agent": this.userAgent, Accept: "application/json" },
         timeout: 15000,
         validateStatus: () => true,
       },
-    )
-    if (response.status !== 200) return null
+    );
+    if (response.status !== 200) return null;
 
     // The endpoint has answered with both shapes over its life; neither is
     // documented, so read both rather than betting on one.
     const pin = (response.data?.data?.[0] ?? response.data?.data?.pins?.[0]) as
-      | PinterestPin
-      | undefined
-    if (!pin) return null
+      PinterestPin | undefined;
+    if (!pin) return null;
 
-    const video = bestPinterestVideo(pin)
-    const image = bestPinterestImage(pin)
-    if (!video && !image) return null
+    const video = bestPinterestVideo(pin);
+    const image = bestPinterestImage(pin);
+    if (!video && !image) return null;
 
-    const title = pin.grid_title || pin.description?.trim() || 'Pinterest pin'
+    const title = pin.grid_title || pin.description?.trim() || "Pinterest pin";
     return {
       id,
       title: title.slice(0, 100),
       url,
-      thumbnail: image || '',
+      thumbnail: image || "",
       duration: 0,
-      author: pin.pinner?.username || 'Pinterest',
-      description: pin.description?.trim() || '',
-      downloadUrl: video || '',
-      images: !video && image ? [{ id: `${id}_0`, url: image, thumbnail: image }] : undefined,
+      author: pin.pinner?.username || "Pinterest",
+      description: pin.description?.trim() || "",
+      downloadUrl: video || "",
+      images:
+        !video && image
+          ? [{ id: `${id}_0`, url: image, thumbnail: image }]
+          : undefined,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /**
@@ -2409,12 +2548,12 @@ export class Downloader {
    *      is still viewable.
    */
   private async downloadYouTube(url: string): Promise<VideoData> {
-    const videoId = parseYouTubeId(url)
+    const videoId = parseYouTubeId(url);
     // Normalise to a canonical watch URL — short/shorts/embed links confuse
     // some extractors, and oEmbed expects a standard watch URL.
     const canonical = videoId
       ? `https://www.youtube.com/watch?v=${videoId}`
-      : url
+      : url;
 
     // 1) yt-dlp — extracts from this process's IP. Run locally / self-hosted
     //    (residential IP), YouTube doesn't bot-block it, so it succeeds where
@@ -2423,9 +2562,9 @@ export class Downloader {
     //    Unavailable on workerd (no Python, no ffmpeg), hence the guard — which
     //    also skips the oEmbed round-trip that only this branch needs.
     if (videoId && nativeMediaAvailable()) {
-      const meta = await this.fetchYouTubeMeta(videoId, canonical)
-      const viaYtDlp = await this.tryYtDlpYouTube(videoId, canonical, meta)
-      if (viaYtDlp) return viaYtDlp
+      const meta = await this.fetchYouTubeMeta(videoId, canonical);
+      const viaYtDlp = await this.tryYtDlpYouTube(videoId, canonical, meta);
+      if (viaYtDlp) return viaYtDlp;
     }
 
     // 2) Innertube — YouTube's own player API, which (unlike Cobalt) answers a
@@ -2442,43 +2581,43 @@ export class Downloader {
     //    player call we already made.
     const viaInnertube = videoId
       ? await tryYouTubeInnertube(videoId, canonical, this.mode)
-      : null
-    if (viaInnertube?.downloadUrl) return viaInnertube
-    if (this.mode === 'audio' && viaInnertube?.musicUrl) return viaInnertube
+      : null;
+    if (viaInnertube?.downloadUrl) return viaInnertube;
+    if (this.mode === "audio" && viaInnertube?.musicUrl) return viaInnertube;
 
-    const meta = await this.fetchYouTubeMeta(videoId, canonical)
+    const meta = await this.fetchYouTubeMeta(videoId, canonical);
 
     const methods: Array<() => Promise<VideoData | null>> = [
       () => this.tryCobaltInstances(canonical),
-    ]
+    ];
 
     for (const method of methods) {
       try {
-        const result = await method()
+        const result = await method();
         if (result && result.downloadUrl) {
           // Reject dead/region-locked stream URLs — and anything that turns out
           // not to be a video at all — so the UI never shows a broken player.
           // Fall through to the next extractor instead.
           const probe = await this.probeStream(result.downloadUrl, {
-            expect: 'video',
-          })
-          if (probe.verdict !== 'ok') {
-            console.warn('YouTube candidate stream unusable, trying next...')
-            continue
+            expect: "video",
+          });
+          if (probe.verdict !== "ok") {
+            console.warn("YouTube candidate stream unusable, trying next...");
+            continue;
           }
-          result.sizeBytes ??= probe.sizeBytes
+          result.sizeBytes ??= probe.sizeBytes;
           // YouTube never yields a photo gallery.
-          result.isPhotoCarousel = false
-          result.images = undefined
+          result.isPhotoCarousel = false;
+          result.images = undefined;
           // Prefer the richer oEmbed metadata over the extractor's guesses.
-          if (meta.title) result.title = meta.title
-          if (meta.author) result.author = meta.author
-          if (meta.thumbnail) result.thumbnail = meta.thumbnail
-          if (videoId) result.id = videoId
-          return result
+          if (meta.title) result.title = meta.title;
+          if (meta.author) result.author = meta.author;
+          if (meta.thumbnail) result.thumbnail = meta.thumbnail;
+          if (videoId) result.id = videoId;
+          return result;
         }
       } catch (e) {
-        console.warn('YouTube method failed, trying next...', e)
+        console.warn("YouTube method failed, trying next...", e);
       }
     }
 
@@ -2498,23 +2637,23 @@ export class Downloader {
     if (videoId) {
       return {
         id: videoId,
-        title: meta.title || viaInnertube?.title || 'YouTube Video',
+        title: meta.title || viaInnertube?.title || "YouTube Video",
         url: canonical,
-        thumbnail: meta.thumbnail || viaInnertube?.thumbnail || '',
+        thumbnail: meta.thumbnail || viaInnertube?.thumbnail || "",
         duration: viaInnertube?.duration ?? 0,
-        author: meta.author || viaInnertube?.author || 'YouTube',
-        description: '',
-        downloadUrl: '',
+        author: meta.author || viaInnertube?.author || "YouTube",
+        description: "",
+        downloadUrl: "",
         // Surfaces as `audioUrl` in the payload (see handleDownload), so the
         // card shows a working MP3 button beside the embed.
         musicUrl: viaInnertube?.musicUrl,
         embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
-      }
+      };
     }
 
     throw new Error(
-      'Could not process this YouTube link. Please double-check the URL and try again.',
-    )
+      "Could not process this YouTube link. Please double-check the URL and try again.",
+    );
   }
 
   /**
@@ -2534,17 +2673,17 @@ export class Downloader {
   private async downloadFacebook(url: string): Promise<VideoData> {
     if (isFacebookStory(url)) {
       throw new Error(
-        'This is a Facebook story — Facebook serves these only to a logged-in account, so they cannot be downloaded here. Public videos, reels and watch links work.',
-      )
+        "This is a Facebook story — Facebook serves these only to a logged-in account, so they cannot be downloaded here. Public videos, reels and watch links work.",
+      );
     }
 
-    let resolvedUrl = url
+    let resolvedUrl = url;
     if (
-      url.includes('fb.watch') ||
-      url.includes('/share/') ||
-      url.includes('fb.com')
+      url.includes("fb.watch") ||
+      url.includes("/share/") ||
+      url.includes("fb.com")
     ) {
-      resolvedUrl = await this.resolveRedirect(url)
+      resolvedUrl = await this.resolveRedirect(url);
     }
 
     // tryFacebookScrape pulls the whole post page and scans it; it is skipped
@@ -2562,27 +2701,27 @@ export class Downloader {
       // would answer a private *video* with its poster frame and call that a
       // success.
       () => this.tryFacebookPhoto(resolvedUrl, url),
-    ]
+    ];
 
     for (const method of methods) {
       try {
-        const result = await method()
+        const result = await method();
         if (result?.downloadUrl) {
           // A video answer is a video answer: whatever gallery an extractor
           // guessed at alongside it is dropped, as it always has been.
-          result.isPhotoCarousel = false
-          result.images = undefined
-          return result
+          result.isPhotoCarousel = false;
+          result.images = undefined;
+          return result;
         }
-        if (result?.images?.length) return result
+        if (result?.images?.length) return result;
       } catch (e) {
-        console.warn('Facebook method failed, trying next...', e)
+        console.warn("Facebook method failed, trying next...", e);
       }
     }
 
     throw new Error(
-      'Could not download this Facebook video. The post may be private, age-restricted, or unavailable.',
-    )
+      "Could not download this Facebook video. The post may be private, age-restricted, or unavailable.",
+    );
   }
 
   /**
@@ -2596,31 +2735,34 @@ export class Downloader {
     resolvedUrl: string,
     originalUrl: string,
   ): Promise<VideoData | null> {
-    if (!isFacebookPhotoLink(originalUrl) && !isFacebookPhotoLink(resolvedUrl)) {
-      return null
+    if (
+      !isFacebookPhotoLink(originalUrl) &&
+      !isFacebookPhotoLink(resolvedUrl)
+    ) {
+      return null;
     }
     const response = await http.get(resolvedUrl, {
-      headers: { 'User-Agent': LINK_CRAWLER_AGENT, Accept: 'text/html' },
+      headers: { "User-Agent": LINK_CRAWLER_AGENT, Accept: "text/html" },
       timeout: 15000,
       validateStatus: () => true,
-    })
-    const html = typeof response.data === 'string' ? response.data : ''
-    const image = metaContent(html, 'og:image')
-    if (!image) return null
+    });
+    const html = typeof response.data === "string" ? response.data : "";
+    const image = metaContent(html, "og:image");
+    if (!image) return null;
 
-    const id = parseVideoId(originalUrl) || Date.now().toString()
+    const id = parseVideoId(originalUrl) || Date.now().toString();
     return {
       id,
-      title: (metaContent(html, 'og:title') || 'Facebook Photo').slice(0, 100),
+      title: (metaContent(html, "og:title") || "Facebook Photo").slice(0, 100),
       url: originalUrl,
       thumbnail: image,
       duration: 0,
-      author: 'Facebook',
-      description: metaContent(html, 'og:description') || '',
-      downloadUrl: '',
+      author: "Facebook",
+      description: metaContent(html, "og:description") || "",
+      downloadUrl: "",
       isPhotoCarousel: true,
       images: [{ id: `${id}_0`, url: image, thumbnail: image }],
-    }
+    };
   }
 
   /**
@@ -2641,21 +2783,21 @@ export class Downloader {
     // Stories & highlights use a different (login-gated) endpoint than shortcode
     // posts — detect and route them out first. `/s/…` share links redirect to a
     // canonical /stories/highlights/… URL, so resolve those before parsing.
-    let storyCandidate = url
-    if (url.includes('/s/')) {
-      storyCandidate = await this.resolveRedirect(url)
+    let storyCandidate = url;
+    if (url.includes("/s/")) {
+      storyCandidate = await this.resolveRedirect(url);
     }
     const story =
-      parseInstagramStory(storyCandidate) || parseInstagramStory(url)
-    if (story) return this.downloadInstagramStory(story, url)
+      parseInstagramStory(storyCandidate) || parseInstagramStory(url);
+    if (story) return this.downloadInstagramStory(story, url);
 
-    let resolvedUrl = url
-    if (url.includes('/share/') || url.includes('instagr.am')) {
-      resolvedUrl = await this.resolveInstagramUrl(url)
+    let resolvedUrl = url;
+    if (url.includes("/share/") || url.includes("instagr.am")) {
+      resolvedUrl = await this.resolveInstagramUrl(url);
     }
 
     const shortcode =
-      parseInstagramShortcode(resolvedUrl) || parseInstagramShortcode(url)
+      parseInstagramShortcode(resolvedUrl) || parseInstagramShortcode(url);
 
     // The chain, ordered by what each surface answers:
     //   1. The embed page — first and alone, for a link that has not already
@@ -2700,10 +2842,10 @@ export class Downloader {
     // embed page's own `data-media-type` settles it, so this is refined as the
     // chain runs.
     let expectsVideo =
-      instagramLinkIsVideo(url) || instagramLinkIsVideo(resolvedUrl)
+      instagramLinkIsVideo(url) || instagramLinkIsVideo(resolvedUrl);
 
     // One word per method, for the give-up line at the bottom.
-    const outcomes: string[] = []
+    const outcomes: string[] = [];
 
     // What the judged methods park for the give-up path. Two facts survive a
     // fully-lost race: a video URL a method extracted but we could not confirm
@@ -2712,23 +2854,26 @@ export class Downloader {
     // because runAndJudge is a closure — a bare `let` only a closure writes is
     // narrowed to `never` by the type checker.
     const held: {
-      unverified: VideoData | null
-      stills: VideoData | null
-    } = { unverified: null, stills: null }
+      unverified: VideoData | null;
+      stills: VideoData | null;
+    } = { unverified: null, stills: null };
 
     // Who judged each method: the walk pulls the sequential loop's per-result
     // logic out so the SAME judgement (probe, catch, park, outcome word) runs
     // when the method is a racer — `firstResult` keeps the first VERIFIED
     // answer, and a judged null is just another loser.
-    const runAndJudge = async (method: { name: string; run: () => Promise<VideoData | null> }): Promise<VideoData | null> => {
+    const runAndJudge = async (method: {
+      name: string;
+      run: () => Promise<VideoData | null>;
+    }): Promise<VideoData | null> => {
       try {
-        const result = await method.run()
+        const result = await method.run();
         if (!result) {
-          outcomes.push(`${method.name}:nothing`)
-          return null
+          outcomes.push(`${method.name}:nothing`);
+          return null;
         }
         // IG never uses the TikTok-style slideshow render path.
-        result.isPhotoCarousel = false
+        result.isPhotoCarousel = false;
 
         if (result.downloadUrl) {
           // Confirm the stream actually serves bytes from THIS host, and that
@@ -2739,37 +2884,37 @@ export class Downloader {
           // the cover JPEG perfectly happily, which is worse: it passes a
           // reachability check and downloads as a picture named .mp4.
           const probe = await this.probeStream(result.downloadUrl, {
-            expect: 'video',
-          })
-          if (probe.verdict === 'ok') {
-            result.sizeBytes ??= probe.sizeBytes
-            return result
+            expect: "video",
+          });
+          if (probe.verdict === "ok") {
+            result.sizeBytes ??= probe.sizeBytes;
+            return result;
           }
-          if (probe.verdict === 'wrong-type') {
+          if (probe.verdict === "wrong-type") {
             // Not a maybe. Never hold it as a fallback.
-            outcomes.push(`${method.name}:not-a-video`)
-            return null
+            outcomes.push(`${method.name}:not-a-video`);
+            return null;
           }
-          held.unverified ??= result
-          outcomes.push(`${method.name}:unreachable`)
-          return null
+          held.unverified ??= result;
+          outcomes.push(`${method.name}:unreachable`);
+          return null;
         }
 
         if ((result.images?.length ?? 0) > 0) {
-          if (!expectsVideo) return result
-          outcomes.push(`${method.name}:stills(${result.images?.length})`)
-          held.stills ??= result
-          return null
+          if (!expectsVideo) return result;
+          outcomes.push(`${method.name}:stills(${result.images?.length})`);
+          held.stills ??= result;
+          return null;
         }
-        outcomes.push(`${method.name}:empty`)
-        return null
+        outcomes.push(`${method.name}:empty`);
+        return null;
       } catch (e) {
         outcomes.push(
-          `${method.name}:threw(${e instanceof Error ? e.message.slice(0, 40) : '?'})`,
-        )
-        return null
+          `${method.name}:threw(${e instanceof Error ? e.message.slice(0, 40) : "?"})`,
+        );
+        return null;
       }
-    }
+    };
 
     // Phase 1 — the embed, alone and only for a link that has not already
     // named itself a video: a /reel/ or /tv/ URL answers that question in its
@@ -2779,15 +2924,15 @@ export class Downloader {
     // that tells the chain a photo-titled post is actually a video.
     if (!expectsVideo) {
       const embedResult = await runAndJudge({
-        name: 'embed',
+        name: "embed",
         run: async () => {
-          if (!shortcode) return null
-          const embed = await this.tryInstagramEmbed(shortcode, url)
-          expectsVideo = expectsVideo || embed.isVideo
-          return embed.data
+          if (!shortcode) return null;
+          const embed = await this.tryInstagramEmbed(shortcode, url);
+          expectsVideo = expectsVideo || embed.isVideo;
+          return embed.data;
         },
-      })
-      if (embedResult) return embedResult
+      });
+      if (embedResult) return embedResult;
     }
 
     // Phase 2 — the video-hunters, raced rather than tried in turn, the shape
@@ -2797,36 +2942,38 @@ export class Downloader {
     // answer arrives with whichever verifies first, and a rate-limited crawler
     // costs the window's no-op instead of the resolve.
     const racers: Array<{
-      name: string
-      run: () => Promise<VideoData | null>
+      name: string;
+      run: () => Promise<VideoData | null>;
     }> = [
       {
-        name: 'crawler',
+        name: "crawler",
         run: () =>
           shortcode && expectsVideo
             ? this.tryInstagramCrawlerView(shortcode, url)
             : Promise.resolve(null),
       },
       {
-        name: 'media-info',
+        name: "media-info",
         run: () =>
           shortcode
             ? this.tryInstagramMediaInfo(shortcode, url)
             : Promise.resolve(null),
       },
-      { name: 'cobalt', run: () => this.tryCobaltInstances(resolvedUrl) },
-    ]
+      { name: "cobalt", run: () => this.tryCobaltInstances(resolvedUrl) },
+    ];
     const raced = await firstResult(
       racers.map((method) => () => runAndJudge(method)),
-    )
-    if (raced) return raced
+    );
+    if (raced) return raced;
 
     // No method produced a verified-reachable stream. If we did extract a video
     // URL (just couldn't confirm it here), return it anyway — it may still play
     // for the client, and this is no worse than the prior behavior.
     if (held.unverified) {
-      console.warn(`Instagram fell back to an unverified stream: ${outcomes.join(' ')}`)
-      return held.unverified
+      console.warn(
+        `Instagram fell back to an unverified stream: ${outcomes.join(" ")}`,
+      );
+      return held.unverified;
     }
     // A gallery for a video link is the last thing tried, never the first: it
     // is the poster, and handing it over as though it were the clip is the
@@ -2844,12 +2991,19 @@ export class Downloader {
     // through to the honest error below is better: "we are being rate-limited,
     // try again" is something a visitor can act on, and a picture named after
     // the reel they asked for is the complaint that started all of this.
-    if (held.stills && !stillsAreJustTheCover(expectsVideo, held.stills.images?.length ?? 0)) {
-      console.warn(`Instagram gave a reel its cover image: ${outcomes.join(' ')}`)
-      return held.stills
+    if (
+      held.stills &&
+      !stillsAreJustTheCover(expectsVideo, held.stills.images?.length ?? 0)
+    ) {
+      console.warn(
+        `Instagram gave a reel its cover image: ${outcomes.join(" ")}`,
+      );
+      return held.stills;
     }
     if (held.stills) {
-      console.warn(`Instagram refused a cover-only reel: ${outcomes.join(' ')}`)
+      console.warn(
+        `Instagram refused a cover-only reel: ${outcomes.join(" ")}`,
+      );
     }
 
     // Rate-limited rather than unavailable, and the two need different words:
@@ -2858,8 +3012,8 @@ export class Downloader {
     // all wrong and all alarming.
     if (expectsVideo && instagramCrawlerCoolingDown()) {
       throw new Error(
-        'Instagram is rate-limiting this downloader right now, so this reel could not be read. Nothing is wrong with the post — give it a few minutes and try again.',
-      )
+        "Instagram is rate-limiting this downloader right now, so this reel could not be read. Nothing is wrong with the post — give it a few minutes and try again.",
+      );
     }
 
     // A credentialed request whose session is locked reached here as if it were
@@ -2867,8 +3021,8 @@ export class Downloader {
     // for a grant holder every login-gated post fails until the lock clears.
     if (this.credentialed && instagramSessionLocked()) {
       throw new Error(
-        'Could not download this Instagram post. It needs a logged-in Instagram account, and this downloader’s account has been asked by Instagram to verify itself — that has to be done before login-only posts work again. Public posts, reels and carousels are unaffected.',
-      )
+        "Could not download this Instagram post. It needs a logged-in Instagram account, and this downloader’s account has been asked by Instagram to verify itself — that has to be done before login-only posts work again. Public posts, reels and carousels are unaffected.",
+      );
     }
 
     // Every login-free path failed. The most common cause now is a login-gated
@@ -2878,16 +3032,16 @@ export class Downloader {
     if (!this.instagramSessionId) {
       console.warn(
         this.instagramSessionConfigured
-          ? 'Instagram extraction failed on an anonymous request. A session IS configured; it is withheld by design from requests without the `ig` grant. Public posts resolve without it, so this is a post Instagram will not serve logged-out — not a missing secret.'
-          : 'Instagram extraction failed and IG_SESSIONID is not set — login-gated posts require it.',
-      )
+          ? "Instagram extraction failed on an anonymous request. A session IS configured; it is withheld by design from requests without the `ig` grant. Public posts resolve without it, so this is a post Instagram will not serve logged-out — not a missing secret."
+          : "Instagram extraction failed and IG_SESSIONID is not set — login-gated posts require it.",
+      );
       throw new Error(
-        'Could not download this Instagram post. Public posts, reels and carousels work — this one is private, age- or region-restricted, or has been deleted, and Instagram serves those only to a logged-in account.',
-      )
+        "Could not download this Instagram post. Public posts, reels and carousels work — this one is private, age- or region-restricted, or has been deleted, and Instagram serves those only to a logged-in account.",
+      );
     }
     throw new Error(
-      'Could not download Instagram content. The post may be private or unavailable, or the configured Instagram session (IG_SESSIONID) may have expired.',
-    )
+      "Could not download Instagram content. The post may be private or unavailable, or the configured Instagram session (IG_SESSIONID) may have expired.",
+    );
   }
 
   /**
@@ -2906,30 +3060,30 @@ export class Downloader {
   ): Promise<VideoData> {
     if (this.credentialed && instagramSessionLocked()) {
       throw new Error(
-        'Instagram has asked this downloader’s Instagram account to verify itself, so story and highlight downloads are paused until that is done. Public posts, reels and carousels are unaffected.',
-      )
+        "Instagram has asked this downloader’s Instagram account to verify itself, so story and highlight downloads are paused until that is done. Public posts, reels and carousels are unaffected.",
+      );
     }
 
     if (!this.instagramSessionId) {
       if (this.instagramSessionConfigured) {
         console.warn(
-          'Instagram story requested anonymously. A session IS configured but never attaches to a request without the `ig` grant.',
-        )
+          "Instagram story requested anonymously. A session IS configured but never attaches to a request without the `ig` grant.",
+        );
       }
       throw new Error(
-        'This is an Instagram story/highlight — Instagram only serves these to a logged-in account, so downloading them needs a configured Instagram session (IG_SESSIONID). Public posts and reels work without one.',
-      )
+        "This is an Instagram story/highlight — Instagram only serves these to a logged-in account, so downloading them needs a configured Instagram session (IG_SESSIONID). Public posts and reels work without one.",
+      );
     }
 
-    const { csrf } = await this.getInstagramTokens()
-    const cookie = this.instagramCookieWith(csrf)
+    const { csrf } = await this.getInstagramTokens();
+    const cookie = this.instagramCookieWith(csrf);
     const headers: Record<string, string> = {
-      'User-Agent': this.userAgent,
-      'X-IG-App-ID': this.instagramAppId,
-      Accept: '*/*',
-      Referer: 'https://www.instagram.com/',
+      "User-Agent": this.userAgent,
+      "X-IG-App-ID": this.instagramAppId,
+      Accept: "*/*",
+      Referer: "https://www.instagram.com/",
       Cookie: cookie,
-    }
+    };
 
     // A /stories/<user>/<pk>/ link carries the item's OWN media id, so ask for
     // that item directly and skip resolving the account behind it. This is the
@@ -2939,33 +3093,33 @@ export class Downloader {
     // need a username — worked. See
     // lessons/2026-08-15-instagram-logged-out-wall.md.
     if (story.storyPk) {
-      const direct = await this.instagramMediaItem(story.storyPk, headers)
+      const direct = await this.instagramMediaItem(story.storyPk, headers);
       const parsed =
         direct &&
         storyItemToVideoData(
           direct,
-          direct.user?.username || story.username || 'instagram',
+          direct.user?.username || story.username || "instagram",
           originalUrl,
           story.storyPk,
-        )
-      if (parsed) return parsed
+        );
+      if (parsed) return parsed;
     }
 
     // Resolve which reel to fetch: a highlight id directly, or the user id
     // behind a username.
-    let reelId: string
+    let reelId: string;
     if (story.highlightId) {
-      reelId = `highlight:${story.highlightId}`
+      reelId = `highlight:${story.highlightId}`;
     } else if (story.username) {
-      const userId = await this.resolveInstagramUserId(story.username, headers)
+      const userId = await this.resolveInstagramUserId(story.username, headers);
       if (!userId) {
         throw new Error(
-          'Could not resolve that Instagram account (it may be private, or the session has expired).',
-        )
+          "Could not resolve that Instagram account (it may be private, or the session has expired).",
+        );
       }
-      reelId = userId
+      reelId = userId;
     } else {
-      throw new Error('Unrecognised Instagram story link.')
+      throw new Error("Unrecognised Instagram story link.");
     }
 
     const reels = await http.get(
@@ -2973,17 +3127,17 @@ export class Downloader {
         reelId,
       )}`,
       { headers, timeout: 20000, validateStatus: () => true },
-    )
+    );
 
-    const reelMap = (reels.data?.reels ?? {}) as Record<string, IgReel>
+    const reelMap = (reels.data?.reels ?? {}) as Record<string, IgReel>;
     const reel: IgReel | undefined =
-      reelMap[reelId] ?? (Object.values(reelMap)[0] as IgReel | undefined)
-    const items = (reel?.items ?? []) as IgStoryItem[]
+      reelMap[reelId] ?? (Object.values(reelMap)[0] as IgReel | undefined);
+    const items = (reel?.items ?? []) as IgStoryItem[];
     if (items.length === 0) {
-      logInstagramRefusal('reels_media', reelId, reels)
+      logInstagramRefusal("reels_media", reelId, reels);
       throw new Error(
-        'No story items are available — the story may have expired (stories last 24 hours) or the account has none right now.',
-      )
+        "No story items are available — the story may have expired (stories last 24 hours) or the account has none right now.",
+      );
     }
 
     // Prefer the exact item the link points at; otherwise take the first.
@@ -2992,18 +3146,18 @@ export class Downloader {
         items.find(
           (it) =>
             String(it.pk) === story.storyPk ||
-            String(it.id ?? '').startsWith(story.storyPk as string),
+            String(it.id ?? "").startsWith(story.storyPk as string),
         )) ||
-      items[0]
+      items[0];
 
     const parsed = storyItemToVideoData(
       item,
-      reel?.user?.username || story.username || 'instagram',
+      reel?.user?.username || story.username || "instagram",
       originalUrl,
       story.storyPk,
-    )
-    if (parsed) return parsed
-    throw new Error('Could not extract media from that story item.')
+    );
+    if (parsed) return parsed;
+    throw new Error("Could not extract media from that story item.");
   }
 
   /**
@@ -3024,17 +3178,17 @@ export class Downloader {
         username,
       )}`,
       { headers, timeout: 15000, validateStatus: () => true },
-    )
-    const users = response.data?.users
-    if (!Array.isArray(users)) return ''
-    const wanted = username.toLowerCase()
+    );
+    const users = response.data?.users;
+    if (!Array.isArray(users)) return "";
+    const wanted = username.toLowerCase();
     for (const entry of users) {
-      const user = entry?.user
-      if (String(user?.username ?? '').toLowerCase() === wanted) {
-        return String(user?.pk ?? '')
+      const user = entry?.user;
+      if (String(user?.username ?? "").toLowerCase() === wanted) {
+        return String(user?.pk ?? "");
       }
     }
-    return ''
+    return "";
   }
 
   /**
@@ -3044,28 +3198,28 @@ export class Downloader {
    */
   private async checkVideoCodecCompatible(url: string): Promise<boolean> {
     try {
-      const referer = codecProbeReferer(url)
+      const referer = codecProbeReferer(url);
       const response = await http.get(url, {
         headers: {
-          Range: 'bytes=0-65535',
-          'User-Agent': this.userAgent,
+          Range: "bytes=0-65535",
+          "User-Agent": this.userAgent,
           ...(referer ? { Referer: referer } : {}),
         },
-        responseType: 'arraybuffer',
+        responseType: "arraybuffer",
         // Short on purpose: this probe sits between the visitor and their
         // result, and its own failure path is "assume the codec is fine". A
         // slow CDN is therefore worth abandoning rather than waiting out —
         // measured, the probe answers in 0.2–1.4s when it answers at all.
         timeout: 2500,
         maxRedirects: 5,
-      })
-      const bytes = Buffer.from(response.data as ArrayBuffer)
+      });
+      const bytes = Buffer.from(response.data as ArrayBuffer);
       return this.supportedVideoCodecs.some((codec) =>
         bytes.includes(Buffer.from(codec)),
-      )
+      );
     } catch {
       // If the check fails we optimistically assume the codec is fine
-      return true
+      return true;
     }
   }
 
@@ -3104,76 +3258,78 @@ export class Downloader {
    */
   private async probeStream(
     url: string,
-    opts?: { rejectHtml?: boolean; expect?: 'video'; pageReferer?: string },
+    opts?: { rejectHtml?: boolean; expect?: "video"; pageReferer?: string },
   ): Promise<StreamProbe> {
     // Native fetch rather than axios: axios's `responseType: 'stream'` hands
     // back a Node Readable, which its fetch adapter cannot produce and which
     // does not exist on workerd. A web ReadableStream works identically on both
     // runtimes, and reading one chunk from it costs no meaningful CPU.
-    const abort = new AbortController()
-    const timer = setTimeout(() => abort.abort(), 12000)
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), 12000);
     try {
-      const referer = getMediaReferer(url) || opts?.pageReferer || ''
+      const referer = getMediaReferer(url) || opts?.pageReferer || "";
       const headers: Record<string, string> = {
-        Range: 'bytes=0-1024',
-        'User-Agent': this.userAgent,
-      }
-      if (referer) headers.Referer = referer
+        Range: "bytes=0-1024",
+        "User-Agent": this.userAgent,
+      };
+      if (referer) headers.Referer = referer;
 
       const response = await fetch(url, {
         headers,
-        redirect: 'follow',
+        redirect: "follow",
         signal: abort.signal,
-      })
+      });
 
-      const statusOk = response.status === 200 || response.status === 206
-      const contentType = (response.headers.get('content-type') ?? '')
-        .toLowerCase()
-      const isPage = contentType.includes('text/html')
+      const statusOk = response.status === 200 || response.status === 206;
+      const contentType = (
+        response.headers.get("content-type") ?? ""
+      ).toLowerCase();
+      const isPage = contentType.includes("text/html");
       // An explicit Content-Length: 0 is the empty-tunnel signature — reject early.
-      if (!statusOk || response.headers.get('content-length') === '0') {
-        await response.body?.cancel()
-        return { verdict: 'unreachable' }
+      if (!statusOk || response.headers.get("content-length") === "0") {
+        await response.body?.cancel();
+        return { verdict: "unreachable" };
       }
       if (
         (opts?.rejectHtml && isPage) ||
-        (opts?.expect === 'video' && (isPage || contentType.startsWith('image/')))
+        (opts?.expect === "video" &&
+          (isPage || contentType.startsWith("image/")))
       ) {
-        await response.body?.cancel()
-        return { verdict: 'wrong-type' }
+        await response.body?.cancel();
+        return { verdict: "wrong-type" };
       }
-      const sizeBytes = totalStreamBytes(response)
-      if (!response.body) return { verdict: 'unreachable' }
+      const sizeBytes = totalStreamBytes(response);
+      if (!response.body) return { verdict: "unreachable" };
 
       // Reachable on the first non-empty chunk; unreachable if the body ends
       // empty, errors, or stalls. One chunk is enough — the rest of the file is
       // never pulled, and cancelling tears the connection down so the upstream
       // stops sending. The chunk is also the only honest answer about *what*
       // this is: a tunnel declares no content type, so the bytes have to say.
-      const reader = response.body.getReader()
+      const reader = response.body.getReader();
       try {
-        const { value, done } = await reader.read()
+        const { value, done } = await reader.read();
         if (done || (value?.byteLength ?? 0) === 0) {
-          return { verdict: 'unreachable' }
+          return { verdict: "unreachable" };
         }
-        if (opts?.expect === 'video' && looksLikeImageBytes(value)) {
-          return { verdict: 'wrong-type' }
+        if (opts?.expect === "video" && looksLikeImageBytes(value)) {
+          return { verdict: "wrong-type" };
         }
-        return { verdict: 'ok', sizeBytes }
+        return { verdict: "ok", sizeBytes };
       } finally {
-        await reader.cancel().catch(() => {})
+        await reader.cancel().catch(() => {});
       }
     } catch {
-      return { verdict: 'unreachable' }
+      return { verdict: "unreachable" };
     } finally {
-      clearTimeout(timer)
+      clearTimeout(timer);
     }
   }
 
   private async downloadTikTok(url: string): Promise<VideoData> {
-    const videoId = parseVideoId(url)
+    const videoId = parseVideoId(url);
     if (!videoId) {
-      throw new Error('Could not extract video ID from URL')
+      throw new Error("Could not extract video ID from URL");
     }
 
     // tikwm and Cobalt are raced, not tried in turn.
@@ -3194,8 +3350,8 @@ export class Downloader {
     const raced = await firstResult([
       () => this.tryTikwmMethod(url),
       () => this.tryTikTokCobalt(url),
-    ])
-    if (raced) return raced
+    ]);
+    if (raced) return raced;
 
     // Everything below is a fallback for when both of those miss, and stays
     // sequential: each is either free (yt-dlp, absent on workerd) or expensive
@@ -3216,24 +3372,35 @@ export class Downloader {
             () => this.tryDirectTikTokScraping(url),
           ]
         : []),
-    ]
+    ];
 
     for (const method of methods) {
       try {
-        const result = await method()
+        const result = await method();
         if (result) {
-          console.log('Successfully downloaded video using method')
-          return result
+          console.log("Successfully downloaded video using method");
+          return result;
         }
       } catch (error) {
-        console.warn('Method failed, trying next...', error)
-        continue
+        console.warn("Method failed, trying next...", error);
+        continue;
+      }
+    }
+
+    // A short link both could not read: follow it ourselves. Most are retired
+    // codes, which TikTok answers with a redirect to its home page.
+    if (isTikTokShortLink(url)) {
+      const target = await this.resolveRedirect(url);
+      if (target !== url) {
+        if (/\/(?:video|photo)\/\d+/.test(target))
+          return this.downloadVideo(target, true);
+        throw new Error(TIKTOK_LINK_RETIRED);
       }
     }
 
     throw new Error(
-      'All download methods failed. TikTok might be blocking requests or the video is private.',
-    )
+      "All download methods failed. TikTok might be blocking requests or the video is private.",
+    );
   }
 
   /**
@@ -3247,22 +3414,22 @@ export class Downloader {
    * the video can't be reached here, so the next method gets a turn.
    */
   private async tryYtDlpTikTok(url: string): Promise<VideoData | null> {
-    const info = await ytdlpInfo(url)
-    if (!info) return null
+    const info = await ytdlpInfo(url);
+    if (!info) return null;
 
-    const encoded = encodeURIComponent(url)
+    const encoded = encodeURIComponent(url);
     return {
       id: parseVideoId(url) || Date.now().toString(),
-      title: info.title || 'TikTok Video',
+      title: info.title || "TikTok Video",
       url,
-      thumbnail: info.thumbnail || '',
+      thumbnail: info.thumbnail || "",
       duration: Math.round(info.duration || 0),
-      author: info.uploader || 'Unknown',
-      description: info.title || '',
+      author: info.uploader || "Unknown",
+      description: info.title || "",
       downloadUrl: `/api/tiktok?url=${encoded}&kind=video`,
       musicUrl: `/api/tiktok?url=${encoded}&kind=audio`,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /**
@@ -3285,44 +3452,44 @@ export class Downloader {
     // Dead tunnels are independent (about one in five), so up to
     // TIKTOK_TUNNEL_ATTEMPTS are staggered: each starts when the one before it
     // fails or stalls past the hedge, and none starts once any has streamed.
-    let settled = false
+    let settled = false;
     const attempt = async () => {
-      if (settled) return null
-      const result = await this.tryTikTokCobaltOnce(url)
-      if (result === 'nothing') {
-        settled = true
-        return null
+      if (settled) return null;
+      const result = await this.tryTikTokCobaltOnce(url);
+      if (result === "nothing") {
+        settled = true;
+        return null;
       }
-      if (result) settled = true
-      return result
-    }
-    const attempts = [attempt()]
+      if (result) settled = true;
+      return result;
+    };
+    const attempts = [attempt()];
     for (let i = 1; i < TIKTOK_TUNNEL_ATTEMPTS; i++) {
-      const previous = attempts[i - 1]
+      const previous = attempts[i - 1];
       const hedge = new Promise<null>((resolve) =>
         setTimeout(() => resolve(null), TIKTOK_TUNNEL_HEDGE_MS),
-      )
-      attempts.push(Promise.race([previous, hedge]).then(() => attempt()))
+      );
+      attempts.push(Promise.race([previous, hedge]).then(() => attempt()));
     }
-    return firstResult(attempts.map((p) => () => p))
+    return firstResult(attempts.map((p) => () => p));
   }
 
   /** One Cobalt resolve whose tunnel has been seen to stream, or why not. */
   private async tryTikTokCobaltOnce(
     url: string,
-  ): Promise<VideoData | null | 'nothing'> {
-    const result = await this.tryCobaltInstances(url)
-    if (!result) return 'nothing'
+  ): Promise<VideoData | null | "nothing"> {
+    const result = await this.tryCobaltInstances(url);
+    if (!result) return "nothing";
 
     // Recover author + numeric id from Cobalt's `tiktok_<author>_<id>` filename
     // (the title is that filename minus extension). Falls back to the URL.
-    const fnMatch = result.title.match(/^tiktok_(.+)_(\d+)$/)
-    const fnAuthor = fnMatch?.[1]
-    const videoId = fnMatch?.[2] || parseVideoId(url) || result.id
-    result.id = videoId
+    const fnMatch = result.title.match(/^tiktok_(.+)_(\d+)$/);
+    const fnAuthor = fnMatch?.[1];
+    const videoId = fnMatch?.[2] || parseVideoId(url) || result.id;
+    result.id = videoId;
     const canonical = fnAuthor
       ? `https://www.tiktok.com/@${fnAuthor}/video/${videoId}`
-      : url
+      : url;
 
     // A tunnel is a promise, not a file: Cobalt says "tunnel" at once and only
     // asks TikTok when the tunnel is read. On 2026-11-19 one answered 500 after
@@ -3331,26 +3498,29 @@ export class Downloader {
     // first bytes here turns a dead tunnel into "no answer", and nothing that
     // does not play is ever cached. The oembed lookup runs alongside the read
     // rather than after it; neither needs the other.
-    const stream = result.downloadUrl || result.musicUrl
-    const needsProbe = Boolean(stream) && !result.isPhotoCarousel
+    const stream = result.downloadUrl || result.musicUrl;
+    const needsProbe = Boolean(stream) && !result.isPhotoCarousel;
     const [probe, meta] = await Promise.all([
       needsProbe
-        ? this.probeStream(stream!, result.downloadUrl ? { expect: 'video' } : undefined)
+        ? this.probeStream(
+            stream!,
+            result.downloadUrl ? { expect: "video" } : undefined,
+          )
         : null,
       this.fetchTikTokMeta(canonical),
-    ])
+    ]);
     if (probe) {
-      if (probe.verdict !== 'ok') return null
-      result.sizeBytes ??= probe.sizeBytes
+      if (probe.verdict !== "ok") return null;
+      result.sizeBytes ??= probe.sizeBytes;
     }
 
-    if (meta.title) result.title = meta.title
-    else if (fnAuthor) result.title = `TikTok by @${fnAuthor}`
-    if (meta.author) result.author = meta.author
-    else if (fnAuthor) result.author = fnAuthor
-    if (meta.thumbnail) result.thumbnail = meta.thumbnail
+    if (meta.title) result.title = meta.title;
+    else if (fnAuthor) result.title = `TikTok by @${fnAuthor}`;
+    if (meta.author) result.author = meta.author;
+    else if (fnAuthor) result.author = fnAuthor;
+    if (meta.thumbnail) result.thumbnail = meta.thumbnail;
 
-    return result
+    return result;
   }
 
   /**
@@ -3365,17 +3535,17 @@ export class Downloader {
       const response = await http.get(
         `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
         {
-          headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
+          headers: { "User-Agent": this.userAgent, Accept: "application/json" },
           timeout: 12000,
         },
-      )
+      );
       return {
         title: response.data?.title,
         author: response.data?.author_name,
         thumbnail: response.data?.thumbnail_url,
-      }
+      };
     } catch {
-      return {}
+      return {};
     }
   }
 
@@ -3383,41 +3553,41 @@ export class Downloader {
   private async tryCobaltInstances(url: string): Promise<VideoData | null> {
     // The MP3 fallback's inner resolve arrives here already knowing Cobalt
     // missed this URL — see skipCobalt.
-    if (this.skipCobalt) return null
-    const errors: string[] = []
+    if (this.skipCobalt) return null;
+    const errors: string[] = [];
     // A self-hosted resolver that self-registers its (possibly rotating) URL is
     // discovered at request time and appended after the static list — so it's
     // reached even when its public URL has changed and no env was updated. Deduped
     // against the configured instances so a stable URL isn't tried twice.
-    const discovered = await discoverResolverBase()
+    const discovered = await discoverResolverBase();
     const configured = new Set(
-      this.cobaltInstances.map((i) => i.replace(/\/$/, '')),
-    )
+      this.cobaltInstances.map((i) => i.replace(/\/$/, "")),
+    );
     const all =
-      discovered && !configured.has(discovered.replace(/\/$/, ''))
+      discovered && !configured.has(discovered.replace(/\/$/, ""))
         ? [...this.cobaltInstances, discovered]
-        : this.cobaltInstances
+        : this.cobaltInstances;
 
     // A public instance refuses a host outside cobalt's service list with a
     // 400, and that refusal costs the same handshake as an answer. Ours are
     // generic, so they stay in the list whatever the host is.
     const publicInstances = new Set(
       Downloader.publicCobaltInstances.map(cobaltKey),
-    )
+    );
     const eligible = publicCobaltServes(url)
       ? all
-      : all.filter((instance) => !publicInstances.has(cobaltKey(instance)))
-    if (eligible.length === 0) return null
+      : all.filter((instance) => !publicInstances.has(cobaltKey(instance)));
+    if (eligible.length === 0) return null;
 
     // Skip an instance that failed transiently a moment ago — but only while
     // another one is left to try. If every instance is cooling down, they are
     // all tried again rather than failing the resolve on the strength of a
     // memo.
-    const now = Date.now()
+    const now = Date.now();
     const ready = eligible.filter(
       (instance) => (cobaltCooldown.get(cobaltKey(instance)) ?? 0) <= now,
-    )
-    const instances = ready.length > 0 ? ready : eligible
+    );
+    const instances = ready.length > 0 ? ready : eligible;
     // Prefer an instance that *tunnels* over one that hands back a raw CDN
     // redirect. Both are usable, but only a tunnel streams from any IP with
     // Content-Disposition set, which lets the browser pull the file straight
@@ -3429,29 +3599,32 @@ export class Downloader {
     // That flag is set explicitly on the tunnel/redirect branch alone, so a
     // `picker` result (photo carousel) leaves it undefined and is returned
     // immediately like any other terminal answer.
-    let redirectFallback: VideoData | null = null
+    let redirectFallback: VideoData | null = null;
     for (const instance of instances) {
       try {
-        const result = await this.tryCobaltInstance(instance, url)
-        if (!result) continue
+        const result = await this.tryCobaltInstance(instance, url);
+        if (!result) continue;
         if (result.tunnel === false) {
-          redirectFallback ??= result
-          continue
+          redirectFallback ??= result;
+          continue;
         }
-        return result
+        return result;
       } catch (e) {
         // Only a transient failure earns a cooldown. A 400 is about the URL,
         // not the instance, and benching a healthy instance over one
         // unsupported link would cost the next request its best source.
         if (isTransientError(e)) {
-          cobaltCooldown.set(cobaltKey(instance), Date.now() + COBALT_COOLDOWN_MS)
+          cobaltCooldown.set(
+            cobaltKey(instance),
+            Date.now() + COBALT_COOLDOWN_MS,
+          );
         }
-        errors.push(`${instance}: ${e}`)
+        errors.push(`${instance}: ${e}`);
       }
     }
-    if (redirectFallback) return redirectFallback
-    console.warn('All cobalt instances failed:', errors)
-    return null
+    if (redirectFallback) return redirectFallback;
+    console.warn("All cobalt instances failed:", errors);
+    return null;
   }
 
   private async tryCobaltInstance(
@@ -3459,58 +3632,58 @@ export class Downloader {
     url: string,
   ): Promise<VideoData | null> {
     const headers: Record<string, string> = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    }
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    };
     // When the (self-hosted) instance requires auth, forward the key so only
     // this app can use it. No-op for the open public instance.
     if (process.env.COBALT_API_KEY) {
-      headers.Authorization = `Api-Key ${process.env.COBALT_API_KEY}`
+      headers.Authorization = `Api-Key ${process.env.COBALT_API_KEY}`;
     }
 
     // Audio mode asks Cobalt for an audio-only MP3 tunnel (the "→ MP3" flow);
     // otherwise a normal video tunnel at the preferred quality.
     const body =
-      this.mode === 'audio'
+      this.mode === "audio"
         ? {
             url,
-            downloadMode: 'audio',
-            audioFormat: 'mp3',
-            filenameStyle: 'basic',
+            downloadMode: "audio",
+            audioFormat: "mp3",
+            filenameStyle: "basic",
           }
         : {
             url,
-            videoQuality: this.videoQuality === 'sd' ? '480' : 'max',
-            filenameStyle: 'basic',
-          }
+            videoQuality: this.videoQuality === "sd" ? "480" : "max",
+            filenameStyle: "basic",
+          };
 
     // Retry transient failures (429 / 5xx / cold-start timeouts) before giving
     // up on this instance and moving to the next.
     const response = await withRetry(
       () => http.post(baseUrl, body, { headers, timeout: 12000 }),
       { retries: 2, isRetryable: isTransientError },
-    )
+    );
 
-    const data = response.data
+    const data = response.data;
 
-    if (data.status === 'error') {
+    if (data.status === "error") {
       throw new Error(
         `Cobalt error: ${data.error?.code ?? JSON.stringify(data.error)}`,
-      )
+      );
     }
 
-    if (data.status === 'tunnel' || data.status === 'redirect') {
-      const isAudio = this.mode === 'audio'
-      const kind = cobaltMediaKind(data.filename)
+    if (data.status === "tunnel" || data.status === "redirect") {
+      const isAudio = this.mode === "audio";
+      const kind = cobaltMediaKind(data.filename);
       const common = {
         id: Date.now().toString(),
-        title: data.filename?.replace(/\.[^.]+$/, '') || 'Social Media Video',
+        title: data.filename?.replace(/\.[^.]+$/, "") || "Social Media Video",
         url,
         duration: 0,
-        author: 'Unknown',
-        description: '',
+        author: "Unknown",
+        description: "",
         isPhotoCarousel: false,
-      }
+      };
 
       // A tunnel carrying a PICTURE. Cobalt answers `tunnel` whether it
       // extracted the clip or gave up and fell back to the post's cover, so
@@ -3519,36 +3692,38 @@ export class Downloader {
       // named .mp4. Returned as an image so a genuine single-photo post still
       // resolves; the caller decides whether a still answers the link it was
       // given. See lessons/2026-09-06-the-tunnel-that-served-a-jpeg.md.
-      if (kind === 'image') {
+      if (kind === "image") {
         return {
           ...common,
           thumbnail: data.url,
-          downloadUrl: '',
-          images: [{ id: `${common.id}_0`, url: data.url, thumbnail: data.url }],
-        }
+          downloadUrl: "",
+          images: [
+            { id: `${common.id}_0`, url: data.url, thumbnail: data.url },
+          ],
+        };
       }
 
       return {
         ...common,
-        thumbnail: '',
+        thumbnail: "",
         // In audio mode the tunnel is an MP3 — hand it back as the music track
         // (no video), so the API serves it through the audio path.
-        downloadUrl: isAudio ? '' : data.url,
+        downloadUrl: isAudio ? "" : data.url,
         ...(isAudio ? { musicUrl: data.url } : {}),
         // A tunnel streams from any IP with Content-Disposition: attachment, so
         // the browser can download it directly (bypassing our proxy). A
         // `redirect` is a raw CDN URL — do NOT mark it direct-safe.
-        tunnel: data.status === 'tunnel',
-      }
+        tunnel: data.status === "tunnel",
+      };
     }
 
-    if (data.status === 'picker') {
+    if (data.status === "picker") {
       const items = (data.picker ?? []) as Array<{
-        type: string
-        url: string
-        thumb?: string
-      }>
-      const videos = items.filter((p) => p.type === 'video')
+        type: string;
+        url: string;
+        thumb?: string;
+      }>;
+      const videos = items.filter((p) => p.type === "video");
 
       // Every item, in the order the post publishes them, each labelled with
       // what it is. Two things used to be lost here: a `gif` item was dropped
@@ -3559,200 +3734,200 @@ export class Downloader {
         id: `item_${i}`,
         url: item.url,
         thumbnail: item.thumb || item.url,
-        kind: item.type === 'video' ? 'video' : 'image',
-      }))
+        kind: item.type === "video" ? "video" : "image",
+      }));
 
       return {
         id: Date.now().toString(),
-        title: data.filename?.replace(/\.[^.]+$/, '') || 'Social Media Content',
+        title: data.filename?.replace(/\.[^.]+$/, "") || "Social Media Content",
         url,
-        thumbnail: items[0]?.thumb || '',
+        thumbnail: items[0]?.thumb || "",
         duration: 0,
-        author: 'Unknown',
-        description: '',
+        author: "Unknown",
+        description: "",
         // The first VIDEO, or nothing. Never `items[0]`: on an all-photo picker
         // that handed a JPEG back as the primary stream, which /api/video then
         // labelled video/mp4.
-        downloadUrl: videos[0]?.url ?? '',
+        downloadUrl: videos[0]?.url ?? "",
         images: gallery.length > 0 ? gallery : undefined,
         // Only a set that is entirely photos is a slideshow — that flag routes
         // to the ffmpeg renderer, which has nothing to do with a clip.
         isPhotoCarousel: gallery.length > 0 && videos.length === 0,
-      }
+      };
     }
 
-    console.warn('Cobalt unexpected status:', data.status, data)
-    return null
+    console.warn("Cobalt unexpected status:", data.status, data);
+    return null;
   }
 
   // Twitter/X: use vxtwitter API (open source, no auth required)
   private async tryVxTwitterMethod(url: string): Promise<VideoData | null> {
     // Extract username and tweet ID from URL
-    const match = url.match(/(?:twitter|x)\.com\/([^/]+)\/status\/(\d+)/)
-    if (!match) throw new Error('Could not parse Twitter URL')
-    const [, username, tweetId] = match
+    const match = url.match(/(?:twitter|x)\.com\/([^/]+)\/status\/(\d+)/);
+    if (!match) throw new Error("Could not parse Twitter URL");
+    const [, username, tweetId] = match;
 
     const response = await http.get(
       `https://api.vxtwitter.com/${username}/status/${tweetId}`,
       {
         headers: {
-          'User-Agent': 'SocialMediaDownloader/1.0',
-          Accept: 'application/json',
+          "User-Agent": "SocialMediaDownloader/1.0",
+          Accept: "application/json",
         },
         timeout: 20000,
       },
-    )
+    );
 
-    const data = response.data
+    const data = response.data;
     // "Failed to scan your link" comes back as an HTML page, not a post: that
     // says nothing about the post, so it is no answer rather than "no media".
-    if (!data || typeof data !== 'object') return null
+    if (!data || typeof data !== "object") return null;
 
     // Find best video media
     const mediaItems = (data.media_extended ?? data.media ?? []) as Array<{
-      type: string
-      url: string
-      thumbnail_url?: string
-      altText?: string
-    }>
+      type: string;
+      url: string;
+      thumbnail_url?: string;
+      altText?: string;
+    }>;
 
     const isVideo = (m: { type: string }) =>
-      m.type === 'video' || m.type === 'gif'
-    const videoItem = mediaItems.find(isVideo)
-    const photoItems = mediaItems.filter((m) => m.type === 'image')
+      m.type === "video" || m.type === "gif";
+    const videoItem = mediaItems.find(isVideo);
+    const photoItems = mediaItems.filter((m) => m.type === "image");
 
     if (!videoItem && photoItems.length === 0) {
-      throw new Error(TWEET_HAS_NO_MEDIA)
+      throw new Error(TWEET_HAS_NO_MEDIA);
     }
 
-    const downloadUrl = videoItem?.url || ''
+    const downloadUrl = videoItem?.url || "";
     // Every attachment, in the order the tweet shows them. A tweet can carry
     // four clips, and the gallery used to be built from the photos alone — so
     // the first clip became `downloadUrl` and the other three were dropped with
     // nothing anywhere saying so. Same defect as the Instagram carousel; the
     // gallery carries video now, so it carries all of it.
     const images: ImageData[] = mediaItems
-      .filter((m) => isVideo(m) || m.type === 'image')
+      .filter((m) => isVideo(m) || m.type === "image")
       .map((item, i) => ({
         id: `tw_media_${i}`,
         url: item.url,
         thumbnail: item.thumbnail_url || item.url,
-        kind: isVideo(item) ? ('video' as const) : ('image' as const),
-      }))
+        kind: isVideo(item) ? ("video" as const) : ("image" as const),
+      }));
     // One clip on its own is not a gallery — it is the tweet, and
     // `downloadUrl` already carries it.
     const gallery =
-      images.length === 1 && images[0].kind === 'video' ? [] : images
+      images.length === 1 && images[0].kind === "video" ? [] : images;
 
     return {
       id: tweetId,
       title: data.text
-        ? data.text.slice(0, 80).replace(/\s+/g, ' ')
+        ? data.text.slice(0, 80).replace(/\s+/g, " ")
         : `Tweet by @${username}`,
       url,
-      thumbnail: videoItem?.thumbnail_url || photoItems[0]?.url || '',
+      thumbnail: videoItem?.thumbnail_url || photoItems[0]?.url || "",
       duration: 0,
       author: data.user_name || username,
-      description: data.text || '',
+      description: data.text || "",
       downloadUrl,
       images: gallery.length > 0 ? gallery : undefined,
       isPhotoCarousel: photoItems.length > 0 && !videoItem,
-    }
+    };
   }
 
   private async trySnaptikMethod(url: string): Promise<VideoData | null> {
     try {
       // Step 1: Get the main page to extract necessary tokens
-      await http.get('https://snaptik.app/', {
-        headers: { 'User-Agent': this.userAgent },
-      })
+      await http.get("https://snaptik.app/", {
+        headers: { "User-Agent": this.userAgent },
+      });
 
       // Step 2: Submit the URL
-      const formData = new URLSearchParams()
-      formData.append('url', url)
+      const formData = new URLSearchParams();
+      formData.append("url", url);
 
       const response = await http.post(
-        'https://snaptik.app/abc2.php',
+        "https://snaptik.app/abc2.php",
         formData,
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': this.userAgent,
-            Referer: 'https://snaptik.app/',
-            Origin: 'https://snaptik.app',
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": this.userAgent,
+            Referer: "https://snaptik.app/",
+            Origin: "https://snaptik.app",
           },
           timeout: 30000,
         },
-      )
+      );
 
-      if (response.data && typeof response.data === 'string') {
+      if (response.data && typeof response.data === "string") {
         // Look for download links
-        const downloadLinks = mp4Hrefs(response.data)
+        const downloadLinks = mp4Hrefs(response.data);
 
         if (downloadLinks.length > 0) {
-          const videoId = parseVideoId(url) || 'unknown'
+          const videoId = parseVideoId(url) || "unknown";
           return {
             id: videoId,
-            title: 'TikTok Video (Snaptik)',
+            title: "TikTok Video (Snaptik)",
             url: url,
-            thumbnail: '',
+            thumbnail: "",
             duration: 0,
-            author: 'Unknown',
-            description: 'Downloaded via Snaptik',
+            author: "Unknown",
+            description: "Downloaded via Snaptik",
             downloadUrl: downloadLinks[0], // Use the first (usually highest quality) link
-          }
+          };
         }
       }
     } catch {
-      throw new Error('Snaptik method failed')
+      throw new Error("Snaptik method failed");
     }
-    return null
+    return null;
   }
 
   private async trySSSMethod(url: string): Promise<VideoData | null> {
     try {
       const response = await http.post(
-        'https://ssstik.io/abc',
+        "https://ssstik.io/abc",
         {
           id: url,
-          locale: 'en',
-          tt: 'RFBiZ3Bi',
+          locale: "en",
+          tt: "RFBiZ3Bi",
         },
         {
           headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': this.userAgent,
-            Accept: 'application/json, text/plain, */*',
-            Origin: 'https://ssstik.io',
-            Referer: 'https://ssstik.io/en',
+            "Content-Type": "application/json",
+            "User-Agent": this.userAgent,
+            Accept: "application/json, text/plain, */*",
+            Origin: "https://ssstik.io",
+            Referer: "https://ssstik.io/en",
           },
           timeout: 30000,
         },
-      )
+      );
 
       if (response.data && response.data.url) {
-        const videoId = parseVideoId(url) || 'unknown'
+        const videoId = parseVideoId(url) || "unknown";
         return {
           id: videoId,
-          title: response.data.title || 'TikTok Video (SSSt)',
+          title: response.data.title || "TikTok Video (SSSt)",
           url: url,
-          thumbnail: response.data.cover || '',
+          thumbnail: response.data.cover || "",
           duration: response.data.duration || 0,
-          author: response.data.author || 'Unknown',
-          description: response.data.title || 'Downloaded via SSSTik',
+          author: response.data.author || "Unknown",
+          description: response.data.title || "Downloaded via SSSTik",
           downloadUrl: response.data.url,
-        }
+        };
       }
     } catch {
-      throw new Error('SSSTik method failed')
+      throw new Error("SSSTik method failed");
     }
-    return null
+    return null;
   }
 
   private async tryTikwmMethod(url: string): Promise<VideoData | null> {
     try {
       const response = await http.post(
-        'https://www.tikwm.com/api/',
+        "https://www.tikwm.com/api/",
         {
           url: url,
           count: 12,
@@ -3765,95 +3940,97 @@ export class Downloader {
           // originals, which the browser loads directly (200) and which our
           // /api/video proxy can still range-fetch — verified against the
           // deployed Worker: 206 with a correct Content-Range.
-          hd: this.videoQuality === 'sd' ? 0 : 1,
+          hd: this.videoQuality === "sd" ? 0 : 1,
         },
         {
           headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': this.userAgent,
-            Accept: 'application/json, text/plain, */*',
-            Origin: 'https://www.tikwm.com',
-            Referer: 'https://www.tikwm.com/',
+            "Content-Type": "application/json",
+            "User-Agent": this.userAgent,
+            Accept: "application/json, text/plain, */*",
+            Origin: "https://www.tikwm.com",
+            Referer: "https://www.tikwm.com/",
           },
           timeout: 30000,
         },
-      )
+      );
 
       if (response.data && response.data.code === 0 && response.data.data) {
-        const data = response.data.data
-        const videoId = parseVideoId(url) || 'unknown'
+        const data = response.data.data;
+        const videoId = parseVideoId(url) || "unknown";
 
-        const thumbnail = pickTikwmCover(data)
+        const thumbnail = pickTikwmCover(data);
 
         // Check if this is a photo carousel (slideshow)
         const isPhotoCarousel =
-          data.images && Array.isArray(data.images) && data.images.length > 0
+          data.images && Array.isArray(data.images) && data.images.length > 0;
 
-        let images: ImageData[] = []
+        let images: ImageData[] = [];
         if (isPhotoCarousel) {
           images = data.images.map((img: string, index: number) => ({
             id: `${videoId}_img_${index}`,
             url: img,
             thumbnail: img,
-          }))
+          }));
         }
 
-        let downloadUrl: string | undefined
+        let downloadUrl: string | undefined;
 
         // Photo carousels: skip tikwm's `play` URL — for slideshow posts it
         // points to an audio-only MP4 with no image frames. The /api/slideshow
         // route renders a proper images+music MP4 on demand instead.
         if (!isPhotoCarousel) {
-          const hdplayUrl = tikwmAbsoluteUrl(data.hdplay)
-          const playUrl = tikwmAbsoluteUrl(data.play)
-          const wmplayUrl = tikwmAbsoluteUrl(data.wmplay)
+          const hdplayUrl = tikwmAbsoluteUrl(data.hdplay);
+          const playUrl = tikwmAbsoluteUrl(data.play);
+          const wmplayUrl = tikwmAbsoluteUrl(data.wmplay);
 
           if (hdplayUrl) {
             // Verify the HD URL uses a browser-renderable codec.
             // TikTok sometimes encodes with bvc2 (ByteDance proprietary) which no browser supports,
             // causing the video element to render audio-only ("shows as mp3").
-            const hdCompatible = await this.checkVideoCodecCompatible(hdplayUrl)
+            const hdCompatible =
+              await this.checkVideoCodecCompatible(hdplayUrl);
             if (hdCompatible) {
-              downloadUrl = hdplayUrl
+              downloadUrl = hdplayUrl;
             } else {
               console.log(
                 `[tikwm] hdplay uses unsupported codec for ${videoId} — falling back to play (H.264)`,
-              )
-              downloadUrl = playUrl || wmplayUrl || hdplayUrl
+              );
+              downloadUrl = playUrl || wmplayUrl || hdplayUrl;
             }
           } else {
-            downloadUrl = playUrl || wmplayUrl
+            downloadUrl = playUrl || wmplayUrl;
           }
         }
 
         // Slideshow soundtrack (TikTok photo carousels always have a music track)
         const musicUrl =
-          tikwmAbsoluteUrl(data.music_info?.play) || tikwmAbsoluteUrl(data.music)
-        const musicTitle = data.music_info?.title
-        const musicAuthor = data.music_info?.author
+          tikwmAbsoluteUrl(data.music_info?.play) ||
+          tikwmAbsoluteUrl(data.music);
+        const musicTitle = data.music_info?.title;
+        const musicAuthor = data.music_info?.author;
 
         return {
           id: videoId,
-          title: data.title || 'TikTok Video',
+          title: data.title || "TikTok Video",
           url: url,
           thumbnail,
           duration: data.duration || 0,
-          author: data.author?.nickname || 'Unknown',
-          description: data.title || '',
-          downloadUrl: downloadUrl ?? '',
+          author: data.author?.nickname || "Unknown",
+          description: data.title || "",
+          downloadUrl: downloadUrl ?? "",
           images,
           isPhotoCarousel,
           musicUrl,
           musicTitle,
           musicAuthor,
-        }
+        };
       }
     } catch (e) {
       throw new Error(
         `Tikwm method failed: ${e instanceof Error ? e.message : e}`,
-      )
+      );
     }
-    return null
+    return null;
   }
 
   private async tryDirectTikTokScraping(
@@ -3861,60 +4038,60 @@ export class Downloader {
   ): Promise<VideoData | null> {
     try {
       // First resolve any shortened URLs
-      const resolvedUrl = await this.resolveUrl(url)
+      const resolvedUrl = await this.resolveUrl(url);
 
       const response = await http.get(resolvedUrl, {
         headers: {
-          'User-Agent': this.userAgent,
+          "User-Agent": this.userAgent,
           Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Accept-Encoding': 'gzip, deflate, br',
-          Connection: 'keep-alive',
-          'Upgrade-Insecure-Requests': '1',
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.5",
+          "Accept-Encoding": "gzip, deflate, br",
+          Connection: "keep-alive",
+          "Upgrade-Insecure-Requests": "1",
         },
         timeout: 30000,
-      })
+      });
 
       // Pull the state blob TikTok inlines into the page. Only the one script
       // carrying the marker is materialised — the page ships megabytes of
       // markup, so building a DOM to find it would cost orders of magnitude
       // more CPU than locating the marker directly.
-      const content = scriptContaining(response.data, 'webapp.video-detail')
+      const content = scriptContaining(response.data, "webapp.video-detail");
       if (content) {
         // Extract video URLs from the script content
-        const videoUrlMatch = content.match(/"playAddr":"([^"]+)"/)
-        const downloadUrlMatch = content.match(/"downloadAddr":"([^"]+)"/)
+        const videoUrlMatch = content.match(/"playAddr":"([^"]+)"/);
+        const downloadUrlMatch = content.match(/"downloadAddr":"([^"]+)"/);
 
         if (videoUrlMatch || downloadUrlMatch) {
-          const videoId = parseVideoId(url) || 'unknown'
+          const videoId = parseVideoId(url) || "unknown";
           const downloadUrl = (
             downloadUrlMatch?.[1] ||
             videoUrlMatch?.[1] ||
-            ''
-          ).replace(/\\u002F/g, '/')
+            ""
+          ).replace(/\\u002F/g, "/");
 
           return {
             id: videoId,
-            title: 'TikTok Video (Direct)',
+            title: "TikTok Video (Direct)",
             url: url,
-            thumbnail: '',
+            thumbnail: "",
             duration: 0,
-            author: 'Unknown',
-            description: 'Downloaded via direct scraping',
+            author: "Unknown",
+            description: "Downloaded via direct scraping",
             downloadUrl: downloadUrl,
-          }
+          };
         }
       }
     } catch {
-      throw new Error('Direct scraping method failed')
+      throw new Error("Direct scraping method failed");
     }
-    return null
+    return null;
   }
 
   // Follow redirects on Instagram share/short links to the canonical post URL.
   private async resolveInstagramUrl(url: string): Promise<string> {
-    return this.resolveRedirect(url)
+    return this.resolveRedirect(url);
   }
 
   /**
@@ -3934,24 +4111,24 @@ export class Downloader {
    * megabyte of markup that nothing here reads.
    */
   private async resolveRedirect(url: string): Promise<string> {
-    const share = isCrawlerOnlyShareLink(url)
+    const share = isCrawlerOnlyShareLink(url);
     try {
-      const send = share ? http.head : http.get
+      const send = share ? http.head : http.get;
       const response = await send(url, {
         maxRedirects: 5,
         validateStatus: () => true,
         headers: {
-          'User-Agent': share ? LINK_CRAWLER_AGENT : this.userAgent,
+          "User-Agent": share ? LINK_CRAWLER_AGENT : this.userAgent,
         },
         timeout: 12000,
-      })
+      });
       // Unwrapped, not merely returned: a logged-out share link ends at the
       // login wall, and the canonical post is in its `next` parameter. Without
       // this the shortcode is lost and every extractor that needs one is
       // skipped. See unwrapLoginWall.
-      return unwrapLoginWall(response.request?.res?.responseUrl || url)
+      return unwrapLoginWall(response.request?.res?.responseUrl || url);
     } catch {
-      return url
+      return url;
     }
   }
 
@@ -3968,20 +4145,20 @@ export class Downloader {
     canonical: string,
     meta: { title?: string; author?: string; thumbnail?: string },
   ): Promise<VideoData | null> {
-    const info = await ytdlpInfo(canonical)
-    if (!info) return null
+    const info = await ytdlpInfo(canonical);
+    if (!info) return null;
     return {
       id: videoId,
-      title: meta.title || info.title || 'YouTube Video',
+      title: meta.title || info.title || "YouTube Video",
       url: canonical,
-      thumbnail: meta.thumbnail || info.thumbnail || '',
+      thumbnail: meta.thumbnail || info.thumbnail || "",
       duration: Math.round(info.duration || 0),
-      author: meta.author || info.uploader || 'YouTube',
-      description: '',
+      author: meta.author || info.uploader || "YouTube",
+      description: "",
       downloadUrl: `/api/youtube?id=${videoId}&kind=video`,
       musicUrl: `/api/youtube?id=${videoId}&kind=audio`,
       embedUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
-    }
+    };
   }
 
   /**
@@ -3995,25 +4172,25 @@ export class Downloader {
   ): Promise<{ title?: string; author?: string; thumbnail?: string }> {
     const fallbackThumb = videoId
       ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`
-      : ''
+      : "";
     try {
       const response = await http.get(
         `https://www.youtube.com/oembed?url=${encodeURIComponent(
           canonicalUrl,
         )}&format=json`,
         {
-          headers: { 'User-Agent': this.userAgent, Accept: 'application/json' },
+          headers: { "User-Agent": this.userAgent, Accept: "application/json" },
           timeout: 12000,
         },
-      )
-      const data = response.data
+      );
+      const data = response.data;
       return {
         title: data?.title,
         author: data?.author_name,
         thumbnail: data?.thumbnail_url || fallbackThumb,
-      }
+      };
     } catch {
-      return { thumbnail: fallbackThumb }
+      return { thumbnail: fallbackThumb };
     }
   }
 
@@ -4028,20 +4205,21 @@ export class Downloader {
   ): Promise<VideoData | null> {
     const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(
       resolvedUrl,
-    )}`
+    )}`;
     const response = await http.get(embedUrl, {
       headers: {
-        'User-Agent': this.userAgent,
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
+        "User-Agent": this.userAgent,
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
       },
       timeout: 20000,
-    })
-    const html = typeof response.data === 'string' ? response.data : ''
-    return this.parseFacebookHtml(html, originalUrl)
+    });
+    const html = typeof response.data === "string" ? response.data : "";
+    return this.parseFacebookHtml(html, originalUrl);
   }
 
   /**
@@ -4057,45 +4235,46 @@ export class Downloader {
     resolvedUrl: string,
     originalUrl: string,
   ): Promise<VideoData | null> {
-    const cookie = this.credentialed ? process.env.FB_COOKIE?.trim() : ''
-    const videoId = parseVideoId(resolvedUrl)
-    if (!cookie || !videoId || !/^\d+$/.test(videoId)) return null
+    const cookie = this.credentialed ? process.env.FB_COOKIE?.trim() : "";
+    const videoId = parseVideoId(resolvedUrl);
+    if (!cookie || !videoId || !/^\d+$/.test(videoId)) return null;
 
     const response = await http.get(
       `https://www.facebook.com/reel/${videoId}/`,
       {
         headers: {
-          'User-Agent': this.userAgent,
+          "User-Agent": this.userAgent,
           Cookie: cookie,
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none',
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Sec-Fetch-Dest": "document",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "none",
         },
         timeout: 20000,
       },
-    )
-    const html = typeof response.data === 'string' ? response.data : ''
-    const reel = facebookReelFromPage(html, videoId)
+    );
+    const html = typeof response.data === "string" ? response.data : "";
+    const reel = facebookReelFromPage(html, videoId);
     if (!reel) {
       // A dead or checkpointed session looks exactly like a missing reel.
       console.warn(
-        `facebook session: no source for ${videoId} (page ${html.length} bytes, login form: ${html.includes('login_form')})`,
-      )
-      return null
+        `facebook session: no source for ${videoId} (page ${html.length} bytes, login form: ${html.includes("login_form")})`,
+      );
+      return null;
     }
-    const caption = reel.caption.replace(/\s+/g, ' ').trim()
+    const caption = reel.caption.replace(/\s+/g, " ").trim();
     return {
       id: videoId,
-      title: caption.slice(0, 100) || 'Facebook Video',
+      title: caption.slice(0, 100) || "Facebook Video",
       url: originalUrl,
       thumbnail: reel.thumbnail,
       duration: reel.duration,
-      author: reel.author || 'Facebook',
+      author: reel.author || "Facebook",
       description: caption,
       downloadUrl: reel.downloadUrl,
-    }
+    };
   }
 
   /**
@@ -4108,18 +4287,19 @@ export class Downloader {
   ): Promise<VideoData | null> {
     const response = await http.get(resolvedUrl, {
       headers: {
-        'User-Agent': this.userAgent,
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Upgrade-Insecure-Requests': '1',
+        "User-Agent": this.userAgent,
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Upgrade-Insecure-Requests": "1",
       },
       timeout: 20000,
-    })
-    const html = typeof response.data === 'string' ? response.data : ''
-    return this.parseFacebookHtml(html, originalUrl)
+    });
+    const html = typeof response.data === "string" ? response.data : "";
+    return this.parseFacebookHtml(html, originalUrl);
   }
 
   /**
@@ -4132,48 +4312,48 @@ export class Downloader {
     html: string,
     originalUrl: string,
   ): VideoData | null {
-    if (!html) return null
+    if (!html) return null;
 
     const pickUrl = (...keys: string[]): string => {
       for (const key of keys) {
         // Match "key":"<value>" capturing up to the next unescaped quote.
-        const re = new RegExp(`"${key}":"(.*?)"(?:,|\\})`)
-        const m = html.match(re)
+        const re = new RegExp(`"${key}":"(.*?)"(?:,|\\})`);
+        const m = html.match(re);
         if (m && m[1]) {
-          const decoded = this.decodeFacebookString(m[1])
-          if (decoded.startsWith('http')) return decoded
+          const decoded = this.decodeFacebookString(m[1]);
+          if (decoded.startsWith("http")) return decoded;
         }
       }
-      return ''
-    }
+      return "";
+    };
 
     const downloadUrl = pickUrl(
-      'browser_native_hd_url',
-      'playable_url_quality_hd',
-      'hd_src_no_ratelimit',
-      'hd_src',
-      'browser_native_sd_url',
-      'playable_url',
-      'sd_src_no_ratelimit',
-      'sd_src',
-    )
+      "browser_native_hd_url",
+      "playable_url_quality_hd",
+      "hd_src_no_ratelimit",
+      "hd_src",
+      "browser_native_sd_url",
+      "playable_url",
+      "sd_src_no_ratelimit",
+      "sd_src",
+    );
 
-    if (!downloadUrl) return null
+    if (!downloadUrl) return null;
 
     // The plugin page carries no og tags at all and titles itself "Facebook",
     // which is worse than the generic name — so a bare host name is discarded
     // rather than shown as the video's title.
-    const pageName = pageTitle(html) || ''
+    const pageName = pageTitle(html) || "";
     const ogTitle =
-      metaContent(html, 'og:title') ||
-      (/^facebook$/i.test(pageName.trim()) ? '' : pageName)
-    const ogDescription = metaContent(html, 'og:description') || ''
+      metaContent(html, "og:title") ||
+      (/^facebook$/i.test(pageName.trim()) ? "" : pageName);
+    const ogDescription = metaContent(html, "og:description") || "";
 
     const title =
-      (ogTitle || ogDescription || 'Facebook Video')
+      (ogTitle || ogDescription || "Facebook Video")
         .slice(0, 100)
-        .replace(/\s+/g, ' ')
-        .trim() || 'Facebook Video'
+        .replace(/\s+/g, " ")
+        .trim() || "Facebook Video";
 
     return {
       id: parseVideoId(originalUrl) || Date.now().toString(),
@@ -4181,25 +4361,25 @@ export class Downloader {
       url: originalUrl,
       thumbnail: facebookPoster(html),
       duration: 0,
-      author: 'Facebook',
+      author: "Facebook",
       description: ogDescription,
       downloadUrl,
-    }
+    };
   }
 
   // Decode the JSON-string escaping Facebook ships in its embedded config.
   private decodeFacebookString(raw: string): string {
     return raw
-      .replace(/\\u0025/g, '%')
-      .replace(/\\u002F/gi, '/')
-      .replace(/\\\//g, '/')
-      .replace(/\\u0026/gi, '&')
-      .replace(/\\u003D/gi, '=')
-      .replace(/\\u003F/gi, '?')
+      .replace(/\\u0025/g, "%")
+      .replace(/\\u002F/gi, "/")
+      .replace(/\\\//g, "/")
+      .replace(/\\u0026/gi, "&")
+      .replace(/\\u003D/gi, "=")
+      .replace(/\\u003F/gi, "?")
       .replace(/\\u([\dA-Fa-f]{4})/g, (_, h) =>
         String.fromCharCode(parseInt(h, 16)),
       )
-      .replace(/\\/g, '')
+      .replace(/\\/g, "");
   }
 
   /**
@@ -4211,24 +4391,24 @@ export class Downloader {
    * the request (it simply won't succeed for gated posts).
    */
   private async getInstagramTokens(): Promise<{ csrf: string; lsd: string }> {
-    const now = Date.now()
+    const now = Date.now();
     if (
       igTokenCache &&
       igTokenCache.sessionKey === this.instagramSessionId &&
       igTokenCache.expires > now
     ) {
-      return { csrf: igTokenCache.csrf, lsd: igTokenCache.lsd }
+      return { csrf: igTokenCache.csrf, lsd: igTokenCache.lsd };
     }
 
-    let csrf = ''
-    let lsd = ''
+    let csrf = "";
+    let lsd = "";
     try {
-      const response = await http.get('https://www.instagram.com/', {
+      const response = await http.get("https://www.instagram.com/", {
         headers: {
-          'User-Agent': this.userAgent,
+          "User-Agent": this.userAgent,
           Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
           // The full set here too, not just the session. This GET is the first
           // request of every credentialed resolve, so a bare `sessionid` on it
           // would be the anomaly the rest of the header work exists to avoid.
@@ -4236,24 +4416,24 @@ export class Downloader {
         },
         timeout: 12000,
         validateStatus: () => true,
-      })
+      });
       const html: string =
-        typeof response.data === 'string' ? response.data : ''
+        typeof response.data === "string" ? response.data : "";
       // csrftoken is set via Set-Cookie; fall back to the inline copy in the
       // page's shared-data blob.
-      const setCookie = (response.headers['set-cookie'] as string[]) || []
+      const setCookie = (response.headers["set-cookie"] as string[]) || [];
       for (const cookie of setCookie) {
-        const m = /csrftoken=([^;]+)/.exec(cookie)
+        const m = /csrftoken=([^;]+)/.exec(cookie);
         if (m) {
-          csrf = m[1]
-          break
+          csrf = m[1];
+          break;
         }
       }
-      if (!csrf) csrf = html.match(/"csrf_token":"([^"]+)"/)?.[1] || ''
+      if (!csrf) csrf = html.match(/"csrf_token":"([^"]+)"/)?.[1] || "";
       lsd =
         html.match(/"LSD",\[\],\{"token":"([^"]+)"/)?.[1] ||
         html.match(/name="lsd"\s+value="([^"]+)"/)?.[1] ||
-        ''
+        "";
     } catch {
       // network error — return whatever we have (likely empty); the GraphQL
       // call will fail and the caller falls through to the next method.
@@ -4264,8 +4444,8 @@ export class Downloader {
       lsd,
       sessionKey: this.instagramSessionId,
       expires: now + 5 * 60 * 1000,
-    }
-    return { csrf, lsd }
+    };
+    return { csrf, lsd };
   }
 
   /**
@@ -4302,37 +4482,37 @@ export class Downloader {
     const response = await http.get(
       `https://www.instagram.com/api/v1/media/${encodeURIComponent(mediaId)}/info/`,
       { headers, timeout: 20000, validateStatus: () => true },
-    )
-    const item = response.data?.items?.[0] as IgStoryItem | undefined
-    if (!item) logInstagramRefusal('media/info', mediaId, response)
-    return item ?? null
+    );
+    const item = response.data?.items?.[0] as IgStoryItem | undefined;
+    if (!item) logInstagramRefusal("media/info", mediaId, response);
+    return item ?? null;
   }
 
   private async tryInstagramMediaInfo(
     shortcode: string,
     originalUrl: string,
   ): Promise<VideoData | null> {
-    if (!this.instagramSessionId) return null
-    const mediaId = instagramMediaId(shortcode)
-    if (!mediaId) return null
+    if (!this.instagramSessionId) return null;
+    const mediaId = instagramMediaId(shortcode);
+    if (!mediaId) return null;
 
-    const { csrf } = await this.getInstagramTokens()
+    const { csrf } = await this.getInstagramTokens();
     const item = await this.instagramMediaItem(mediaId, {
-      'User-Agent': this.userAgent,
-      'X-IG-App-ID': this.instagramAppId,
-      Accept: '*/*',
+      "User-Agent": this.userAgent,
+      "X-IG-App-ID": this.instagramAppId,
+      Accept: "*/*",
       Referer: `https://www.instagram.com/p/${shortcode}/`,
       Cookie: this.instagramCookieWith(csrf),
-    })
-    if (!item) return null
+    });
+    if (!item) return null;
 
     const parsed = this.parseInstagramMedia(
       igInfoToShortcodeMedia(item),
       shortcode,
       originalUrl,
-    )
-    if (!parsed.downloadUrl && (parsed.images?.length ?? 0) === 0) return null
-    return parsed
+    );
+    if (!parsed.downloadUrl && (parsed.images?.length ?? 0) === 0) return null;
+    return parsed;
   }
 
   // REMOVED 2026-08-15: the web GraphQL extractor (`/graphql/query/` with
@@ -4366,34 +4546,34 @@ export class Downloader {
     shortcode: string,
     originalUrl: string,
   ): Promise<{ data: VideoData | null; isVideo: boolean }> {
-    const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`
+    const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`;
     const response = await http.get(embedUrl, {
       headers: {
-        'User-Agent': this.userAgent,
+        "User-Agent": this.userAgent,
         Accept:
-          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
       },
       timeout: 20000,
-    })
+    });
 
-    const html = typeof response.data === 'string' ? response.data : ''
-    if (!html) return { data: null, isVideo: false }
+    const html = typeof response.data === "string" ? response.data : "";
+    if (!html) return { data: null, isVideo: false };
 
     // What the page says the post is, before anything is extracted from it.
     // `GraphVideo` is a single clip; a `GraphSidecar` may still contain one,
     // which the JSON below settles.
-    const declaredType = instagramEmbedMediaType(html)
-    const isVideo = declaredType === 'GraphVideo'
-    const bail = { data: null, isVideo }
+    const declaredType = instagramEmbedMediaType(html);
+    const isVideo = declaredType === "GraphVideo";
+    const bail = { data: null, isVideo };
 
     // 1) Best case: the embed page ships the full shortcode_media JSON.
-    const media = this.extractEmbeddedShortcodeMedia(html)
+    const media = this.extractEmbeddedShortcodeMedia(html);
     if (media) {
-      const parsed = this.parseInstagramMedia(media, shortcode, originalUrl)
+      const parsed = this.parseInstagramMedia(media, shortcode, originalUrl);
       // The embed JSON marks a reel/video as is_video=true but ships NO video_url
       // (the clip loads via client JS) — only a poster display_url. parseInstagram-
       // Media refuses to emit that poster as a photo, so `parsed` comes back with
@@ -4402,24 +4582,24 @@ export class Downloader {
       // crucially, do NOT fall through to the scrape fallback below, which would
       // re-emit the poster as a single photo. This is the case that misrendered
       // reels.
-      const containsVideo = this.mediaContainsVideo(media)
+      const containsVideo = this.mediaContainsVideo(media);
       if (containsVideo && !parsed.downloadUrl) {
-        return { data: null, isVideo: isVideo || containsVideo }
+        return { data: null, isVideo: isVideo || containsVideo };
       }
       if (parsed.downloadUrl || (parsed.images?.length ?? 0) > 0) {
-        return { data: parsed, isVideo: isVideo || containsVideo }
+        return { data: parsed, isVideo: isVideo || containsVideo };
       }
     }
 
     // 2) Fallback: scrape the rendered embed for a single image / video.
-    const imgSrc = firstTagAttr(html, 'img', 'src', 'EmbeddedMediaImage')
-    const videoSrc = firstTagAttr(html, 'video', 'src')
+    const imgSrc = firstTagAttr(html, "img", "src", "EmbeddedMediaImage");
+    const videoSrc = firstTagAttr(html, "video", "src");
     const username =
-      textOfFirstWithClass(html, 'UsernameText') ||
-      textOfFirstWithClass(html, 'Username') ||
-      'Unknown'
+      textOfFirstWithClass(html, "UsernameText") ||
+      textOfFirstWithClass(html, "Username") ||
+      "Unknown";
 
-    if (!imgSrc && !videoSrc) return bail
+    if (!imgSrc && !videoSrc) return bail;
 
     // CRITICAL: Instagram video embeds ship NO usable <video src> (the clip is
     // loaded by client JS), only the poster frame as img.EmbeddedMediaImage. So
@@ -4435,30 +4615,30 @@ export class Downloader {
     const looksLikeVideo =
       !videoSrc &&
       (isVideo ||
-        declaredType === 'GraphSidecar' ||
+        declaredType === "GraphSidecar" ||
         /"is_video"\s*:\s*(true|1)/.test(html) ||
         /"video_url"\s*:\s*"/.test(html) || // a real URL value, not "video_url":null
-        html.includes('video_view_count') || // video-only metadata fields
-        html.includes('video_duration') ||
-        hasTag(html, 'video'))
-    if (looksLikeVideo) return bail
+        html.includes("video_view_count") || // video-only metadata fields
+        html.includes("video_duration") ||
+        hasTag(html, "video"));
+    if (looksLikeVideo) return bail;
 
     const scraped: VideoData = {
       id: shortcode,
       title: `Instagram post by @${username}`,
       url: originalUrl,
-      thumbnail: imgSrc || '',
+      thumbnail: imgSrc || "",
       duration: 0,
       author: username,
-      description: '',
-      downloadUrl: videoSrc || '',
+      description: "",
+      downloadUrl: videoSrc || "",
       images:
         !videoSrc && imgSrc
           ? [{ id: `${shortcode}_0`, url: imgSrc, thumbnail: imgSrc }]
           : undefined,
       isPhotoCarousel: false,
-    }
-    return { data: scraped, isVideo }
+    };
+    return { data: scraped, isVideo };
   }
 
   /**
@@ -4479,61 +4659,61 @@ export class Downloader {
     shortcode: string,
     originalUrl: string,
   ): Promise<VideoData | null> {
-    const mediaId = instagramMediaId(shortcode)
-    if (!mediaId) return null
-    const pageUrl = `https://www.instagram.com/reel/${shortcode}/`
-    let page = { status: 0, html: '', upstreamLocation: '', region: '' }
+    const mediaId = instagramMediaId(shortcode);
+    if (!mediaId) return null;
+    const pageUrl = `https://www.instagram.com/reel/${shortcode}/`;
+    let page = { status: 0, html: "", upstreamLocation: "", region: "" };
     // Instagram is rate-limiting this address. Asking again inside the window
     // buys a doomed 731 KB request and another mark against us, so the window
     // goes straight to the relay instead (lib/pageRelay.ts).
     if (!instagramCrawlerCoolingDown()) {
-      page = await this.getCrawlerPage(pageUrl)
+      page = await this.getCrawlerPage(pageUrl);
       if (page.status === 429) {
-        instagramCrawlerBlockedUntil = Date.now() + IG_CRAWLER_COOLDOWN_MS
+        instagramCrawlerBlockedUntil = Date.now() + IG_CRAWLER_COOLDOWN_MS;
         console.warn(
           `instagram crawler view: ${shortcode} answered 429 — rate limited, holding off for ${IG_CRAWLER_COOLDOWN_MS / 60000} minutes`,
-        )
+        );
       }
     }
     if (instagramCrawlerCoolingDown()) {
-      const relayed = await pageRelayUrl(pageUrl, process.env.PAGE_RELAY_KEY)
-      if (!relayed) return null
-      page = await this.getCrawlerPage(relayed)
+      const relayed = await pageRelayUrl(pageUrl, process.env.PAGE_RELAY_KEY);
+      if (!relayed) return null;
+      page = await this.getCrawlerPage(relayed);
       if (page.status !== 200) {
         // A 302 to /accounts/login/ is Instagram walling the relay's address,
         // not the relay breaking; the relay says where and from which region.
         console.warn(
           `instagram crawler view: the page relay answered ${page.status} for ${shortcode}`,
-          `→ ${page.upstreamLocation || 'no location'}`,
-          `(region ${page.region || '?'})`,
-        )
+          `→ ${page.upstreamLocation || "no location"}`,
+          `(region ${page.region || "?"})`,
+        );
       }
     }
     // Four different silences, and telling them apart from the outside is
     // impossible — which is exactly the trap the 2026-08-13 lesson names about
     // a `doc_id` that started failing with a 200. One line, once, per failure.
-    const { html } = page
+    const { html } = page;
     if (page.status !== 200 || !html) {
       if (page.status !== 429) {
         console.warn(
           `instagram crawler view: ${shortcode} answered ${page.status}, ${html.length} chars`,
-        )
+        );
       }
-      return null
+      return null;
     }
 
-    const found = parseInstagramCrawlerMedia(html, mediaId)
+    const found = parseInstagramCrawlerMedia(html, mediaId);
     if (!found?.videoUrl) {
       console.warn(
         `instagram crawler view: no clip for ${shortcode} in ${html.length} chars`,
-        `anchor ${html.includes(`"pk":"${mediaId}"`) ? 'found' : 'MISSING'}`,
-        `video_versions ${html.includes('video_versions') ? 'present' : 'absent'}`,
-        found?.poster ? 'poster only' : 'nothing',
-      )
-      return null
+        `anchor ${html.includes(`"pk":"${mediaId}"`) ? "found" : "MISSING"}`,
+        `video_versions ${html.includes("video_versions") ? "present" : "absent"}`,
+        found?.poster ? "poster only" : "nothing",
+      );
+      return null;
     }
 
-    const caption = decodeEntities(metaContent(html, 'og:title') || '')
+    const caption = decodeEntities(metaContent(html, "og:title") || "");
     return {
       id: shortcode,
       title: instagramCaptionTitle(caption, shortcode),
@@ -4544,28 +4724,33 @@ export class Downloader {
       description: caption,
       downloadUrl: found.videoUrl,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   /** One crawler-view page, from Instagram itself or the relay that signs for it. */
   private async getCrawlerPage(
     url: string,
-  ): Promise<{ status: number; html: string; upstreamLocation: string; region: string }> {
+  ): Promise<{
+    status: number;
+    html: string;
+    upstreamLocation: string;
+    region: string;
+  }> {
     const response = await http.get(url, {
       headers: {
-        'User-Agent': LINK_CRAWLER_AGENT,
-        Accept: 'text/html,application/xhtml+xml',
+        "User-Agent": LINK_CRAWLER_AGENT,
+        Accept: "text/html,application/xhtml+xml",
       },
       timeout: 20000,
       validateStatus: () => true,
-    })
+    });
     return {
       status: response.status,
-      html: typeof response.data === 'string' ? response.data : '',
+      html: typeof response.data === "string" ? response.data : "",
       // Only the relay sets these (reely-resolver-relay page.ts).
-      upstreamLocation: response.headers.get('x-upstream-location') ?? '',
-      region: response.headers.get('x-deno-region') ?? '',
-    }
+      upstreamLocation: response.headers.get("x-upstream-location") ?? "",
+      region: response.headers.get("x-deno-region") ?? "",
+    };
   }
 
   // Map an Instagram `shortcode_media` object onto our shared VideoData shape.
@@ -4574,17 +4759,17 @@ export class Downloader {
     shortcode: string,
     originalUrl: string,
   ): VideoData {
-    const username = media.owner?.username || 'Unknown'
+    const username = media.owner?.username || "Unknown";
     const caption =
-      media.edge_media_to_caption?.edges?.[0]?.node?.text?.trim() || ''
+      media.edge_media_to_caption?.edges?.[0]?.node?.text?.trim() || "";
     const title = caption
-      ? caption.slice(0, 80).replace(/\s+/g, ' ').trim()
-      : `Instagram post by @${username}`
+      ? caption.slice(0, 80).replace(/\s+/g, " ").trim()
+      : `Instagram post by @${username}`;
 
-    const images: ImageData[] = []
-    let downloadUrl = ''
+    const images: ImageData[] = [];
+    let downloadUrl = "";
 
-    const children = media.edge_sidecar_to_children?.edges
+    const children = media.edge_sidecar_to_children?.edges;
     if (Array.isArray(children) && children.length > 0) {
       // Carousel: every slide, in the order the post publishes them. The first
       // clip is also the primary `downloadUrl` so the big button still works,
@@ -4595,31 +4780,31 @@ export class Downloader {
       // display_url is never passed off as a photo (see the single-media note
       // below).
       children.forEach((edge, i) => {
-        const node = edge?.node
-        if (!node) return
+        const node = edge?.node;
+        if (!node) return;
         if (node.is_video) {
-          if (!node.video_url) return
-          if (!downloadUrl) downloadUrl = node.video_url
+          if (!node.video_url) return;
+          if (!downloadUrl) downloadUrl = node.video_url;
           images.push({
             id: `${shortcode}_${i}`,
             url: node.video_url,
-            thumbnail: node.display_url || '',
-            kind: 'video',
-          })
+            thumbnail: node.display_url || "",
+            kind: "video",
+          });
         } else if (node.display_url) {
           images.push({
             id: `${shortcode}_${i}`,
             url: node.display_url,
             thumbnail: node.display_resources?.[0]?.src || node.display_url,
-            kind: 'image',
-          })
+            kind: "image",
+          });
         }
-      })
+      });
       // A carousel of one clip is not a gallery — it is the clip, which
       // `downloadUrl` already carries.
-      if (images.length === 1 && images[0].kind === 'video') images.length = 0
+      if (images.length === 1 && images[0].kind === "video") images.length = 0;
     } else if (media.is_video && media.video_url) {
-      downloadUrl = media.video_url
+      downloadUrl = media.video_url;
     } else if (!media.is_video && media.display_url) {
       // Photo only. A video whose video_url is absent (the embed JSON ships
       // is_video=true with just a poster display_url) deliberately yields
@@ -4631,12 +4816,12 @@ export class Downloader {
         id: `${shortcode}_0`,
         url: media.display_url,
         thumbnail: media.display_url,
-        kind: 'image',
-      })
+        kind: "image",
+      });
     }
 
     const thumbnail =
-      media.display_url || media.thumbnail_src || images[0]?.thumbnail || ''
+      media.display_url || media.thumbnail_src || images[0]?.thumbnail || "";
 
     // A carousel container carries no duration of its own — the clip inside it
     // does, and the embed's children do not carry one either. Reading only the
@@ -4644,7 +4829,7 @@ export class Downloader {
     // last resort and answers when neither field is present.
     const firstVideoChild = children
       ?.map((edge) => edge?.node)
-      .find((node) => node?.is_video && node.video_url)
+      .find((node) => node?.is_video && node.video_url);
 
     return {
       id: shortcode,
@@ -4661,7 +4846,7 @@ export class Downloader {
       downloadUrl,
       images: images.length > 0 ? images : undefined,
       isPhotoCarousel: false,
-    }
+    };
   }
 
   // True when a `shortcode_media` graph is (or contains) a video. Used by the
@@ -4669,42 +4854,41 @@ export class Downloader {
   // URL should defer to a richer extractor (GraphQL) rather than be mistaken for
   // a photo — the embed ships is_video=true with no video_url for reels/videos.
   private mediaContainsVideo(media: IgShortcodeMedia): boolean {
-    if (media.is_video) return true
-    const children = media.edge_sidecar_to_children?.edges
+    if (media.is_video) return true;
+    const children = media.edge_sidecar_to_children?.edges;
     return (
-      Array.isArray(children) && children.some((edge) => Boolean(edge?.node?.is_video))
-    )
+      Array.isArray(children) &&
+      children.some((edge) => Boolean(edge?.node?.is_video))
+    );
   }
 
   // Pull the embedded `shortcode_media` JSON out of an embed page's HTML.
-  private extractEmbeddedShortcodeMedia(
-    html: string,
-  ): IgShortcodeMedia | null {
+  private extractEmbeddedShortcodeMedia(html: string): IgShortcodeMedia | null {
     // Preferred path: the embed ships `"contextJSON":"<json-encoded-json>"`.
     // The value is a JSON-encoded string whose contents are themselves JSON,
     // so a double JSON.parse decodes every escape (quotes, slashes, \uXXXX)
     // correctly — far more robust than hand-rolled unescaping.
-    const fromContext = this.extractContextJson(html)
-    if (fromContext) return fromContext
+    const fromContext = this.extractContextJson(html);
+    if (fromContext) return fromContext;
 
     // Fallback: balance-match the raw `shortcode_media` object. Handles the
     // raw (already-unescaped) variant some payloads ship.
-    const key = '"shortcode_media":'
-    const keyIdx = html.indexOf(key)
+    const key = '"shortcode_media":';
+    const keyIdx = html.indexOf(key);
     if (keyIdx !== -1) {
-      const braceStart = html.indexOf('{', keyIdx + key.length)
+      const braceStart = html.indexOf("{", keyIdx + key.length);
       if (braceStart !== -1) {
-        const json = this.extractBalancedJson(html, braceStart)
+        const json = this.extractBalancedJson(html, braceStart);
         if (json) {
           try {
-            return JSON.parse(json) as IgShortcodeMedia
+            return JSON.parse(json) as IgShortcodeMedia;
           } catch {
             // fall through
           }
         }
       }
     }
-    return null
+    return null;
   }
 
   // Decode the embed page's `contextJSON` blobs and return the first that
@@ -4712,83 +4896,83 @@ export class Downloader {
   // (e.g. a NavigationMetrics telemetry one), so we scan all of them rather
   // than assuming the media blob comes first.
   private extractContextJson(html: string): IgShortcodeMedia | null {
-    const key = '"contextJSON":'
-    let searchFrom = 0
+    const key = '"contextJSON":';
+    let searchFrom = 0;
     while (true) {
-      const idx = html.indexOf(key, searchFrom)
-      if (idx === -1) break
-      const quoteStart = html.indexOf('"', idx + key.length)
-      if (quoteStart === -1) break
+      const idx = html.indexOf(key, searchFrom);
+      if (idx === -1) break;
+      const quoteStart = html.indexOf('"', idx + key.length);
+      if (quoteStart === -1) break;
 
       // Read the JSON string token (respecting backslash escapes).
-      let i = quoteStart + 1
-      let escaped = false
+      let i = quoteStart + 1;
+      let escaped = false;
       for (; i < html.length; i++) {
-        const ch = html[i]
-        if (escaped) escaped = false
-        else if (ch === '\\') escaped = true
-        else if (ch === '"') break
+        const ch = html[i];
+        if (escaped) escaped = false;
+        else if (ch === "\\") escaped = true;
+        else if (ch === '"') break;
       }
-      searchFrom = i + 1
+      searchFrom = i + 1;
 
-      const token = html.slice(quoteStart, i + 1)
+      const token = html.slice(quoteStart, i + 1);
       try {
-        const inner = JSON.parse(token) as string // first decode → JSON text
+        const inner = JSON.parse(token) as string; // first decode → JSON text
         const obj = JSON.parse(inner) as {
-          gql_data?: { shortcode_media?: IgShortcodeMedia }
-          context?: { media?: IgShortcodeMedia }
-        }
-        const media = obj?.gql_data?.shortcode_media || obj?.context?.media
-        if (media) return media
+          gql_data?: { shortcode_media?: IgShortcodeMedia };
+          context?: { media?: IgShortcodeMedia };
+        };
+        const media = obj?.gql_data?.shortcode_media || obj?.context?.media;
+        if (media) return media;
       } catch {
         // not the media blob — try the next contextJSON occurrence
       }
     }
-    return null
+    return null;
   }
 
   // Return the balanced `{...}` substring starting at `start`, respecting
   // nested braces and string literals.
   private extractBalancedJson(text: string, start: number): string | null {
-    let depth = 0
-    let inString = false
-    let escaped = false
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
     for (let i = start; i < text.length; i++) {
-      const ch = text[i]
+      const ch = text[i];
       if (inString) {
-        if (escaped) escaped = false
-        else if (ch === '\\') escaped = true
-        else if (ch === '"') inString = false
-        continue
+        if (escaped) escaped = false;
+        else if (ch === "\\") escaped = true;
+        else if (ch === '"') inString = false;
+        continue;
       }
-      if (ch === '"') inString = true
-      else if (ch === '{') depth++
-      else if (ch === '}') {
-        depth--
-        if (depth === 0) return text.slice(start, i + 1)
+      if (ch === '"') inString = true;
+      else if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) return text.slice(start, i + 1);
       }
     }
-    return null
+    return null;
   }
 
   private async resolveUrl(url: string): Promise<string> {
     try {
       if (
-        url.includes('vm.tiktok.com') ||
-        url.includes('vt.tiktok.com') ||
-        url.includes('/t/')
+        url.includes("vm.tiktok.com") ||
+        url.includes("vt.tiktok.com") ||
+        url.includes("/t/")
       ) {
         const response = await http.head(url, {
           maxRedirects: 5,
           validateStatus: () => true,
-          headers: { 'User-Agent': this.userAgent },
+          headers: { "User-Agent": this.userAgent },
           timeout: 10000,
-        })
-        return response.request.res.responseUrl || url
+        });
+        return response.request.res.responseUrl || url;
       }
     } catch {
       // If resolve fails, return original URL
     }
-    return url
+    return url;
   }
 }

@@ -19,6 +19,7 @@ import { dn } from '@/lib/i18nDeep'
  */
 
 import { detectImportSource } from './importSources'
+import { isTelegramChannelLink } from './telegramPost'
 
 export type AdviceKind =
   /** A playlist, board, subreddit or channel the queue importer can expand. */
@@ -87,6 +88,8 @@ function isHostOf(h: string, domain: string): boolean {
 function profileTitle(u: URL): string | null {
   const h = host(u)
   const segs = segments(u.pathname)
+
+  if (isTelegramChannelLink(u.href)) return dn('That is a Telegram channel, not a post')
 
   if (isHostOf(h, 'instagram.com')) {
     if (segs.length === 1 && !IG_ROUTES.has(segs[0].toLowerCase())) return dn('That is an Instagram profile, not a post')
