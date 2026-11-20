@@ -1,0 +1,43 @@
+name: PostHog watch
+
+# Reads the last 3 days of PostHog and files one GitHub issue per problem: a
+# supported host routed to `generic`, a link shape failing for several people,
+# a platform failing a third of the time, an error kind spreading, or downloads
+# going silent. Rules and thresholds: scripts/lib/posthog-watch-rules.mjs.
+#
+# An open issue is updated in place, never duplicated. Close it as completed
+# when fixed (it reopens only if the problem recurs over a window that starts
+# after the close) or as not planned when it is expected (it stays closed).
+on:
+  schedule:
+    # 06:17 UTC daily, after the platform monitor, off the busy minutes.
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: posthog-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # No install: the watcher and scripts/lib/posthog.mjs use only node: and fetch.
+      - name: File PostHog problems as issues
+        run: node scripts/posthog-watch.mjs
+        env:
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_PROJECT_ID: '327739'
+          POSTHOG_HOST: https://eu.posthog.com
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

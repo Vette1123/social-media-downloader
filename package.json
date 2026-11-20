@@ -42,6 +42,7 @@
     "posthog:issues": "node scripts/posthog-issues.mjs",
     "posthog:usage": "node scripts/posthog-usage.mjs",
     "posthog:setup": "node scripts/posthog-setup.mjs",
+    "posthog:watch": "node scripts/posthog-watch.mjs",
     "telegram:setup": "node scripts/telegram-setup.mjs",
     "link:probe": "node scripts/link-probe.mjs"
   },
