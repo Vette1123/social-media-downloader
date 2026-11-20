@@ -1544,6 +1544,12 @@ export class Downloader {
     platform: SupportedPlatform,
   ): Promise<VideoData> {
     let result = await this.tryCobaltInstances(url)
+    // Cobalt answering at all means it can read this link, even when its audio
+    // tunnel then streams nothing: on 2026-11-20 every TikTok audio tunnel from
+    // co.otomir23.me answered `200` with 0 bytes while the same post's video
+    // tunnel streamed. The video fallback below may skip Cobalt only when it
+    // had no answer.
+    const cobaltAnswered = result !== null
 
     // A tunnel is not an answer until it streams. For a long YouTube video
     // (2026-11-18, 1 h 51 min) the instance answered `200` with an empty body,
@@ -1566,7 +1572,7 @@ export class Downloader {
       if (viaInnertube) {
         result = viaInnertube
       } else {
-        const viaFallback = await this.fallbackAudioViaVideo(url)
+        const viaFallback = await this.fallbackAudioViaVideo(url, cobaltAnswered)
         if (!viaFallback?.musicUrl) {
           throw new Error(
             'Could not extract audio from this link. The post may be private, region-locked, or the audio source may be unavailable (YouTube blocks audio extraction from some networks).',
@@ -1640,7 +1646,10 @@ export class Downloader {
    * re-enter itself — `downloadAudio` only runs in 'audio' mode, which a new
    * Downloader never has.
    */
-  private async fallbackAudioViaVideo(url: string): Promise<VideoData | null> {
+  private async fallbackAudioViaVideo(
+    url: string,
+    cobaltAnswered = false,
+  ): Promise<VideoData | null> {
     // A real audio-only stream when we can get one. Instant null on Cloudflare.
     if (nativeMediaAvailable()) {
       const probe = await ytdlpProbe(url, 'audio')
@@ -1662,13 +1671,15 @@ export class Downloader {
 
     let resolved: VideoData | null = null
     try {
-      // skipCobalt: this instance runs immediately after the audio attempt
-      // watched every Cobalt instance miss, so the video resolve skips them
-      // and goes straight to the extractors that have not had their turn.
+      // skipCobalt: when the audio attempt watched every Cobalt instance miss,
+      // the video resolve skips them and goes straight to the extractors that
+      // have not had their turn. When Cobalt answered with an audio tunnel
+      // that did not stream, its video tunnel is still worth asking: for
+      // TikTok it is the only path that works from the Worker.
       resolved = await new Downloader({
         quality: this.videoQuality,
         mode: 'auto',
-        skipCobalt: true,
+        skipCobalt: !cobaltAnswered,
       }).downloadVideo(url)
     } catch {
       return null
