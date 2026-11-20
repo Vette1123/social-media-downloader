@@ -1,0 +1,59 @@
+import { describe, expect, it } from 'vitest'
+import { decideAction, findProblems, issueBody, issueKey } from './posthog-watch-rules.mjs'
+
+const shape = (o) => ({ platform: 'facebook', code: 'inconclusive', host: 'facebook.com', shape: 'www|/share/r/*', n: 10, people: 5, ...o })
+
+describe('findProblems', () => {
+  it('flags a supported host routed to generic at a low bar', () => {
+    const [p] = findProblems({ shapes: [shape({ platform: 'generic', code: 'unsupported', host: 'google.com', shape: 'www|/*?url', people: 2 })] })
+    expect(p.kind).toBe('misroute')
+    expect(p.key).toBe('misroute:google.com:www|/*?url')
+  })
+
+  it('treats a subdomain of a supported host as supported, an unknown site as not', () => {
+    expect(findProblems({ shapes: [shape({ platform: 'generic', host: 'vt.tiktok.com', people: 2 })] })[0].kind).toBe('misroute')
+    expect(findProblems({ shapes: [shape({ platform: 'generic', host: 'evil-tiktok.com', people: 9 })] })).toEqual([])
+  })
+
+  it('flags a failing shape only with enough people and a non-transient code', () => {
+    expect(findProblems({ shapes: [shape({ people: 4 })] })[0].kind).toBe('shape')
+    expect(findProblems({ shapes: [shape({ people: 3 })] })).toEqual([])
+    expect(findProblems({ shapes: [shape({ code: 'rate_limited', people: 40 })] })).toEqual([])
+    expect(findProblems({ shapes: [shape({ code: 'private', people: 40 })] })).toEqual([])
+  })
+
+  it('reads Telegram failures as a generic-extractor shape, not a misroute', () => {
+    const [p] = findProblems({ shapes: [shape({ platform: 'generic', code: 'upstream', host: 't.me', shape: '|/*/#', people: 5 })] })
+    expect(p.kind).toBe('shape')
+    expect(findProblems({ shapes: [shape({ platform: 'generic', code: 'unsupported', host: 'example.org', people: 30 })] })).toEqual([])
+  })
+
+  it('flags a platform failure rate only past both bars', () => {
+    expect(findProblems({ platforms: [{ platform: 'twitter', ok: 60, bad: 40, bad_people: 6 }] })[0].key).toBe('platform:twitter')
+    expect(findProblems({ platforms: [{ platform: 'twitter', ok: 60, bad: 40, bad_people: 2 }] })).toEqual([])
+    expect(findProblems({ platforms: [{ platform: 'twitter', ok: 90, bad: 10, bad_people: 9 }] })).toEqual([])
+  })
+
+  it('flags error kinds and the silence tripwire, ranked by people', () => {
+    const out = findProblems({ errors: [{ ev: 'api_error', kind: 'download:image_item', n: 20, people: 5 }], completed24h: 3 })
+    expect(out.map((p) => p.kind)).toEqual(['error', 'silence'])
+    expect(findProblems({ completed24h: 50 })).toEqual([])
+  })
+})
+
+describe('issue round trip', () => {
+  it('reads back the key it wrote', () => {
+    const [p] = findProblems({ shapes: [shape({})] })
+    expect(issueKey(issueBody(p))).toBe(p.key)
+    expect(issueKey('no marker')).toBeNull()
+  })
+
+  it('decides create / update / reopen / skip', () => {
+    const start = new Date('2026-11-17T00:00:00Z')
+    expect(decideAction(undefined, start)).toBe('create')
+    expect(decideAction({ state: 'open' }, start)).toBe('update')
+    expect(decideAction({ state: 'closed', state_reason: 'not_planned', closed_at: '2026-01-01' }, start)).toBe('skip')
+    expect(decideAction({ state: 'closed', state_reason: 'completed', closed_at: '2026-11-10T00:00:00Z' }, start)).toBe('reopen')
+    expect(decideAction({ state: 'closed', state_reason: 'completed', closed_at: '2026-11-18T00:00:00Z' }, start)).toBe('skip')
+  })
+})
