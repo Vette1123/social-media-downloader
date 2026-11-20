@@ -175,3 +175,4 @@ the index for exactly that.
 | 2026-11-20 | [Instagram resolves: the first click failed, the second worked](2026-11-20-instagram-resolves.md) | A chain's "private" give-up is often a cold first run; re-ask once silently, and read failures as fail-then-succeed pairs per person. |
 | 2026-11-20 | [Share cards rebuilt](2026-11-20-share-cards.md) | A thin OG headline was a missing satori font, not a layout problem |
 | 2026-11-20 | [Link shapes from the failure log](2026-11-20-link-shapes.md) | Check a failing shape against its successes and distinct people before calling it a bug |
+| 2026-11-20 | [Promo films](2026-11-20-promo-films.md) | Check a film as stills in both aspect ratios before rendering, and assert fps from the file |
