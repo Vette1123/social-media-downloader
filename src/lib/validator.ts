@@ -355,7 +355,7 @@ function trimTail(link: string): string {
  * Every `http(s)://` link in the text, in order. A new scheme starts a new link
  * even with no space before it (a paste of several share links run together),
  * except right after `=`, `?` or `&`, where it is a query value of the link
- * before, e.g. a login wall's `?next=https://…`.
+ * before, e.g. a login wall's `?next=https://â€¦`.
  */
 export function linkTokens(text: string): string[] {
   if (!text) return []
