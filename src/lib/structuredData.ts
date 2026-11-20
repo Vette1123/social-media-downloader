@@ -170,6 +170,7 @@ function webPageNode({
   isPartOfId,
   locale,
   breadcrumb = true,
+  image = true,
 }: {
   locale: Locale
   url: string
@@ -178,6 +179,8 @@ function webPageNode({
   isPartOfId: string
   /** A page with one crumb has no trail to show, so it points at none. */
   breadcrumb?: boolean
+  /** Only pages that render their own share card point at it. */
+  image?: boolean
 }) {
   return {
     '@type': 'WebPage',
@@ -188,7 +191,9 @@ function webPageNode({
     inLanguage: locale,
     isPartOf: { '@id': isPartOfId },
     // Every home and platform route renders its own share card beside it.
-    primaryImageOfPage: `${url.replace(/\/$/, '')}/opengraph-image`,
+    ...(image && {
+      primaryImageOfPage: `${url.replace(/\/$/, '')}/opengraph-image`,
+    }),
     publisher: { '@id': `${siteConfig.url}/#organization` },
     ...(breadcrumb && { breadcrumb: { '@id': `${url}#breadcrumb` } }),
   }
@@ -324,6 +329,37 @@ export function platformStructuredData(
         p.faqs.map((f) => ({ q: f.q, a: f.a })),
         locale,
       ),
+    ],
+  }
+}
+
+/**
+ * /pro, /privacy and /terms: a WebPage inside the site and a two-step trail
+ * home. They carried only the site-wide nodes, so search engines saw a page
+ * with no place in the site's structure.
+ */
+export function infoStructuredData(
+  page: 'pro' | 'privacy' | 'terms',
+  locale: Locale = 'en',
+) {
+  const { legal, nav } = contentFor(locale).copy
+  const doc = legal[page]
+  const url = localizedUrl(locale, `/${page}`)
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      webPageNode({
+        url,
+        name: doc.metaTitle,
+        description: fill(doc.metaDescription, { site: siteConfig.name }),
+        isPartOfId: `${siteConfig.url}/#website`,
+        locale,
+        image: false,
+      }),
+      breadcrumbNode(`${url}#breadcrumb`, [
+        { name: nav.home, url: localizedUrl(locale, '/') },
+        { name: page === 'pro' ? 'Pro' : legal[page].title, url },
+      ]),
     ],
   }
 }
