@@ -164,3 +164,59 @@ describe('resolving a TikTok link', () => {
     expect(browserResolve).not.toHaveBeenCalled()
   })
 })
+
+describe('resolving an Instagram link', () => {
+  const REEL = 'https://www.instagram.com/reel/DKcalTzoftf/?igsh=abc'
+  const GIVE_UP =
+    'Could not download this Instagram post. Public posts, reels and carousels work — this one is private, age- or region-restricted, or has been deleted, and Instagram serves those only to a logged-in account.'
+
+  const stubSequence = (...bodies: object[]) => {
+    const spy = vi.fn()
+    bodies.forEach((b) =>
+      spy.mockResolvedValueOnce(new Response(JSON.stringify(b))),
+    )
+    vi.stubGlobal('fetch', spy)
+    return spy
+  }
+
+  it('asks again silently when the first run gives up, so one click is enough', async () => {
+    const spy = stubSequence({ success: false, error: GIVE_UP }, answer('second'))
+
+    const result = await resolve(REEL)
+
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(result.success).toBe(true)
+    expect(result.metadata?.title).toBe('second')
+  })
+
+  it('stops after the second run, whatever it says', async () => {
+    const spy = stubSequence(
+      { success: false, error: GIVE_UP },
+      { success: false, error: GIVE_UP },
+    )
+
+    const result = await resolve(REEL)
+
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(result.success).toBe(false)
+  })
+
+  it('does not re-run a story link, which only a session can open', async () => {
+    const spy = stubSequence({
+      success: false,
+      error: 'Instagram only serves these to a logged-in account',
+    })
+
+    await resolve('https://www.instagram.com/stories/someone/123456/')
+
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not re-run another platform’s failure', async () => {
+    const spy = stubSequence({ success: false, error: GIVE_UP })
+
+    await resolve('https://www.facebook.com/reel/123456789')
+
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+})

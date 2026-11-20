@@ -16,7 +16,7 @@ import {
   trackResolveSucceeded,
   type LinkSource,
 } from './analytics'
-import { errorMessage } from './analyticsErrors'
+import { errorMessage, failureCode } from './analyticsErrors'
 import type { VideoMetadata } from './appReducer'
 import { isTransientError, withRetry } from './retry'
 import { resolveTikTokInBrowser } from './tikwmClient'
@@ -200,6 +200,24 @@ async function resolveLink(
   return fromServer()
 }
 
+/** Pause before the silent second resolve, long enough to land on a fresh extractor pick. */
+export const SECOND_TRY_DELAY_MS = 500
+
+const INSTAGRAM_STORY_LINK = /instagram\.com\/(?:stories|s)\//i
+const RECOVERABLE_CODES = new Set(['private', 'inconclusive', 'rate_limited', 'timeout', 'network'])
+
+/**
+ * A failed Instagram answer worth one silent second run. The chain's give-up
+ * line says "private" when every method merely came back empty, which a cold
+ * first request does routinely. Stories and highlights are excluded: they are
+ * login-gated by design and a second run cannot change that.
+ */
+export function isRecoverableAnswer(url: string, result: ResolveResult): boolean {
+  if (result.success || detectPlatform(url) !== 'instagram') return false
+  if (INSTAGRAM_STORY_LINK.test(url)) return false
+  return RECOVERABLE_CODES.has(failureCode(result.error))
+}
+
 async function resolveOnServer(
   url: string,
   type: 'video' | 'audio',
@@ -218,15 +236,28 @@ async function resolveOnServer(
   // network error is retried, and only once: a server answer the app can read
   // is never re-sent, so a resolve that Instagram actually refused costs one
   // extractor run, not two.
+  const ask = async (): Promise<ResolveResult> => {
+    const response = await fetch('/api/download', {
+      method: 'POST',
+      headers,
+      signal: opts.signal,
+      body: JSON.stringify({ url, type, quality, format }),
+    })
+    return response.json()
+  }
+
   return withRetry(
     async () => {
-      const response = await fetch('/api/download', {
-        method: 'POST',
-        headers,
-        signal: opts.signal,
-        body: JSON.stringify({ url, type, quality, format }),
-      })
-      return response.json()
+      const first = await ask()
+      if (!isRecoverableAnswer(url, first) || opts.signal?.aborted) return first
+      // The server answered, but with a give-up that a second run routinely
+      // turns into a success (PostHog, 7 days: 62 Instagram "private" and 14
+      // rate-limit failures were followed by a success for the same person
+      // within two minutes). Ask once more behind the same loading state, and
+      // keep the second answer whatever it is.
+      await new Promise((r) => setTimeout(r, SECOND_TRY_DELAY_MS))
+      if (opts.signal?.aborted) return first
+      return ask()
     },
     {
       retries: 1,
