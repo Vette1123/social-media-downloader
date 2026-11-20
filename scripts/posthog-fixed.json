@@ -10,9 +10,9 @@
     "commit": "2c21cb7"
   },
   "01a19363-2a2e-7892-af5a-c68e766974f1": {
-    "fixedOn": "2026-11-16",
-    "what": "storage-blocked browsers: typeof localStorage called the throwing getter in proSignals; canUseLocalStorage()",
-    "commit": "a313018"
+    "fixedOn": "2026-11-17",
+    "what": "Turbopack \"Failed to load chunk\" from tabs older than the deploy: staleChunk reloads once on a 404; wording joined the noise filter",
+    "commit": "fbdad2f"
   },
   "01a18fd5-4876-7980-a3d1-6f75e6951cd6": {
     "fixedOn": "2026-11-03",
