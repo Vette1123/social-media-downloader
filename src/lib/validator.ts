@@ -22,6 +22,8 @@ const platformPatterns: Record<
 > = {
   tiktok: [
     /^(https?:\/\/)?(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/,
+    // Photo carousels: same id space, and tikwm/Cobalt resolve them like videos
+    /^(https?:\/\/)?(www\.)?tiktok\.com\/@[\w.-]+\/photo\/\d+/,
     /^(https?:\/\/)?(www\.)?tiktok\.com\/[\w.-]+\/video\/\d+/,
     /^(https?:\/\/)?vm\.tiktok\.com\/[\w\d]+/,
     /^(https?:\/\/)?vt\.tiktok\.com\/[\w\d]+/,
@@ -73,6 +75,8 @@ const platformPatterns: Record<
     // Facebook's share sheet uses is accepted — /v/ and /r/ are video and reel,
     // /p/ is a post, which is frequently a post *of* a video.
     /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/share\/[a-z]\/[\w-]+/,
+    // …and the letterless /share/<code> the share sheet now hands out
+    /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/share\/[\w-]{5,}\/?(?:[?#]|$)/,
     // A post on a profile or page, which carries its video inline
     /^(https?:\/\/)?(www\.|web\.|m\.|mbasic\.)?facebook\.com\/[\w.-]+\/posts\/[\w-]+/,
     // The same post inside a group
@@ -189,6 +193,7 @@ export function validateUrl(url: string): boolean {
 export function parseVideoId(url: string): string | null {
   const patterns = [
     /\/video\/(\d+)/,
+    /tiktok\.com\/@[\w.-]+\/photo\/(\d+)/,
     /\/v\/(\d+)/,
     /vm\.tiktok\.com\/([\w\d]+)/,
     /vt\.tiktok\.com\/([\w\d]+)/,

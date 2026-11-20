@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectPlatform, extractLink } from './validator'
+import { detectPlatform, extractLink, parseVideoId } from './validator'
 
 describe('extractLink', () => {
   it('leaves a single link alone', () => {
@@ -49,5 +49,21 @@ describe('detectPlatform: Snapchat share links', () => {
       ),
     ).toBe('snapchat')
     expect(detectPlatform('https://www.snapchat.com/spotlight/W7_abc')).toBe('snapchat')
+  })
+})
+
+// PostHog 2026-11-20: both shapes fell through to the generic Cobalt path and
+// failed as "unsupported", skipping the extractors built for them.
+describe('detectPlatform: share-sheet shapes that were landing in generic', () => {
+  it('reads the letterless Facebook /share/<code> as Facebook', () => {
+    expect(detectPlatform('https://www.facebook.com/share/1AbCdEfGh/')).toBe('facebook')
+    expect(detectPlatform('https://www.facebook.com/share/1AbCdEfGh/?mibextid=wwXIfr')).toBe('facebook')
+    expect(detectPlatform('https://www.facebook.com/share/')).toBe('generic')
+  })
+
+  it('reads a TikTok photo carousel as TikTok, with its id', () => {
+    const url = 'https://www.tiktok.com/@someone/photo/7311111111111111111?_r=1'
+    expect(detectPlatform(url)).toBe('tiktok')
+    expect(parseVideoId(url)).toBe('7311111111111111111')
   })
 })
