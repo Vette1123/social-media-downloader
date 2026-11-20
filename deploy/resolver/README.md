@@ -42,11 +42,11 @@ this path, so once this is deployed and wired, those links resolve on the live
 
 On the app, as Worker secrets (`pnpm cf:setup secrets <KEY>`, or `wrangler secret put <KEY>`):
 
-- `COBALT_API_URL` = the Space URL from step 4 (e.g.
-  `https://<user>-media-resolver.hf.space`).
+- `COBALT_API_URL` = the service URL from step 4 (e.g.
+  `https://<app>-<org>.koyeb.app`).
   This var accepts a comma/space-separated list, so it stacks with any existing
   value.
-- If you set `RESOLVER_API_KEY` on the Space, also set `COBALT_API_KEY` to the
+- If you set `RESOLVER_API_KEY` on the service, also set `COBALT_API_KEY` to the
   same value here.
 
 Secrets apply to the next request, so there is nothing to redeploy. Paste a link on the site — it resolves through the
@@ -84,8 +84,17 @@ Some sources gate downloads behind cookies + a browser check. To handle them:
 
 1. Export a `cookies.txt` (Netscape format) with a browser extension such as
    "Get cookies.txt LOCALLY" while logged in on that site.
-2. Paste the file **contents** into the `RESOLVER_COOKIES` secret on the Space
-   and it redeploys.
+2. Paste the file **contents** into the `RESOLVER_COOKIES` secret on the
+   service and it redeploys. If the file is too big for the host's env-var cap,
+   or the host mangles its tabs and newlines, put it at a private raw URL
+   (a secret Gist) and set `RESOLVER_COOKIES_URL` instead; it is fetched once
+   at boot.
+
+Some sources gate by the *client's* region rather than a login, and redirect
+datacenter traffic to a notice page that cookies cannot fix. Set
+`RESOLVER_PROXY` to an `http(s)://` or `socks5://` proxy in a region the
+source serves, and every fetch (extraction, the pipe path, the `/t` stream)
+goes through it.
 
 The image already installs `curl_cffi`, so the service impersonates a real
 browser's TLS fingerprint automatically. Cookies expire, so refresh them if a
