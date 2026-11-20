@@ -33,6 +33,16 @@ describe('shouldDropException', () => {
     ).toBe(true)
   })
 
+  it('drops storage the browser blocked before our code ran', () => {
+    expect(
+      shouldDropException(
+        exception(
+          "[early_crash] SecurityError: Failed to read the 'localStorage' property from 'Window': Access is denied for this document.",
+        ),
+      ),
+    ).toBe(true)
+  })
+
   // A <video> whose src changes mid-load: Chrome aborts the old fetch and rejects
   // play() with this. No stack, nothing to act on (PostHog, 2026-11-15).
   it('drops the media-fetch AbortError a src swap throws', () => {

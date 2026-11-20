@@ -37,6 +37,10 @@ const NOISE_PATTERNS = [
   // Turbopack says "Failed to load chunk … from module …"; lib/staleChunk reloads.
   /ChunkLoadError|Loading (CSS )?chunk \S+ failed|Failed to load chunk /i,
   /Failed to fetch dynamically imported module/i,
+  // Storage blocked by the browser (sandboxed frame, strict privacy settings):
+  // PostHog's own localStorage persistence throws it before any code of ours
+  // runs; every call site of ours is guarded. 2 people, Nov 2026.
+  /Failed to read the '(local|session)Storage' property/i,
   /^(TypeError: )?(Failed to fetch|Load failed|NetworkError when attempting to fetch resource\.?)$/i,
 ]
 

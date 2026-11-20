@@ -116,6 +116,15 @@ function profileTitle(u: URL): string | null {
     if (segs.length === 1) return dn('That is a Pinterest profile, not a post')
     return null
   }
+  if (isHostOf(h, 'snapchat.com')) {
+    // /add/<user> is the add-friend link and /u/<user> or /@user the public
+    // profile; a post is /spotlight/<id>, /t/<code>, /p/<id> or /@user/spotlight/<id>.
+    // 10 of 17 failed Snapchat resolves in Nov 2026 were /add/ links.
+    const [first = ''] = segs
+    if (first === 'add' || first === 'u') return dn('That is a Snapchat profile, not a post')
+    if (segs.length === 1 && first.startsWith('@')) return dn('That is a Snapchat profile, not a post')
+    return null
+  }
   if (isHostOf(h, 'threads.net') || isHostOf(h, 'threads.com')) {
     if (segs.length === 1 && segs[0].startsWith('@')) return dn('That is a Threads profile, not a post')
     return null

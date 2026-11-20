@@ -25,3 +25,17 @@ export function gallerySaveOutcome(saved: number, total: number): 'all' | 'some'
   if (saved <= 0) return 'none'
   return saved >= total ? 'all' : 'some'
 }
+
+/**
+ * A fetch that never reached the server: Chrome/Firefox "Failed to fetch",
+ * Safari "Load failed", Firefox "NetworkError…". The connection is gone, so
+ * every later file in the same run fails the same way within milliseconds —
+ * 23 `download:image_item` events from 5 people in Nov 2026 were bursts of 5,
+ * 2 ms apart. Stop the run on the first one and report it once.
+ */
+export function isConnectionDrop(error: unknown): boolean {
+  return (
+    error instanceof TypeError &&
+    /^(Failed to fetch|Load failed|NetworkError when attempting to fetch resource\.?)$/i.test(error.message)
+  )
+}
