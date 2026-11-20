@@ -66,7 +66,8 @@ try {
   for (const { name, element } of cards) {
     const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>
 *{box-sizing:border-box}html,body{margin:0;width:1200px;height:630px;overflow:hidden;background:#050506}
-body{font-family:'Segoe UI',Tahoma,sans-serif;color:#fff}div{text-wrap:balance}
+${[400, 600, 800].map((w) => `@font-face{font-family:Geist;font-weight:${w};src:url('${pathToFileURL(join(root, 'src', 'og', 'fonts', `Geist-${w}.ttf`)).href}')}`).join('')}
+body{font-family:Geist,'Segoe UI',Tahoma,sans-serif;color:#fff}div{text-wrap:balance}
 /* The headline's 1.02 leading is for Latin caps; Arabic ascenders and descenders need room. */
 div[style*="font-weight:800"]{line-height:1.32!important;padding-bottom:6px}
 </style></head><body>${renderToStaticMarkup(element)}</body></html>`

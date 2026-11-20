@@ -2,6 +2,8 @@ import { siteConfig } from '@/config/site'
 import type { Locale } from '@/lib/i18n'
 import { platformFor, contentFor } from '@/lib/localeContent'
 import type { PlatformSlug } from '@/lib/platforms'
+import { dictionaries } from '@/lib/i18nDictionaries'
+import { translate } from '@/lib/i18n'
 
 export interface OgCopy {
   /** Small line beside the glyph, e.g. "TikTok downloader". */
@@ -10,6 +12,11 @@ export interface OgCopy {
   headline: string
   tagline: string
   chips: string[]
+  /** The headline already split into statement and accent, when the copy comes in two parts. */
+  parts?: [string, string]
+  /** The drawn result card: its button and its toast, in the card's language. */
+  action: string
+  saved: string
 }
 
 /**
@@ -44,6 +51,7 @@ export function platformOgCopy(locale: Locale, slug: PlatformSlug): OgCopy {
       pick(chips?.hd, en$.hd),
       pick(chips?.noLimits, en$.noLimits),
     ],
+    ...cardActions(locale),
   }
 }
 
@@ -57,12 +65,14 @@ export function homeOgCopy(locale: Locale): OgCopy {
     label: siteConfig.name,
     free: pick(copy.chips?.free, en.chips.free),
     headline: `${lead} ${accent}`,
+    parts: [lead.replace(/[,،]\s*$/, ''), accent],
     tagline: pick(copy.chips?.anyLink, en.chips.anyLink),
     chips: [
       pick(copy.chips?.noLoginRequired, en.chips.noLoginRequired),
       pick(copy.chips?.hd, en.chips.hd),
       pick(copy.chips?.noLimits, en.chips.noLimits),
     ],
+    ...cardActions(locale),
   }
 }
 
@@ -71,4 +81,13 @@ export function headlineSize(text: string, max = 72): number {
   if (text.length <= 28) return max
   if (text.length <= 48) return Math.round(max * 0.78)
   return Math.round(max * 0.62)
+}
+
+/** The download button and "Saved" toast words for a card, from the app's own dictionary. */
+export function cardActions(locale: Locale): Pick<OgCopy, 'action' | 'saved'> {
+  const dict = dictionaries[locale as keyof typeof dictionaries]
+  return {
+    action: pick(dict?.downloadBtn, translate('en', 'downloadBtn')),
+    saved: pick(dict?.savedShort, translate('en', 'savedShort')),
+  }
 }

@@ -1,320 +1,67 @@
 import { ImageResponse } from 'next/og'
-import { siteConfig } from '@/config/site'
 import type { Locale } from '@/lib/i18n'
-import { headlineSize, platformOgCopy } from '@/lib/ogCopy'
+import { platformOgCopy } from '@/lib/ogCopy'
+import { PLATFORM_GLYPHS } from '@/lib/ogGlyphs'
+import {
+  OG_SIZE,
+  OgBrand,
+  OgChips,
+  OgHeadline,
+  OgPill,
+  OgResultCard,
+  OgStage,
+  ogResponseOptions,
+  siteHost,
+} from '@/lib/ogKit'
 import type { PlatformSlug } from '@/lib/platforms'
 
-export const ogImageSize = { width: 1200, height: 630 }
+export const ogImageSize = OG_SIZE
 export const ogImageContentType = 'image/png'
 
-interface PlatformGlyph {
-  bg: string
-  glow: string
-  path: string
-}
-
-const PLATFORM_GLYPHS: Record<PlatformSlug, PlatformGlyph> = {
-  'video-downloader': {
-    bg: '#0891B2',
-    glow: '34, 211, 238',
-    // A film clapper/board glyph matching FilmIcon's outline style.
-    path: 'M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm14 3.5v2h2v-2h-2zm-4 0v2h2v-2h-2zM6 8.5v2h2v-2H6zm10 7.5h4v-3.5h-4V16z',
-  },
-  'tiktok-downloader': {
-    bg: '#010101',
-    glow: '236, 72, 153',
-    path: 'M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43V7.93a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.36z',
-  },
-  'twitter-video-downloader': {
-    bg: '#000000',
-    glow: '56, 189, 248',
-    path: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.631 5.905-5.631Zm-1.161 17.52h1.833L7.084 4.126H5.117z',
-  },
-  'instagram-downloader': {
-    bg: 'linear-gradient(135deg, #FEDA75 0%, #FA7E1E 25%, #D62976 52%, #962FBF 76%, #4F5BD5 100%)',
-    glow: '214, 41, 118',
-    path: 'M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z',
-  },
-  'facebook-downloader': {
-    bg: '#1877F2',
-    glow: '24, 119, 242',
-    path: 'M16.4 12.06h-2.62V20h-3.1v-7.94H8.86V9.4h1.82V7.85c0-2.15 1.28-3.35 3.24-3.35.94 0 1.93.17 1.93.17v2.12h-1.08c-1.06 0-1.4.66-1.4 1.34V9.4h2.37l-.38 2.66z',
-  },
-  'youtube-downloader': {
-    bg: '#FF0000',
-    glow: '255, 0, 0',
-    path: 'M9.8 8.2 16 12l-6.2 3.8z',
-  },
-  'pinterest-downloader': {
-    bg: '#E60023',
-    glow: '230, 0, 35',
-    path: 'M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345c-.091.378-.293 1.194-.333 1.361-.052.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z',
-  },
-  'reddit-video-downloader': {
-    bg: '#FF4500',
-    glow: '255, 69, 0',
-    path: 'M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12c-.688 0-1.25.561-1.25 1.25 0 .687.562 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z',
-  },
-  'threads-video-downloader': {
-    bg: '#000000',
-    glow: '120, 120, 120',
-    path: 'M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.78 3.631 2.695 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.359-.89h-.029c-.844 0-1.992.232-2.721 1.32L9.396 9.662c.98-1.453 2.568-2.255 4.478-2.255h.044c3.194.02 5.097 1.975 5.287 5.388.108.046.216.094.324.145 1.52.715 2.63 1.796 3.21 3.128.807 1.855.881 4.874-1.55 7.253-1.856 1.817-4.106 2.64-7.293 2.68h-.02z',
-  },
-  'snapchat-downloader': {
-    bg: '#FFFC00',
-    glow: '255, 252, 0',
-    path: 'M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.023.354-.033.534.006.007.055.03.15.03.174-.005.24-.049.24-.049.171-.09.442-.183.7-.183.174 0 .276.023.406.068.324.114.514.35.517.638.006.396-.376.752-1.135.998-.081.026-.19.058-.31.093-.44.13-1.105.325-1.288.756-.095.223-.058.51.11.855l.006.012c.06.14 1.483 3.442 4.702 3.975.235.039.417.246.402.487-.002.019-.006.037-.01.055-.157.741-2.24.951-2.996 1.11-.081.017-.156.033-.208.049-.033.011-.052.037-.061.081-.044.211-.086.412-.156.641-.113.372-.35.549-.749.549-.234 0-.505-.06-.803-.126-.542-.12-1.279-.284-2.204-.284-.53 0-1.077.057-1.628.17-.885.181-1.65.685-2.516 1.264-.977.652-2.089 1.395-3.567 1.395-.13 0-.259-.008-.386-.024l-.06-.008c-1.442 0-2.554-.743-3.531-1.395-.866-.579-1.631-1.083-2.516-1.264-.551-.113-1.098-.17-1.628-.17-.925 0-1.662.164-2.204.284-.298.066-.569.126-.803.126-.399 0-.636-.177-.749-.549-.07-.229-.112-.43-.156-.641-.009-.044-.028-.07-.061-.081-.052-.016-.127-.032-.208-.049-.756-.159-2.839-.369-2.996-1.11-.004-.018-.008-.036-.01-.055-.015-.241.167-.448.402-.487 3.219-.533 4.642-3.835 4.702-3.975l.006-.012c.168-.345.205-.632.11-.855-.183-.431-.848-.626-1.288-.756-.12-.035-.229-.067-.31-.093-.759-.246-1.141-.602-1.135-.998.003-.288.193-.524.517-.638.13-.045.232-.068.406-.068.258 0 .529.093.7.183 0 0 .066.044.24.049.095 0 .144-.023.15-.03-.01-.18-.021-.354-.033-.534l-.003-.06c-.104-1.628-.23-3.654.299-4.847C7.859 1.069 11.216.793 12.206.793z',
-  },
-  'twitch-clip-downloader': {
-    bg: '#9146FF',
-    glow: '145, 70, 255',
-    path: 'M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z',
-  },
-  'vimeo-downloader': {
-    bg: '#1AB7EA',
-    glow: '26, 183, 234',
-    path: 'M23.977 6.416c-.105 2.338-1.739 5.543-4.894 9.609-3.268 4.247-6.026 6.37-8.29 6.37-1.409 0-2.578-1.294-3.553-3.881L5.322 11.4C4.603 8.816 3.834 7.522 3.01 7.522c-.179 0-.806.378-1.881 1.132L0 7.197c1.185-1.044 2.351-2.084 3.501-3.128C5.08 2.701 6.266 1.984 7.055 1.91c1.867-.18 3.016 1.1 3.447 3.838.465 2.953.789 4.789.971 5.507.539 2.45 1.131 3.674 1.776 3.674.502 0 1.256-.796 2.265-2.385 1.004-1.589 1.54-2.797 1.612-3.628.144-1.371-.395-2.061-1.614-2.061-.574 0-1.167.121-1.777.391 1.186-3.868 3.434-5.757 6.762-5.637 2.473.06 3.628 1.664 3.493 4.797z',
-  },
-  'dailymotion-downloader': {
-    bg: '#0D0D0D',
-    glow: '0, 170, 255',
-    path: 'M21.823 7.327a11.928 11.928 0 0 0-2.606-3.814 12.126 12.126 0 0 0-3.866-2.57A12.246 12.246 0 0 0 10.617 0H1.831a.602.602 0 0 0-.609.603v3.764c0 .162.064.312.179.426l4.164 4.123a.612.612 0 0 0 .439.177h4.56c.806 0 1.56.313 2.125.88.557.559.856 1.296.843 2.075-.029 1.571-1.343 2.849-2.931 2.849h-6.74a.613.613 0 0 0-.432.176.619.619 0 0 0-.178.427v3.764c0 .162.063.312.178.427l4.139 4.099a.647.647 0 0 0 .476.21h2.572a12.276 12.276 0 0 0 4.733-.945 12.145 12.145 0 0 0 3.866-2.571 11.959 11.959 0 0 0 2.607-3.813c.633-1.479.956-3.051.956-4.67 0-1.619-.321-3.19-.956-4.669l.001-.005ZM2.441 4.118V1.982l2.945 2.755.001 2.297-2.946-2.916Zm4.975 17.813-2.945-2.917v-2.137l2.945 2.755v2.299Zm-2.004-5.832h5.19c2.248 0 4.107-1.807 4.147-4.03a4.027 4.027 0 0 0-1.192-2.937 4.203 4.203 0 0 0-2.996-1.239H6.606V5.216h3.996c1.831 0 3.553.706 4.849 1.986a6.724 6.724 0 0 1-.152 9.736 6.875 6.875 0 0 1-4.697 1.84H8.275L5.412 16.1v-.001Zm15.289.1a10.753 10.753 0 0 1-2.345 3.431 10.91 10.91 0 0 1-3.48 2.314 11.018 11.018 0 0 1-4.26.847H8.633v-2.814h1.916c2.145 0 4.161-.802 5.675-2.254a7.88 7.88 0 0 0 2.451-5.728c0-2.177-.87-4.21-2.451-5.728-1.514-1.454-3.528-2.254-5.675-2.254h-4.16L3.383 1.202h7.234c1.479 0 2.911.285 4.259.847a10.957 10.957 0 0 1 3.48 2.313 10.769 10.769 0 0 1 2.345 3.432c.571 1.33.86 2.743.86 4.202 0 1.46-.289 2.873-.86 4.203Z',
-  },
-  'linkedin-video-downloader': {
-    bg: '#0A66C2',
-    glow: '10, 102, 194',
-    path: 'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z',
-  },
-  'telegram-downloader': {
-    bg: '#26A5E4',
-    glow: '38, 165, 228',
-    path: 'M21.94 4.3 18.7 19.58c-.24 1.08-.88 1.34-1.79.84l-4.94-3.64-2.38 2.29c-.26.27-.48.49-.99.49l.35-5.03 9.16-8.28c.4-.35-.09-.55-.62-.2L6.17 13.17 1.3 11.65c-1.06-.33-1.08-1.06.22-1.57L20.55 2.75c.88-.33 1.65.2 1.39 1.55Z',
-  },
-}
-
 /** The card itself, so satori (`renderPlatformOgImage`) and Chrome (`scripts/og-ar.mjs`) draw one design. */
-export function platformOgCard(
-  slug: PlatformSlug,
-  locale: Locale = 'en',
-) {
+export function platformOgCard(slug: PlatformSlug, locale: Locale = 'en') {
   const copy = platformOgCopy(locale, slug)
   const glyph = PLATFORM_GLYPHS[slug]
 
   return (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          padding: 28,
-          background:
-            'linear-gradient(135deg, #050506 0%, #0a0f14 50%, #050506 100%)',
-        }}
-      >
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative',
-            borderRadius: 40,
-            padding: 56,
-            overflow: 'hidden',
-            background: `radial-gradient(circle at 18% 22%, rgba(${glyph.glow}, 0.5) 0%, transparent 48%), radial-gradient(circle at 84% 78%, #22d3ee 0%, transparent 44%), radial-gradient(circle at 60% 50%, #2dd4bf 0%, transparent 55%), linear-gradient(135deg, #0b0e12 0%, #0a0f14 55%, #050506 100%)`,
-            border: `1.5px solid rgba(${glyph.glow}, 0.35)`,
-            boxShadow: `inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 80px 120px -40px rgba(${glyph.glow}, 0.22), inset 0 -80px 120px -40px rgba(6, 182, 212, 0.18)`,
-          }}
-        >
+    <OgStage glow={glyph.glow}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <OgBrand />
+        <OgPill>{copy.free}</OgPill>
+      </div>
+
+      <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'space-between', gap: 32 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: 650 }}>
           <div
             style={{
-              position: 'absolute',
-              inset: 0,
               display: 'flex',
-              background:
-                'radial-gradient(1.5px 1.5px at 18% 28%, rgba(255,255,255,0.55), transparent), radial-gradient(1.5px 1.5px at 72% 62%, rgba(255,255,255,0.4), transparent), radial-gradient(1.5px 1.5px at 42% 82%, rgba(255,255,255,0.5), transparent), radial-gradient(2px 2px at 88% 22%, rgba(255,255,255,0.65), transparent), radial-gradient(1.5px 1.5px at 8% 70%, rgba(255,255,255,0.45), transparent)',
+              fontSize: 20,
+              fontWeight: 600,
+              letterSpacing: 2.4,
+              textTransform: 'uppercase',
+              color: '#67e8f9',
             }}
-          />
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-              <div
-                style={{
-                  width: 96,
-                  height: 96,
-                  borderRadius: 24,
-                  background: glyph.bg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: `0 20px 60px rgba(${glyph.glow}, 0.55), inset 0 1px 0 rgba(255,255,255,0.3)`,
-                }}
-              >
-                <svg width='52' height='52' viewBox='0 0 24 24' fill='#ffffff'>
-                  <path d={glyph.path} />
-                </svg>
-              </div>
-              <div
-                style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
-              >
-                <div
-                  style={{
-                    fontSize: 30,
-                    fontWeight: 600,
-                    color: 'rgba(186, 230, 253, 0.65)',
-                    display: 'flex',
-                  }}
-                >
-                  {copy.label}
-                </div>
-                <div
-                  style={{
-                    fontSize: 22,
-                    fontWeight: 500,
-                    color: 'rgba(186, 230, 253, 0.55)',
-                    display: 'flex',
-                  }}
-                >
-                  {siteConfig.url.replace(/^https?:\/\/(www\.)?/, '')}
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '12px 22px',
-                borderRadius: 999,
-                background: 'rgba(34, 197, 94, 0.15)',
-                border: '1px solid rgba(74, 222, 128, 0.4)',
-                color: '#86efac',
-                fontSize: 22,
-                fontWeight: 600,
-              }}
-            >
-              <div
-                style={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: 999,
-                  background: '#4ade80',
-                  boxShadow: '0 0 16px #4ade80',
-                }}
-              />
-              {copy.free}
-            </div>
+            {copy.label}
           </div>
-
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 22,
-              marginTop: 'auto',            }}
-          >
-            <div
-              style={{
-                fontSize: headlineSize(copy.headline),
-                fontWeight: 800,
-                letterSpacing: -2.5,
-                lineHeight: 1.02,
-                background:
-                  'linear-gradient(135deg, #ffffff 0%, #67e8f9 50%, #38bdf8 100%)',
-                backgroundClip: 'text',
-                color: 'transparent',
-                display: 'flex',
-              }}
-            >
-              {copy.headline}
-            </div>
-            <div
-              style={{
-                fontSize: 32,
-                fontWeight: 600,
-                color: 'rgba(243, 232, 255, 0.92)',
-                letterSpacing: -0.6,
-                display: 'flex',
-              }}
-            >
-              {copy.tagline}
-            </div>
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: 24,
-                marginTop: 8,
-              }}
-            >
-              <div style={{ display: 'flex', gap: 14 }}>
-                {copy.chips
-                  .map((label, i) => ({
-                    label,
-                    accent: ['#5eead4', '#7dd3fc', '#67e8f9'][i],
-                  }))
-                  .map((chip) => (
-                  <div
-                    key={chip.label}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '13px 24px',
-                      borderRadius: 999,
-                      background: 'rgba(255, 255, 255, 0.07)',
-                      border: `1px solid rgba(${glyph.glow}, 0.35)`,
-                      color: chip.accent,
-                      fontSize: 23,
-                      fontWeight: 600,
-                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
-                    }}
-                  >
-                    {chip.label}
-                  </div>
-                ))}
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  whiteSpace: 'nowrap',
-                  fontSize: 25,
-                  fontWeight: 700,
-                }}
-              >
-                <span
-                  style={{
-                    display: 'flex',
-                    color: 'rgba(186, 230, 253, 0.55)',
-                    fontWeight: 500,
-                  }}
-                >
-                  by
-                </span>
-                <span style={{ display: 'flex', color: '#67e8f9' }}>
-                  mohamedgado.com
-                </span>
-              </div>
-            </div>
+          <OgHeadline text={copy.headline} />
+          <div style={{ display: 'flex', fontSize: 24, lineHeight: 1.4, color: 'rgba(250, 250, 250, 0.62)' }}>
+            {copy.tagline}
           </div>
         </div>
+        <OgResultCard glyph={glyph} quality='MP4 · HD' action={copy.action} saved={copy.saved} />
       </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <OgChips labels={copy.chips} />
+        <div style={{ display: 'flex', fontSize: 20, fontWeight: 600, color: 'rgba(250, 250, 250, 0.5)' }}>
+          {siteHost}
+        </div>
+      </div>
+    </OgStage>
   )
 }
 
-export function renderPlatformOgImage(
-  slug: PlatformSlug,
-  locale: Locale = 'en',
-) {
-  return new ImageResponse(platformOgCard(slug, locale), ogImageSize)
+export function renderPlatformOgImage(slug: PlatformSlug, locale: Locale = 'en') {
+  return new ImageResponse(platformOgCard(slug, locale), ogResponseOptions())
 }
