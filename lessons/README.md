@@ -173,3 +173,4 @@ the index for exactly that.
 | 2026-11-20 | [TikTok MP3, misrouted share links, info-page JSON-LD](2026-11-20-tiktok-mp3-and-misrouted-links.md) | An audio-tunnel miss is not a Cobalt miss: the MP3 fallback skipped the only TikTok path that works from the Worker. |
 | 2026-11-20 | [Health sweep: Snapchat profiles, gallery bursts, blocked storage](2026-11-20-health-sweep.md) | Read failure rates by URL shape and events-per-person, not the error board; a per-item loop stops on a dropped connection. |
 | 2026-11-20 | [Instagram resolves: the first click failed, the second worked](2026-11-20-instagram-resolves.md) | A chain's "private" give-up is often a cold first run; re-ask once silently, and read failures as fail-then-succeed pairs per person. |
+| 2026-11-20 | [Share cards rebuilt](2026-11-20-share-cards.md) | A thin OG headline was a missing satori font, not a layout problem |

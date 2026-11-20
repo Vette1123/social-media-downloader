@@ -37,6 +37,7 @@
     "cf:tune": "node scripts/cf-setup.mjs tune",
     "fb:secret": "node scripts/fb-secret.mjs",
     "og:ar": "node scripts/og-ar.mjs",
+    "og:preview": "node scripts/og-preview.mjs",
     "posthog:query": "node scripts/posthog-query.mjs",
     "posthog:issues": "node scripts/posthog-issues.mjs",
     "posthog:usage": "node scripts/posthog-usage.mjs",
