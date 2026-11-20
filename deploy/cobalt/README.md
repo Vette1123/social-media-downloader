@@ -1,19 +1,23 @@
-# Self-hosted cobalt (TikTok fallback)
+# Self-hosted cobalt (the private fallback)
 
 A private [cobalt](https://github.com/imputnet/cobalt) API instance that extracts
 and **tunnels** media. The site calls it server-side; because cobalt
 tunnels the bytes through its own server, the URLs it returns play from any IP
-(which is why this fixes TikTok where tikwm/datacenter extraction fails).
+(which is why it rescues TikTok, X, Instagram and the rest when the
+platform's own endpoint refuses a datacenter address).
 
-**Ordering:** the app tries the **public** cobalt instance first (warm + fast)
-and only falls back to your self-hosted `COBALT_API_URL` when the public one
-fails/rate-limits. So your instance is a safety net, not the hot path.
+**Ordering:** for a free request the app tries the platform's own endpoint,
+then the **public** cobalt instances, and only then your self-hosted
+`COBALT_API_URL`, so your instance is a safety net, not the hot path. A
+supporter's request (`pro`) flips that: the private instance goes **first**
+(`priority` in `src/lib/downloader.ts`).
 
 ---
 
-## Option A — Render (free, no card) ✅ recommended
+## Option A — Render (free tier) ✅ recommended
 
-Render runs the public cobalt image directly; its free tier needs no credit card.
+Render runs the public cobalt image directly. Its free tier may ask for a `$1`
+card authorization on new accounts (see `deploy/resolver/README.md`).
 
 ### Deploy (Render dashboard)
 
@@ -82,5 +86,7 @@ can put the same line in `.env`, which is the repo's single env file.
   it to this app, enable cobalt API-key auth (`API_AUTH_REQUIRED=1` + a keys
   file) and set `COBALT_API_KEY` as a Worker secret — the app already forwards it as an
   `Authorization: Api-Key <key>` header when present.
-- **YouTube** is intentionally out of scope — it bot-blocks datacenter IPs and
-  needs a residential IP or session cookies.
+- **YouTube** often fails from here: it bot-blocks datacenter IPs, so a
+  datacenter-hosted instance answers it only some of the time. The app's
+  YouTube chain does not depend on it (public cobalt, then Piped, then
+  `youtube-dl-exec` where Node runs).
