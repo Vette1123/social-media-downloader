@@ -2,7 +2,7 @@
 
 > Download public TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn & Telegram posts in their original quality — HD video, reels, Shorts, MP3 audio, photo carousels, and ffmpeg-rendered slideshow MP4s. Free, no login, no limits. Installs as an app.
 
-![Social Media Downloader — download HD video, reels, Shorts, MP3 audio and photos from public posts on TikTok, X, Instagram, Facebook, YouTube and more](docs/social-preview.png)
+![Social Media Downloader: any video, any app, in original quality. TikTok, Instagram, YouTube, X and 10 more; no login, HD, no download limits](docs/social-preview.png)
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
