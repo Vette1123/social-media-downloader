@@ -147,7 +147,7 @@ import {
 import { rememberRecentHeight } from '@/lib/recentReserve'
 import { saveBlob, saveMedia } from '@/lib/blobSaver'
 import { isStaleLinkError, isTransientError, withRetry } from '@/lib/retry'
-import { gallerySaveOutcome, imageSaveStep } from '@/lib/imageSaves'
+import { gallerySaveOutcome, imageSaveStep, isConnectionDrop } from '@/lib/imageSaves'
 import { canShareFile, fileFromBlob, shareFile } from '@/lib/shareFile'
 import { audioTagsFor } from '@/lib/audioTags'
 import { slideshowRenderOffered } from '@/lib/nativeMedia'
@@ -2569,6 +2569,9 @@ export function DownloaderApp() {
             }
             console.error('Failed to download individual image:', error)
             trackCaughtError('download:image_item', error)
+            // No connection: the rest would fail the same way, one event each.
+            // gallerySaveOutcome below still says how many made it.
+            if (isConnectionDrop(error)) break
           }
         }
         if (cancelRef.current.signal.aborted) {

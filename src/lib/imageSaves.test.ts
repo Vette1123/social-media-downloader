@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGE_SAVE_GAP_MS, gallerySaveOutcome, imageSaveStep } from './imageSaves'
+import { IMAGE_SAVE_GAP_MS, gallerySaveOutcome, imageSaveStep, isConnectionDrop } from './imageSaves'
 
 describe('imageSaveStep', () => {
   it('does not wait after a single image', () => {
@@ -23,5 +23,20 @@ describe('gallerySaveOutcome', () => {
   it('tells a partial run apart from a full one', () => {
     expect(gallerySaveOutcome(3, 5)).toBe('some')
     expect(gallerySaveOutcome(5, 5)).toBe('all')
+  })
+})
+
+describe('isConnectionDrop', () => {
+  it.each(['Failed to fetch', 'Load failed', 'NetworkError when attempting to fetch resource.'])(
+    'stops the run on "%s"',
+    (message) => {
+      expect(isConnectionDrop(new TypeError(message))).toBe(true)
+    },
+  )
+
+  it('keeps going past a bad file', () => {
+    expect(isConnectionDrop(new Error('HTTP 403'))).toBe(false)
+    expect(isConnectionDrop(new TypeError("Cannot read properties of undefined (reading 'blob')"))).toBe(false)
+    expect(isConnectionDrop('Failed to fetch')).toBe(false)
   })
 })
