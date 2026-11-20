@@ -1,3 +1,7 @@
 # Its own root, so an install here never touches the site's lockfile.
 packages: []
 minimumReleaseAge: 0
+
+# Remotion pins zod 4.4.3, which has a memory-exhaustion advisory (Dependabot #10).
+overrides:
+  zod: 4.6.6
