@@ -16,9 +16,9 @@
 
 ### 🎬 Watch the 26-second film
 
-[![The Social Media Downloader film: paste a link, keep the original. Play the 1080p60 cut](docs/films/smd-film-poster.jpg)](docs/films/smd-film-1080p60.mp4)
+https://github.com/user-attachments/assets/ebd6e5d9-a3b6-45e2-b8e2-c8ab2dbd2196
 
-[1080p, 16:9](docs/films/smd-film-1080p60.mp4) · [vertical 9:16 for Reels, TikTok and Shorts](docs/films/smd-reel-9x16-60.mp4). Both are 60 fps, cut to their own soundtrack and built from the live site's real screens ([`video/`](video/README.md)).
+[1080p, 16:9](docs/films/smd-film-1080p60.mp4?raw=true) · [vertical 9:16 for Reels, TikTok and Shorts](docs/films/smd-reel-9x16-60.mp4?raw=true). Both are 60 fps, cut to their own soundtrack and built from the live site's real screens ([`video/`](video/README.md)).
 
 A free downloader for public posts on **TikTok, Twitter/X, Instagram, Facebook, YouTube, Pinterest, Reddit, Threads, Snapchat, Twitch, Vimeo, Dailymotion, LinkedIn and Telegram**. Paste a link and get an HD video, reel, or Short, MP3 audio, a photo carousel (individual images or a ZIP), or a fully rendered slideshow MP4 with the original soundtrack. No login and no install are required, and it runs in your browser. It reaches only what a logged-out visitor can already see: no private accounts, no paywalled or subscriber-only posts, no DRM.
 

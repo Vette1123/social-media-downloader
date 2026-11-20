@@ -177,3 +177,4 @@ the index for exactly that.
 | 2026-11-20 | [Link shapes from the failure log](2026-11-20-link-shapes.md) | Check a failing shape against its successes and distinct people before calling it a bug |
 | 2026-11-20 | [Promo films](2026-11-20-promo-films.md) | Check a film as stills in both aspect ratios before rendering, and assert fps from the file |
 | 2026-11-20 | [Facebook walled share links](2026-11-20-facebook-walled-share-links.md) | A share link the crawler gets 200 for names no post: say so in one request |
+| 2026-11-20 | [README film as an inline player](2026-11-20-readme-inline-film.md) | A README video is a user-attachments URL on its own line; a committed mp4 is only a file page |
