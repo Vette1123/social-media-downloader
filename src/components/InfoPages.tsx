@@ -10,6 +10,7 @@ import { proMailto, SUPPORT_PRICES } from '@/config/support'
 import { fill, type Locale } from '@/lib/i18n'
 import { contentFor } from '@/lib/localeContent'
 import { localePath } from '@/lib/localeRoutes'
+import { infoStructuredData, jsonLdText } from '@/lib/structuredData'
 import type { ReactNode } from 'react'
 
 // Balanced so a two-line heading never strands its last word ("run." on /pro).
@@ -45,6 +46,9 @@ function formatDate(iso: string, locale: Locale): string {
   }).format(new Date(iso))
 }
 
+type InfoPage = 'pro' | 'privacy' | 'terms'
+const isInfoPath = (path: string) => ['/pro', '/privacy', '/terms'].includes(path)
+
 function Shell({
   locale,
   path,
@@ -57,6 +61,14 @@ function Shell({
   return (
     <div className='app-bg relative min-h-[100dvh] overflow-clip'>
       <div className='relative z-10 mx-auto max-w-3xl px-4 py-10 sm:py-16'>
+        {isInfoPath(path) && (
+          <script
+            type='application/ld+json'
+            dangerouslySetInnerHTML={{
+              __html: jsonLdText(infoStructuredData(path.slice(1) as InfoPage, locale)),
+            }}
+          />
+        )}
         <main>{children}</main>
         <SiteFooter locale={locale} path={path} />
       </div>

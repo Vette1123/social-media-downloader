@@ -8,6 +8,7 @@ import { platforms } from './platforms'
 import {
   globalStructuredData,
   homepageStructuredData,
+  infoStructuredData,
   jsonLdText,
   platformStructuredData,
 } from './structuredData'
@@ -230,5 +231,27 @@ describe('home FAQ', () => {
     expect(mainEntity.map((e) => ({ q: e.name, a: e.acceptedAnswer.text }))).toEqual(
       contentFor(locale).homeFaqs,
     )
+  })
+})
+
+describe('infoStructuredData', () => {
+  it('places /pro, /privacy and /terms in the site with a trail home, in every locale', () => {
+    for (const locale of LOCALES) {
+      for (const page of ['pro', 'privacy', 'terms'] as const) {
+        const graph = infoStructuredData(page, locale)['@graph'] as Array<Record<string, unknown>>
+        const webPage = graph.find((n) => n['@type'] === 'WebPage')!
+        const crumbs = graph.find((n) => n['@type'] === 'BreadcrumbList')!
+        expect(webPage.url).toMatch(new RegExp(`/${page}$`))
+        expect(webPage.inLanguage).toBe(locale)
+        expect(webPage.name).toBeTruthy()
+        // These pages render no share card of their own to point at.
+        expect(webPage).not.toHaveProperty('primaryImageOfPage')
+        expect(webPage.breadcrumb).toEqual({ '@id': crumbs['@id'] })
+        const items = crumbs.itemListElement as Array<{ name: string; item: string }>
+        expect(items).toHaveLength(2)
+        expect(items[1].item).toBe(webPage.url)
+        expect(items.every((i) => i.name.length > 0)).toBe(true)
+      }
+    }
   })
 })

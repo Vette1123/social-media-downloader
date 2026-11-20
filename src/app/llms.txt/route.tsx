@@ -1,4 +1,6 @@
 import { siteConfig } from '@/config/site'
+import { LOCALES } from '@/lib/i18n'
+import { localePath } from '@/lib/localeRoutes'
 import { platforms } from '@/lib/platforms'
 
 /**
@@ -42,6 +44,15 @@ function platformLines(): string[] {
   )
 }
 
+/** Every page also exists in each of these, under its own prefix. */
+function languageLines(): string[] {
+  const name = new Intl.DisplayNames(['en'], { type: 'language' })
+  return LOCALES.map((locale) => {
+    const home = localePath(locale, '/')
+    return `- [${name.of(locale)}](${siteConfig.url}${home === '/' ? '' : home})`
+  })
+}
+
 function body(): string {
   return [
     `# ${siteConfig.name}`,
@@ -57,6 +68,10 @@ function body(): string {
       platformLines(),
     ),
     section('Good to know', FACTS.map((f) => `- ${f}`)),
+    section('Languages', [
+      'Every page above is translated; each language lives under its own prefix.',
+      ...languageLines(),
+    ]),
     section('Links', [
       `- [Homepage](${siteConfig.url}): paste any supported link.`,
       `- [Sitemap](${siteConfig.url}/sitemap.xml): every indexable page.`,
