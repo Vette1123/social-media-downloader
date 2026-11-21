@@ -46,17 +46,17 @@ const INDEXNOW_KEY = 'f62bfbe4672c27f2ad3204b176eaab35'
 // The shared endpoint fans one submission out to every participating engine.
 const ENDPOINT = 'https://api.indexnow.org/IndexNow'
 const OUT_DIR = 'out'
-const GSC_SITE = 'sc-domain:socialdownloader.space'
+export const GSC_SITE = 'sc-domain:socialdownloader.space'
 // Bing verifies the apex; www pages submit under it (measured 2026-11-21).
-const BING_SITE = 'https://socialdownloader.space'
+export const BING_SITE = 'https://socialdownloader.space'
 
-const baseUrl = (
+export const baseUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.socialdownloader.space'
 ).replace(/\/+$/, '')
 const host = new URL(baseUrl).host
 const FETCH_HEADERS = { 'User-Agent': 'socialdownloader-indexnow/1.0' }
 
-async function fetchText(url) {
+export async function fetchText(url) {
   try {
     const res = await fetch(url, { headers: FETCH_HEADERS })
     return res.ok ? await res.text() : null
@@ -138,7 +138,7 @@ async function submit(urlList) {
  * Asks Search Console and Bing to re-read the sitemap (and any children).
  * Reads the live sitemap (after a deploy, the one just built), else out/.
  */
-async function submitSitemapFeeds() {
+export async function submitSitemapFeeds() {
   const root = `${baseUrl}/sitemap.xml`
   const xml = (await fetchText(root)) ?? readBuilt('sitemap.xml')
   const result = await submitSitemaps({

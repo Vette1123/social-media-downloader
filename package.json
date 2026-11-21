@@ -32,6 +32,7 @@
     "cf:smoke": "node scripts/cf-smoke.mjs",
     "seo:verify": "node scripts/seo-verify.mjs",
     "seo:submit": "node scripts/indexnow.mjs --sitemaps",
+    "seo:daily": "node scripts/seo-daily.mjs",
     "cf:setup": "node scripts/cf-setup.mjs",
     "cf:waf": "node scripts/cf-setup.mjs waf",
     "cf:health": "node scripts/cf-setup.mjs health",
