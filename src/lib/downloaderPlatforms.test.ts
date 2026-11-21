@@ -970,3 +970,39 @@ describe('a public Telegram channel post', () => {
     ])
   })
 })
+
+describe("FxTwitter's definite answers", () => {
+  // vxtwitter fails, FxTwitter says exactly why: that beats "may be private" (GitHub #68).
+  const answer = (status: number, body: object) =>
+    vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes('api.fxtwitter.com')
+        ? new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+        : new Response('<html>Failed to scan your link!</html>', { headers: { 'Content-Type': 'text/html' } }),
+    )
+
+  it('a deleted post is not found, not maybe private', async () => {
+    vi.stubGlobal('fetch', answer(404, { code: 404, message: 'NOT_FOUND', tweet: null }))
+    const error = await new Downloader()
+      .downloadVideo('https://x.com/nasa/status/1858962155924889768')
+      .catch((e: Error) => e)
+    expect(String(error)).toMatch(/not found/i)
+    expect(failureCode((error as Error).message)).toBe('unavailable')
+  })
+
+  it('a protected account is private', async () => {
+    vi.stubGlobal('fetch', answer(401, { code: 401, message: 'PRIVATE_TWEET', tweet: null }))
+    const error = await new Downloader()
+      .downloadVideo('https://x.com/someone/status/1858962155924889768')
+      .catch((e: Error) => e)
+    expect(String(error)).toMatch(/protected/i)
+    expect(failureCode((error as Error).message)).toBe('private')
+  })
+
+  it('a 404 without its JSON verdict stays a guess (a blocked edge is not an answer)', async () => {
+    vi.stubGlobal('fetch', answer(404, { error: 'edge' }))
+    const error = await new Downloader()
+      .downloadVideo('https://x.com/nasa/status/1858962155924889768')
+      .catch((e: Error) => e)
+    expect(String(error)).toMatch(/may be private/i)
+  })
+})
