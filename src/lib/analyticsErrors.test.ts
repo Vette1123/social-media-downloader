@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { errorMessage, failureCode, isExpectedFailure } from './analyticsErrors'
+import {
+  TELEGRAM_MEDIA_NOT_EMBEDDED,
+  TELEGRAM_POST_NOT_FOUND,
+  TELEGRAM_POST_TEXT_ONLY,
+  TELEGRAM_PRIVATE_CHANNEL,
+} from './telegramPost'
 
 describe('failureCode', () => {
   it.each([
@@ -45,5 +51,19 @@ describe('errorMessage on a plain-object rejection', () => {
     expect(errorMessage({ message: 'quota exceeded', code: 22 })).toBe('quota exceeded')
     expect(errorMessage({ type: 'abort', token: 'secret-value' })).toBe('[Object] keys: type, token')
     expect(errorMessage({})).toBe('[Object] (no keys)')
+  })
+})
+
+describe('Telegram explanations', () => {
+  // Each is a diagnosis we show the visitor, never a fault of ours. MEDIA_NOT_EMBEDDED
+  // matched no rule and opened an Error Tracking issue (2026-11-20, 01a18e22).
+  it.each([
+    [TELEGRAM_PRIVATE_CHANNEL, 'private'],
+    [TELEGRAM_POST_NOT_FOUND, 'private'],
+    [TELEGRAM_POST_TEXT_ONLY, 'unsupported'],
+    [TELEGRAM_MEDIA_NOT_EMBEDDED, 'unavailable'],
+  ] as const)('%s → %s', (message, code) => {
+    expect(failureCode(message)).toBe(code)
+    expect(isExpectedFailure(failureCode(message))).toBe(true)
   })
 })

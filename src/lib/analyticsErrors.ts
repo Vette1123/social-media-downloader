@@ -25,8 +25,8 @@ const RULES: [RegExp, FailureCode][] = [
   // does not decide the breakdown.
   [/\b(may|might) be (private|blocking)\b/i, 'inconclusive'],
   [/private|log ?in|logged[- ]in|signed[- ]in members|sign in|age.?restricted|checkpoint/i, 'private'],
-  [/not supported|unsupported|cannot repackage|invalid url|valid url|not a (post|valid)/i, 'unsupported'],
-  [/unavailable|not found|removed|deleted|\b404\b|region/i, 'unavailable'],
+  [/not supported|unsupported|cannot repackage|invalid url|valid url|not a (post|valid)|no video or image|text only/i, 'unsupported'],
+  [/unavailable|not found|removed|deleted|\b404\b|region|outside the app|embed size limit/i, 'unavailable'],
   // A host that refuses us: it blocks automated requests, a link expired (401/403/410),
   // or our proxy relays that the origin failed (502/504/530).
   [/blocks automated|\b(401|403|410|502|504|530)\b/i, 'unavailable'],
