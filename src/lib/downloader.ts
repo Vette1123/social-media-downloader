@@ -1240,6 +1240,17 @@ class TelegramEmptyPost extends Error {}
 export const TWEET_HAS_NO_MEDIA =
   "This X post has no video or image to download. It is text only, or its media was removed.";
 
+/** FxTwitter's JSON says the post is gone (deleted, or its account suspended). */
+export const TWEET_NOT_FOUND =
+  "This X post was not found. It was deleted, or its account was suspended or removed.";
+
+/** FxTwitter's JSON says the post sits behind a protected account. */
+export const TWEET_PROTECTED =
+  "This X post is private: its account is protected, so only approved followers can see it.";
+
+/** Answers the X chain may end on, ranked over the "may be private" guess. */
+const TWEET_VERDICTS = new Set([TWEET_NOT_FOUND, TWEET_PROTECTED, TWEET_HAS_NO_MEDIA]);
+
 /** Link shorteners and share redirectors: no media of their own, only a hop. */
 const SHORT_LINK_HOSTS = [
   "b23.tv",
@@ -1580,23 +1591,23 @@ export class Downloader {
         () => this.tryFxTwitterMethod(url),
         () => this.tryCobaltInstances(url),
       ];
-      // The API read the post and it carries no media: a definite answer, so
-      // it outranks the "may be private" guess if nothing else resolves.
-      let textOnly = false;
+      // An API that read the post (no media, deleted, protected) gave a
+      // definite answer: it outranks the "may be private" guess if nothing
+      // else resolves.
+      let verdict: string | null = null;
       for (const method of methods) {
         try {
           const result = await method();
           if (result) return result;
         } catch (e) {
-          if (e instanceof Error && e.message === TWEET_HAS_NO_MEDIA)
-            textOnly = true;
+          if (e instanceof Error && TWEET_VERDICTS.has(e.message))
+            verdict = e.message;
           console.warn("Twitter method failed, trying next...", e);
         }
       }
       throw new Error(
-        textOnly
-          ? TWEET_HAS_NO_MEDIA
-          : "Could not download Twitter/X content. The post may be private, age-restricted, or unavailable.",
+        verdict ??
+          "Could not download Twitter/X content. The post may be private, age-restricted, or unavailable.",
       );
     }
 
@@ -3910,8 +3921,16 @@ export class Downloader {
           Accept: "application/json",
         },
         timeout: 20000,
+        validateStatus: (status) => status < 500,
       },
     );
+    // Only FxTwitter's own JSON verdict counts: a bare 404 from a blocked
+    // edge says nothing about the post.
+    const verdict = response.data?.message;
+    if (response.status === 404 && verdict === "NOT_FOUND")
+      throw new Error(TWEET_NOT_FOUND);
+    if (response.status === 401 && verdict === "PRIVATE_TWEET")
+      throw new Error(TWEET_PROTECTED);
     const tweet = response.data?.tweet;
     if (!tweet || typeof tweet !== "object") return null;
 
