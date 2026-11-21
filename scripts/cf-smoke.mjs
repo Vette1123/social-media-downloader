@@ -838,9 +838,7 @@ function describeBytes(bytes) {
   if (a === 0x89 && b === 0x50 && c === 0x4e && d === 0x47) return 'a PNG'
   if (a === 0x47 && b === 0x49 && c === 0x46) return 'a GIF'
   if (a === 0x3c) return 'an HTML page'
-  return `bytes starting ${[...bytes.slice(0, 8)]
-    .map((x) => x.toString(16).padStart(2, '0'))
-    .join(' ')}`
+  return `bytes starting ${Array.from(bytes.slice(0, 8), (x) => x.toString(16).padStart(2, '0')).join(' ')}`
 }
 
 /**
@@ -1012,7 +1010,7 @@ async function runCheck(check) {
 
 /** Runs checks with a bounded number in flight, preserving input order. */
 async function runAll(checks) {
-  const results = new Array(checks.length)
+  const results = Array.from({ length: checks.length })
   let next = 0
 
   async function worker() {

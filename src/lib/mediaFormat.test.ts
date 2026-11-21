@@ -4,8 +4,8 @@ import { correctExtension, sniffContainer } from './mediaFormat'
 const bytes = (...values: number[]) => Uint8Array.from(values)
 const ascii = (text: string, pad = 0) =>
   Uint8Array.from([
-    ...new Array(pad).fill(0),
-    ...[...text].map((c) => c.charCodeAt(0)),
+    ...Array.from({ length: pad }, () => 0),
+    ...Array.from(text, (c) => c.charCodeAt(0)),
   ])
 
 const MP3 = bytes(0xff, 0xfb, 0x90, 0x00)

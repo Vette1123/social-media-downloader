@@ -775,7 +775,7 @@ describe('the crawler view through the page relay', () => {
   const b64url = (b: ArrayBuffer) => Buffer.from(b).toString('base64url')
   const relayPage = (mediaId: string) =>
     `<html><head><meta property="og:title" content="Martin Garrix on Instagram: &quot;hi&quot;" /></head>` +
-    `<body><script type="application/json">{"pk":"${mediaId}","video_versions":[{"type":101,"url":"https:\/\/cdn.example\/clip.mp4"}]}</script></body></html>`
+    `<body><script type="application/json">{"pk":"${mediaId}","video_versions":[{"type":101,"url":"https://cdn.example/clip.mp4"}]}</script></body></html>`
 
   async function keyPair() {
     const pair = (await crypto.subtle.generateKey({ name: 'Ed25519' }, true, [
