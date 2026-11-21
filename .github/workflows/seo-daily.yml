@@ -1,0 +1,32 @@
+# Daily search engines (scripts/seo-daily.mjs), ported from portfolio-v1 (same
+# as Reely's): resubmit the sitemap to Search Console and Bing, check Google has
+# read it, and check Bing's quota, crawl issues and crawl counters. A failed run
+# mails the repo owner through GitHub's own workflow notifications.
+# Four times a day: GitHub delays or drops scheduled runs under load, so one
+# slot a day is not daily.
+name: SEO daily
+
+on:
+  schedule:
+    - cron: '41 1,7,13,19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          # No dependencies needed; without this setup-node sees pnpm and fails.
+          package-manager-cache: false
+      - name: Submit sitemap, check Search Console and Bing
+        run: node scripts/seo-daily.mjs
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          BING_API_KEY: ${{ secrets.BING_API_KEY }}
