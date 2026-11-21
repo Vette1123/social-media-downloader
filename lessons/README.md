@@ -187,3 +187,4 @@ the index for exactly that.
 | 2026-11-21 | [X definite verdicts](2026-11-21-x-definite-verdicts.md) | Test a chain with a dead ID too: "not found" is an answer the API already gives |
 | 2026-11-21 | [Sitemap submit on deploy](2026-11-21-seo-submit.md) | Sitemap goes to GSC + Bing when IndexNow sends URLs; a missing GSC grant warns, never fails |
 | 2026-11-21 | [Daily search-engine run](2026-11-21-seo-daily.md) | Thresholds come from the site's own Bing history; a red daily run is the signal |
+| 2026-11-21 | [Scheme-less redirect wrappers](2026-11-21-scheme-less-redirects.md) | A link-shape fix gets a scheme-less test too: #73 closed on https-only and #83 refiled it |

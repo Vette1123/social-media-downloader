@@ -116,6 +116,18 @@ describe('extractLink — redirect wrappers', () => {
     ).toBe('https://vimeo.com/42')
   })
 
+  // posthog-watch #83: `www|/*?url&gsessionid` reached the generic extractor as a
+  // google.com link. A copied address bar drops the scheme, and `new URL` threw.
+  it('unwraps a wrapper pasted without its scheme, and a target without one', () => {
+    expect(extractLink('www.google.com/url?url=https%3A%2F%2Fwww.tiktok.com%2F%40a%2Fvideo%2F123&gsessionid=x')).toBe(
+      'https://www.tiktok.com/@a/video/123',
+    )
+    expect(extractLink('l.facebook.com/l.php?u=https%3A%2F%2Fx.com%2Fa%2Fstatus%2F1')).toBe('https://x.com/a/status/1')
+    expect(extractLink('https://www.google.com/url?url=www.instagram.com%2Freel%2FABC%2F')).toBe(
+      'https://www.instagram.com/reel/ABC/',
+    )
+  })
+
   it('keeps a wrapper whose target is not a web link, and ordinary query links', () => {
     expect(extractLink('https://www.google.com/url?url=javascript%3Aalert(1)')).toBe(
       'https://www.google.com/url?url=javascript%3Aalert(1)',

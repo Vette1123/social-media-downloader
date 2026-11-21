@@ -336,16 +336,23 @@ const REDIRECT_WRAPPERS: Array<[RegExp, RegExp, string]> = [
   [/^(?:www\.|m\.)?youtube\.com$/, /^\/redirect$/, 'q'],
 ]
 
+// A copied address bar drops the scheme on the wrapper or on the link inside it.
+// Anything that already names a scheme (javascript:, intent:) keeps it.
+function withScheme(link: string): string {
+  return /^[a-z][a-z0-9+.-]*:/i.test(link) ? link : `https://${link}`
+}
+
 export function unwrapRedirect(link: string): string {
   let parsed: URL
   try {
-    parsed = new URL(link)
+    parsed = new URL(withScheme(link))
   } catch {
     return link
   }
   for (const [host, path, param] of REDIRECT_WRAPPERS) {
     if (!host.test(parsed.hostname) || !path.test(parsed.pathname)) continue
-    const inner = parsed.searchParams.get(param)
+    const raw = parsed.searchParams.get(param)
+    const inner = raw && withScheme(raw)
     if (inner && /^https?:\/\//i.test(inner) && isHttpUrl(inner)) return inner
   }
   return link
