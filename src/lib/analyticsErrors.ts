@@ -15,8 +15,11 @@ export type FailureCode =
   | 'network'
   | 'upstream'
   | 'server'
+  // The visitor's own browser or disk refused: storage full, a blob's temp file gone.
+  | 'device'
 
 const RULES: [RegExp, FailureCode][] = [
+  [/could not be read|notreadableerror|quotaexceedederror|no space left|disk is full/i, 'device'],
   [/failed to fetch|network ?error|network request failed|load failed|offline/i, 'network'],
   [/timed? ?out|aborterror|gateway/i, 'timeout'],
   [/rate.?limit|too many|\b429\b/i, 'rate_limited'],

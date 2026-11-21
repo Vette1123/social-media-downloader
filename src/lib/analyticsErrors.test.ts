@@ -27,6 +27,11 @@ describe('failureCode', () => {
     ['Instagram only serves these to a logged-in account', 'private'],
     ['LinkedIn serves its videos to signed-in members only; the public page publishes just a preview.', 'private'],
     ['video2.twimg.nom.es blocks automated requests from our servers', 'unavailable'],
+    // Chrome Android lost the blob's temp file before the save (2026-11-20, 01a19180).
+    ['The requested file could not be read, typically due to permission problems that have occurred after a reference to a file was acquired.', 'device'],
+    ['QuotaExceededError: The quota has been exceeded.', 'device'],
+    // A provider's API quota is OUR fault, not the visitor's disk.
+    ['API quota exceeded for this key', 'upstream'],
     ['Failed to extract download URL', 'upstream'],
     [undefined, 'upstream'],
   ] as const)('%s → %s', (message, code) => {
