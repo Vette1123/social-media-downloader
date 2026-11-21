@@ -150,6 +150,11 @@ jobs:
       - name: Ping IndexNow
         if: github.event_name != 'pull_request'
         run: node scripts/indexnow.mjs --submit .indexnow-plan.json
+        env:
+          # When URLs changed, the sitemap is resubmitted to Search Console and
+          # Bing Webmaster too (scripts/lib/search-engines.mjs). Absent, skipped.
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          BING_API_KEY: ${{ secrets.BING_API_KEY }}
 
       # The deploy is live; the edge must now serve the head we built, for every
       # sitemap URL, with no redirect. Retries for propagation before failing.
