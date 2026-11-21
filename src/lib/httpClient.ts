@@ -49,6 +49,11 @@ export interface HttpRequestConfig {
    * and does not expose a hop limit, so the number itself is advisory.
    */
   maxRedirects?: number
+  /**
+   * 'manual' hands back the 3xx itself, so a caller can read `Location` without
+   * fetching the page it points at. Default 'follow'.
+   */
+  redirect?: 'manual' | 'follow'
   /** Return true to accept a status instead of throwing. */
   validateStatus?: (status: number) => boolean
 }
@@ -181,7 +186,7 @@ async function request<T>(
       method,
       headers,
       body: payload,
-      redirect: 'follow',
+      redirect: config.redirect ?? 'follow',
       // AbortSignal.timeout covers the whole exchange, where axios's `timeout`
       // covered the socket. Strictly the safer of the two for a Worker, which
       // is billed on wall-clock subrequest duration.
