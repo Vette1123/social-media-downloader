@@ -6,8 +6,7 @@
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true,
-    "baseUrl": ".",
+    "noEmit": true,
     "paths": { "@/*": ["../src/*"] }
   },
   "include": ["src", "remotion.config.ts"]
