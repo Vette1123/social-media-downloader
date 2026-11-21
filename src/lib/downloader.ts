@@ -1551,6 +1551,10 @@ export class Downloader {
     if (platform === "twitter") {
       const methods = [
         () => this.tryVxTwitterMethod(url),
+        // vxtwitter answers some posts with its HTML "Failed to scan" page
+        // (rate limit / blocked edge); FxTwitter is a separate service and
+        // reads the same post, so the chain no longer ends on one host.
+        () => this.tryFxTwitterMethod(url),
         () => this.tryCobaltInstances(url),
       ];
       // The API read the post and it carries no media: a definite answer, so
@@ -3864,6 +3868,64 @@ export class Downloader {
       author: data.user_name || username,
       description: data.text || "",
       downloadUrl,
+      images: gallery.length > 0 ? gallery : undefined,
+      isPhotoCarousel: photoItems.length > 0 && !videoItem,
+    };
+  }
+
+  // Twitter/X second opinion: FxTwitter's API, same post, different host.
+  private async tryFxTwitterMethod(url: string): Promise<VideoData | null> {
+    const match = url.match(/(?:twitter|x)\.com\/([^/]+)\/status\/(\d+)/);
+    if (!match) throw new Error("Could not parse Twitter URL");
+    const [, username, tweetId] = match;
+
+    const response = await http.get(
+      `https://api.fxtwitter.com/${username}/status/${tweetId}`,
+      {
+        headers: {
+          "User-Agent": "SocialMediaDownloader/1.0",
+          Accept: "application/json",
+        },
+        timeout: 20000,
+      },
+    );
+    const tweet = response.data?.tweet;
+    if (!tweet || typeof tweet !== "object") return null;
+
+    const all = (tweet.media?.all ?? []) as Array<{
+      type: string;
+      url: string;
+      thumbnail_url?: string;
+    }>;
+    const isVideo = (m: { type: string }) =>
+      m.type === "video" || m.type === "gif";
+    const videoItem = all.find(isVideo);
+    const photoItems = all.filter((m) => m.type === "photo");
+    if (!videoItem && photoItems.length === 0) {
+      throw new Error(TWEET_HAS_NO_MEDIA);
+    }
+
+    const images: ImageData[] = all
+      .filter((m) => isVideo(m) || m.type === "photo")
+      .map((item, i) => ({
+        id: `tw_media_${i}`,
+        url: item.url,
+        thumbnail: item.thumbnail_url || item.url,
+        kind: isVideo(item) ? ("video" as const) : ("image" as const),
+      }));
+    const gallery =
+      images.length === 1 && images[0].kind === "video" ? [] : images;
+    const text = typeof tweet.text === "string" ? tweet.text : "";
+
+    return {
+      id: tweetId,
+      title: text ? text.slice(0, 80).replace(/\s+/g, " ") : `Tweet by @${username}`,
+      url,
+      thumbnail: videoItem?.thumbnail_url || photoItems[0]?.url || "",
+      duration: 0,
+      author: tweet.author?.name || username,
+      description: text,
+      downloadUrl: videoItem?.url || "",
       images: gallery.length > 0 ? gallery : undefined,
       isPhotoCarousel: photoItems.length > 0 && !videoItem,
     };

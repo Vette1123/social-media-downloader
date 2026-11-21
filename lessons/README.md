@@ -182,3 +182,4 @@ the index for exactly that.
 | 2026-11-20 | [PostHog watch, redirect links, home snippet](2026-11-20-posthog-watch-and-redirect-links.md) | Dry-run a watcher on real data before it files: half the first findings were verdicts, not bugs. |
 | 2026-11-21 | [Telegram explanations filed as faults](2026-11-21-telegram-expected-failures.md) | A new visitor-facing failure message needs a classifier test, or it lands on the error board |
 | 2026-11-21 | [Device read failures, autocapture on](2026-11-21-device-read-failures.md) | An empty error board can mean the project switch is off: the gate checks it |
+| 2026-11-21 | [The X chain ended on one host](2026-11-21-x-status-second-host.md) | vxtwitter answers blocked/rate-limited requests with the same HTML as a dead post, so one host plus Cobalt turned an outage into "may be private"; FxTwitter is now the second opinion. |
