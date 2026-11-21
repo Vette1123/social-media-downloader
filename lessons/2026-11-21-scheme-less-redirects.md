@@ -17,6 +17,8 @@
   (added in Search Console, Settings > Users and permissions). `seo:daily` is green: sitemap 204, 0 errors.
 - New `pnpm seo:gsc` (ported from masareef): 28 days = 2,625 clicks / 22,176 impressions, avg position 7.3;
   home takes 2,532 clicks. The 4 unclicked pages sit at position 18-67: ranking, not titles, so no retitle.
+- Ported `seo:gsc` to Reely too, with a notice when a list fills Google's 1,000-row cap and JSDoc
+  types on `gsc-rank.mjs` (Reely typechecks its tests). Every property already had the account.
 
 ## Mistakes
 
