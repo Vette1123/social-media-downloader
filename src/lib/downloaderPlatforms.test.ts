@@ -109,6 +109,29 @@ describe('the Twitter API client', () => {
   )
 })
 
+describe('the X chain when vxtwitter cannot read the post', () => {
+  it('falls through to FxTwitter instead of ending on "may be private"', async () => {
+    const fxBody = {
+      code: 200,
+      tweet: {
+        text: 'A public video',
+        author: { name: 'Example' },
+        media: {
+          all: [{ type: 'video', url: 'https://video.twimg.com/fx.mp4', thumbnail_url: 'https://pbs.twimg.com/t.jpg' }],
+        },
+      },
+    }
+    const spy = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes('api.fxtwitter.com')
+        ? new Response(JSON.stringify(fxBody), { headers: { 'Content-Type': 'application/json' } })
+        : new Response('<html>Failed to scan your link!</html>', { headers: { 'Content-Type': 'text/html' } }),
+    )
+    vi.stubGlobal('fetch', spy)
+    const result = await new Downloader().downloadVideo('https://x.com/nasa/status/2094078415376658588')
+    expect(result.downloadUrl).toBe('https://video.twimg.com/fx.mp4')
+  })
+})
+
 describe('an X post with nothing to download', () => {
   it('says the post is text only, not that it is private', async () => {
     stubFetch({ tweetID: '20', text: 'just setting up my twttr', media_extended: [] })
