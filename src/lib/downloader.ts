@@ -1268,6 +1268,16 @@ export function isTikTokShortLink(url: string): boolean {
   );
 }
 
+/** A TikTok URL that names no post: its front page (or the For You feed). */
+export function isTikTokHomePage(url: string): boolean {
+  try {
+    const { pathname } = new URL(url);
+    return /^\/(?:foryou\/?)?$/.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
 export const TIKTOK_LINK_RETIRED =
   "This TikTok link no longer points to a post. It has expired or the video was removed. Copy the link again from TikTok.";
 
@@ -1536,6 +1546,19 @@ export class Downloader {
     if (!expanded && isShortLink(url)) {
       const target = await this.resolveRedirect(url);
       if (target !== url) return this.downloadVideo(target, true);
+    }
+
+    // A TikTok short link is read from its own redirect, before any extractor
+    // sees it: the extractors do worse on a code than on the post it names, and
+    // a retired code is known dead in one hop.
+    if (!expanded && isTikTokShortLink(url)) {
+      const landing = await this.expandTikTokShortLink(url);
+      if (landing && /\/(?:video|photo)\/\d+/.test(landing))
+        return this.downloadVideo(landing, true);
+      // Only the home page means retired: a login or consent hop from a
+      // datacenter IP is not a verdict, so it falls through to the chain.
+      if (landing && isTikTokHomePage(landing))
+        throw new Error(TIKTOK_LINK_RETIRED);
     }
 
     // Audio-only mode (the "→ MP3" flow) short-circuits every platform through
@@ -4208,6 +4231,39 @@ export class Downloader {
    */
   private async resolveRedirect(url: string): Promise<string> {
     return (await this.followRedirect(url)).url;
+  }
+
+  /**
+   * Where a TikTok short code points, from its own `Location` header. Only the
+   * 302 is read (never the page behind it): following it with a GET pulled the
+   * whole video page, which a datacenter IP gets challenged on or times out on,
+   * and the walk then "resolved" to the unchanged short link. Returns the post
+   * URL without its tracking query, the landing URL when it is not a post (a
+   * retired code lands on the home page), or null when nothing answered.
+   */
+  private async expandTikTokShortLink(url: string): Promise<string | null> {
+    let current = /^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`;
+    for (let hop = 0; hop < 3; hop++) {
+      try {
+        const response = await http.get(current, {
+          redirect: "manual",
+          validateStatus: () => true,
+          headers: { "User-Agent": this.userAgent },
+          timeout: 6000,
+        });
+        const location = response.headers.get("location");
+        if (response.status < 300 || response.status >= 400 || !location)
+          return hop === 0 ? null : current;
+        current = new URL(location, current).toString();
+        const post = current.match(
+          /^(https?:\/\/[^/]+\/@[^/]*\/(?:video|photo)\/\d+)/i,
+        );
+        if (post) return post[1];
+      } catch {
+        return null;
+      }
+    }
+    return current;
   }
 
   /**

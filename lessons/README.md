@@ -183,3 +183,4 @@ the index for exactly that.
 | 2026-11-21 | [Telegram explanations filed as faults](2026-11-21-telegram-expected-failures.md) | A new visitor-facing failure message needs a classifier test, or it lands on the error board |
 | 2026-11-21 | [Device read failures, autocapture on](2026-11-21-device-read-failures.md) | An empty error board can mean the project switch is off: the gate checks it |
 | 2026-11-21 | [The X chain ended on one host](2026-11-21-x-status-second-host.md) | vxtwitter answers blocked/rate-limited requests with the same HTML as a dead post, so one host plus Cobalt turned an outage into "may be private"; FxTwitter is now the second opinion. |
+| 2026-11-21 | [TikTok short links: read the 302](2026-11-21-tiktok-short-links-read-the-302.md) | Expand short links from Location first; only the home page means retired |
