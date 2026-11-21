@@ -10,6 +10,9 @@
  *   --dry-run                print the set and reasons, submit nothing (any env)
  *   --all                    treat every URL in out/sitemap.xml as changed
  *   --force                  submit outside a push to main
+ *   --sitemaps               resubmit the sitemap to Search Console and Bing
+ *                            Webmaster now (pnpm seo:submit); a submit that
+ *                            sends URLs does this itself
  *
  * "Changed" means new to the live sitemap, dropped from it, or a built page
  * whose fingerprint (scripts/lib/indexnow-diff.mjs) differs from the page live
@@ -36,12 +39,16 @@ import {
   removedUrls,
   sitemapUrls,
 } from './lib/indexnow-diff.mjs'
+import { sitemapFeeds, submitSitemaps } from './lib/search-engines.mjs'
 
 // Matches public/f62bfbe4672c27f2ad3204b176eaab35.txt — the two must agree.
 const INDEXNOW_KEY = 'f62bfbe4672c27f2ad3204b176eaab35'
 // The shared endpoint fans one submission out to every participating engine.
 const ENDPOINT = 'https://api.indexnow.org/IndexNow'
 const OUT_DIR = 'out'
+const GSC_SITE = 'sc-domain:socialdownloader.space'
+// Bing verifies the apex; www pages submit under it (measured 2026-11-21).
+const BING_SITE = 'https://socialdownloader.space'
 
 const baseUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.socialdownloader.space'
@@ -122,6 +129,25 @@ async function submit(urlList) {
     const body = await res.text().catch(() => '')
     console.warn(`IndexNow: non-success response body: ${body.slice(0, 500)}`)
   }
+  // URLs changed, so the sitemap did too: the portfolio-v1 rule. An unchanged
+  // sitemap is never resubmitted; that tells the engines nothing.
+  await submitSitemapFeeds()
+}
+
+/**
+ * Asks Search Console and Bing to re-read the sitemap (and any children).
+ * Reads the live sitemap (after a deploy, the one just built), else out/.
+ */
+async function submitSitemapFeeds() {
+  const root = `${baseUrl}/sitemap.xml`
+  const xml = (await fetchText(root)) ?? readBuilt('sitemap.xml')
+  const result = await submitSitemaps({
+    feeds: sitemapFeeds(root, xml),
+    gscSite: GSC_SITE,
+    bingSite: BING_SITE,
+  })
+  console.log(`Sitemaps: Search Console ${result.gsc}, Bing ${result.bing}`)
+  return result
 }
 
 /** After the deploy: send what the plan lists. No plan means planning died, so send all. */
@@ -138,6 +164,14 @@ async function main() {
   const dryRun = args.includes('--dry-run')
   const all = args.includes('--all')
 
+  if (args.includes('--sitemaps')) {
+    try {
+      process.loadEnvFile('.env.local') // CI passes secrets as env instead
+    } catch {}
+    const { gsc, bing } = await submitSitemapFeeds()
+    if (gsc === 'failed' || bing === 'failed') process.exitCode = 1
+    return
+  }
   if (args.includes('--submit') && !dryRun) return submitPlan(valueOf('--submit'))
 
   if (args.includes('--plan')) {
