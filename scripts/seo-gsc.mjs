@@ -37,13 +37,16 @@ const token = await googleAccessToken(sa)
 const day = (offset) => new Date(Date.now() - offset * 864e5).toISOString().slice(0, 10)
 const [startDate, endDate] = [day(days), day(1)]
 
+// Google's per-request maximum. Totals are exact; a list that fills it is the top rows only.
+const ROW_LIMIT = 1000
+
 async function query(dimensions) {
   const res = await fetch(
     `https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(GSC_SITE)}/searchAnalytics/query`,
     {
       method: 'POST',
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ startDate, endDate, dimensions, rowLimit: 1000 }),
+      body: JSON.stringify({ startDate, endDate, dimensions, rowLimit: ROW_LIMIT }),
     },
   )
   if (res.status === 403)
@@ -58,6 +61,7 @@ const queries = flatten(queryRows)
 const pages = flatten(pageRows).map((r) => ({ ...r, key: r.key.replace(baseUrl, '') || '/' }))
 const report = {
   window: { startDate, endDate },
+  capped: [queryRows.length, pageRows.length].some((n) => n >= ROW_LIMIT),
   total: { clicks: total.clicks, impressions: total.impressions, position: Math.round(total.position * 10) / 10 },
   striking: strikingDistance(queries),
   unclickedPages: seenNotClicked(pages),
@@ -75,6 +79,7 @@ if (json) {
   console.log(`${GSC_SITE}  ${startDate} -> ${endDate} (data lags 2-3 days)`)
   console.log(`total: ${report.total.clicks} clicks, ${report.total.impressions} impressions, avg position ${report.total.position}`)
   console.log(`\ntop queries by impressions: ${queries.length}`)
+  if (report.capped) console.log(`lists capped at ${ROW_LIMIT} rows (Google's limit): top rows only; totals are exact`)
   report.topQueries.slice(0, 20).forEach((r) => console.log(row(r)))
   console.log(`\nstriking distance (position 4-20, 5+ impressions): ${report.striking.length}`)
   report.striking.slice(0, 25).forEach((r) => console.log(row(r)))
