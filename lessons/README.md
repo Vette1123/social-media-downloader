@@ -180,3 +180,4 @@ the index for exactly that.
 | 2026-11-20 | [README film as an inline player](2026-11-20-readme-inline-film.md) | A README video is a user-attachments URL on its own line; a committed mp4 is only a file page |
 | 2026-11-20 | [README refresh, sponsor by email](2026-11-20-readme-refresh-sponsor-email.md) | A README mailto uses the site button's subject, so the Gmail auto-reply catches it |
 | 2026-11-20 | [PostHog watch, redirect links, home snippet](2026-11-20-posthog-watch-and-redirect-links.md) | Dry-run a watcher on real data before it files: half the first findings were verdicts, not bugs. |
+| 2026-11-21 | [Telegram explanations filed as faults](2026-11-21-telegram-expected-failures.md) | A new visitor-facing failure message needs a classifier test, or it lands on the error board |
