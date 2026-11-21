@@ -201,7 +201,7 @@ on for the email you sign in with once the payment is done. See
 | Layer            | Technology                          |
 | ---------------- | ----------------------------------- |
 | Framework        | Next.js 16 (App Router), React 19   |
-| Language         | TypeScript 7 (native `tsc` for typecheck; lint parses on TS 6) |
+| Language         | TypeScript 7 (native `tsc` typecheck; oxlint type-aware rules via tsgolint). TS 6 stays as `typescript` for `next build` and `i18n:deep`, which need the JS compiler API |
 | Styling          | Tailwind CSS 4                      |
 | Animation        | Motion (formerly framer-motion) 14  |
 | UI primitives    | Radix Accordion, `clsx`             |

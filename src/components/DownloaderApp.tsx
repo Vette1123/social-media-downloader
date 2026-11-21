@@ -1600,7 +1600,7 @@ export function DownloaderApp() {
       const found = extractFirstUrl(text)
       if (found) {
         trackFeatureUsed(via, { outcome: 'link' })
-        handleProcess(found, via === 'paste_chip' ? 'paste_chip' : 'empty_submit')
+        void handleProcess(found, via === 'paste_chip' ? 'paste_chip' : 'empty_submit')
       } else if (text.trim()) {
         trackFeatureUsed(via, { outcome: 'not_a_link' })
         dispatch({ type: 'SET_URL', payload: text.trim() })
@@ -1724,7 +1724,7 @@ export function DownloaderApp() {
       if (!found) return
       event.preventDefault()
       trackFeatureUsed('paste_anywhere')
-      handleProcess(found, 'paste_anywhere')
+      void handleProcess(found, 'paste_anywhere')
     }
     document.addEventListener('paste', onPaste)
     return () => document.removeEventListener('paste', onPaste)
@@ -1774,7 +1774,7 @@ export function DownloaderApp() {
       lastClipboard.current = decision.seen
       if (decision.resolve) {
         trackFeatureUsed('clipboard_watch')
-        handleProcess(decision.resolve, 'clipboard_watch')
+        void handleProcess(decision.resolve, 'clipboard_watch')
       }
     }
 
@@ -1919,7 +1919,7 @@ export function DownloaderApp() {
     const found = droppedLink(event.dataTransfer)
     if (!found) return
     event.preventDefault()
-    handleProcess(found, 'dropped')
+    void handleProcess(found, 'dropped')
   }
 
   /**
@@ -2859,7 +2859,7 @@ export function DownloaderApp() {
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
-                handleProcess()
+                void handleProcess()
                 return
               }
               // Escape undoes one step, and the field is the first step. This
@@ -3227,7 +3227,7 @@ export function DownloaderApp() {
                   type='button'
                   onClick={() => {
                     trackFeatureUsed('history_reopen')
-                    handleProcess(h.url, 'history')
+                    void handleProcess(h.url, 'history')
                   }}
                   className='card-hover group flex w-full items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] py-1.5 pe-9 ps-2 text-start'
                 >

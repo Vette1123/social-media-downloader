@@ -94,7 +94,7 @@ interface TargetRow {
   sub_reconciled_at: number | null
 }
 
-async function getJson(url: string, apiKey: string): Promise<unknown | null> {
+async function getJson(url: string, apiKey: string): Promise<unknown> {
   const response = await fetch(url, {
     headers: creemHeaders(apiKey),
     signal: AbortSignal.timeout(10_000),

@@ -185,6 +185,8 @@ async function request<T>(
     response = await fetch(url, {
       method,
       headers,
+      // Only `http.post` passes a body; GET and HEAD always arrive with `payload` undefined.
+      // oxlint-disable-next-line unicorn/no-invalid-fetch-options
       body: payload,
       redirect: config.redirect ?? 'follow',
       // AbortSignal.timeout covers the whole exchange, where axios's `timeout`

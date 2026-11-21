@@ -43,7 +43,7 @@ describe('parseYouTubePlaylistId', () => {
 const PAGE = JSON.stringify({
   contents: [
     { playlistVideoRenderer: { videoId: 'aaaaaaaaaaa', thumbnail: { thumbnails: [{}] }, title: { runs: [{ text: 'First & real' }] } } },
-    { playlistVideoRenderer: { videoId: 'bbbbbbbbbbb', thumbnail: {}, title: { runs: [{ text: 'Second \"quoted\" \\ backslash' }] } } },
+    { playlistVideoRenderer: { videoId: 'bbbbbbbbbbb', thumbnail: {}, title: { runs: [{ text: 'Second "quoted" \\ backslash' }] } } },
     { compactVideoRenderer: { videoId: 'ccccccccccc', title: { runs: [{ text: 'Sidebar suggestion' }] } } },
     { playlistVideoRenderer: { videoId: 'aaaaaaaaaaa', title: { runs: [{ text: 'Duplicate' }] } } },
   ],

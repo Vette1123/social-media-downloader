@@ -53,10 +53,12 @@ function upstreamHeaders(
   return headers
 }
 
-function json(data: unknown, init?: ResponseInit): Response {
+// Headers as a plain record only: spreading a `Headers` instance or a pairs array (both valid
+// HeadersInit) would silently drop every header.
+function json(data: unknown, init?: Omit<ResponseInit, 'headers'> & { headers?: Record<string, string> }): Response {
   return new Response(JSON.stringify(data), {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
   })
 }
 

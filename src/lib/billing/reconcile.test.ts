@@ -122,7 +122,7 @@ const PENDING_ROW = {
  * Answers by path. `search` may be a single page or one page per call, since
  * the repair walks the store a page at a time.
  */
-function stubFetch(routes: { search?: unknown | unknown[]; byId?: unknown }) {
+function stubFetch(routes: { search?: unknown; byId?: unknown }) {
   let searchCalls = 0
   const fetchMock = vi.fn(async (url: string | URL | Request) => {
     const href = String(url)

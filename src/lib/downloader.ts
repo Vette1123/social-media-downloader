@@ -4296,8 +4296,8 @@ export class Downloader {
   ): Promise<{ url: string; answered: boolean }> {
     const share = isCrawlerOnlyShareLink(url);
     try {
-      const send = share ? http.head : http.get;
-      const response = await send(url, {
+      const send = share ? "head" : "get";
+      const response = await http[send](url, {
         maxRedirects: 5,
         validateStatus: () => true,
         headers: {

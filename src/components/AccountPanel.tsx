@@ -915,7 +915,6 @@ const DELETE_FAILED = d('Could not delete the account. Try again.')
  * assumes a soft transition is always preferable; here the reload is the point.
  */
 function hardNavigateHome(): void {
-  // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- intentional, see above
   window.location.href = '/'
 }
 
