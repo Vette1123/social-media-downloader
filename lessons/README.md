@@ -188,3 +188,4 @@ the index for exactly that.
 | 2026-11-21 | [Sitemap submit on deploy](2026-11-21-seo-submit.md) | Sitemap goes to GSC + Bing when IndexNow sends URLs; a missing GSC grant warns, never fails |
 | 2026-11-21 | [Daily search-engine run](2026-11-21-seo-daily.md) | Thresholds come from the site's own Bing history; a red daily run is the signal |
 | 2026-11-21 | [Scheme-less redirect wrappers](2026-11-21-scheme-less-redirects.md) | A link-shape fix gets a scheme-less test too: #73 closed on https-only and #83 refiled it |
+| 2026-11-21 | [Dependencies to latest](2026-11-21-deps-latest.md) | Remotion now pins a patched zod, so our override went; a piped `tail` hid the real tsc exit |
