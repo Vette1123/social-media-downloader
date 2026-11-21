@@ -22,7 +22,7 @@
   "01a18e22-36a9-7923-abd7-cd91071e09a7": {
     "fixedOn": "2026-11-21",
     "what": "Telegram media-not-embedded and text-only explanations classified as expected failures (failureCode rules + test)",
-    "commit": "pending"
+    "commit": "#74"
   },
   "01a19180-42ad-7b00-b7ff-04439bdbba16": {
     "fixedOn": "2026-11-03",
