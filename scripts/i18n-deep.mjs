@@ -13,7 +13,8 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import ts from 'typescript'
+// TypeScript 7 ships no JS compiler API; this script parses TSX with TypeScript 6's, kept under its own name.
+import ts from 'typescript6'
 
 const MESSAGE_MODULES = ['src/lib/errorMessages.ts', 'src/lib/linkAdvice.ts']
 const LANGUAGES = ['es', 'pt', 'id', 'ar']

@@ -37,6 +37,7 @@ export function AudioPreview({
       {/* preload='none', not 'metadata': every result carrying audio would
           otherwise pull the head of the track through /api/audio for a visitor
           who never pressed play. */}
+      {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a preview of someone else's audio: no caption track exists to offer */}
       <audio
         src={src}
         controls

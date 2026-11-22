@@ -255,6 +255,8 @@ function Control({
       // added on click, not in the HTML: see signInLink.
       <a
         {...link}
+        // Named, not only spread, so the anchor reads as a link to lint and to a reviewer.
+        href={link.href}
         onClick={(event) => {
           link.onClick(event)
           trackFeatureUsed('sign_in_link')

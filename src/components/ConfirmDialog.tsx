@@ -66,6 +66,7 @@ export function ConfirmDialog({
   }, [open])
 
   return (
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- a backdrop click; Escape (onCancel) is its keyboard path
     <dialog
       ref={ref}
       aria-labelledby='confirm-dialog-title'

@@ -104,7 +104,12 @@ const nextConfig: NextConfig = {
   // Keep visited and prefetched pages in the client router cache: 2 h prefetched,
   // 30 min otherwise (defaults 5 min / 0), so going back or revisiting a page never
   // refetches its payload. Under a day, so an open tab still picks up a deploy.
-  experimental: { staleTimes: { static: 7200, dynamic: 1800 } },
+  experimental: {
+    staleTimes: { static: 7200, dynamic: 1800 },
+    // TypeScript 7 has no JS compiler API for Next's in-process checker; without this
+    // `next dev` and `next build` refuse to start. The build's type check runs the native `tsc`.
+    useTypeScriptCli: true,
+  },
 
   // Everywhere except the static build (local dev, any Node host), keep these
   // native / dynamic-require packages out of the server bundle so their

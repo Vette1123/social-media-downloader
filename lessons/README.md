@@ -191,3 +191,4 @@ the index for exactly that.
 | 2026-11-21 | [Dependencies to latest](2026-11-21-deps-latest.md) | Remotion now pins a patched zod, so our override went; a piped `tail` hid the real tsc exit |
 | 2026-11-21 | [ESLint to oxlint](2026-11-21-oxlint.md) | A migration tool's "correctness: off" is not parity: oxlint + type-aware found 6 floating promises and a header-dropping spread |
 | 2026-11-22 | [Bing throttle, and the November core update](2026-11-22-seo-daily-bing-throttle-and-core-update.md) | A Bing ThrottleUser is not a failed submit; during a core update rollout change no titles, re-check 2026-12-01. |
+| 2026-11-22 | [A11y lint rules on, TypeScript 7](2026-11-22-a11y-lint.md) | Disable comments go above the element's opening tag; no onClick only to stop propagation, mark the area instead. |

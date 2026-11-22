@@ -118,14 +118,16 @@
     "jsx-a11y/aria-unsupported-elements": "warn",
     "jsx-a11y/role-has-required-aria-props": "warn",
     "jsx-a11y/role-supports-aria-props": "warn",
-    // ponytail: the correctness category adds these five a11y rules; ESLint never ran them, and
-    // the 32 hits (lightbox backdrop clicks, role="status"/"group"/"progressbar", the preview
-    // <video>) are UI changes for their own pass. Turn each on as its hits are fixed.
-    "jsx-a11y/prefer-tag-over-role": "off",
-    "jsx-a11y/click-events-have-key-events": "off",
-    "jsx-a11y/no-static-element-interactions": "off",
-    "jsx-a11y/no-noninteractive-element-interactions": "off",
-    "jsx-a11y/media-has-caption": "off"
+    // On since 2026-11-22 (lessons/2026-11-22-a11y-lint.md). The backdrop clicks and the preview
+    // <video>/<audio> carry a disable comment naming their keyboard path or why no captions exist.
+    "jsx-a11y/click-events-have-key-events": "warn",
+    "jsx-a11y/no-static-element-interactions": "warn",
+    "jsx-a11y/no-noninteractive-element-interactions": "warn",
+    "jsx-a11y/media-has-caption": "warn",
+    // Off for good: every hit is a correct ARIA role on a div. The tags it wants change the look or
+    // the behaviour: <fieldset> adds a border, padding and min-width: min-content, <dialog> needs
+    // showModal and the top layer, <progress> brings native styling, <output> joins form semantics.
+    "jsx-a11y/prefer-tag-over-role": "off"
   },
   "overrides": [
     {

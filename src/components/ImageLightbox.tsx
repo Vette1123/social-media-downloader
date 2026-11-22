@@ -17,6 +17,7 @@ import {
 import { buildDownloadFilename } from '@/lib/filename'
 import { useHydrated } from '@/lib/clientEnv'
 import { slideSign, stepForKey, stepForSwipe } from '@/lib/lightboxDirection'
+import { closesLightbox } from '@/lib/lightboxBackdrop'
 
 interface LightboxImage {
   id: string
@@ -201,10 +202,9 @@ export function ImageLightbox({
     // Otherwise the image springs back to 0 automatically (constraints 0/0).
   }
 
-  const handleBackdropClick = () => {
-    // A pointerup that ends a drag can synthesize a click — don't close then.
-    if (isDragging) return
-    onClose()
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    // Not after a drag (its pointerup synthesizes a click), not inside a bar or the media.
+    if (closesLightbox(e.target as Element, isDragging)) onClose()
   }
 
   const [downloading, setDownloading] = useState(false)
@@ -259,6 +259,7 @@ export function ImageLightbox({
   const stop = (e: React.MouseEvent) => e.stopPropagation()
 
   return createPortal(
+    // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- a backdrop click; Escape (the window keydown above) is its keyboard path
     <div
       ref={dialogRef}
       tabIndex={-1}
@@ -271,7 +272,7 @@ export function ImageLightbox({
       {/* Top bar: counter + close */}
       <div
         className='flex shrink-0 items-center justify-between gap-3 p-4'
-        onClick={stop}
+        data-lightbox-keep
       >
         <span className='rounded-full bg-white/10 px-3 py-1 text-sm font-medium text-white tabular-nums'>
           {activeIndex + 1} / {images.length}
@@ -333,10 +334,11 @@ export function ImageLightbox({
             dragMomentum={false}
             onDragStart={() => setIsDragging(true)}
             onDragEnd={handleDragEnd}
-            onClick={stop}
+            data-lightbox-keep
             className='flex max-h-full max-w-full items-center justify-center'
           >
             {isVideo ? (
+              // oxlint-disable-next-line jsx-a11y/media-has-caption -- a preview of someone else's video: the source publishes no caption track
               <video
                 src={current.url}
                 poster={current.thumbnail || undefined}
@@ -379,7 +381,7 @@ export function ImageLightbox({
       {/* Bottom bar: download */}
       <div
         className='flex shrink-0 flex-col items-center justify-center gap-2 p-4'
-        onClick={stop}
+        data-lightbox-keep
       >
         {isVideo && unplayableIndex === activeIndex && (
           <p role='status' className='text-center text-xs text-white/70'>

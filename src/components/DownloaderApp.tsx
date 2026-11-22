@@ -3871,6 +3871,7 @@ export function DownloaderApp() {
                       className='relative max-h-[60dvh] w-full bg-black rounded-xl overflow-hidden ring-1 ring-inset ring-white/10 shadow-lg'
                       style={{ aspectRatio: previewAspect }}
                     >
+                      {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- a preview of someone else's video: the source publishes no caption track */}
                       <video
                         src={state.downloadUrl}
                         poster={state.videoMetadata?.thumbnail || undefined}
