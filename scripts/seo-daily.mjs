@@ -34,7 +34,7 @@ const feeds = sitemapFeeds(root, xml)
 
 const submitted = await submitSitemapFeeds()
 for (const [engine, state] of Object.entries(submitted))
-  if (state !== 'ok') problems.push(`${engine} sitemap submit ${state}`)
+  if (state !== 'ok' && state !== 'throttled') problems.push(`${engine} sitemap submit ${state}`)
 
 if (process.env.GSC_SERVICE_ACCOUNT_JSON) {
   try {
