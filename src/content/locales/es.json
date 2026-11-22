@@ -962,7 +962,7 @@
         },
         {
           "q": "¿Puedo descargar videos de cualquier subreddit?",
-          "a": "Cualquier publicación pública funciona. Los videos de comunidades privadas o en cuarentena, o las publicaciones age-gated tras una verificación de edad, pueden no ser accesibles."
+          "a": "Cualquier publicación pública funciona. Los videos de comunidades privadas o en cuarentena, o las publicaciones con verificación de edad, pueden no ser accesibles."
         },
         {
           "q": "¿Funciona con GIF y publicaciones cruzadas?",

@@ -16,8 +16,9 @@
  * and there is exactly one implementation to maintain.
  */
 
-import { getMediaReferer, resolveRangeResponse } from './proxyHeaders'
+import { getMediaReferer, pageOriginReferer, resolveRangeResponse } from './proxyHeaders'
 import { isTransientError, withRetry } from './retry'
+import { fetchWithNodeFallback } from './upstreamFetch'
 
 // Several of these CDNs serve different (or no) content to non-browser clients.
 const BROWSER_UA =
@@ -37,18 +38,25 @@ const AUDIO_ACCEPT = 'video/webm,video/ogg,video/*;q=0.9,*/*;q=0.5'
 // what actually arrives while cutting the worst case by more than half.
 const MAX_THUMB_BYTES = 120_000
 
-/** Upstream request headers, including the Referer that hotlink-gated CDNs need. */
-function upstreamHeaders(
+/**
+ * Upstream request headers, including the Referer that hotlink-gated CDNs need:
+ * the platform's own when getMediaReferer knows the host, else the origin of
+ * the page the media came from (the proxy URL's `ref`, set by toMediaUrl).
+ * `ref` is reduced to an origin here too, so a hand-built URL can never put
+ * anything but a scheme and host into the header.
+ */
+export function upstreamHeaders(
   url: string,
   accept: string,
   extra?: Record<string, string>,
+  pageRef?: string | null,
 ): Record<string, string> {
   const headers: Record<string, string> = {
     'User-Agent': BROWSER_UA,
     Accept: accept,
     ...extra,
   }
-  const referer = getMediaReferer(url)
+  const referer = getMediaReferer(url) || pageOriginReferer(pageRef)
   if (referer) headers['Referer'] = referer
   return headers
 }
@@ -169,7 +177,7 @@ async function fetchUpstream(url: string, headers: Record<string, string>): Prom
   try {
     return await withRetry(
       async () => {
-        const res = await fetch(url, { headers, redirect: 'follow' })
+        const res = await fetchWithNodeFallback(url, { headers, redirect: 'follow' })
         if (res.ok || res.status === 206 || (res.status < 500 && res.status !== 429)) return res
         await res.body?.cancel().catch(() => {})
         const err = new Error(`upstream ${res.status}`) as Error & {
@@ -260,7 +268,8 @@ export async function handleImageProxy(request: Request): Promise<Response> {
  */
 export async function handleVideoProxy(request: Request): Promise<Response> {
   try {
-    const videoUrl = new URL(request.url).searchParams.get('url')
+    const params = new URL(request.url).searchParams
+    const videoUrl = params.get('url')
 
     if (!videoUrl) {
       return json({ error: 'Video URL is required' }, { status: 400 })
@@ -275,7 +284,7 @@ export async function handleVideoProxy(request: Request): Promise<Response> {
       'Accept-Encoding': 'identity',
       // Forwarded so the browser can seek.
       ...(rangeHeader ? { Range: rangeHeader } : {}),
-    })
+    }, params.get('ref'))
 
     const response = await fetchUpstream(videoUrl, headers)
     if (!response.ok && response.status !== 206) {
@@ -331,7 +340,8 @@ export async function handleVideoProxy(request: Request): Promise<Response> {
  */
 export async function handleAudioProxy(request: Request): Promise<Response> {
   try {
-    const audioUrl = new URL(request.url).searchParams.get('url')
+    const params = new URL(request.url).searchParams
+    const audioUrl = params.get('url')
 
     if (!audioUrl) {
       return json(
@@ -348,7 +358,7 @@ export async function handleAudioProxy(request: Request): Promise<Response> {
       'Accept-Language': 'en-US,en;q=0.5',
       'Accept-Encoding': 'identity',
       ...(rangeHeader ? { Range: rangeHeader } : {}),
-    })
+    }, params.get('ref'))
 
     const response = await fetchUpstream(audioUrl, headers)
     if (!response.ok && response.status !== 206) {

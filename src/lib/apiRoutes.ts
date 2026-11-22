@@ -24,6 +24,7 @@ import { readEdgeCache, writeEdgeCache, type WaitUntilContext } from './edgeCach
 import { slugify } from './filename'
 import { nativeMediaAvailable, nativeMediaUnavailable } from './nativeMedia'
 import { MEDIA_PROXY_HANDLERS } from './mediaProxy'
+import { getMediaReferer, pageOriginReferer } from './proxyHeaders'
 import { extractPlaylistItems, PLAYLIST_SCAN_BYTES } from './playlist'
 import {
   detectImportSource,
@@ -78,10 +79,19 @@ function cachedResponse(body: string, tier: 'HIT' | 'EDGE'): Response {
   })
 }
 
-/** Same-origin paths are already local; only external media needs the proxy. */
-function toMediaUrl(mediaUrl: string, proxyPath: string): string {
+/**
+ * Same-origin paths are already local; only external media needs the proxy.
+ *
+ * `pageUrl` is the link the media was resolved from. When the media host has
+ * no Referer of its own (see getMediaReferer), the page's origin rides along
+ * as `ref` so the proxy can send what a browser on that page would: plenty of
+ * sites serve from a CDN on another domain that 403s without it.
+ */
+export function toMediaUrl(mediaUrl: string, proxyPath: string, pageUrl?: string): string {
   if (mediaUrl.startsWith('/')) return mediaUrl
-  return `${proxyPath}?url=${encodeURIComponent(mediaUrl)}`
+  const proxied = `${proxyPath}?url=${encodeURIComponent(mediaUrl)}`
+  const ref = getMediaReferer(mediaUrl) ? '' : pageOriginReferer(pageUrl)
+  return ref ? `${proxied}&ref=${encodeURIComponent(ref)}` : proxied
 }
 
 /**
@@ -285,14 +295,17 @@ export async function handleDownload(
 
     // Video proxy forces video/mp4 so browsers render a real player; the audio
     // proxy re-serves the video stream, or slideshow music, as audio/mpeg.
+    // Only a generic site's page origin is passed on: every named platform's
+    // CDN already has its Referer in getMediaReferer.
+    const pageUrl = platform === 'generic' ? url : undefined
     const videoProxyUrl = videoData.downloadUrl
-      ? toMediaUrl(videoData.downloadUrl, '/api/video')
+      ? toMediaUrl(videoData.downloadUrl, '/api/video', pageUrl)
       : undefined
 
     // Prefer a dedicated music track (photo carousels), else re-serve the video.
     const audioSourceUrl = videoData.musicUrl || videoData.downloadUrl
     const audioProxyUrl = audioSourceUrl
-      ? toMediaUrl(audioSourceUrl, '/api/audio')
+      ? toMediaUrl(audioSourceUrl, '/api/audio', pageUrl)
       : undefined
 
     // Instagram's CDN only serves to instagram.com, so its image URLs must go
@@ -342,7 +355,7 @@ export async function handleDownload(
             ...img,
             url:
               img.kind === 'video'
-                ? toMediaUrl(img.url, '/api/video')
+                ? toMediaUrl(img.url, '/api/video', pageUrl)
                 : proxyImage(img.url),
             thumbnail: proxyImage(img.thumbnail),
             selected: false,
@@ -628,13 +641,12 @@ export async function handleSubtitles(request: Request): Promise<Response> {
  * a carousel's clips. Unwrap back to the raw CDN URL so it can be re-wrapped
  * cleanly rather than double-proxied.
  */
-function toRawMediaUrl(u: string): string {
+export function toRawMediaUrl(u: string): string {
   if (!u.startsWith('/api/image') && !u.startsWith('/api/video')) return u
-  const marker = 'url='
-  const index = u.indexOf(marker)
-  if (index === -1) return u
+  // Parsed, not sliced after `url=`: a proxy URL can carry `&ref=` after it,
+  // which a slice would decode into the media URL itself.
   try {
-    return decodeURIComponent(u.slice(index + marker.length))
+    return new URL(u, 'http://local').searchParams.get('url') ?? u
   } catch {
     return u
   }

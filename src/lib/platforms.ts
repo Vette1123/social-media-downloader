@@ -723,7 +723,7 @@ export const platforms: Platform[] = [
       },
       {
         q: 'Can I download videos from any subreddit?',
-        a: 'Any public post works. Videos in private or quarantined communities, or age-gated posts behind an age gate, may not be accessible.',
+        a: 'Any public post works. Videos in private or quarantined communities, or age-gated posts, may not be accessible.',
       },
       {
         q: 'Does it work with GIFs and crossposts?',

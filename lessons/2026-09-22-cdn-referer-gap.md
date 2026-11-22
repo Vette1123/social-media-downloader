@@ -10,8 +10,7 @@ failed on two hosts (404 and 403 "Wrong key"), and the probe script reported
 `title: null`. The priority host had zero code anywhere.
 
 `getMediaReferer` only knew YouTube/TikTok/Twitter/Facebook/Instagram. Every
-third-party CDN (cdna, cdnb, cdnb, the priority host's own CDN, and
-the rest of the tube-CDN set) fell through to
+third-party video CDN fell through to
 `''`, so `probeStream` and `/api/video` sent no Referer. Added origin mappings
 for all of them. `probeStream` gained a `pageReferer` fallback: when the CDN
 host has no mapping, the watch-page URL itself is used — which is what a

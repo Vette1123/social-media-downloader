@@ -962,7 +962,7 @@
         },
         {
           "q": "Posso baixar vídeos de qualquer subreddit?",
-          "a": "Qualquer post público funciona. Vídeos de comunidades privadas ou em quarentena, ou posts age-gated atrás de verificação de idade, podem não estar acessíveis."
+          "a": "Qualquer post público funciona. Vídeos de comunidades privadas ou em quarentena, ou posts com verificação de idade, podem não estar acessíveis."
         },
         {
           "q": "Funciona com GIFs e crossposts?",

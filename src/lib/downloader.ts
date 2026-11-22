@@ -40,6 +40,7 @@ import {
 } from "./validator";
 import { htmlScrapingAvailable, nativeMediaAvailable } from "./nativeMedia";
 import { getMediaReferer } from "./proxyHeaders";
+import { fetchWithNodeFallback } from "./upstreamFetch";
 import { tryYouTubeInnertube } from "./youtubeInnertube";
 import { ytdlpInfo, ytdlpProbe } from "./ytdlp";
 import { isTransientError, withRetry } from "./retry";
@@ -404,7 +405,7 @@ async function fetchPageDirectThenRelay(
   target: string,
 ): Promise<string | null> {
   try {
-    const response = await fetch(target, {
+    const response = await fetchWithNodeFallback(target, {
       headers: BROWSER_PAGE_HEADERS,
       redirect: "follow",
       signal: AbortSignal.timeout(10_000),
@@ -1970,7 +1971,7 @@ export class Downloader {
    * a file needs ffmpeg, which no deployment target here has.
    */
   private async tryPageScrape(url: string): Promise<VideoData | null> {
-    const response = await fetch(url, {
+    const response = await fetchWithNodeFallback(url, {
       headers: BROWSER_PAGE_HEADERS,
       redirect: "follow",
       signal: AbortSignal.timeout(10000),
@@ -3346,7 +3347,7 @@ export class Downloader {
       };
       if (referer) headers.Referer = referer;
 
-      const response = await fetch(url, {
+      const response = await fetchWithNodeFallback(url, {
         headers,
         redirect: "follow",
         signal: abort.signal,

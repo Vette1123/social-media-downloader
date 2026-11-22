@@ -23,7 +23,7 @@ export interface FriendlyError {
 }
 
 const PRIVATE = /private|login|log in|logged[- ]in|sign[- ]in|authenticat/i
-const AGE = /age[- ]restrict|18\+|age-gated|sensitive/i
+const AGE = /age[- ]?(restrict|gate)|18\+|over[_ ]?18|mature|sensitive/i
 const REGION = /region|geo[- ]?block|not available in your|country/i
 const GONE = /deleted|removed|unavailable|not found|no longer|404/i
 const UNSUPPORTED = /unsupported|invalid url|couldn'?t? (parse|recogni)|not a valid/i
