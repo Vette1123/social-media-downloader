@@ -212,10 +212,10 @@ describe('resolving an Instagram link', () => {
     expect(spy).toHaveBeenCalledTimes(1)
   })
 
-  it('does not re-run another platform’s failure', async () => {
+  it('does not re-run a platform outside the retry set', async () => {
     const spy = stubSequence({ success: false, error: GIVE_UP })
 
-    await resolve('https://www.facebook.com/reel/123456789')
+    await resolve('https://www.pinterest.com/pin/123456789/')
 
     expect(spy).toHaveBeenCalledTimes(1)
   })

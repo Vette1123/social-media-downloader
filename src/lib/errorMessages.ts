@@ -4,6 +4,7 @@
 // voice and adds an actionable hint, without swallowing genuinely novel errors.
 
 import { dKnown, dn, speaksEnglish } from '@/lib/i18nDeep'
+import { isUnsupportedHost } from '@/lib/validator'
 
 const GENERIC_HINT = dn('Something went wrong resolving the media. Try again in a moment.')
 
@@ -27,7 +28,8 @@ const AGE = /age[- ]?(restrict|gate)|18\+|over[_ ]?18|mature|sensitive/i
 const REGION = /region|geo[- ]?block|not available in your|country/i
 const GONE = /deleted|removed|unavailable|not found|no longer|404/i
 const UNSUPPORTED = /unsupported|invalid url|couldn'?t? (parse|recogni)|not a valid/i
-const RATE = /rate[- ]?limit|too many|429|blocking requests|blocked/i
+const UNSUPPORTED_SITE = /(site|platform|website|host)s? (is|are) not supported|unsupported (site|platform|website|host)/i
+const RATE =/rate[- ]?limit|too many|429|blocking requests|blocked/i
 // "Failed to fetch" (Chrome/Firefox) and "Load failed" (Safari) are what a
 // dropped connection actually reads as at the call site, and neither contains
 // the word "network" — so this used to fall through to the generic branch and
@@ -84,6 +86,15 @@ export function friendlyError(
     return {
       title: 'Stories need a logged-in session',
       hint: 'Instagram only serves stories & highlights to signed-in accounts, so they can’t be fetched anonymously here.',
+      retry: 'no',
+    }
+  }
+  // The site itself is the problem, so no guess about the post applies: a
+  // known-unsupported host, or an extractor that says so in as many words.
+  if (isUnsupportedHost(url) || (UNSUPPORTED_SITE.test(text) && !INCONCLUSIVE.test(text))) {
+    return {
+      title: 'This site isn’t supported',
+      hint: 'We can only download from supported platforms, such as TikTok, Instagram, X, Facebook, YouTube and Reddit. Retrying won’t change this.',
       retry: 'no',
     }
   }

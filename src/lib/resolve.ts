@@ -11,6 +11,7 @@
 
 import {
   contentProps,
+  trackLinkRejected,
   trackLinkSubmitted,
   trackResolveFailed,
   trackResolveSucceeded,
@@ -76,6 +77,13 @@ export async function resolve(
   const platform = detectPlatform(url)
   const format = opts.format ?? 'auto'
   const quality = opts.quality ?? 'hd'
+  // Text with no parseable host cannot resolve, and a request to say so costs an
+  // extractor run (198 of these in 23 days). Refused here so every caller —
+  // paste box, batch, re-pick — gets the same answer.
+  if (platform === 'unknown') {
+    trackLinkRejected({ platform, reason: 'not_a_url' })
+    return { success: false, error: 'That is not a valid URL.' }
+  }
   const startedAt = Date.now()
   const elapsed = () => Date.now() - startedAt
   trackLinkSubmitted({
@@ -203,18 +211,20 @@ async function resolveLink(
 /** Pause before the silent second resolve, long enough to land on a fresh extractor pick. */
 export const SECOND_TRY_DELAY_MS = 500
 
-const INSTAGRAM_STORY_LINK = /instagram\.com\/(?:stories|s)\//i
+const LOGIN_GATED_STORY_LINK = /(?:instagram\.com\/(?:stories|s)\/|facebook\.com\/stories\/)/i
 const RECOVERABLE_CODES = new Set(['private', 'inconclusive', 'rate_limited', 'timeout', 'network'])
+/** Platforms whose "private" give-up is routinely a cold first run (PostHog: IG, FB and X doubled). */
+const SECOND_TRY_PLATFORMS = new Set(['instagram', 'facebook', 'twitter'])
 
 /**
- * A failed Instagram answer worth one silent second run. The chain's give-up
- * line says "private" when every method merely came back empty, which a cold
- * first request does routinely. Stories and highlights are excluded: they are
- * login-gated by design and a second run cannot change that.
+ * A failed Instagram, Facebook or X answer worth one silent second run. The
+ * chain's give-up line says "private" when every method merely came back
+ * empty, which a cold first request does routinely. Stories and highlights are
+ * excluded: they are login-gated by design and a second run cannot change that.
  */
 export function isRecoverableAnswer(url: string, result: ResolveResult): boolean {
-  if (result.success || detectPlatform(url) !== 'instagram') return false
-  if (INSTAGRAM_STORY_LINK.test(url)) return false
+  if (result.success || !SECOND_TRY_PLATFORMS.has(detectPlatform(url))) return false
+  if (LOGIN_GATED_STORY_LINK.test(url)) return false
   return RECOVERABLE_CODES.has(failureCode(result.error))
 }
 
