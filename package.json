@@ -10,6 +10,7 @@
     "sponsors:expire": "node scripts/expire-sponsors.mjs",
     "icons": "node scripts/make-favicon.mjs",
     "apps:icons": "node scripts/build-app-icons.mjs",
+    "icons:bump": "node scripts/icon-version.mjs --bump",
     "start": "next start",
     "lint": "oxlint --report-unused-disable-directives --deny-warnings",
     "typecheck": "tsc --noEmit",

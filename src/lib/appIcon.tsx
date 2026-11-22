@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og'
 import { brandMarkDataUri } from './brandMark'
+import iconVersion from './iconVersion.json'
 
 // PNG app-icon renderer. Chrome on Android only treats a PWA as installable —
 // and only then registers its share_target in the system share sheet — when the
@@ -13,20 +14,16 @@ export const appIconSize = (n: number) => ({ width: n, height: n })
 export const appIconContentType = 'image/png'
 
 /**
- * Bump when the icon art changes.
+ * The icon URL version, from src/lib/iconVersion.json.
  *
- * Icons are served with `max-age=86400, stale-while-revalidate=604800`, and an
- * installed PWA holds its home-screen icon until the manifest's icon `src`
- * string itself changes. So new art at an unchanged URL reaches a returning
- * visitor a day later at best, and an installed app possibly never. Appending
- * this to every icon reference makes the URL new, which is the only thing all
- * three caches (HTTP, favicon, installed manifest) agree to respect.
- *
- * Changing it here is not enough on its own: public/manifest.json carries the
- * same `?v=` on each icon src and has to move with it. src/lib/appIcon.test.ts
- * fails when the two drift.
+ * An installed PWA keeps its home-screen icon until an icon `src` in the
+ * manifest changes; no browser re-downloads the same URL to look for new art.
+ * So the version has to move with every art change. iconVersion.json pins it
+ * next to a fingerprint of the art files, appIcon.test.ts fails when the art
+ * changes without a bump, and `pnpm icons:bump` moves the version, every
+ * `?v=` in public/manifest.json and the fingerprint together.
  */
-export const ICON_VERSION = '4'
+export const ICON_VERSION: string = iconVersion.version
 
 /** Appends the cache-busting version to an icon path. */
 export function versionedIcon(path: string): string {

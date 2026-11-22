@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ICON_VERSION, SPLASH_BACKGROUND, versionedIcon } from './appIcon'
+import iconVersion from './iconVersion.json'
+import { bumpManifestIcons, iconArtFingerprint } from '../../scripts/icon-version.mjs'
 
 /**
  * The icon version lives in two places that cannot import each other:
@@ -26,6 +28,24 @@ function allManifestIconSrcs(): string[] {
     ...manifest.shortcuts.flatMap((s) => s.icons.map((i) => i.src)),
   ]
 }
+
+describe('icon art fingerprint', () => {
+  it('matches the pinned art, or the icon changed without a version bump', () => {
+    // Installed PWAs only refresh their home-screen icon when the manifest's
+    // icon URL changes. New art at the old ?v= reaches nobody who installed.
+    // Fix: pnpm icons:bump
+    expect(iconArtFingerprint(process.cwd()), 'icon art changed: run pnpm icons:bump').toBe(
+      iconVersion.art,
+    )
+  })
+
+  it('bump moves every manifest icon src and nothing else', () => {
+    const before = '{"icons":[{"src":"/icons/192?v=4"},{"src":"/favicon.svg?v=4"}],"x":"?v=4"}'
+    const { text, moved } = bumpManifestIcons(before, '4', '5')
+    expect(moved).toBe(2)
+    expect(text).toBe('{"icons":[{"src":"/icons/192?v=5"},{"src":"/favicon.svg?v=5"}],"x":"?v=4"}')
+  })
+})
 
 describe('versionedIcon', () => {
   it('appends the current version', () => {
