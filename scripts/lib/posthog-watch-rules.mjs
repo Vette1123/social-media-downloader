@@ -48,7 +48,7 @@ const num = (v) => Number(v) || 0
 /**
  * @param {object} data
  * @param {Array<{platform,code,host,shape,n,people}>} data.shapes  resolve_failed grouped
- * @param {Array<{platform,ok,bad,bad_people}>} data.platforms  bad = failures outside EXPECTED_CODES
+ * @param {Array<{platform,format?,ok,bad,bad_people}>} data.platforms  bad = failures outside EXPECTED_CODES; format "audio" is judged on its own
  * @param {Array<{ev,kind,n,people}>} data.errors
  * @param {number} data.completed24h
  * @param {number} days  window length, for the wording
@@ -70,6 +70,9 @@ export function findProblems({ shapes = [], platforms = [], errors = [], complet
       continue
     }
     if (routedAway && !GENERIC_HOSTS.includes(r.host)) continue
+    // On the generic extractor `unsupported` is the site's own verdict, Telegram's
+    // included ("not shown outside the app", deleted, private channel).
+    if (routedAway && r.code === 'unsupported') continue
     if (EXPECTED_CODES.includes(r.code)) continue
     if (people >= t.shapePeople) {
       out.push({
@@ -88,12 +91,15 @@ export function findProblems({ shapes = [], platforms = [], errors = [], complet
     const people = num(r.bad_people)
     if (r.platform === 'generic' || r.platform === 'unknown') continue
     const rate = bad / (ok + bad || 1)
+    // MP3 is judged apart from video: one embed-only video "success" per paste hid
+    // a three-day YouTube MP3 outage inside the pooled rate (2026-11-19..22).
+    const audio = r.format === 'audio'
     if (rate >= t.platformRate && people >= t.platformPeople) {
       out.push({
-        key: `platform:${r.platform}`,
+        key: audio ? `platform:${r.platform}:audio` : `platform:${r.platform}`,
         kind: 'platform',
-        title: `${r.platform} resolves fail ${Math.round(rate * 100)}%`,
-        detail: `${bad} failed vs ${ok} succeeded in ${days} days, ${people} people affected. Run \`pnpm link:probe\` on a public ${r.platform} post and check the extractor chain.`,
+        title: `${r.platform} ${audio ? 'MP3 ' : ''}resolves fail ${Math.round(rate * 100)}%`,
+        detail: `${bad} failed vs ${ok} succeeded in ${days} days, ${people} people affected. Run \`pnpm link:probe${audio ? ' --audio' : ''}\` on a public ${r.platform} post and check the extractor chain.`,
         people,
       })
     }

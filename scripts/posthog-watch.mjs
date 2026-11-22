@@ -32,10 +32,11 @@ const QUERIES = {
            GROUP BY platform, code, host, shape HAVING people >= 2
            ORDER BY people DESC LIMIT 200`,
   platforms: `SELECT toString(properties.platform) AS platform,
+                     if(toString(properties.format) = 'audio', 'audio', 'video') AS format,
                      countIf(event = 'resolve_succeeded') AS ok, countIf(${ourFault}) AS bad,
                      uniqIf(person_id, ${ourFault}) AS bad_people
               FROM events WHERE {humans} AND ${since} AND event IN ('resolve_succeeded', 'resolve_failed')
-              GROUP BY platform ORDER BY bad DESC LIMIT 50`,
+              GROUP BY platform, format ORDER BY bad DESC LIMIT 100`,
   errors: `SELECT any(event) AS ev,
                   coalesce(nullIf(toString(properties.source), ''), toString(properties.$exception_types)) AS kind,
                   count() AS n, uniq(person_id) AS people

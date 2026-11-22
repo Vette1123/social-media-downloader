@@ -26,12 +26,29 @@ describe('findProblems', () => {
     const [p] = findProblems({ shapes: [shape({ platform: 'generic', code: 'upstream', host: 't.me', shape: '|/*/#', people: 5 })] })
     expect(p.kind).toBe('shape')
     expect(findProblems({ shapes: [shape({ platform: 'generic', code: 'unsupported', host: 'example.org', people: 30 })] })).toEqual([])
+    // Telegram's own "not shown outside the app / deleted / private channel" is coded unsupported (#87).
+    expect(findProblems({ shapes: [shape({ platform: 'generic', code: 'unsupported', host: 't.me', shape: '|/*/#', people: 11 })] })).toEqual([])
   })
 
   it('flags a platform failure rate only past both bars', () => {
     expect(findProblems({ platforms: [{ platform: 'twitter', ok: 60, bad: 40, bad_people: 6 }] })[0].key).toBe('platform:twitter')
     expect(findProblems({ platforms: [{ platform: 'twitter', ok: 60, bad: 40, bad_people: 2 }] })).toEqual([])
     expect(findProblems({ platforms: [{ platform: 'twitter', ok: 90, bad: 10, bad_people: 9 }] })).toEqual([])
+  })
+
+  it('judges MP3 resolves apart from video, so an audio-only collapse is its own issue', () => {
+    // 2026-11-19..22: YouTube MP3 went 0 ok / 37 failed while embed-only video "successes"
+    // kept the pooled YouTube rate under the bar.
+    const out = findProblems({
+      platforms: [
+        { platform: 'youtube', format: 'video', ok: 359, bad: 0, bad_people: 0 },
+        { platform: 'youtube', format: 'audio', ok: 0, bad: 34, bad_people: 7 },
+      ],
+    })
+    expect(out.map((p) => p.key)).toEqual(['platform:youtube:audio'])
+    expect(out[0].title).toBe('youtube MP3 resolves fail 100%')
+    // A row without a format (older events) keeps the video key, so filed issues still match.
+    expect(findProblems({ platforms: [{ platform: 'twitter', ok: 60, bad: 40, bad_people: 6 }] })[0].key).toBe('platform:twitter')
   })
 
   it('flags error kinds and the silence tripwire, ranked by people', () => {

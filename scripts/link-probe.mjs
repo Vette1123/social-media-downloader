@@ -1,6 +1,6 @@
 // Resolve real links through the real Downloader, from this machine.
 //
-//   pnpm link:probe <url> [url…]
+//   pnpm link:probe [--audio] <url> [url…]
 //
 // Prints, per link, what the chain returned (title, media count, file host) or
 // the exact error a visitor would see. It runs from a home connection, not a
@@ -13,9 +13,12 @@ import { fileURLToPath } from "node:url";
 import { createViteServer } from "vitest/node";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const urls = process.argv.slice(2);
+// --audio runs the MP3 flow (Downloader mode "audio") instead of the video one.
+const args = process.argv.slice(2);
+const mode = args.includes("--audio") ? "audio" : "auto";
+const urls = args.filter((a) => a !== "--audio");
 if (urls.length === 0) {
-  console.error("usage: pnpm link:probe <url> [url…]");
+  console.error("usage: pnpm link:probe [--audio] <url> [url…]");
   process.exit(2);
 }
 
@@ -38,11 +41,12 @@ try {
     const url = extractLink(raw) ?? raw;
     const started = Date.now();
     try {
-      const data = await new Downloader().downloadVideo(url);
+      const data = await new Downloader({ mode }).downloadVideo(url);
       const items = data.images?.length ?? 0;
-      const file = data.downloadUrl
-        ? new URL(data.downloadUrl).host
-        : "gallery";
+      const media = data.downloadUrl || data.musicUrl;
+      // A proxied result is a same-origin path (/api/video?url=…), not a URL.
+      let file = "gallery";
+      if (media) file = media.startsWith("/") ? media.split("?")[0] : new URL(media).host;
       console.log(
         `ok   ${detectPlatform(url)}  ${url}\n     ${items ? `${items} items` : file}  "${String(data.title).slice(0, 60)}"  ${Date.now() - started}ms`,
       );
