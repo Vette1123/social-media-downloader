@@ -190,6 +190,38 @@ export function validateUrl(url: string): boolean {
   return detectPlatform(url) !== 'unknown'
 }
 
+/**
+ * Hosts nobody can read, so a failure there is never "private". They reach the
+ * generic extractor (t.me, a search page, a shop), whose give-up line guesses
+ * "may be private" and was filed as private on 66% of generic failures.
+ */
+const UNSUPPORTED_HOSTS = [
+  't.me',
+  'telegram.me',
+  'google.com',
+  'bing.com',
+  'wikipedia.org',
+  'amazon.com',
+  'github.com',
+  'whatsapp.com',
+  'wa.me',
+  'discord.com',
+  'discord.gg',
+  'chatgpt.com',
+]
+
+/** True for a link on a host we know has nothing to extract. */
+export function isUnsupportedHost(url: string | undefined): boolean {
+  if (!url || detectPlatform(url) !== 'generic') return false
+  try {
+    const trimmed = url.trim()
+    const host = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`).hostname
+    return UNSUPPORTED_HOSTS.some((h) => host === h || host.endsWith(`.${h}`))
+  } catch {
+    return false
+  }
+}
+
 export function parseVideoId(url: string): string | null {
   const patterns = [
     /\/video\/(\d+)/,

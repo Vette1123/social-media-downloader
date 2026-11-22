@@ -323,7 +323,7 @@ export function trackResolveFailed(props: {
   format: string
   link?: string
 }): void {
-  const code = failureCode(props.message)
+  const code = failureCode(props.message, props.link)
   const expected = isExpectedFailure(code)
   const message = scrubText(props.message ?? 'no error text').slice(0, 200)
   track(EVENTS.RESOLVE_FAILED, {

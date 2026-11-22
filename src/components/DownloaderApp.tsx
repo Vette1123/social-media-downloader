@@ -1436,6 +1436,15 @@ export function DownloaderApp() {
     // every clause of which is wrong for instagram.com/nasa, and which told
     // somebody who pasted a playlist no while the batch queue was sitting
     // underneath saying yes.
+    // Text with no parseable host is not a link at all: say so inline, with no
+    // request. `resolve` refuses it too, for the callers that skip this form.
+    if (detectPlatform(target) === 'unknown') {
+      trackLinkRejected({ platform: 'unknown', reason: 'not_a_url' })
+      dispatch({ type: 'SET_URL', payload: target })
+      setUrlError(t('errorNotLink'))
+      return
+    }
+
     const advice = linkAdvice(target)
     if (advice) {
       trackLinkRejected({

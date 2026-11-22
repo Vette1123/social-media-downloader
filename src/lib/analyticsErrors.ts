@@ -5,6 +5,8 @@
  * The free text from extractors is not a breakdown: it varies per post. The
  * `code` is what groups, and only `upstream` and `server` are faults of ours.
  */
+import { isUnsupportedHost } from './validator'
+
 export type FailureCode =
   | 'private'
   | 'inconclusive'
@@ -36,11 +38,24 @@ const RULES: [RegExp, FailureCode][] = [
   [/\b5\d\d\b|internal|invalid response/i, 'server'],
 ]
 
-export function failureCode(message: string | undefined): FailureCode {
+/** What an unsupported host's give-up gets filed as, instead of a guess about the post. */
+const GUESSED_ON_UNSUPPORTED = new Set<FailureCode>(['private', 'inconclusive', 'unavailable', 'upstream'])
+
+function messageCode(message: string | undefined): FailureCode {
   for (const [pattern, code] of RULES) {
     if (message && pattern.test(message)) return code
   }
   return 'upstream'
+}
+
+/**
+ * `url` is optional: on a host known to have nothing to extract, a guess such
+ * as "private" is really "unsupported". Passing conditions (rate limit, network)
+ * keep their own code.
+ */
+export function failureCode(message: string | undefined, url?: string): FailureCode {
+  const code = messageCode(message)
+  return isUnsupportedHost(url) && GUESSED_ON_UNSUPPORTED.has(code) ? 'unsupported' : code
 }
 
 /** A failure with no fault of ours behind it: an event, not an Error Tracking issue. */

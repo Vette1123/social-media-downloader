@@ -193,5 +193,6 @@ the index for exactly that.
 | 2026-11-22 | [Bing throttle, and the November core update](2026-11-22-seo-daily-bing-throttle-and-core-update.md) | A Bing ThrottleUser is not a failed submit; during a core update rollout change no titles, re-check 2026-12-01. |
 | 2026-11-22 | [A11y lint rules on, TypeScript 7](2026-11-22-a11y-lint.md) | Disable comments go above the element's opening tag; no onClick only to stop propagation, mark the area instead. |
 | 2026-11-22 | [Page-origin Referer](2026-11-22-page-origin-referer.md) | An unknown CDN gets the page origin as Referer through the proxy URL; never keep a per-site host list. |
+| 2026-11-22 | [Input checks and retries](2026-11-22-input-and-retries.md) | Non-URL text never reaches the API; unsupported hosts say so, not "private"; IG, FB and X share one silent retry set. |
 | 2026-11-22 | [Installed PWA icon updates](2026-11-22-pwa-icon-updates.md) | Icon art is fingerprinted against its ?v=; change the art, run pnpm icons:bump, or installed apps keep the old icon. |
 | 2026-11-22 | [Triage sweep](2026-11-22-triage.md) | PostHog 0 open, no GH issues, GSC/Bing clean; titles stay frozen until the 2026-12-01 core-update re-check. |
