@@ -48,7 +48,8 @@
     "posthog:setup": "node scripts/posthog-setup.mjs",
     "posthog:watch": "node scripts/posthog-watch.mjs",
     "telegram:setup": "node scripts/telegram-setup.mjs",
-    "link:probe": "node scripts/link-probe.mjs"
+    "link:probe": "node scripts/link-probe.mjs",
+    "seo:pending": "node scripts/seo-pending.mjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
