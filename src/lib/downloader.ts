@@ -27,6 +27,7 @@ import {
   OriginBlockedError,
   readCappedText,
 } from "./pageScrape";
+import { linkShape } from "./analyticsPrivacy";
 import { resolveByRule } from "./siteRules";
 import { VideoData, ImageData } from "./types";
 import {
@@ -530,6 +531,23 @@ export function isWalledFacebookShare(finalUrl: string): boolean {
   return /^https?:\/\/([\w-]+\.)?(facebook\.com\/(share\/|login(\.php)?([/?#]|$))|fb\.watch\/)/i.test(
     finalUrl,
   );
+}
+
+/**
+ * The give-up error for a link that a redirect walk moved somewhere else, with
+ * the SHAPE of where it landed as `landed` (`resolveFailure` sends it on, the
+ * client puts it on `resolve_failed`). A share link that Facebook answered and
+ * every extractor then failed on was untraceable without it: the event only
+ * named the `/share/r/*` that was pasted (#67, #69). A shape names no post.
+ */
+export function landedFailure(
+  message: string,
+  pasted: string,
+  landedAt: string,
+): Error & { landed?: string } {
+  const failure: Error & { landed?: string } = new Error(message);
+  if (landedAt !== pasted) failure.landed = linkShape(landedAt);
+  return failure;
 }
 
 export function isThreadsShareLink(url: string): boolean {
@@ -2812,8 +2830,10 @@ export class Downloader {
       }
     }
 
-    throw new Error(
+    throw landedFailure(
       "Could not download this Facebook video. The post may be private, age-restricted, or unavailable.",
+      url,
+      resolvedUrl,
     );
   }
 

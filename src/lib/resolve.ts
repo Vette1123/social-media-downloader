@@ -46,6 +46,8 @@ export interface ResolveResult {
   audioUrl?: string
   metadata?: VideoMetadata
   error?: string
+  /** Shape of the page a share link redirected to, on a failure. */
+  landed?: string
 }
 
 /**
@@ -112,6 +114,7 @@ export async function resolve(
         duration_ms: elapsed(),
         format,
         link: url,
+        landed: result.landed,
       })
     }
     return result
