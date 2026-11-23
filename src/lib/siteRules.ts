@@ -65,6 +65,14 @@ const DEFAULT_HEIGHTS = [1080, 720, 480, 360]
  */
 const MAX_PROBES = 4
 
+/**
+ * How many path segments are tried as an id when a rule's own pattern does not
+ * match. Player and embed links commonly carry the same id in a different
+ * shape; this runs only after the page itself yielded nothing, so the bound
+ * keeps a dead end to a few fetches.
+ */
+const MAX_ID_CANDIDATES = 3
+
 let cached: SiteRule[] | null = null
 
 function isRule(value: unknown): value is SiteRule {
@@ -105,6 +113,12 @@ function normalizeHost(hostname: string): string {
   return hostname.replace(/^www\./, '').toLowerCase()
 }
 
+/**
+ * A rule is about a site, not one hostname: media and player hosts are
+ * routinely subdomains of the watch host, and a link to either should reach
+ * the same recipe. Matching stops at the label boundary, so a host that merely
+ * ends in the same letters is still a different site.
+ */
 export function ruleFor(url: string): SiteRule | null {
   let hostname: string
   try {
@@ -113,7 +127,12 @@ export function ruleFor(url: string): SiteRule | null {
     return null
   }
   const host = normalizeHost(hostname)
-  return siteRules().find((rule) => normalizeHost(rule.host) === host) ?? null
+  return (
+    siteRules().find((rule) => {
+      const ruleHost = normalizeHost(rule.host)
+      return host === ruleHost || host.endsWith('.' + ruleHost)
+    }) ?? null
+  )
 }
 
 /** First capture of `pattern` in `text`, or null. A bad pattern is not fatal. */
@@ -169,6 +188,35 @@ function pageThumbnail(html: string): string {
 }
 
 /**
+ * The ids to try, in order. A rule's `id` describes the shape its watch URLs
+ * use; a player or embed link names the same video in a different shape, so
+ * when that pattern does not match, the path segments themselves are tried.
+ * Only long alphanumeric segments qualify, so slugs, route words and file
+ * extensions are skipped rather than fetched.
+ */
+function ruleIds(rule: SiteRule, url: string): string[] {
+  const matched = capture(rule.id, url)
+  if (matched) return [matched]
+
+  let pathname: string
+  try {
+    pathname = new URL(url).pathname
+  } catch {
+    return []
+  }
+
+  const seen = new Set<string>()
+  const ids: string[] = []
+  for (const segment of pathname.split('/')) {
+    if (!/^[A-Za-z0-9]{6,}$/.test(segment) || seen.has(segment)) continue
+    seen.add(segment)
+    ids.push(segment)
+    if (ids.length === MAX_ID_CANDIDATES) break
+  }
+  return ids
+}
+
+/**
  * Follow a host's recipe. `fetchPage` reads a URL from somewhere the site will
  * answer — the caller owns that, because it is the same relay chain the rest of
  * the blocked path uses. Returns null whenever any step comes up empty, so a
@@ -181,38 +229,42 @@ export async function resolveByRule(
   const rule = ruleFor(url)
   if (!rule) return null
 
-  const id = capture(rule.id, url)
-  if (!id) return null
+  const ids = ruleIds(rule, url)
+  if (ids.length === 0) return null
 
-  const html = await fetchPage(rule.page.replace(/\$1/g, id))
-  if (!html) return null
+  for (const id of ids) {
+    const html = await fetchPage(rule.page.replace(/\$1/g, id))
+    if (!html) continue
 
-  const fid = capture(rule.fid, html)
-  if (!fid) return null
+    const fid = capture(rule.fid, html)
+    if (!fid) continue
 
-  const stated = rule.hcap ? Number(capture(rule.hcap, html)) : NaN
-  const ladder = (rule.heights ?? DEFAULT_HEIGHTS).slice(0, MAX_PROBES)
-  const order =
-    Number.isFinite(stated) && stated > 0
-      ? [stated, ...ladder.filter((height) => height !== stated)].slice(0, MAX_PROBES)
-      : ladder
+    const stated = rule.hcap ? Number(capture(rule.hcap, html)) : NaN
+    const ladder = (rule.heights ?? DEFAULT_HEIGHTS).slice(0, MAX_PROBES)
+    const order =
+      Number.isFinite(stated) && stated > 0
+        ? [stated, ...ladder.filter((height) => height !== stated)].slice(0, MAX_PROBES)
+        : ladder
 
-  const result = (mediaUrl: string): ScrapedMedia => ({
-    mediaUrl,
-    isStream: false,
-    title: pageTitle(html, id),
-    thumbnail: pageThumbnail(html),
-  })
+    const result = (mediaUrl: string): ScrapedMedia => ({
+      mediaUrl,
+      isStream: false,
+      title: pageTitle(html, id),
+      thumbnail: pageThumbnail(html),
+    })
 
-  let walled: string | null = null
-  for (const height of order) {
-    const mediaUrl = fill(rule.media, id, fid, height)
-    const verdict = await probeRendition(mediaUrl)
-    if (verdict === 'serves') return result(mediaUrl)
-    // The page's own height answered with a page from an egress the host does
-    // not serve files to — nothing here can confirm it, and the recipe built
-    // the URL the same way it would have built a verified one.
-    if (verdict === 'page' && height === stated) walled = mediaUrl
+    let walled: string | null = null
+    for (const height of order) {
+      const mediaUrl = fill(rule.media, id, fid, height)
+      const verdict = await probeRendition(mediaUrl)
+      if (verdict === 'serves') return result(mediaUrl)
+      // The page's own height answered with a page from an egress the host does
+      // not serve files to — nothing here can confirm it, and the recipe built
+      // the URL the same way it would have built a verified one.
+      if (verdict === 'page' && height === stated) walled = mediaUrl
+    }
+    if (walled) return result(walled)
   }
-  return walled ? result(walled) : null
+
+  return null
 }

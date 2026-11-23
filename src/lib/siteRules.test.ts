@@ -77,6 +77,17 @@ describe('siteRules parsing', () => {
     expect(ruleFor('https://www.site.example/video-abc/x/')).not.toBeNull()
   })
 
+  it('matches a subdomain of the rule host, where media and player hosts live', () => {
+    configure([RULE])
+    expect(ruleFor('https://cdn.site.example/video-abc/x/')).not.toBeNull()
+    expect(ruleFor('https://player.site.example/abc/abc.mp4')).not.toBeNull()
+  })
+
+  it('does not match a host that merely ends in the same letters', () => {
+    configure([RULE])
+    expect(ruleFor('https://notsite.example/video-abc/x/')).toBeNull()
+  })
+
   it('does not match a different host, or an unparseable URL', () => {
     configure([RULE])
     expect(ruleFor('https://other.example/video-abc/x/')).toBeNull()
@@ -148,6 +159,51 @@ describe('resolveByRule', () => {
 
     await expect(resolveByRule(WATCH, async () => '<html>nothing</html>')).resolves.toBeNull()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('finds the id in a player link whose shape the watch pattern does not match', async () => {
+    configure([RULE])
+    const wanted = 'https://www.site.example/dload/YI0Ch192Dyi/1080/17187864-1080p.mp4'
+    vi.stubGlobal('fetch', headMock([wanted]))
+
+    const media = await resolveByRule(
+      'https://player.site.example/YI0Ch192Dyi/YI0Ch192Dyi.mp4',
+      page,
+    )
+    expect(media?.mediaUrl).toBe(wanted)
+  })
+
+  it('finds the id in an embed link, and tries the next candidate when one is not an id', async () => {
+    configure([RULE])
+    const wanted = 'https://www.site.example/dload/YI0Ch192Dyi/1080/17187864-1080p.mp4'
+    vi.stubGlobal('fetch', headMock([wanted]))
+
+    const fetched: string[] = []
+    const media = await resolveByRule(
+      'https://www.site.example/static4/YI0Ch192Dyi/',
+      async (target) => {
+        fetched.push(target)
+        return target.includes('/embed/static4/') ? null : PAGE
+      },
+    )
+
+    expect(media?.mediaUrl).toBe(wanted)
+    expect(fetched).toEqual([
+      'https://www.site.example/embed/static4/',
+      'https://www.site.example/embed/YI0Ch192Dyi/',
+    ])
+  })
+
+  it('does not invent an id from short or punctuated path segments', async () => {
+    configure([RULE])
+    const fetched: string[] = []
+    await expect(
+      resolveByRule('https://www.site.example/embed/abc/some-slug/', async (target) => {
+        fetched.push(target)
+        return PAGE
+      }),
+    ).resolves.toBeNull()
+    expect(fetched).toEqual([])
   })
 
   it('treats a broken regex in the secret as no match, not as a crash', async () => {

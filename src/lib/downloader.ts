@@ -1982,7 +1982,27 @@ export class Downloader {
     if (!response.ok || directMedia || !isHtml) {
       await response.body?.cancel().catch(() => {});
     }
-    if (!response.ok) return null;
+
+    // A link can name a player's own file instead of a page, and that file can
+    // refuse an address the site does not serve media to. The recipe may still
+    // be able to rebuild a link that does serve from the id in the path, so it
+    // gets its turn before the URL is written off. No rule matches, no change.
+    if (!response.ok) {
+      const media = await resolveByRule(url, fetchPageDirectThenRelay);
+      if (!media || media.isStream) return null;
+      return {
+        id: parseVideoId(url) || media.mediaUrl.slice(-32),
+        title: media.title,
+        url,
+        thumbnail: media.thumbnail,
+        duration: 0,
+        author: new URL(url).hostname.replace(/^www\./, ""),
+        description: "",
+        downloadUrl: media.mediaUrl,
+        directBrowser: true,
+      };
+    }
+
     const finalUrl = response.url || url;
 
     // A direct media link pasted as-is: no page to scrape, and the URL is
