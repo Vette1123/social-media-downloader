@@ -164,9 +164,12 @@ export function resolveCacheKey(
  * than the status, so nothing about what a visitor sees changes.
  */
 export function resolveFailure(error: unknown, fallback: string): Response {
+  const landed = (error as { landed?: unknown } | null)?.landed
   const body = {
     success: false,
     error: error instanceof Error ? error.message : fallback,
+    // Where a share link's redirect ended, as a shape; see landedFailure.
+    ...(typeof landed === 'string' ? { landed } : {}),
   }
 
   if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {

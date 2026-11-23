@@ -322,6 +322,8 @@ export function trackResolveFailed(props: {
   duration_ms: number
   format: string
   link?: string
+  /** Where a share link's redirect ended, already a shape (landedFailure). */
+  landed?: string
 }): void {
   const code = failureCode(props.message, props.link)
   const expected = isExpectedFailure(code)
@@ -332,6 +334,7 @@ export function trackResolveFailed(props: {
     message,
     host: linkHost(props.link),
     shape: linkShape(props.link),
+    ...(props.landed ? { landed: props.landed.slice(0, 120) } : {}),
     duration_ms: props.duration_ms,
     format: props.format,
   })

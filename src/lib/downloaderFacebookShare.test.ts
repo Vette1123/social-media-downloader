@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { failureCode } from './analyticsErrors'
-import { Downloader, FACEBOOK_SHARE_WALLED, isWalledFacebookShare } from './downloader'
+import { resolveFailure } from './apiRoutes'
+import {
+  Downloader,
+  FACEBOOK_SHARE_WALLED,
+  isWalledFacebookShare,
+  landedFailure,
+} from './downloader'
 
 /**
  * A Facebook share link to a post Facebook opens only for logged-in viewers
@@ -66,5 +72,35 @@ describe('downloadFacebook on a walled share link', () => {
       .downloadFacebook(SHARE)
       .catch((e: Error) => e)
     expect((error as Error).message).not.toBe(FACEBOOK_SHARE_WALLED)
+  })
+})
+
+/**
+ * #67/#69: a share link Facebook answered (3-7 s, under the 12 s hop timeout)
+ * and every extractor then failed on. The event named only the pasted
+ * `/share/r/*`, so the post form that failed could never be reproduced.
+ */
+describe('landedFailure', () => {
+  it('says where a share link landed, as a shape that names no post', async () => {
+    const error = landedFailure(
+      'Could not download this Facebook video.',
+      SHARE,
+      'https://www.facebook.com/someone.page/videos/123456789/?mibextid=abc'
+    )
+    expect(error.landed).toBe('www|/*/videos/#?mibextid')
+    const body = await resolveFailure(error, 'x').json()
+    expect(body.landed).toBe('www|/*/videos/#?mibextid')
+    expect(JSON.stringify(body)).not.toMatch(/someone|123456789|abc/)
+  })
+
+  it('stays a plain 422 extraction failure', () => {
+    const error = landedFailure('Could not download this Facebook video.', SHARE, 'https://www.facebook.com/reel/1/')
+    expect(resolveFailure(error, 'x').status).toBe(422)
+  })
+
+  it('adds nothing when the link never moved', async () => {
+    const reel = 'https://www.facebook.com/reel/1536569814605331/'
+    const body = await resolveFailure(landedFailure('nope', reel, reel), 'x').json()
+    expect(body).toEqual({ success: false, error: 'nope' })
   })
 })
