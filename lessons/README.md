@@ -197,3 +197,4 @@ the index for exactly that.
 | 2026-11-22 | [Installed PWA icon updates](2026-11-22-pwa-icon-updates.md) | Icon art is fingerprinted against its ?v=; change the art, run pnpm icons:bump, or installed apps keep the old icon. |
 | 2026-11-22 | [Triage sweep](2026-11-22-triage.md) | PostHog 0 open, no GH issues, GSC/Bing clean; titles stay frozen until the 2026-12-01 core-update re-check. |
 | 2026-11-22 | [YouTube MP3 outage, watcher by format](2026-11-22-youtube-mp3-outage-watch.md) | YouTube MP3 is 0% since 11-19 from upstream login walls; the watcher now judges MP3 apart from video, since embed-only video hid it. |
+| 2026-11-23 | [Resolve unwraps, MP3 shapes](2026-11-23-resolve-unwraps-and-mp3-shapes.md) | Only the paste box unwrapped Google/Facebook redirect links; `resolve()` now does it for every surface, and an MP3 shape stays under its platform's outage issue. |

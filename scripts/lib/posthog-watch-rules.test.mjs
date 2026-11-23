@@ -51,6 +51,20 @@ describe('findProblems', () => {
     expect(findProblems({ platforms: [{ platform: 'twitter', ok: 60, bad: 40, bad_people: 6 }] })[0].key).toBe('platform:twitter')
   })
 
+  it('files no MP3 shape issue while that platform has an MP3 outage issue', () => {
+    // 2026-11-23: #89 (youtu.be ?si, all 13 audio) was #88's outage seen through one shape.
+    const audioShape = { platform: 'youtube', format: 'audio', code: 'inconclusive', host: 'youtu.be', shape: '|/*?si', n: 13, people: 4 }
+    const videoShape = { ...audioShape, format: 'video', people: 5 }
+    const outage = { platform: 'youtube', format: 'audio', ok: 0, bad: 34, bad_people: 7 }
+    const keys = (data) => findProblems(data).map((p) => p.key)
+    expect(keys({ shapes: [audioShape, videoShape], platforms: [outage] })).toEqual([
+      'platform:youtube:audio',
+      'shape:youtube:youtu.be:inconclusive:|/*?si',
+    ])
+    // No outage on file: the audio shape is its own problem and files as before.
+    expect(keys({ shapes: [audioShape] })).toEqual(['shape:youtube:youtu.be:inconclusive:|/*?si'])
+  })
+
   it('flags error kinds and the silence tripwire, ranked by people', () => {
     const out = findProblems({ errors: [{ ev: 'api_error', kind: 'download:image_item', n: 20, people: 5 }], completed24h: 3 })
     expect(out.map((p) => p.kind)).toEqual(['error', 'silence'])

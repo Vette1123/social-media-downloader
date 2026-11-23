@@ -165,6 +165,20 @@ describe('resolving a TikTok link', () => {
   })
 })
 
+// The batch queue and a re-pick call resolve() with the link as pasted. Only the
+// paste box unwrapped Google/Facebook redirect links, so a wrapped link from a
+// batch was judged and reported as google.com on `generic` (issue #73).
+describe('resolving a redirect-wrapped link', () => {
+  it('judges the link inside the wrapper, whatever surface called', async () => {
+    stubServer(0)
+    browserResolve.mockResolvedValue(answer('from-browser'))
+    const wrapped = `https://www.google.com/url?sa=t&url=${encodeURIComponent(TIKTOK)}`
+    const result = await resolve(wrapped)
+    expect(browserResolve).toHaveBeenCalledWith(TIKTOK, expect.anything())
+    expect(result.success).toBe(true)
+  })
+})
+
 describe('resolving an Instagram link', () => {
   const REEL = 'https://www.instagram.com/reel/DKcalTzoftf/?igsh=abc'
   const GIVE_UP =

@@ -81,6 +81,7 @@ export function findProblems({ shapes = [], platforms = [], errors = [], complet
         title: `${r.platform} fails for ${r.host || '?'} ${r.shape} links (${r.code})`,
         detail: `${people} people, ${num(r.n)} failed resolves in ${days} days, code \`${r.code}\`, host ${r.host || '-'}. Reproduce with a real link of this shape through \`pnpm link:probe\` before changing the extractor.`,
         people,
+        mp3Of: r.format === 'audio' ? r.platform : undefined,
       })
     }
   }
@@ -127,7 +128,12 @@ export function findProblems({ shapes = [], platforms = [], errors = [], complet
     })
   }
 
-  return out.sort((a, b) => b.people - a.people)
+  // An MP3 shape failing during that platform's MP3 outage is the outage, not a
+  // second bug: #89 (youtu.be ?si, all audio) duplicated #88 on 2026-11-23.
+  const mp3Down = new Set(
+    out.filter((p) => p.key.startsWith('platform:') && p.key.endsWith(':audio')).map((p) => p.key.split(':')[1]),
+  )
+  return out.filter((p) => !mp3Down.has(p.mp3Of)).sort((a, b) => b.people - a.people)
 }
 
 const MARK = (key) => `<!-- posthog-watch:${key} -->`

@@ -27,9 +27,10 @@ const ourFault = `event = 'resolve_failed' AND toString(properties.code) NOT IN 
 const QUERIES = {
   shapes: `SELECT toString(properties.platform) AS platform, toString(properties.code) AS code,
                   toString(properties.host) AS host, toString(properties.shape) AS shape,
+                  if(toString(properties.format) = 'audio', 'audio', 'video') AS format,
                   count() AS n, uniq(person_id) AS people
            FROM events WHERE {humans} AND ${since} AND event = 'resolve_failed'
-           GROUP BY platform, code, host, shape HAVING people >= 2
+           GROUP BY platform, code, host, shape, format HAVING people >= 2
            ORDER BY people DESC LIMIT 200`,
   platforms: `SELECT toString(properties.platform) AS platform,
                      if(toString(properties.format) = 'audio', 'audio', 'video') AS format,

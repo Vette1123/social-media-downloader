@@ -21,7 +21,7 @@ import { errorMessage, failureCode } from './analyticsErrors'
 import type { VideoMetadata } from './appReducer'
 import { isTransientError, withRetry } from './retry'
 import { resolveTikTokInBrowser } from './tikwmClient'
-import { detectPlatform } from './validator'
+import { detectPlatform, unwrapRedirect } from './validator'
 
 export interface ResolveOptions {
   type?: 'video' | 'audio'
@@ -71,9 +71,13 @@ const after = (ms: number) =>
  * batch queue, a re-pick, a retry. No caller can forget to report.
  */
 export async function resolve(
-  url: string,
+  pasted: string,
   opts: ResolveOptions = {},
 ): Promise<ResolveResult> {
+  // Every surface, not just the paste box: the batch queue and a re-pick hand
+  // over the link as pasted, and a Google/Facebook wrapper judged as itself is
+  // google.com on `generic` (issue #73).
+  const url = unwrapRedirect(pasted)
   const platform = detectPlatform(url)
   const format = opts.format ?? 'auto'
   const quality = opts.quality ?? 'hd'
