@@ -361,7 +361,7 @@
         "Unduh reels, video, dan foto Instagram",
         "Unduh video dan Shorts YouTube dalam HD",
         "Unduh video, klip Watch, dan reels Facebook dalam HD",
-        "Ekstrak audio MP3 dari video TikTok, YouTube, dan Facebook",
+        "Ekstrak audio MP3 dari video TikTok dan Facebook (YouTube untuk pendukung)",
         "Unduh slideshow TikTok (carousel foto) beserta musik aslinya",
         "Unduh carousel foto Instagram — setiap gambar satu per satu atau sebagai ZIP",
         "Pratinjau video, audio, dan gambar sebelum mengunduh",
@@ -395,7 +395,7 @@
     },
     {
       "q": "Bisakah saya mengunduh video dan Shorts YouTube?",
-      "a": "Bisa. Tempel link youtube.com/watch?v=…, youtu.be/…, atau /shorts/… apa saja dan alat ini memproses streamnya agar kamu bisa melihat pratinjau, mengunduh MP4 dalam HD, atau mengekstrak audionya sebagai MP3. Video dengan batasan usia, video yang dikunci, dan video khusus anggota tidak didukung."
+      "a": "Bisa. Tempel link youtube.com/watch?v=…, youtu.be/…, atau /shorts/… apa saja dan alat ini memproses streamnya agar kamu bisa melihat pratinjau, atau mengunduh MP4 dalam HD. MP3 dari YouTube khusus pendukung, karena YouTube kini menyembunyikan audionya di balik login. Video dengan batasan usia, video yang dikunci, dan video khusus anggota tidak didukung."
     },
     {
       "q": "Apakah mendukung video dan reels Facebook?",
@@ -725,7 +725,7 @@
         },
         {
           "title": "🎵 Ekstrak audio MP3",
-          "body": "Ambil soundtrack-nya saja sebagai MP3 yang bersih. Cocok untuk musik, kuliah, podcast, dan klip belajar bahasa."
+          "body": "Ambil soundtrack-nya saja sebagai MP3 yang bersih, untuk musik, kuliah, dan podcast. Di YouTube khusus pendukung, karena audionya kini di balik login."
         },
         {
           "title": "⚡ Siap untuk Shorts",
@@ -743,7 +743,7 @@
         },
         {
           "q": "Bisakah saya mengekstrak audio MP3-nya saja?",
-          "a": "Bisa. Klik Ekstrak audio setelah diproses untuk mengunduh MP3 yang bersih sebagai pengganti (atau bersama) videonya."
+          "a": "Bisa, untuk pendukung. YouTube kini menyembunyikan audionya di balik login, jadi MP3 dari YouTube khusus pendukung. Menyimpan video tetap gratis."
         },
         {
           "q": "Berapa kualitas maksimumnya?",

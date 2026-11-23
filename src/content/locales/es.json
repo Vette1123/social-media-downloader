@@ -361,7 +361,7 @@
         "Descarga reels, videos y fotos de Instagram",
         "Descarga videos y Shorts de YouTube en HD",
         "Descarga videos, clips de Watch y reels de Facebook en HD",
-        "Extrae audio MP3 de videos de TikTok, YouTube y Facebook",
+        "Extrae audio MP3 de videos de TikTok y Facebook (YouTube para quienes apoyan)",
         "Descarga presentaciones de TikTok (carruseles de fotos) con su música original",
         "Descarga carruseles de fotos de Instagram: cada imagen por separado o en un ZIP",
         "Previsualiza el video, el audio y las imágenes antes de descargar",
@@ -395,7 +395,7 @@
     },
     {
       "q": "¿Puedo descargar videos y Shorts de YouTube?",
-      "a": "Sí. Pega cualquier enlace youtube.com/watch?v=…, youtu.be/… o /shorts/… y la herramienta resuelve el flujo para que lo previsualices, descargues el MP4 en HD o extraigas el audio como MP3. Los videos con restricción de edad, privados o solo para miembros no son compatibles."
+      "a": "Sí. Pega cualquier enlace youtube.com/watch?v=…, youtu.be/… o /shorts/… y la herramienta resuelve el flujo para que lo previsualices, o descargues el MP4 en HD. El MP3 de YouTube es para quienes apoyan, porque YouTube ahora oculta su audio tras un inicio de sesión. Los videos con restricción de edad, privados o solo para miembros no son compatibles."
     },
     {
       "q": "¿Admite videos y reels de Facebook?",
@@ -725,7 +725,7 @@
         },
         {
           "title": "🎵 Extracción de audio MP3",
-          "body": "Saca solo la banda sonora como un MP3 limpio. Perfecto para música, clases, podcasts y clips para aprender idiomas."
+          "body": "Saca solo la banda sonora como un MP3 limpio, para música, clases y podcasts. En YouTube es para quienes apoyan, porque ahora oculta su audio tras un inicio de sesión."
         },
         {
           "title": "⚡ Listo para Shorts",
@@ -743,7 +743,7 @@
         },
         {
           "q": "¿Puedo extraer solo el audio MP3?",
-          "a": "Sí. Haz clic en Extraer audio tras procesar para descargar un MP3 limpio en lugar del video (o junto con él)."
+          "a": "Sí, si apoyas el proyecto. YouTube ahora oculta su audio tras un inicio de sesión, así que el MP3 de YouTube es para quienes apoyan. Guardar el video sigue siendo gratis."
         },
         {
           "q": "¿Cuál es la calidad máxima?",
