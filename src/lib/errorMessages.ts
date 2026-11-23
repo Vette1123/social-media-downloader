@@ -37,6 +37,7 @@ const RATE =/rate[- ]?limit|too many|429|blocking requests|blocked/i
 const NETWORK =
   /network|timeout|timed out|econn|fetch failed|failed to fetch|load failed|socket/i
 const STORY = /story|stories|highlight/i
+const SUPPORTER = /supporter feature/i
 // The extractors' last resort lists GUESSES: "may be private, age-restricted,
 // or unavailable". Read word by word, that made every X failure "Age-restricted"
 // and every unknown site "private" (14 Nov), and people retried a post they had
@@ -79,6 +80,15 @@ export function friendlyError(
       title: 'You are offline',
       hint: 'This link needs a connection to resolve. Reconnect and try again — nothing about the post is wrong.',
       retry: 'yes',
+    }
+  }
+
+  // Before PRIVATE and friends: a refusal by design, not a fault in the post.
+  if (SUPPORTER.test(text)) {
+    return {
+      title: 'MP3 from YouTube is for supporters',
+      hint: 'YouTube now hides its audio behind a login. Saving the video stays free; supporters can pick MP3 (Support, at the top of the page).',
+      retry: 'no',
     }
   }
 

@@ -19,8 +19,11 @@ export type FailureCode =
   | 'server'
   // The visitor's own browser or disk refused: storage full, a blob's temp file gone.
   | 'device'
+  // A supporter-only resolve asked for without a supporter token: a refusal by design.
+  | 'supporter'
 
 const RULES: [RegExp, FailureCode][] = [
+  [/supporter feature/i, 'supporter'],
   [/could not be read|notreadableerror|quotaexceedederror|no space left|disk is full/i, 'device'],
   [/failed to fetch|network ?error|network request failed|load failed|offline/i, 'network'],
   [/timed? ?out|aborterror|gateway/i, 'timeout'],

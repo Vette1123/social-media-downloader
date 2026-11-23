@@ -361,7 +361,7 @@
         "Baixe reels, vídeos e fotos do Instagram",
         "Baixe vídeos e Shorts do YouTube em HD",
         "Baixe vídeos, clipes do Watch e reels do Facebook em HD",
-        "Extraia áudio MP3 de vídeos do TikTok, YouTube e Facebook",
+        "Extraia áudio MP3 de vídeos do TikTok e Facebook (YouTube para apoiadores)",
         "Baixe slideshows do TikTok (carrosséis de fotos) com a música original",
         "Baixe carrosséis de fotos do Instagram: cada imagem separada ou em um ZIP",
         "Veja a prévia de vídeo, áudio e imagens antes de baixar",
@@ -395,7 +395,7 @@
     },
     {
       "q": "Dá para baixar vídeos e Shorts do YouTube?",
-      "a": "Sim. Cole qualquer link youtube.com/watch?v=…, youtu.be/… ou /shorts/… e a ferramenta resolve o stream para você ver a prévia, baixar o MP4 em HD ou extrair o áudio como MP3. Vídeos com restrição de idade, privados e exclusivos para membros não são compatíveis."
+      "a": "Sim. Cole qualquer link youtube.com/watch?v=…, youtu.be/… ou /shorts/… e a ferramenta resolve o stream para você ver a prévia, ou baixar o MP4 em HD. O MP3 do YouTube é para apoiadores, porque o YouTube agora esconde o áudio atrás de um login. Vídeos com restrição de idade, privados e exclusivos para membros não são compatíveis."
     },
     {
       "q": "Funciona com vídeos e reels do Facebook?",
@@ -725,7 +725,7 @@
         },
         {
           "title": "🎵 Extração de áudio MP3",
-          "body": "Extraia só a trilha como um MP3 limpo. Perfeito para música, aulas, podcasts e trechos para aprender idiomas."
+          "body": "Extraia só a trilha como um MP3 limpo, para música, aulas e podcasts. No YouTube é para apoiadores, porque agora o áudio fica atrás de um login."
         },
         {
           "title": "⚡ Pronto para Shorts",
@@ -743,7 +743,7 @@
         },
         {
           "q": "Posso extrair só o áudio em MP3?",
-          "a": "Sim. Clique em Extrair áudio depois de processar para baixar um MP3 limpo no lugar do vídeo (ou junto com ele)."
+          "a": "Sim, para apoiadores. O YouTube agora esconde o áudio atrás de um login, então o MP3 do YouTube é para apoiadores. Salvar o vídeo continua grátis."
         },
         {
           "q": "Qual é a qualidade máxima?",

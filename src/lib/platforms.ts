@@ -435,7 +435,7 @@ export const platforms: Platform[] = [
       },
       {
         title: '🎵 MP3 audio extract',
-        body: 'Pull just the soundtrack as a clean MP3. Perfect for music, lectures, podcasts, and language-learning clips.',
+        body: 'Pull just the soundtrack as a clean MP3, for music, lectures and podcasts. A supporter feature on YouTube, which now keeps its audio behind a login.',
       },
       {
         title: '⚡ Shorts ready',
@@ -453,7 +453,7 @@ export const platforms: Platform[] = [
       },
       {
         q: 'Can I extract just the MP3 audio?',
-        a: 'Yes. Click Extract Audio after processing to download a clean MP3 instead of (or alongside) the video.',
+        a: 'Yes, as a supporter. YouTube now keeps its audio behind a login, so MP3 from YouTube is a supporter feature. Saving the video stays free.',
       },
       {
         q: 'What\'s the maximum quality?',

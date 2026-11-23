@@ -33,7 +33,7 @@ export const homepageFaqs: HomepageFaq[] = [
   },
   {
     q: 'Can I download YouTube videos and Shorts?',
-    a: 'Yes. Paste any youtube.com/watch?v=…, youtu.be/…, or /shorts/… link and the tool resolves the stream so you can preview it, download the MP4 in HD, or extract the audio as an MP3. Age-restricted, private, and members-only videos are not supported.',
+    a: 'Yes. Paste any youtube.com/watch?v=…, youtu.be/…, or /shorts/… link and the tool resolves the stream so you can preview it, or download the MP4 in HD. MP3 from YouTube is a supporter feature, since YouTube now keeps its audio behind a login. Age-restricted, private, and members-only videos are not supported.',
   },
   {
     q: 'Does it support Facebook videos and reels?',

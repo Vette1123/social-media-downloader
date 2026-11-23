@@ -152,7 +152,7 @@ export const pageCopy = {
       'Download Instagram reels, videos and photos',
       'Download YouTube videos and Shorts in HD',
       'Download Facebook videos, watch clips and reels in HD',
-      'Extract MP3 audio from TikTok, YouTube and Facebook videos',
+      'Extract MP3 audio from TikTok and Facebook videos (YouTube for supporters)',
       'Download TikTok slideshows (photo carousels) with original music',
       'Download Instagram photo carousels — every image individually or as a ZIP',
       'Preview video, audio and images before downloading',

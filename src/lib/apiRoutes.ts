@@ -39,6 +39,7 @@ import {
 } from './subtitles'
 import { fetchPlayerResponse } from './youtubeInnertube'
 import { type TokenPayload, verifyToken } from './proToken'
+import { bodyForCaller, supporterOnlyReason } from './supporterOnly'
 import { handleWebhook } from './billing/webhook'
 import { handlePortal } from './billing/portal'
 import { handleCheckout } from './billing/checkout'
@@ -222,6 +223,13 @@ export async function handleDownload(
      */
     const credentialed = claims?.c === true
 
+    // Before the cache: a cached public payload must not answer a request the
+    // caller isn't entitled to make.
+    const refusal = supporterOnlyReason(platform, mode, priority)
+    if (refusal) {
+      return Response.json({ success: false, error: refusal }, { status: 403 })
+    }
+
     // Serve an identical recent resolve from cache — skips a full extractor
     // round-trip for repeats (double-tap, HD/SD/MP3 re-pick, Recent re-tap, or
     // simply a link several people paste). Keyed on everything that changes the
@@ -254,14 +262,14 @@ export async function handleDownload(
 
     if (!credentialed) {
       const cached = getCached(cacheKey)
-      if (cached) return cachedResponse(cached, 'HIT')
+      if (cached) return cachedResponse(bodyForCaller(cached, platform, priority), 'HIT')
 
       const edge = await readEdgeCache(origin, cacheKey)
       if (edge) {
         // Promote into this isolate so a second repeat skips even the edge
         // lookup, which is I/O and therefore latency the Map does not cost.
         setCached(cacheKey, edge)
-        return cachedResponse(edge, 'EDGE')
+        return cachedResponse(bodyForCaller(edge, platform, priority), 'EDGE')
       }
     }
 
@@ -379,7 +387,7 @@ export async function handleDownload(
       writeEdgeCache(origin, cacheKey, body, ctx)
     }
 
-    return new Response(body, {
+    return new Response(bodyForCaller(body, platform, priority), {
       headers: { 'Content-Type': 'application/json', 'X-Cache': 'MISS' },
     })
   } catch (error) {

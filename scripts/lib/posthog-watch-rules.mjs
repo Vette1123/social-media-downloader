@@ -21,7 +21,8 @@ export const SUPPORTED_HOSTS = [
  * Codes that are not our bug: the platform's mood, the visitor's network, or a
  * verdict the extractor reached with evidence (a private or removed post).
  */
-export const EXPECTED_CODES = ['rate_limited', 'network', 'canceled', 'private', 'unavailable', 'device']
+// `supporter`: a supporter-only resolve refused by design (YouTube MP3, src/lib/supporterOnly.ts).
+export const EXPECTED_CODES = ['rate_limited', 'network', 'canceled', 'private', 'unavailable', 'device', 'supporter']
 
 /** Hosts the generic extractor serves on purpose (Telegram's embed page). */
 export const GENERIC_HOSTS = ['t.me']
