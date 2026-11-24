@@ -275,8 +275,10 @@ export function parseInstagramShortcode(url: string): string | null {
  * the only path — for the one link shape the mobile app's Copy link produces.
  * `next` still carries the real path, and reading it costs nothing.
  *
- * Facebook writes the same wall at `/login/` with an absolute `next`, so both
- * shapes are accepted. Anything that is not a login wall comes back unchanged.
+ * Facebook writes the same wall at `/login/` or `/login.php` with an absolute
+ * `next` (a share link to a story ends at `/login.php?next=…/stories/…`), so
+ * all three are accepted. Anything that is not a login wall comes back
+ * unchanged.
  */
 export function unwrapLoginWall(finalUrl: string): string {
   let parsed: URL
@@ -285,7 +287,7 @@ export function unwrapLoginWall(finalUrl: string): string {
   } catch {
     return finalUrl
   }
-  if (!/^\/(?:accounts\/)?login\/?$/.test(parsed.pathname)) return finalUrl
+  if (!/^\/(?:accounts\/login\/?|login(?:\.php|\/)?)$/.test(parsed.pathname)) return finalUrl
 
   const next = parsed.searchParams.get('next')
   if (!next) return finalUrl

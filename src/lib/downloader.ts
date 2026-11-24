@@ -513,6 +513,14 @@ export function isCrawlerOnlyShareLink(url: string): boolean {
  * What a visitor sees when a Facebook share link opens only for a logged-in
  * account. `logged-in` files it under `private` (see analyticsErrors.ts).
  */
+/**
+ * What a visitor sees for a Facebook story, pasted directly or behind a share
+ * link. Facebook sends every logged-out client (crawlers included) to its
+ * login page for these.
+ */
+export const FACEBOOK_STORY =
+  "This is a Facebook story — Facebook serves these only to a logged-in account, so they cannot be downloaded here. Public videos, reels and watch links work.";
+
 export const FACEBOOK_SHARE_WALLED =
   "Facebook opens this link only for logged-in viewers, so it cannot be downloaded here. The post is friends-only, in a private group, or was deleted. Public videos, reels and watch links work.";
 
@@ -2772,11 +2780,7 @@ export class Downloader {
    * attempts and a generic error.
    */
   private async downloadFacebook(url: string): Promise<VideoData> {
-    if (isFacebookStory(url)) {
-      throw new Error(
-        "This is a Facebook story — Facebook serves these only to a logged-in account, so they cannot be downloaded here. Public videos, reels and watch links work.",
-      );
-    }
+    if (isFacebookStory(url)) throw new Error(FACEBOOK_STORY);
 
     let resolvedUrl = url;
     if (
@@ -2785,6 +2789,11 @@ export class Downloader {
       url.includes("fb.com")
     ) {
       const hop = await this.followRedirect(url);
+      // A share link can lead to a story (via /login.php?next=…/stories/…,
+      // unwrapped by followRedirect): name it, not "friends-only or deleted".
+      if (hop.answered && isFacebookStory(hop.url)) {
+        throw new Error(FACEBOOK_STORY);
+      }
       // Only an answer Facebook gave counts: a timeout also leaves the link on
       // /share/, and that is not the post's fault.
       if (
