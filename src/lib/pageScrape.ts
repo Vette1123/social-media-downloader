@@ -28,6 +28,7 @@ import {
   scriptContaining,
 } from './htmlExtract'
 import { secondaryRelaysUsable } from './nativeMedia'
+import { pageRelayUrl } from './pageRelay'
 
 /**
  * How much of the page is pulled off the wire at all. `readCappedText` stops
@@ -125,6 +126,16 @@ export function looksLikeBotWall(html: string): boolean {
 }
 
 /**
+ * Whether a fetched body is a wall rather than the thing asked for. The size
+ * test is for HTML: a compact JSON answer (a player API) is the payload, not a
+ * stub, however short it is. An empty body is a wall either way.
+ */
+export function isWalled(body: string, contentType: string | null): boolean {
+  if (!body.trim()) return true
+  return !(contentType ?? '').includes('json') && looksLikeBotWall(body)
+}
+
+/**
  * One last way to read a page that walled us: fetch it through an unlocker.
  *
  * The block these sites apply is on datacenter IP ranges, not on Cloudflare
@@ -171,6 +182,8 @@ export function unlockerUrl(target: string): string | null {
 interface RelayAttempt {
   url: string
   headers?: Record<string, string>
+  /** One try only: a refusal from this relay is the site walling it too. */
+  once?: boolean
 }
 
 function archiveUrl(target: string): RelayAttempt {
@@ -226,12 +239,16 @@ function corsProxyUrl(target: string): RelayAttempt {
  */
 export async function fetchThroughRelay(target: string): Promise<string | null> {
   const configured = unlockerUrl(target)
-  // The reader is always first: it answers every egress we run on, including
-  // Cloudflare (re-measured 2026-09-22 — the older reading of all three
-  // refusing is stale as far as it goes). The archive and the CORS proxy still
-  // refuse Workers, so off Workers they would only buy timeouts. See
-  // secondaryRelaysUsable().
-  const attempts: RelayAttempt[] = [readerUrl(target)]
+  // Our own signed relay first: it runs outside Cloudflare, so it is the one
+  // attempt that is answered by a host that walls a Worker's address. The
+  // reader is next; it answers every egress we run on, including Cloudflare
+  // (re-measured 2026-09-22 — the older reading of all three refusing is stale
+  // as far as it goes). The archive and the CORS proxy still refuse Workers,
+  // so off Workers they would only buy timeouts. See secondaryRelaysUsable().
+  const attempts: RelayAttempt[] = []
+  const signed = await pageRelayUrl(target, process.env.PAGE_RELAY_KEY)
+  if (signed) attempts.push({ url: signed, once: true })
+  attempts.push(readerUrl(target))
   if (secondaryRelaysUsable()) attempts.push(archiveUrl(target), corsProxyUrl(target))
   if (configured) attempts.push({ url: configured })
 
@@ -255,7 +272,7 @@ function retryWaitSeconds(response: Response): number {
   return Math.min(retryAfter, 5)
 }
 
-async function relay({ url, headers }: RelayAttempt): Promise<string | null> {
+async function relay({ url, headers, once }: RelayAttempt): Promise<string | null> {
   // The reader rate-limits the addresses it sees most and answers 429 with a
   // retry-after of a few seconds; a challenge it has cached for a fetch like
   // this one comes back 403 until the fetch asks for fresh bytes. Both are
@@ -263,7 +280,8 @@ async function relay({ url, headers }: RelayAttempt): Promise<string | null> {
   // this path only runs after everything else has already failed. A wall, a
   // missing page, or any other status is the relay declining, not stalling,
   // and stays a single attempt.
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  const tries = once ? 1 : 3
+  for (let attempt = 1; attempt <= tries; attempt++) {
     let response: Response
     try {
       response = await fetch(url, {
@@ -274,12 +292,12 @@ async function relay({ url, headers }: RelayAttempt): Promise<string | null> {
       return null
     }
     if (response.ok) {
-      const html = await readCappedText(response)
+      const body = await readCappedText(response)
       // A wall relayed through anything is still a wall.
-      return looksLikeBotWall(html) ? null : html
+      return isWalled(body, response.headers.get('content-type')) ? null : body
     }
     const retryable = response.status === 429 || response.status === 403
-    if (!retryable || attempt === 3) return null
+    if (!retryable || attempt === tries) return null
     const waitMs = retryWaitSeconds(response) * 1000
     await new Promise((resolve) => setTimeout(resolve, waitMs))
   }

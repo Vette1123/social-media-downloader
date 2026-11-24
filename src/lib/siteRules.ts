@@ -24,7 +24,12 @@
  *     "fid":     "/thumbs/static\\d+/\\d+/\\d+/\\d+/(\\d+)/",
  *     "media":   "https://www.site.example/dload/$1/{h}/$2-{h}p.mp4",
  *     "heights": [1080, 720, 480],
- *     "hcap":    "\"height\":\\s*\"(\\d+)\""
+ *     "hcap":    "\"height\":\\s*\"(\\d+)\"",
+ *     "vid":     "player\\.vid\\s*=\\s*'([A-Za-z0-9]+)'",
+ *     "hash":    "player\\.hash\\s*=\\s*'([0-9a-f]+)'",
+ *     "hashFormat": "base36",
+ *     "api":     "https://www.site.example/xhr/video/$1?hash={hash}&_={ts}",
+ *     "src":     "\"src\"\\s*:\\s*\"([^\"]+)\""
  *   }]
  *
  * `id` is matched against the pasted URL and `fid` against the fetched page;
@@ -41,6 +46,21 @@
  * and refusing would turn a working link into the block message. The page's
  * own height is returned unverified instead; from an address the host answers
  * normally the probe still decides.
+ *
+ * `hash`, `hashFormat`, `api` and `src` (all optional) describe a player API
+ * that hands out a signed file URL. `hash` captures the page's player token;
+ * `hashFormat` is how the API wants it re-encoded (`base36` turns fixed-width
+ * hex chunks into base-36 integers, anything else passes the token through).
+ * `api` is fetched next — `{hash}` is the token, `{ts}` a cache-buster — and
+ * `src` pulls candidate URLs out of the body (default: JSON `"src"` fields).
+ * Each candidate is probed, and the first that serves wins before the ladder
+ * above is tried. An API source is usually signed for the caller and is
+ * therefore the one URL that still works from an address the site walls.
+ *
+ * `vid` (optional) captures the player's own name for the video from the page.
+ * A link that reached us in another shape — a numeric file id, a player URL —
+ * still opens the same page, and that page states the name the API and the
+ * download template actually want, so it replaces the id taken from the path.
  */
 
 import type { ScrapedMedia } from './pageScrape'
@@ -53,6 +73,11 @@ export interface SiteRule {
   media: string
   heights?: number[]
   hcap?: string
+  vid?: string
+  hash?: string
+  hashFormat?: string
+  api?: string
+  src?: string
 }
 
 /** Probed highest-first when a rule does not name its own ladder. */
@@ -78,8 +103,15 @@ let cached: SiteRule[] | null = null
 function isRule(value: unknown): value is SiteRule {
   if (!value || typeof value !== 'object') return false
   const rule = value as Record<string, unknown>
-  return ['host', 'id', 'page', 'fid', 'media'].every(
-    (key) => typeof rule[key] === 'string' && (rule[key] as string).length > 0,
+  const required = ['host', 'id', 'page', 'fid', 'media']
+  const optional = ['hcap', 'vid', 'hash', 'hashFormat', 'api', 'src']
+  return (
+    required.every(
+      (key) => typeof rule[key] === 'string' && (rule[key] as string).length > 0,
+    ) &&
+    optional.every(
+      (key) => rule[key] === undefined || typeof rule[key] === 'string',
+    )
   )
 }
 
@@ -149,6 +181,68 @@ function fill(template: string, id: string, fid: string, height: number): string
     .replace(/\$1/g, id)
     .replace(/\$2/g, fid)
     .replace(/\{h\}/g, String(height))
+    .replace(/\{ts\}/g, String(Date.now()))
+}
+
+const HEX_ONLY = /^[0-9a-f]+$/i
+
+/**
+ * Re-encode a player token the way an API expects it. `base36` is the common
+ * shape: the page hands out hex in fixed-width chunks and the API wants each
+ * chunk as a base-36 integer. A token that is not hex, or a format this build
+ * does not know, is passed through untouched rather than mangled.
+ */
+function formatHash(raw: string, format?: string): string {
+  if (format !== 'base36' || !HEX_ONLY.test(raw)) return raw
+  return (raw.match(/.{1,8}/g) ?? [])
+    .map((chunk) => parseInt(chunk, 16).toString(36))
+    .join('')
+}
+
+function fillApi(template: string, id: string, fid: string, hash: string): string {
+  return template
+    .replace(/\$1/g, id)
+    .replace(/\$2/g, fid)
+    .replace(/\{hash\}/g, encodeURIComponent(hash))
+    .replace(/\{ts\}/g, String(Date.now()))
+}
+
+/** What an API body names as its file when the rule does not say otherwise. */
+const DEFAULT_SRC = '"src"\\s*:\\s*"([^"]+)"'
+const MEDIA_FILE = /\.(?:mp4|webm|mov|m4v|m3u8|mpd)(?:\?|#|$)/i
+
+/**
+ * Candidate file URLs in an API body, best first. A `src` field is the usual
+ * shape; the rule may name another. Media-looking URLs win over anything else
+ * the body happens to call `src` (a player or an ad slot), but an API that
+ * signs extensionless URLs keeps its own order rather than losing every entry.
+ */
+function apiSources(body: string, pattern: string | undefined, apiUrl: string): string[] {
+  let regex: RegExp
+  try {
+    regex = new RegExp(pattern ?? DEFAULT_SRC, 'g')
+  } catch {
+    return []
+  }
+
+  const found: string[] = []
+  let match: RegExpExecArray | null
+  while ((match = regex.exec(body)) !== null) {
+    const raw = match[1]?.replace(/\\\//g, '/')
+    if (!raw) continue
+    let url: string
+    try {
+      url = new URL(raw, apiUrl).toString()
+    } catch {
+      continue
+    }
+    if (!/^https?:\/\//i.test(url) || found.includes(url)) continue
+    found.push(url)
+    if (found.length >= MAX_PROBES * 2) break
+  }
+
+  const media = found.filter((url) => MEDIA_FILE.test(url))
+  return (media.length ? media : found).slice(0, MAX_PROBES)
 }
 
 /**
@@ -239,12 +333,9 @@ export async function resolveByRule(
     const fid = capture(rule.fid, html)
     if (!fid) continue
 
-    const stated = rule.hcap ? Number(capture(rule.hcap, html)) : NaN
-    const ladder = (rule.heights ?? DEFAULT_HEIGHTS).slice(0, MAX_PROBES)
-    const order =
-      Number.isFinite(stated) && stated > 0
-        ? [stated, ...ladder.filter((height) => height !== stated)].slice(0, MAX_PROBES)
-        : ladder
+    // The page names the video the way its own player and API do. A link that
+    // arrived in another shape still opened this page, so that name wins.
+    const playerId = (rule.vid ? capture(rule.vid, html) : null) ?? id
 
     const result = (mediaUrl: string): ScrapedMedia => ({
       mediaUrl,
@@ -253,9 +344,37 @@ export async function resolveByRule(
       thumbnail: pageThumbnail(html),
     })
 
+    // A player API hands out a file URL signed for the caller, which is the one
+    // thing that still serves from an address the site walls. Try it before the
+    // ladder, and fall through when the body names nothing that serves.
+    if (rule.api && rule.hash) {
+      const token = capture(rule.hash, html)
+      if (token) {
+        const apiUrl = fillApi(
+          rule.api,
+          playerId,
+          fid,
+          formatHash(token, rule.hashFormat),
+        )
+        const body = await fetchPage(apiUrl)
+        if (body) {
+          for (const source of apiSources(body, rule.src, apiUrl)) {
+            if ((await probeRendition(source)) === 'serves') return result(source)
+          }
+        }
+      }
+    }
+
+    const stated = rule.hcap ? Number(capture(rule.hcap, html)) : NaN
+    const ladder = (rule.heights ?? DEFAULT_HEIGHTS).slice(0, MAX_PROBES)
+    const order =
+      Number.isFinite(stated) && stated > 0
+        ? [stated, ...ladder.filter((height) => height !== stated)].slice(0, MAX_PROBES)
+        : ladder
+
     let walled: string | null = null
     for (const height of order) {
-      const mediaUrl = fill(rule.media, id, fid, height)
+      const mediaUrl = fill(rule.media, playerId, fid, height)
       const verdict = await probeRendition(mediaUrl)
       if (verdict === 'serves') return result(mediaUrl)
       // The page's own height answered with a page from an egress the host does

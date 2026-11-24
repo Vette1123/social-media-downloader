@@ -202,3 +202,4 @@ the index for exactly that.
 | 2026-11-23 | [seo:pending](2026-11-23-seo-pending.md) | The daily Request Indexing list now exists: URL Inspection API + a 14-day ledger, ranked so section and title pages come before 156 alphabetical collection pages. |
 | 2026-11-23 | [Facebook share links: where they landed](2026-11-23-facebook-share-landed.md) | Inconclusive share failures took 3-7 s, so Facebook answered: the event now carries the shape of the post the link led to, which is what a repro needs. |
 | 2026-11-24 | [A share link to a story says so](2026-11-24-facebook-share-to-story.md) | Facebook walls stories at /login.php?next=…; unwrapLoginWall only knew /login/, so a live story read "friends-only or deleted". |
+| 2026-11-24 | [Site rules read a player API through our relay](2026-11-24-site-rule-player-api.md) | Walled sites now resolve through our signed relay + the player API; our own relay is asked once, since its 403 means the site walls it too. |

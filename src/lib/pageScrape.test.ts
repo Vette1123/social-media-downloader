@@ -5,6 +5,7 @@ import {
   fetchThroughRelay,
   filenameTitle,
   isDirectMediaType,
+  isWalled,
   looksLikeBotWall,
   MAX_SCAN_BYTES,
   MIN_REAL_PAGE_BYTES,
@@ -345,6 +346,14 @@ describe('telling a bot wall apart from a page with no video', () => {
     expect(looksLikeBotWall('')).toBe(true)
     expect(looksLikeBotWall('   \n  ')).toBe(true)
   })
+
+  it('keeps a short JSON answer, which is a payload rather than a stub', () => {
+    const api = '{"sources":{"mp4":{"src":"https://cdn.example/1.mp4"}}}'
+    expect(isWalled(api, 'application/json; charset=utf-8')).toBe(false)
+    expect(isWalled(api, 'text/html')).toBe(true)
+    expect(isWalled(api, null)).toBe(true)
+    expect(isWalled('  ', 'application/json')).toBe(true)
+  })
 })
 
 /**
@@ -574,5 +583,53 @@ describe('fetchThroughRelay', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('over quota', { status: 402 })))
 
     await expect(fetchThroughRelay('https://site.example/v')).resolves.toBeNull()
+  })
+
+  it('returns a short JSON body from a relay instead of calling it a wall', async () => {
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    const api = '{"src":"https://cdn.example/1.mp4"}'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(api, { headers: { 'content-type': 'application/json' } })),
+    )
+
+    await expect(fetchThroughRelay('https://site.example/xhr/1')).resolves.toBe(api)
+  })
+
+  it('asks our own signed relay before the reader when a key is set', async () => {
+    const pair = (await crypto.subtle.generateKey({ name: 'Ed25519' }, true, [
+      'sign',
+      'verify',
+    ])) as CryptoKeyPair
+    const pkcs8 = await crypto.subtle.exportKey('pkcs8', pair.privateKey)
+    vi.stubEnv('PAGE_RELAY_KEY', Buffer.from(pkcs8).toString('base64url'))
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => new Response(REAL_PAGE))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(
+      /^https:\/\/reely-ig-page\.netlify\.app\/page\?u=https%3A%2F%2Fsite\.example%2Fv&exp=\d+&sig=/,
+    )
+  })
+
+  it('asks our own relay once: its 403 is the site walling it too, not a cached challenge', async () => {
+    const pair = (await crypto.subtle.generateKey({ name: 'Ed25519' }, true, [
+      'sign',
+      'verify',
+    ])) as CryptoKeyPair
+    const pkcs8 = await crypto.subtle.exportKey('pkcs8', pair.privateKey)
+    vi.stubEnv('PAGE_RELAY_KEY', Buffer.from(pkcs8).toString('base64url'))
+    vi.stubEnv('SCRAPE_UNLOCKER_URL', '')
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 403 }))
+      .mockResolvedValueOnce(new Response(REAL_PAGE))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(fetchThroughRelay('https://site.example/v')).resolves.toContain('word')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[1][0]).toBe('https://r.jina.ai/https://site.example/v')
   })
 })

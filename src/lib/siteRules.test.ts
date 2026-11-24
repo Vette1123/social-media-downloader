@@ -71,6 +71,11 @@ describe('siteRules parsing', () => {
     expect(siteRules()).toHaveLength(1)
   })
 
+  it('drops an entry whose optional field has the wrong type', () => {
+    configure([RULE, { ...RULE, api: 42 }])
+    expect(siteRules()).toHaveLength(1)
+  })
+
   it('matches a host regardless of the www prefix on either side', () => {
     configure([RULE])
     expect(ruleFor('https://site.example/video-abc/x/')).not.toBeNull()
@@ -248,5 +253,149 @@ describe('resolveByRule', () => {
     configure([RULE])
     vi.stubGlobal('fetch', headMock([]))
     await expect(resolveByRule(WATCH, page)).resolves.toBeNull()
+  })
+})
+
+describe('player API recipes', () => {
+  const API_RULE = {
+    ...RULE,
+    hash: "player\\.hash\\s*=\\s*'([0-9a-f]+)'",
+    hashFormat: 'base36',
+    api: 'https://www.site.example/xhr/video/$1?hash={hash}&_={ts}',
+  }
+
+  const API_PAGE = PAGE.replace(
+    '</body>',
+    "<script>player.hash = 'f0b823db7573337c77e54205126dcd6f';</script></body>",
+  )
+
+  const API_BODY = JSON.stringify({
+    sources: {
+      mp4: {
+        '720p HD': { src: 'https://cdn.site.example/v6/a/1-720p.mp4' },
+        '480p': { src: 'https://cdn.site.example/v6/a/1-480p.mp4' },
+      },
+    },
+  })
+
+  const readBoth = (body = API_BODY) => async (target: string): Promise<string | null> => {
+    if (target.includes('/embed/')) return API_PAGE
+    if (target.includes('/xhr/video/')) return body
+    return null
+  }
+
+  it('asks the player API with the re-encoded token, and returns its first serving source', async () => {
+    configure([API_RULE])
+    const wanted = 'https://cdn.site.example/v6/a/1-720p.mp4'
+    const fetchMock = headMock([wanted])
+    vi.stubGlobal('fetch', fetchMock)
+
+    const asked: string[] = []
+    const media = await resolveByRule(WATCH, async (target) => {
+      asked.push(target)
+      return readBoth()(target)
+    })
+
+    expect(media?.mediaUrl).toBe(wanted)
+    expect(asked).toHaveLength(2)
+    expect(asked[0]).toBe('https://www.site.example/embed/YI0Ch192Dyi/')
+    expect(asked[1]).toMatch(
+      /^https:\/\/www\.site\.example\/xhr\/video\/YI0Ch192Dyi\?hash=1ush7ffwl6b98x9lpmt542xdb&_=\d+$/,
+    )
+    // One probe, on the source the API named first: the ladder never runs.
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the title and thumbnail from the page that carried the token', async () => {
+    configure([API_RULE])
+    vi.stubGlobal('fetch', headMock(['https://cdn.site.example/v6/a/1-720p.mp4']))
+
+    const media = await resolveByRule(WATCH, readBoth())
+    expect(media?.title).toBe('A Clip')
+    expect(media?.thumbnail).toBe('https://img.site.example/a.jpg')
+  })
+
+  it('falls back to the ladder when no API source serves', async () => {
+    configure([API_RULE])
+    const wanted = 'https://www.site.example/dload/YI0Ch192Dyi/1080/17187864-1080p.mp4'
+    vi.stubGlobal('fetch', headMock([wanted]))
+
+    const media = await resolveByRule(WATCH, readBoth())
+    expect(media?.mediaUrl).toBe(wanted)
+  })
+
+  it('falls back to the ladder when the API cannot be read', async () => {
+    configure([API_RULE])
+    const wanted = 'https://www.site.example/dload/YI0Ch192Dyi/1080/17187864-1080p.mp4'
+    vi.stubGlobal('fetch', headMock([wanted]))
+
+    const media = await resolveByRule(WATCH, async (target) =>
+      target.includes('/embed/') ? API_PAGE : null,
+    )
+    expect(media?.mediaUrl).toBe(wanted)
+  })
+
+  it('resolves a relative source against the API URL', async () => {
+    configure([API_RULE])
+    const wanted = 'https://www.site.example/v/1.mp4'
+    vi.stubGlobal('fetch', headMock([wanted]))
+
+    const media = await resolveByRule(
+      WATCH,
+      readBoth(JSON.stringify({ sources: { mp4: { src: '/v/1.mp4' } } })),
+    )
+    expect(media?.mediaUrl).toBe(wanted)
+  })
+
+  it('honours a rule that names a different source field', async () => {
+    configure([{ ...API_RULE, src: '"file"\\s*:\\s*"([^"]+)"' }])
+    const wanted = 'https://cdn.site.example/v/1.mp4'
+    vi.stubGlobal('fetch', headMock([wanted]))
+
+    const media = await resolveByRule(
+      WATCH,
+      readBoth(JSON.stringify({ file: wanted, src: 'https://cdn.site.example/v/wrong.mp4' })),
+    )
+    expect(media?.mediaUrl).toBe(wanted)
+  })
+
+  it('passes a non-hex token through instead of mangling it', async () => {
+    configure([{ ...API_RULE, hash: "player\\.hash\\s*=\\s*'([^']+)'" }])
+    const asked: string[] = []
+    await resolveByRule(WATCH, async (target) => {
+      asked.push(target)
+      if (target.includes('/embed/')) {
+        return API_PAGE.replace('f0b823db7573337c77e54205126dcd6f', 'zzzz-token')
+      }
+      return null
+    })
+
+    expect(asked[1]).toContain('hash=zzzz-token&')
+  })
+
+  it('prefers the player id the page states over the one in the path', async () => {
+    configure([{ ...API_RULE, vid: "player\\.vid\\s*=\\s*'([A-Za-z0-9]+)'" }])
+    const wanted = 'https://cdn.site.example/v6/a/1-720p.mp4'
+    vi.stubGlobal('fetch', headMock([wanted]))
+
+    const asked: string[] = []
+    const media = await resolveByRule(
+      'https://www.site.example/hd-porn/18976060/a-slug/',
+      async (target) => {
+        asked.push(target)
+        if (target.includes('/embed/')) {
+          return API_PAGE.replace(
+            '</body>',
+            "<script>player.vid = 'wPmkEKkBUoM';</script></body>",
+          )
+        }
+        if (target.includes('/xhr/video/')) return API_BODY
+        return null
+      },
+    )
+
+    expect(media?.mediaUrl).toBe(wanted)
+    expect(asked[0]).toBe('https://www.site.example/embed/18976060/')
+    expect(asked[1]).toContain('/xhr/video/wPmkEKkBUoM?')
   })
 })

@@ -23,6 +23,7 @@ import {
   fetchThroughRelay,
   filenameTitle,
   isDirectMediaType,
+  isWalled,
   looksLikeBotWall,
   OriginBlockedError,
   readCappedText,
@@ -415,7 +416,7 @@ async function fetchPageDirectThenRelay(
       const html = await readCappedText(response);
       // A stub is not the page; fall through to the relay rather than feeding
       // the recipe markup that cannot contain what it is looking for.
-      if (html && !looksLikeBotWall(html)) return html;
+      if (!isWalled(html, response.headers.get("content-type"))) return html;
     }
   } catch {
     // Network failure is the same news as a wall here: try the relay.
