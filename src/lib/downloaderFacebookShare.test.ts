@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { failureCode } from './analyticsErrors'
 import { resolveFailure } from './apiRoutes'
+import { unwrapLoginWall } from './validator'
 import {
   Downloader,
   FACEBOOK_SHARE_WALLED,
+  FACEBOOK_STORY,
   isWalledFacebookShare,
   landedFailure,
 } from './downloader'
@@ -102,5 +104,45 @@ describe('landedFailure', () => {
     const reel = 'https://www.facebook.com/reel/1536569814605331/'
     const body = await resolveFailure(landedFailure('nope', reel, reel), 'x').json()
     expect(body).toEqual({ success: false, error: 'nope' })
+  })
+})
+
+/**
+ * 2026-11-24, a real link: facebook.com/share/1FvT4oZ33v/ answers crawlers with
+ * a 302 to /stories/<id>/…, which 302s to /login.php?next=<that story>. The
+ * walk stopped at login.php and the visitor read "friends-only or deleted".
+ */
+const STORY =
+  'https://www.facebook.com/stories/1769969363073584/UzpfSVNDOjE2NzczNTQ0MDA0Njg2NDA=/?view_single=1'
+const STORY_WALL = `https://www.facebook.com/login.php?next=${encodeURIComponent(STORY)}`
+
+describe('a share link that leads to a story', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it("reads the story behind Facebook's login.php wall", () => {
+    expect(unwrapLoginWall(STORY_WALL)).toBe(STORY)
+    const bare = 'https://www.facebook.com/login.php'
+    expect(unwrapLoginWall(bare)).toBe(bare)
+    const offsite = 'https://www.facebook.com/login.php?next=https%3A%2F%2Fevil.example%2F'
+    expect(unwrapLoginWall(offsite)).toBe(offsite)
+  })
+
+  it('says it is a story, after one request', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => answer(STORY_WALL))
+    await expect(
+      facebook(new Downloader()).downloadFacebook('https://www.facebook.com/share/1FvT4oZ33v/')
+    ).rejects.toThrow(FACEBOOK_STORY)
+    expect(spy).toHaveBeenCalledTimes(1)
+    // An expected refusal, never an extractor fault on the error board.
+    expect(failureCode(FACEBOOK_STORY)).toBe('private')
+  })
+
+  it('keeps the walled answer for a share link that stays on /share/', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
+      answer(`https://www.facebook.com/login.php?next=${encodeURIComponent(SHARE)}`)
+    )
+    await expect(facebook(new Downloader()).downloadFacebook(SHARE)).rejects.toThrow(
+      FACEBOOK_SHARE_WALLED
+    )
   })
 })
