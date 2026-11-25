@@ -1,5 +1,7 @@
 {
-  "requested": {},
+  "requested": {
+    "https://www.socialdownloader.space/telegram-downloader": "2026-11-25"
+  },
   "inspected": {
     "https://www.socialdownloader.space": {
       "date": "2026-11-23",
