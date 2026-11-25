@@ -433,8 +433,7 @@ function buildChecks() {
     },
 
     {
-      name: 'api/download resolves YouTube audio',
-      thirdParty: true,
+      name: 'api/download keeps YouTube audio for supporters',
       request: {
         pathname: '/api/download',
         method: 'POST',
@@ -445,20 +444,21 @@ function buildChecks() {
         timeoutMs: 90_000,
       },
       /**
-       * The audio is the half of YouTube worth still asserting: an audio-only
-       * adaptive stream needs no muxing, so it is the one thing Innertube can
-       * hand over whenever it answers at all. When it does not answer, the same
-       * reasoning as the check above applies — an MP3 nobody will serve us is
-       * not a promise the code can keep — so the embed is accepted as the floor
-       * and the message says which of the two came back.
+       * MP3 from YouTube is a supporter feature since 2026-11-23 (#91), and this
+       * probe has no supporter token. It used to expect 200 and went red on
+       * every Platform monitor run after the gate shipped. What an anonymous
+       * caller is owed now is the refusal, sent before any extractor or cache:
+       * a 403 whose error the client files as `supporter` (expected, no Error
+       * Tracking issue). No third party is involved, so it is a hard check.
        */
       check: async (response, body) => {
-        if (response.status !== 200) return `expected 200, got ${response.status}`
+        if (response.status !== 403) return `expected the supporter 403, got ${response.status}`
         const payload = JSON.parse(new TextDecoder().decode(body))
-        if (!payload.success) return `success=false: ${payload.error ?? 'no error given'}`
-        if (payload.audioUrl) return null
-        if (payload.metadata?.embedUrl) return null
-        return 'an audio-mode request came back with neither an MP3 nor an embed'
+        if (payload.success !== false) return 'a 403 that still says success'
+        if (!/supporter feature/i.test(payload.error ?? '')) {
+          return `403 without the supporter message: ${payload.error ?? 'no error given'}`
+        }
+        return null
       },
     },
 
