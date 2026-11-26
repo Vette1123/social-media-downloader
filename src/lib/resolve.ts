@@ -19,6 +19,7 @@ import {
 } from './analytics'
 import { errorMessage, failureCode } from './analyticsErrors'
 import type { VideoMetadata } from './appReducer'
+import { readResolveAnswer } from './resolveAnswer'
 import { isTransientError, withRetry } from './retry'
 import { resolveTikTokInBrowser } from './tikwmClient'
 import { detectPlatform, unwrapRedirect } from './validator'
@@ -260,7 +261,7 @@ async function resolveOnServer(
       signal: opts.signal,
       body: JSON.stringify({ url, type, quality, format }),
     })
-    return response.json()
+    return readResolveAnswer<ResolveResult>(response)
   }
 
   return withRetry(
