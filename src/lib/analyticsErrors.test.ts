@@ -23,6 +23,12 @@ describe('failureCode', () => {
     ['HTTP 500', 'server'],
     ['HTTP 502', 'unavailable'],
     ['HTTP 403', 'unavailable'],
+    // A media host's own non-standard refusal (2026-11-25, iOS, generic host): not ours.
+    ['[download:video] HTTP 470', 'unavailable'],
+    ['HTTP 444', 'unavailable'],
+    // Standard 4xx we could cause ourselves stay faults.
+    ['HTTP 400', 'upstream'],
+    ['HTTP 405', 'upstream'],
     ['network error', 'network'],
     ['Instagram only serves these to a logged-in account', 'private'],
     ['LinkedIn serves its videos to signed-in members only; the public page publishes just a preview.', 'private'],

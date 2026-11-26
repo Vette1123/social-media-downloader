@@ -38,6 +38,9 @@ const RULES: [RegExp, FailureCode][] = [
   // A host that refuses us: it blocks automated requests, a link expired (401/403/410),
   // or our proxy relays that the origin failed (502/504/530).
   [/blocks automated|\b(401|403|410|502|504|530)\b/i, 'unavailable'],
+  // A status outside the standard 4xx set (432-450, 452-499: nginx 444/499, a CDN's 470)
+  // is a media host's own refusal; we never send one. Standard 4xx stay ours to explain.
+  [/\bHTTP 4(3[2-9]|4\d|5[2-9]|[6-9]\d)\b/i, 'unavailable'],
   [/\b5\d\d\b|internal|invalid response/i, 'server'],
 ]
 
