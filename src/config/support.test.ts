@@ -1,5 +1,4 @@
-import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 
 import { panelBenefits, PRO_EMAIL, proMailto } from './support'
@@ -7,24 +6,33 @@ import { panelBenefits, PRO_EMAIL, proMailto } from './support'
 // The old payment provider suspended the account on 2026-11-06. Every link to
 // it now sends a supporter to a dead page, so nothing live may name it.
 // lessons/ and migrations/ are history and stay as written.
-const BANNED = /buymeacoffee|buy me a coffee|\/api\/billing\/bmc|BMC_WEBHOOK|bmc-https-robot|#bmc-/i
-const HISTORY = /^(lessons|migrations)\//
+const BANNED =
+  'buymeacoffee|buy me a coffee|/api/billing/bmc|BMC_WEBHOOK|bmc-https-robot|#bmc-'
+const HISTORY = [':!lessons', ':!migrations']
 const SELF = 'src/config/support.test.ts'
+
+/** Tracked text files outside history that match `pattern` (case-insensitive). */
+function trackedHits(pattern: string): string[] {
+  // git grep, not a readFileSync walk over `git ls-files`: -I skips binaries by
+  // content. The walk took 11.7 s and timed out under a full suite (27 Nov).
+  const run = spawnSync(
+    'git',
+    ['grep', '-l', '-I', '-i', '-E', pattern, '--', '.', ...HISTORY, `:!${SELF}`],
+    { encoding: 'utf8' }
+  )
+  // Exit 1 is "no match"; above 1 is a real error, which must not pass as clean.
+  expect(run.status, run.stderr).not.toBeGreaterThan(1)
+  return run.stdout.split('\n').filter(Boolean)
+}
 
 describe('the suspended payment provider is gone', () => {
   it('no tracked file outside history names it', () => {
-    const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
-      .split('\n')
-      .filter((f) => f && !HISTORY.test(f) && f !== SELF)
-      .filter((f) => !/\.(png|jpe?g|webp|avif|ico|zip|woff2?|mp4)$/.test(f))
-    const hits = files.filter((f) => {
-      try {
-        return BANNED.test(readFileSync(f, 'utf8'))
-      } catch {
-        return false
-      }
-    })
-    expect(hits).toEqual([])
+    expect(trackedHits(BANNED)).toEqual([])
+  })
+
+  it('the scan finds a name that is there', () => {
+    // Guards the guard: a broken pathspec or flag would pass the test above vacuously.
+    expect(trackedHits('proMailto')).not.toEqual([])
   })
 })
 
