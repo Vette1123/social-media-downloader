@@ -72,6 +72,8 @@ export interface AppMessage {
   text: string
   /** False when "Try again" cannot help (see errorMessages.failureRetry). Absent = offer it. */
   retry?: boolean
+  /** True when the same link as a video would work (the MP3 supporter refusal). */
+  videoInstead?: boolean
 }
 
 export interface AppState {

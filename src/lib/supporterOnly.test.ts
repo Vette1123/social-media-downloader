@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { handleDownload } from './apiRoutes'
 import { failureCode, isExpectedFailure } from './analyticsErrors'
-import { friendlyError } from './errorMessages'
+import { friendlyError, offersVideoInstead } from './errorMessages'
 import { EXPECTED_CODES } from '../../scripts/lib/posthog-watch-rules.mjs'
 import { bodyForCaller, supporterOnlyReason, YOUTUBE_MP3_SUPPORTER } from './supporterOnly'
 
@@ -65,5 +65,12 @@ describe('the refusal as the visitor and the board see it', () => {
     const friendly = friendlyError(YOUTUBE_MP3_SUPPORTER, 'https://youtu.be/dQw4w9WgXcQ')
     expect(friendly.title).toBe('MP3 from YouTube is for supporters')
     expect(friendly.retry).toBe('no')
+  })
+
+  it('offers the same link as a video, and only for this refusal', () => {
+    // One visitor re-pasted a Short 27 times against a remembered MP3 choice.
+    expect(offersVideoInstead(YOUTUBE_MP3_SUPPORTER)).toBe(true)
+    expect(offersVideoInstead('This post may be private or unavailable')).toBe(false)
+    expect(offersVideoInstead(undefined)).toBe(false)
   })
 })

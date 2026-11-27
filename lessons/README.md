@@ -205,3 +205,4 @@ the index for exactly that.
 | 2026-11-24 | [Site rules read a player API through our relay](2026-11-24-site-rule-player-api.md) | Walled sites now resolve through our signed relay + the player API; our own relay is asked once, since its 403 means the site walls it too. |
 | 2026-11-25 | [The platform monitor asserts the supporter gate](2026-11-25-monitor-mp3-gate.md) | #91 made anonymous YouTube MP3 a 403 but the daily monitor still demanded 200: a contract change updates cf-smoke in the same PR. |
 | 2026-11-26 | [HTML and non-standard answers](2026-11-26-html-and-nonstandard-answers.md) | An HTML page from /api/download read "Unexpected token '<'" and a host's HTTP 470 read as our fault; both now name a status and classify. |
+| 2026-11-27 | [The MP3 refusal offers the video](2026-11-27-video-instead.md) | One visitor hit the supporter refusal 27 times against a remembered MP3 choice; the banner now switches to video in one tap and remembers it. |
