@@ -60,6 +60,16 @@ export interface ErrorContext {
 }
 
 /**
+ * Whether the failure is the MP3 supporter refusal, which the same link as a
+ * video always gets past. The banner then offers that switch in one tap: one
+ * visitor re-pasted a Short 27 times in two days against a remembered MP3
+ * choice (PostHog, 26-27 Nov).
+ */
+export function offersVideoInstead(raw: string | undefined): boolean {
+  return SUPPORTER.test(raw ?? '')
+}
+
+/**
  * Map a raw error to a friendly headline + hint. Falls back to the raw text
  * (trimmed) as the hint so nothing is ever hidden from the user.
  */

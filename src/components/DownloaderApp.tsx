@@ -80,7 +80,7 @@ import { embedNotice } from '@/lib/embedNotice'
 import Link from '@/components/IntentLink'
 import { CopyLinkButton } from '@/components/CopyLinkButton'
 import { d, dKnown, useDeepWords } from '@/lib/i18nDeep'
-import { failureLine, failureRetry, failureTitle } from '@/lib/errorMessages'
+import { failureLine, failureRetry, failureTitle, offersVideoInstead } from '@/lib/errorMessages'
 import { useLocale, useT, useLocalePath } from '@/lib/i18nStore'
 import {
   clearPlatformQuality,
@@ -632,6 +632,7 @@ function explain(raw: string | undefined, url?: string, repeats = 1): AppMessage
     kind: 'error',
     text: failureLine(raw, url, context, repeats),
     retry: failureRetry(raw, url, context, repeats),
+    videoInstead: offersVideoInstead(raw),
   }
 }
 
@@ -1382,6 +1383,9 @@ export function DownloaderApp() {
   const handleProcess = async (
     overrideUrl?: string,
     source: LinkSource = 'typed',
+    // Set by "Save the video instead": the prefs it just changed have not
+    // reached this render's closure yet.
+    formatOverride?: 'video' | 'audio',
   ) => {
     // The button is disabled while busy, but Enter, the paste chip and the
     // Recent list are not: a second resolve mid-transfer raced the first, and
@@ -1477,7 +1481,7 @@ export function DownloaderApp() {
     resetResult()
 
     try {
-      const data = await resolveOne(target, { source })
+      const data = await resolveOne(target, { source, format: formatOverride })
 
       if (data.success) {
         dispatch({
@@ -3392,6 +3396,25 @@ export function DownloaderApp() {
                   className='btn-press mx-auto mt-2 block rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold transition-colors hover:bg-white/10'
                 >
                   {t('tryAgain')}
+                </button>
+              )}
+              {isError && message.videoInstead && !isResolvingOrDownloading(state) && retryLink && (
+                // The MP3 refusal names its way out; this is that way in one
+                // tap. Video becomes the choice for this platform too, so the
+                // next link from it doesn't walk into the same refusal.
+                <button
+                  type='button'
+                  onClick={() => {
+                    trackRetryClicked({ surface: 'video_instead' })
+                    changeFormat('video')
+                    const platform = detectPlatform(retryLink) as SupportedPlatform
+                    rememberPlatformFormat(platform, 'video')
+                    setPlatformFormatMap(getStoredFormatMap())
+                    void handleProcess(retryLink, 'retry', 'video')
+                  }}
+                  className='btn-press mx-auto mt-2 block rounded-lg border border-white/25 px-3 py-1 text-xs font-semibold transition-colors hover:bg-white/10'
+                >
+                  {d('Save the video instead')}
                 </button>
               )}
             </div>
