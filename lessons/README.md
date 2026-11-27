@@ -208,3 +208,4 @@ the index for exactly that.
 | 2026-11-27 | [The MP3 refusal offers the video](2026-11-27-video-instead.md) | One visitor hit the supporter refusal 27 times against a remembered MP3 choice; the banner now switches to video in one tap and remembers it. |
 | 2026-11-27 | [Dailymotion es/pt content](2026-11-27-dailymotion-es-pt-content.md) | Crawled-not-indexed with clean technicals is a copy problem; prove each new claim on the live API, keep FAQs at 4-5 and add depth via cards; oxlint needs --disable-nested-config. |
 | 2026-11-27 | [Empty body is a 400](2026-11-27-empty-body-400.md) | request.json() on an empty body was a 500 in 4 handlers; readJsonObject answers 400 at parse time. Re-read the board yourself, an agent called it stale. |
+| 2026-11-27 | [Sweep: guard uses git grep](2026-11-27-sweep-guard-git-grep.md) | The payment-provider guard timed out walking tracked files; git grep -I (Reely #260) fixes it. Port a fix to the sibling repo the day it lands. |
