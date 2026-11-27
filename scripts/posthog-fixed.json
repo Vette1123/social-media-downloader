@@ -83,5 +83,10 @@
     "fixedOn": "2026-11-10",
     "what": "failureCode: signed-in refusals are private, an expected event not an exception",
     "commit": "fix/posthog-errors"
+  },
+  "01a1d386-4c71-7722-87c4-22ee7656c94d": {
+    "fixedOn": "2026-11-27",
+    "what": "empty/non-object POST body now 400 via readJsonObject, not 500",
+    "commit": "da72bb2"
   }
 }
