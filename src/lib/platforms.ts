@@ -1144,6 +1144,10 @@ export const platforms: Platform[] = [
         title: '🎚️ Quality aware',
         body: 'Choose HD for the best version the source offers or Data saver for a lighter file.',
       },
+      {
+        title: '🎵 Audio as MP3',
+        body: 'Switch the format to MP3 and a Dailymotion link gives you just the soundtrack, for talks, music and shows you only want to listen to.',
+      },
     ],
     faqs: [
       {
@@ -1152,7 +1156,7 @@ export const platforms: Platform[] = [
       },
       {
         q: 'Which Dailymotion links work?',
-        a: 'Links in the form dailymotion.com/video/<id> and the dai.ly/<id> short links. A channel page or playlist address isn’t a single video, so paste the link to one video.',
+        a: 'Links in the form dailymotion.com/video/<id> and the dai.ly/<id> short links. The ID is the code that starts with x, such as x8abc12, so dailymotion.com/video/x8abc12 and dai.ly/x8abc12 open the same video. A channel page or playlist address has no single video ID, so paste the link to one video.',
       },
       {
         q: 'How do I copy a Dailymotion link from the app?',
@@ -1163,8 +1167,8 @@ export const platforms: Platform[] = [
         a: 'Yes. It runs in the browser on iPhone, Android and computers, so nothing is installed. On iPhone, Safari puts the MP4 in Downloads in the Files app, and from there you can save it to Photos.',
       },
       {
-        q: 'Why does my Dailymotion link fail to process?',
-        a: 'Make sure the video is public and the link points to one video. If the video is restricted to certain viewers or regions, it can’t be fetched.',
+        q: 'Can I save only the audio from a Dailymotion video?',
+        a: 'Yes. Switch the format next to the paste box to MP3, then paste the link, and you get the soundtrack as an MP3 file. Pick MP3 again on a Dailymotion result and the site remembers it for your next Dailymotion links on this device.',
       },
     ],
     featureList: [
@@ -1173,6 +1177,7 @@ export const platforms: Platform[] = [
       'HD or Data-saver quality selection',
       'No Dailymotion login, no extension, no install',
       'Preview the video before downloading',
+      'Save just the soundtrack as MP3',
     ],
   },
   {

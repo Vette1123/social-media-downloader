@@ -1298,6 +1298,10 @@
         {
           "title": "🎚️ Atento a la calidad",
           "body": "Elige HD para la mejor versión que ofrezca la fuente o Ahorro de datos para un archivo más ligero."
+        },
+        {
+          "title": "🎵 Audio en MP3",
+          "body": "Cambia el formato a MP3 y un enlace de Dailymotion te da solo la banda sonora, para charlas, música y programas que solo quieres escuchar."
         }
       ],
       "faqs": [
@@ -1307,7 +1311,7 @@
         },
         {
           "q": "¿Qué enlaces de Dailymotion funcionan?",
-          "a": "Los enlaces con la forma dailymotion.com/video/<id> y los enlaces cortos dai.ly/<id>. La página de un canal o una lista de reproducción no es un video suelto, así que pega el enlace de un solo video."
+          "a": "Los enlaces con la forma dailymotion.com/video/<id> y los enlaces cortos dai.ly/<id>. El ID es el código que empieza por x, como x8abc12, así que dailymotion.com/video/x8abc12 y dai.ly/x8abc12 abren el mismo video. Una página de canal o una lista de reproducción no tiene un único ID de video, así que pega el enlace de un solo video."
         },
         {
           "q": "¿Cómo copio un enlace de Dailymotion desde la app?",
@@ -1318,8 +1322,8 @@
           "a": "Sí. Funciona en el navegador de iPhone, Android y computadoras, así que no se instala nada. En iPhone, Safari guarda el MP4 en Descargas dentro de la app Archivos, y desde ahí puedes guardarlo en Fotos."
         },
         {
-          "q": "¿Por qué mi enlace de Dailymotion no se procesa?",
-          "a": "Comprueba que el video sea público y que el enlace apunte a un solo video. Si está limitado a ciertos espectadores o regiones, no se puede obtener."
+          "q": "¿Puedo guardar solo el audio de un video de Dailymotion?",
+          "a": "Sí. Cambia el formato junto a la caja de pegado a MP3, pega el enlace y obtendrás la banda sonora como archivo MP3. Si vuelves a elegir MP3 en un resultado de Dailymotion, el sitio lo recuerda para tus próximos enlaces de Dailymotion en este dispositivo."
         }
       ],
       "featureList": [
@@ -1327,7 +1331,8 @@
         "Funciona con enlaces de dailymotion.com y dai.ly",
         "Selección de calidad HD o Ahorro de datos",
         "Sin iniciar sesión en Dailymotion, sin extensión y sin instalar nada",
-        "Previsualiza el video antes de descargar"
+        "Previsualiza el video antes de descargar",
+        "Guarda solo la banda sonora en MP3"
       ],
       "steps": [
         {

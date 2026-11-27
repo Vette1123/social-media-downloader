@@ -361,6 +361,9 @@ describe('player API recipes', () => {
 
   it('passes a non-hex token through instead of mangling it', async () => {
     configure([{ ...API_RULE, hash: "player\\.hash\\s*=\\s*'([^']+)'" }])
+    // Without this stub the media HEAD probe went to the real network and timed out at 5 s now and then.
+    const fetchMock = headMock([])
+    vi.stubGlobal('fetch', fetchMock)
     const asked: string[] = []
     await resolveByRule(WATCH, async (target) => {
       asked.push(target)
@@ -371,6 +374,7 @@ describe('player API recipes', () => {
     })
 
     expect(asked[1]).toContain('hash=zzzz-token&')
+    expect(fetchMock).toHaveBeenCalled()
   })
 
   it('prefers the player id the page states over the one in the path', async () => {

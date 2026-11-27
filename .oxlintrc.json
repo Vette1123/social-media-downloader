@@ -18,6 +18,8 @@
     ".prof/**",
     // The promo films: their own package, deps and typecheck (video/README.md).
     "video/**",
+    // Other sessions' git worktrees; a nested .oxlintrc there fails the whole run.
+    ".claude/**",
     "next-env.d.ts"
   ],
   "rules": {

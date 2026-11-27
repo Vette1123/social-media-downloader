@@ -1298,6 +1298,10 @@
         {
           "title": "🎚️ Peka kualitas",
           "body": "Pilih HD untuk versi terbaik dari sumbernya atau Hemat data untuk file yang lebih ringan."
+        },
+        {
+          "title": "🎵 Audio sebagai MP3",
+          "body": "Ubah format ke MP3 dan link Dailymotion memberimu suaranya saja, untuk ceramah, musik, dan acara yang hanya ingin kamu dengarkan."
         }
       ],
       "faqs": [
@@ -1307,7 +1311,7 @@
         },
         {
           "q": "Link Dailymotion mana yang berfungsi?",
-          "a": "Link berbentuk dailymotion.com/video/<id> dan link pendek dai.ly/<id>. Halaman kanal atau daftar putar bukan satu video, jadi tempel link satu video saja."
+          "a": "Link berbentuk dailymotion.com/video/<id> dan link pendek dai.ly/<id>. ID-nya adalah kode yang diawali huruf x, misalnya x8abc12, jadi dailymotion.com/video/x8abc12 dan dai.ly/x8abc12 membuka video yang sama. Halaman channel atau playlist tidak punya satu ID video, jadi tempel link ke satu video."
         },
         {
           "q": "Bagaimana cara menyalin link Dailymotion dari aplikasi?",
@@ -1318,8 +1322,8 @@
           "a": "Bisa. Alat ini berjalan di browser iPhone, Android, dan komputer, jadi tidak ada yang perlu dipasang. Di iPhone, Safari menyimpan MP4 ke folder Unduhan di aplikasi File, dan dari sana Anda bisa menyimpannya ke Foto."
         },
         {
-          "q": "Mengapa link Dailymotion saya gagal diproses?",
-          "a": "Pastikan videonya publik dan link mengarah ke satu video. Jika video dibatasi untuk penonton atau wilayah tertentu, video itu tidak bisa diambil."
+          "q": "Bisakah saya menyimpan audionya saja dari video Dailymotion?",
+          "a": "Bisa. Ubah format di samping kotak tempel ke MP3, lalu tempel link-nya, dan kamu mendapatkan suaranya sebagai file MP3. Pilih MP3 lagi pada hasil Dailymotion, dan situs ini mengingatnya untuk link Dailymotion berikutnya di perangkat ini."
         }
       ],
       "featureList": [
@@ -1327,7 +1331,8 @@
         "Bekerja dengan link dailymotion.com dan dai.ly",
         "Pilihan kualitas HD atau Hemat data",
         "Tanpa login Dailymotion, tanpa ekstensi, tanpa pemasangan",
-        "Pratinjau video sebelum mengunduh"
+        "Pratinjau video sebelum mengunduh",
+        "Simpan suaranya saja sebagai MP3"
       ],
       "steps": [
         {

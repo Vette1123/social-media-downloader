@@ -12,7 +12,7 @@
     "apps:icons": "node scripts/build-app-icons.mjs",
     "icons:bump": "node scripts/icon-version.mjs --bump",
     "start": "next start",
-    "lint": "oxlint --report-unused-disable-directives --deny-warnings",
+    "lint": "oxlint --report-unused-disable-directives --deny-warnings --disable-nested-config",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "verify": "pnpm typecheck && pnpm lint && pnpm test",

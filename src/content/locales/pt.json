@@ -1298,6 +1298,10 @@
         {
           "title": "🎚️ Atento à qualidade",
           "body": "Escolha HD para a melhor versão que a fonte oferece ou Economia de dados para um arquivo mais leve."
+        },
+        {
+          "title": "🎵 Áudio em MP3",
+          "body": "Mude o formato para MP3 e um link do Dailymotion entrega só a trilha sonora, para palestras, músicas e programas que você só quer ouvir."
         }
       ],
       "faqs": [
@@ -1307,7 +1311,7 @@
         },
         {
           "q": "Quais links do Dailymotion funcionam?",
-          "a": "Links no formato dailymotion.com/video/<id> e os links curtos dai.ly/<id>. A página de um canal ou uma playlist não é um vídeo único, então cole o link de um só vídeo."
+          "a": "Links no formato dailymotion.com/video/<id> e os links curtos dai.ly/<id>. O ID é o código que começa com x, como x8abc12, então dailymotion.com/video/x8abc12 e dai.ly/x8abc12 abrem o mesmo vídeo. Uma página de canal ou playlist não tem um único ID de vídeo, então cole o link de um vídeo só."
         },
         {
           "q": "Como copio um link do Dailymotion pelo app?",
@@ -1318,8 +1322,8 @@
           "a": "Sim. Funciona no navegador do iPhone, do Android e do computador, então nada é instalado. No iPhone, o Safari coloca o MP4 em Downloads no app Arquivos, e de lá você pode salvá-lo em Fotos."
         },
         {
-          "q": "Por que meu link do Dailymotion não é processado?",
-          "a": "Confira se o vídeo é público e se o link aponta para um único vídeo. Se ele for restrito a certos espectadores ou regiões, não pode ser obtido."
+          "q": "Posso salvar só o áudio de um vídeo do Dailymotion?",
+          "a": "Sim. Mude o formato ao lado da caixa de colar para MP3, cole o link e você recebe a trilha sonora como arquivo MP3. Escolha MP3 de novo em um resultado do Dailymotion e o site lembra disso para os seus próximos links do Dailymotion neste aparelho."
         }
       ],
       "featureList": [
@@ -1327,7 +1331,8 @@
         "Funciona com links de dailymotion.com e dai.ly",
         "Seleção de qualidade HD ou Economia de dados",
         "Sem login no Dailymotion, sem extensão e sem instalação",
-        "Veja a prévia do vídeo antes de baixar"
+        "Veja a prévia do vídeo antes de baixar",
+        "Salve só a trilha sonora em MP3"
       ],
       "steps": [
         {
