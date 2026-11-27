@@ -128,6 +128,15 @@ describe('handleDownload failure statuses', () => {
     return response.status
   }
 
+  // PostHog 01a1d386, 27 Nov 2026: a no-UA client POSTed an empty body and
+  // request.json()'s "Unexpected end of JSON input" was answered as a 500.
+  it.each(['', 'not json', 'null', '[]'])('rejects body %j as a client error', async (body) => {
+    for (const handler of [handleDownload, handleImages]) {
+      const request = new Request('https://example.com/api/x', { method: 'POST', body })
+      expect((await handler(request)).status).toBe(400)
+    }
+  })
+
   it('rejects a missing url as a client error', async () => {
     expect(await statusFor('')).toBe(400)
   })

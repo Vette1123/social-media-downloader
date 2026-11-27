@@ -184,12 +184,34 @@ export function resolveFailure(error: unknown, fallback: string): Response {
   return Response.json(body, { status: 500 })
 }
 
+/**
+ * The POST body as an object, or null when it is empty, not JSON, or not an
+ * object. Every one of those is the caller's fault: PostHog 01a1d386 was a
+ * no-UA client POSTing an empty body to /api/download, and request.json()'s
+ * "Unexpected end of JSON input" fell into the catch and was answered as 500.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function readJsonObject(request: Request): Promise<Record<string, any> | null> {
+  const body: unknown = await request.json().catch(() => null)
+  return body !== null && typeof body === 'object' && !Array.isArray(body)
+    ? (body as Record<string, unknown>)
+    : null
+}
+
+function badBody(): Response {
+  return Response.json(
+    { success: false, error: 'Request body must be a JSON object' },
+    { status: 400 },
+  )
+}
+
 export async function handleDownload(
   request: Request,
   ctx?: WaitUntilContext,
 ): Promise<Response> {
   try {
-    const input = await request.json()
+    const input = await readJsonObject(request)
+    if (!input) return badBody()
     const { type = 'video', quality, format } = input
     // A link inside shared text is still a link (see extractLink).
     const url = extractLink(input.url) ?? input.url
@@ -441,7 +463,9 @@ export async function handlePlaylist(request: Request): Promise<Response> {
   }
 
   try {
-    const { url } = await request.json()
+    const input = await readJsonObject(request)
+    if (!input) return badBody()
+    const { url } = input
     const source =
       typeof url === 'string' ? detectImportSource(url) : null
 
@@ -549,7 +573,9 @@ export async function handleSubtitles(request: Request): Promise<Response> {
   }
 
   try {
-    const body = (await request.json()) as {
+    const input = await readJsonObject(request)
+    if (!input) return badBody()
+    const body = input as {
       url?: string
       videoId?: string
       lang?: string
@@ -679,7 +705,9 @@ export function toRawMediaUrl(u: string): string {
  */
 export async function handleImages(request: Request): Promise<Response> {
   try {
-    const { imageUrls, items, title } = await request.json()
+    const input = await readJsonObject(request)
+    if (!input) return badBody()
+    const { imageUrls, items, title } = input
 
     const list: Array<{ url: string; kind?: string }> = Array.isArray(items)
       ? items.filter((i) => typeof i?.url === 'string')
