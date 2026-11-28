@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Downloader, firstResult, isCrawlerOnlyShareLink, isShortLink, threadsEmbedImages, noMediaMessage, parseTwitchClipSlug } from './downloader'
+import { Downloader, firstResult, isCrawlerOnlyShareLink, isShortLink, threadsEmbedImages, noMediaMessage, parseTwitchClipSlug, THREADS_POST_HAS_NO_MEDIA } from './downloader'
 import { failureCode } from './analyticsErrors'
 import { detectPlatform, unwrapLoginWall } from './validator'
 
@@ -482,6 +482,21 @@ describe('the Threads embed extractor', () => {
       )
       vi.unstubAllGlobals()
     }
+  })
+
+  // #100/#101: a text post (here with a link card) rendered in full and held no
+  // media, and the chain fell through to "may be private", filed `inconclusive`.
+  it('says a text-only post is text only, not that it may be private', async () => {
+    stubFetch(
+      `<html><body><img class="img" src="https://scontent.cdninstagram.com/v/t51.2885-19/1_n.jpg" />` +
+        `<span class="BodyTextContainer"><a href="https://www.threads.com/@muse">@muse</a> is out today.</span>` +
+        `<a href="https://security.muse.ai/">security.muse.ai</a></body></html>`,
+    )
+    const error = await new Downloader()
+      .downloadVideo('https://www.threads.com/@someone/post/DdCbtnaAQ3N')
+      .catch((e: Error) => e)
+    expect((error as Error).message).toBe(THREADS_POST_HAS_NO_MEDIA)
+    expect(failureCode((error as Error).message)).toBe('unsupported')
   })
 })
 

@@ -1261,8 +1261,15 @@ const IG_COOKIE_ORDER: readonly { name: string; env: string }[] = [
   { name: "wd", env: "IG_WD" },
 ];
 
-/** Telegram's embed page read in full and held no media; the message says why. */
-class TelegramEmptyPost extends Error {}
+/**
+ * A post page read in full that held no media (Telegram's and Threads' embed
+ * views); the message says why, and no later method can do better.
+ */
+class EmptyPost extends Error {}
+
+/** A Threads embed that rendered the post and held no video or photo. */
+export const THREADS_POST_HAS_NO_MEDIA =
+  "This Threads post has no video or image to download. It is text only, or its media was removed.";
 
 /** A post the API read in full and found no media on. Maps to `unavailable`. */
 export const TWEET_HAS_NO_MEDIA =
@@ -1892,7 +1899,7 @@ export class Downloader {
     if (telegram) methods.push(() => this.tryTelegramPost(url, telegram));
     if (platform === "generic" && isTelegramPrivateLink(url)) {
       methods.push(async () => {
-        throw new TelegramEmptyPost(TELEGRAM_PRIVATE_CHANNEL);
+        throw new EmptyPost(TELEGRAM_PRIVATE_CHANNEL);
       });
     }
     methods.push(() => this.tryCobaltInstances(url));
@@ -1938,8 +1945,8 @@ export class Downloader {
           blocked = e;
           continue;
         }
-        // Telegram's own page said why there is nothing: no other method can do better.
-        if (e instanceof TelegramEmptyPost) throw new Error(e.message);
+        // The post's own page said why there is nothing: no other method can do better.
+        if (e instanceof EmptyPost) throw new Error(e.message);
         console.warn(`${platform} method failed, trying next...`, e);
       }
     }
@@ -2459,6 +2466,10 @@ export class Downloader {
     author: string,
   ): VideoData | null {
     const photos = threadsEmbedImages(html);
+    // The embed rendered the post's text and nothing else: a text or link-card
+    // post. The app shell (no BodyTextContainer) stays a null for Cobalt to try.
+    if (photos.length === 0 && html.includes('class="BodyTextContainer"'))
+      throw new EmptyPost(THREADS_POST_HAS_NO_MEDIA);
     if (photos.length === 0) return null;
     const id = /post\/([\w-]+)/.exec(url)?.[1] || Date.now().toString();
     return {
@@ -2497,7 +2508,7 @@ export class Downloader {
       return null;
     const media = parseTelegramEmbed(response.data);
     const reason = telegramEmptyReason(response.data, media);
-    if (reason) throw new TelegramEmptyPost(reason);
+    if (reason) throw new EmptyPost(reason);
     const author = media.author || ref.channel;
     const title = media.text?.slice(0, 100) || `Telegram post by ${author}`;
     const id = `telegram_${ref.channel}_${ref.id}`;
